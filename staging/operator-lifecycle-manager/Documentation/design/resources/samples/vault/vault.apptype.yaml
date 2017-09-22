@@ -20,6 +20,7 @@ spec:
     url: https://www.vaultproject.io/
   labels:
     alm-owner-vault: vault.apptypev1s.app.coreos.com.v1alpha1  
+    alm-catalog: Open Cloud Services
   selector:
     matchLabels:
       alm-owner-vault: vault.apptypev1s.app.coreos.com.v1alpha1 
