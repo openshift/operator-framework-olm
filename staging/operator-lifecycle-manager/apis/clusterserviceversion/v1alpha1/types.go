@@ -171,8 +171,8 @@ type ClusterServiceVersion struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   ClusterServiceVersionSpec   `json:"spec"`
-	Status ClusterServiceVersionStatus `json:"status"`
+	Spec   ClusterServiceVersionSpec `json:"spec"`
+	Status metav1.Status             `json:"status"`
 }
 
 // ClusterServiceVersionList represents a list of ClusterServiceVersions.
