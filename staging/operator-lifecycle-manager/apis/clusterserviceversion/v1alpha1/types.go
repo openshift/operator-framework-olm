@@ -4,6 +4,7 @@ package v1alpha1
 
 import (
 	"encoding/json"
+	"sort"
 
 	"github.com/coreos/go-semver/semver"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -220,6 +221,7 @@ type ClusterServiceVersionList struct {
 // the union of the owned and required CRDDescriptions.
 //
 // Descriptions with the same name prefer the value in Owned.
+// Descriptions are returned in alphabetical order.
 func (csv ClusterServiceVersion) GetAllCRDDescriptions() []CRDDescription {
 	set := make(map[string]CRDDescription)
 	for _, required := range csv.Spec.CustomResourceDefinitions.Required {
@@ -230,10 +232,16 @@ func (csv ClusterServiceVersion) GetAllCRDDescriptions() []CRDDescription {
 		set[owned.Name] = owned
 	}
 
-	slice := make([]CRDDescription, 0)
-	for _, description := range set {
-		slice = append(slice, description)
+	keys := make([]string, 0)
+	for key := range set {
+		keys = append(keys, key)
+	}
+	sort.StringSlice(keys).Sort()
+
+	descs := make([]CRDDescription, 0)
+	for _, key := range keys {
+		descs = append(descs, set[key])
 	}
 
-	return slice
+	return descs
 }
