@@ -153,6 +153,8 @@ data:
         namespace: placeholder
         annotations:
           tectonic-visibility: ocs
+        labels:
+          alm-catalog: tectonic-ocs
       spec:
         displayName: etcd
         description: |
@@ -330,6 +332,8 @@ data:
         namespace: placeholder
         annotations:
           tectonic-visibility: ocs
+        labels:
+          alm-catalog: tectonic-ocs
       spec:
         displayName: Prometheus
         description: |
@@ -581,6 +585,8 @@ data:
         namespace: placeholder
         annotations:
           tectonic-visibility: ocs
+        labels:
+          alm-catalog: tectonic-ocs
       spec:
         displayName: Vault
         description: |
