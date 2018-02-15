@@ -1,6 +1,4 @@
----
-# Source: alm/templates/02-alm-operator.rolebinding.yaml
-apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: {{ .Values.rbacApiVersion }}/v1
 kind: ClusterRoleBinding
 metadata:
   name: alm-operator-binding
@@ -13,4 +11,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: alm-operator-serviceaccount
-  namespace: tectonic-system
+  namespace: {{ .Values.namespace }}
