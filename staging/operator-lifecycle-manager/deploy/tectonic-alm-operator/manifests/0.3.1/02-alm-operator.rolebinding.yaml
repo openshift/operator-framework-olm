@@ -1,3 +1,5 @@
+---
+# Source: alm/templates/02-alm-operator.rolebinding.yaml
 apiVersion: {{ .Values.rbacApiVersion }}/v1
 kind: ClusterRoleBinding
 metadata:
