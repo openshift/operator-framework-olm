@@ -457,6 +457,9 @@ data:
                   replicas: 1
                   strategy:
                     type: Recreate
+                  selector:
+                    matchLabels:
+                      app: chargeback-helm-operator
                   template:
                     metadata:
                       labels:
@@ -682,6 +685,9 @@ data:
             - name: etcd-operator
               spec:
                 replicas: 1
+                selector:
+                  matchLabels:
+                    name: etcd-operator-alm-owned
                 template:
                   metadata:
                     name: etcd-operator-alm-owned
@@ -856,6 +862,9 @@ data:
             - name: etcd-operator
               spec:
                 replicas: 1
+                selector:
+                  matchLabels:
+                    name: etcd-operator-alm-owned
                 template:
                   metadata:
                     name: etcd-operator-alm-owned
@@ -1143,6 +1152,9 @@ data:
             - name: prometheus-operator
               spec:
                 replicas: 1
+                selector:
+                  matchLabels:
+                    k8s-app: prometheus-operator
                 template:
                   metadata:
                     labels:
@@ -1394,6 +1406,9 @@ data:
             - name: prometheus-operator
               spec:
                 replicas: 1
+                selector:
+                  matchLabels:
+                    k8s-app: prometheus-operator
                 template:
                   metadata:
                     labels:
@@ -1625,6 +1640,9 @@ data:
             - name: vault-operator
               spec:
                 replicas: 1
+                selector:
+                  matchLabels:
+                    name: vault-operator
                 template:
                   metadata:
                     labels:
@@ -1804,6 +1822,9 @@ data:
             - name: vault-operator
               spec:
                 replicas: 1
+                selector:
+                  matchLabels:
+                    name: vault-operator
                 template:
                   metadata:
                     labels:
