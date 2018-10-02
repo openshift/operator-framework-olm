@@ -380,23 +380,23 @@ func namespacesChanged(clusterNamespaces []corev1.Namespace, statusNamespaces []
 	return false
 }
 
-func (a *Operator) updateDeploymentAnnotation(op *v1alpha2.OperatorGroup) error {
+func (a *Operator) updateDeploymentAnnotation(op *v1alpha2.OperatorGroup) (error, []corev1.Namespace) {
 	// NOTE: if a CSV modification is required in the future, copy the original
 	// data as done in the bottom of this method first.
 
 	selector, err := metav1.LabelSelectorAsSelector(&op.Spec.Selector)
 	if err != nil {
-		return err
+		return err, nil
 	}
 	operatorGroupOpts := metav1.ListOptions{LabelSelector: selector.String()}
 	namespaceList, err := a.OpClient.KubernetesInterface().CoreV1().Namespaces().List(operatorGroupOpts)
 	if err != nil {
-		return err
+		return err, nil
 	}
 
 	if !namespacesChanged(namespaceList.Items, op.Status.Namespaces) {
 		// status is current with correct namespaces, so no further updates required
-		return nil
+		return nil, namespaceList.Items
 	}
 	op.Status.Namespaces = namespaceList.Items
 	op.Status.LastUpdated = timeNow()
@@ -406,12 +406,12 @@ func (a *Operator) updateDeploymentAnnotation(op *v1alpha2.OperatorGroup) error 
 	for csvName, csv := range csvsInNamespace {
 		strategy, err := a.resolver.UnmarshalStrategy(csv.Spec.InstallStrategy)
 		if err != nil {
-			return fmt.Errorf("error unmarshaling strategy from ClusterServiceVersion '%s' with error: %s", csvName, err)
+			return fmt.Errorf("error unmarshaling strategy from ClusterServiceVersion '%s' with error: %s", csvName, err), namespaceList.Items
 		}
 
 		strategyDetailsDeployment, ok := strategy.(*install.StrategyDetailsDeployment)
 		if !ok {
-			return fmt.Errorf("could not assert strategy implementation as deployment for CSV %s", csvName)
+			return fmt.Errorf("could not assert strategy implementation as deployment for CSV %s", csvName), namespaceList.Items
 		}
 
 		managerPolicyRules := []rbacv1.PolicyRule{}
@@ -440,7 +440,7 @@ func (a *Operator) updateDeploymentAnnotation(op *v1alpha2.OperatorGroup) error 
 		clusterRole.SetGenerateName(fmt.Sprintf("owned-crd-manager-%s-", csv.Spec.DisplayName))
 		_, err = a.OpClient.KubernetesInterface().RbacV1().ClusterRoles().Create(clusterRole)
 		if err != nil {
-			return err
+			return err, namespaceList.Items
 		}
 
 		// operator group specific roles
@@ -452,7 +452,7 @@ func (a *Operator) updateDeploymentAnnotation(op *v1alpha2.OperatorGroup) error 
 		}
 		_, err = a.OpClient.KubernetesInterface().RbacV1().ClusterRoles().Create(operatorGroupEditClusterRole)
 		if err != nil {
-			return err
+			return err, namespaceList.Items
 		}
 		operatorGroupViewClusterRole := &rbacv1.ClusterRole{
 			ObjectMeta: metav1.ObjectMeta{
@@ -462,7 +462,7 @@ func (a *Operator) updateDeploymentAnnotation(op *v1alpha2.OperatorGroup) error 
 		}
 		_, err = a.OpClient.KubernetesInterface().RbacV1().ClusterRoles().Create(operatorGroupViewClusterRole)
 		if err != nil {
-			return err
+			return err, namespaceList.Items
 		}
 
 		var nsList []string
@@ -473,27 +473,27 @@ func (a *Operator) updateDeploymentAnnotation(op *v1alpha2.OperatorGroup) error 
 		for _, deploy := range strategyDetailsDeployment.DeploymentSpecs {
 			originalData, err := json.Marshal(csv)
 			if err != nil {
-				return err
+				return err, namespaceList.Items
 			}
 			deploy.Spec.Template.Annotations["olm.targetNamespaces"] = strings.Join(nsList, ",")
 			modifiedData, err := json.Marshal(csv)
 			if err != nil {
-				return err
+				return err, namespaceList.Items
 			}
 			patchBytes, err := strategicpatch.CreateTwoWayMergePatch(originalData, modifiedData, v1alpha1.ClusterServiceVersion{})
 			if err != nil {
-				return err
+				return err, namespaceList.Items
 			}
 
 			_, err = a.client.Operators().ClusterServiceVersions(currentNamespace).Patch(csvName, types.StrategicMergePatchType, patchBytes)
 			if err != nil {
-				return fmt.Errorf("CSV update for '%v' failed: %v\n", csvName, err)
+				return fmt.Errorf("CSV update for '%v' failed: %v\n", csvName, err), namespaceList.Items
 			}
 			//a.requeueCSV(csvName, currentNamespace)
 		}
 	}
 
-	return nil
+	return nil, namespaceList.Items
 }
 
 func (a *Operator) syncOperatorGroups(obj interface{}) error {
@@ -503,8 +503,31 @@ func (a *Operator) syncOperatorGroups(obj interface{}) error {
 		return fmt.Errorf("casting OperatorGroup failed")
 	}
 
-	if err := a.updateDeploymentAnnotation(op); err != nil {
+	err, targetedNamespaces := a.updateDeploymentAnnotation(op)
+	if err != nil {
 		return err
+	}
+
+	for _, ns := range targetedNamespaces {
+		csvsInNamespace := a.csvsInNamespace(ns.Name)
+		for _, csv := range csvsInNamespace {
+			if csv.Status.Phase == v1alpha1.CSVPhaseSucceeded {
+				newCSV := csv.DeepCopy()
+				newCSV.Status = v1alpha1.ClusterServiceVersionStatus{
+					Message:        "CSV copied to target namespace",
+					Reason:         v1alpha1.CSVReasonCopied,
+					LastUpdateTime: timeNow(),
+				}
+				newCSV.Annotations["OriginalCSV"] = fmt.Sprintf("Namespace:%v, ResourceVersion:%v", csv.GetNamespace(), csv.GetResourceVersion())
+				ownerutil.AddNonBlockingOwner(newCSV, csv)
+				if newCSV.GetNamespace() != ns.Name {
+					_, err := a.client.OperatorsV1alpha1().ClusterServiceVersions(newCSV.GetNamespace()).Create(newCSV)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
 	}
 
 	return nil
@@ -865,7 +888,7 @@ func (a *Operator) syncNamespace(obj interface{}) (syncError error) {
 	}
 
 	for op := range opGroupUpdate {
-		if err := a.updateDeploymentAnnotation(op); err != nil {
+		if err, _ := a.updateDeploymentAnnotation(op); err != nil {
 			return err
 		}
 	}
