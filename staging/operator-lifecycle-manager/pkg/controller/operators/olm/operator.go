@@ -396,6 +396,7 @@ func (a *Operator) updateDeploymentAnnotation(op *v1alpha2.OperatorGroup) (error
 
 	if !namespacesChanged(namespaceList.Items, op.Status.Namespaces) {
 		// status is current with correct namespaces, so no further updates required
+		log.Debugf("No namespace changes detected, found: %v", namespaceList.Items)
 		return nil, namespaceList.Items
 	}
 	op.Status.Namespaces = namespaceList.Items
@@ -475,7 +476,7 @@ func (a *Operator) updateDeploymentAnnotation(op *v1alpha2.OperatorGroup) (error
 			if err != nil {
 				return err, namespaceList.Items
 			}
-			deploy.Spec.Template.Annotations["olm.targetNamespaces"] = strings.Join(nsList, ",")
+			metav1.SetMetaDataAnnotation(&deploy.Spec.Template.ObjectMeta, "olm.targetNamespaces", strings.Join(nsList, ","))
 			modifiedData, err := json.Marshal(csv)
 			if err != nil {
 				return err, namespaceList.Items
@@ -504,6 +505,7 @@ func (a *Operator) syncOperatorGroups(obj interface{}) error {
 	}
 
 	err, targetedNamespaces := a.updateDeploymentAnnotation(op)
+	log.Debugf("Got targetedNamespaces: '%v'", targetedNamespaces)
 	if err != nil {
 		return err
 	}
@@ -518,7 +520,7 @@ func (a *Operator) syncOperatorGroups(obj interface{}) error {
 					Reason:         v1alpha1.CSVReasonCopied,
 					LastUpdateTime: timeNow(),
 				}
-				newCSV.Annotations["OriginalCSV"] = fmt.Sprintf("Namespace:%v, ResourceVersion:%v", csv.GetNamespace(), csv.GetResourceVersion())
+				metav1.SetMetaDataAnnotation(&newCSV.ObjectMeta, "olm.originalCSV", fmt.Sprintf("%v/%v", csv.GetNamespace(), csv.GetName()))
 				ownerutil.AddNonBlockingOwner(newCSV, csv)
 				if newCSV.GetNamespace() != ns.Name {
 					_, err := a.client.OperatorsV1alpha1().ClusterServiceVersions(newCSV.GetNamespace()).Create(newCSV)
