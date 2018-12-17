@@ -276,6 +276,7 @@ type RequirementStatus struct {
 	Kind       string            `json:"kind"`
 	Name       string            `json:"name"`
 	Status     StatusReason      `json:"status"`
+	Message    string            `json:"message"`
 	UUID       string            `json:"uuid,omitempty"`
 	Dependents []DependentStatus `json:"dependents,omitempty"`
 }
@@ -447,3 +448,4 @@ func (csv ClusterServiceVersion) GetOwnedAPIServiceDescriptions() []APIServiceDe
 
 	return descs
 }
+

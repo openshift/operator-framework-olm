@@ -2184,6 +2184,7 @@ func TestSyncOperatorGroups(t *testing.T) {
 			Kind:    "CustomResourceDefinition",
 			Name:    crd.GetName(),
 			Status:  v1alpha1.RequirementStatusReasonPresent,
+			Message: "CRD is present and Established condition is true",
 		},
 		{
 			Group:   "",
