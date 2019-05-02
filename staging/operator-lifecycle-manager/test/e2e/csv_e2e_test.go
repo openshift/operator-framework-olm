@@ -2828,6 +2828,7 @@ func TestUpdateCSVModifyDeploymentName(t *testing.T) {
 }
 
 func TestCreateCSVRequirementsEvents(t *testing.T) {
+	t.Skip()
 	defer cleaner.NotifyTestComplete(t, true)
 
 	c := newKubeClient(t)
