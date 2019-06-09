@@ -1,6 +1,6 @@
 <!--
 
-Before making a PR, please read our contributing guidelines https://github.com/operator-framework/operator-lifecycle-manager/blob/master/CONTRIBUTING.md
+Before making a PR, please read our contributing guidelines https://github.com/operator-framework/operator-lifecycle-manager/blob/master/CONTRIBUTING.MD
 
 Note: Make sure your branch is rebased to the latest upstream master.
 
@@ -10,14 +10,6 @@ Note: Make sure your branch is rebased to the latest upstream master.
 
 
 **Motivation for the change:**
-
-**Reviewer Checklist**
-- [ ] Implementation matches the proposed design, or proposal is updated to match implementation
-- [ ] Sufficient unit test coverage 
-- [ ] Sufficient end-to-end test coverage
-- [ ] Docs updated or added to `/docs` 
-- [ ] Commit messages sensible and descriptive
-
 
 <!--
 
