@@ -708,8 +708,6 @@ func (a *Operator) syncClusterServiceVersion(obj interface{}) (syncError error) 
 		return
 	}
 
-	a.recordMetrics(logger, clusterServiceVersion)
-
 	outCSV, syncError := a.transitionCSVState(*clusterServiceVersion)
 
 	if outCSV == nil {
@@ -807,18 +805,6 @@ func (a *Operator) syncGcCsv(obj interface{}) (syncError error) {
 		return
 	}
 	return
-}
-
-func (a *Operator) recordMetrics(logger *logrus.Entry, csv *v1alpha1.ClusterServiceVersion) {
-	if csv.IsCopied() {
-		// don't record for copied CSVs
-		return
-	}
-	counter, err := metrics.CounterForCSV(csv.GetName(), string(csv.Status.Phase))
-	if err != nil {
-		logger.WithError(err).Warn("could not record metrics")
-	}
-	counter.Inc()
 }
 
 // operatorGroupFromAnnotations returns the OperatorGroup for the CSV only if the CSV is active one in the group
