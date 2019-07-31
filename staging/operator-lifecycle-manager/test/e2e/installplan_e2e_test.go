@@ -915,7 +915,7 @@ func TestInstallPlanWithCRDSchemaChange(t *testing.T) {
 			_, err := fetchCatalogSource(t, crc, mainCatalogSourceName, testNamespace, catalogSourceRegistryPodSynced)
 			require.NoError(t, err)
 
-			subscriptionName := genName("sub-nginx-")
+			subscriptionName := genName("sub-nginx-alpha-")
 			// this subscription will be cleaned up below without the clean up function
 			createSubscriptionForCatalog(t, crc, testNamespace, subscriptionName, mainCatalogSourceName, mainPackageName, stableChannel, "", v1alpha1.ApprovalAutomatic)
 
@@ -923,7 +923,7 @@ func TestInstallPlanWithCRDSchemaChange(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, subscription)
 
-			installPlanName := subscription.Status.Install.Name
+			installPlanName := subscription.Status.InstallPlanRef.Name
 
 			// Wait for InstallPlan to be status: Complete or failed before checking resource presence
 			completeOrFailedFunc := buildInstallPlanPhaseCheckFunc(v1alpha1.InstallPlanPhaseComplete, v1alpha1.InstallPlanPhaseFailed)
@@ -969,13 +969,14 @@ func TestInstallPlanWithCRDSchemaChange(t *testing.T) {
 			require.NoError(t, err)
 
 			// existing cleanup should remove this
+			subscriptionName = genName("sub-nginx-beta")
 			createSubscriptionForCatalog(t, crc, testNamespace, subscriptionName, mainCatalogSourceName, mainPackageName, betaChannel, "", v1alpha1.ApprovalAutomatic)
 
 			subscription, err = fetchSubscription(t, crc, testNamespace, subscriptionName, subscriptionHasInstallPlanChecker)
 			require.NoError(t, err)
 			require.NotNil(t, subscription)
 
-			installPlanName = subscription.Status.Install.Name
+			installPlanName = subscription.Status.InstallPlanRef.Name
 
 			// Wait for InstallPlan to be status: Complete or Failed before checking resource presence
 			fetchedInstallPlan, err = fetchInstallPlan(t, crc, installPlanName, buildInstallPlanPhaseCheckFunc(v1alpha1.InstallPlanPhaseComplete, v1alpha1.InstallPlanPhaseFailed))
@@ -1095,9 +1096,8 @@ func TestUpdateInstallPlan(t *testing.T) {
 		_, err := fetchCatalogSource(t, crc, mainCatalogName, testNamespace, catalogSourceRegistryPodSynced)
 		require.NoError(t, err)
 
-		subscriptionName := genName("sub-nginx-update-")
-		subscriptionCleanup := createSubscriptionForCatalog(t, crc, testNamespace, subscriptionName, mainCatalogName, mainPackageName, stableChannel, "", v1alpha1.ApprovalAutomatic)
-		defer subscriptionCleanup()
+		subscriptionName := genName("sub-nginx-update-before-")
+		createSubscriptionForCatalog(t, crc, testNamespace, subscriptionName, mainCatalogName, mainPackageName, stableChannel, "", v1alpha1.ApprovalAutomatic)
 
 		subscription, err := fetchSubscription(t, crc, testNamespace, subscriptionName, subscriptionHasInstallPlanChecker)
 		require.NoError(t, err)
@@ -1131,7 +1131,9 @@ func TestUpdateInstallPlan(t *testing.T) {
 		require.NoError(t, err)
 
 		// existing cleanup should remove this
-		createSubscriptionForCatalog(t, crc, testNamespace, subscriptionName, mainCatalogName, mainPackageName, stableChannel, "", v1alpha1.ApprovalAutomatic)
+		subscriptionName = genName("sub-nginx-update-after-")
+		subscriptionCleanup := createSubscriptionForCatalog(t, crc, testNamespace, subscriptionName, mainCatalogName, mainPackageName, stableChannel, "", v1alpha1.ApprovalAutomatic)
+		defer subscriptionCleanup()
 
 		// Wait for subscription to update
 		updatedSubscription, err := fetchSubscription(t, crc, testNamespace, subscriptionName, subscriptionHasInstallPlanChecker)
