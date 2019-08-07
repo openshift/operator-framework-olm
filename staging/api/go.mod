@@ -44,7 +44,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30 // indirect
 	github.com/openshift/api v0.0.0-00010101000000-000000000000
 	github.com/openshift/client-go v0.0.0-00010101000000-000000000000
-	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20190125151539-1e295784b30a
+	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.1.1
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.2
@@ -71,3 +71,5 @@ require (
 	sigs.k8s.io/structured-merge-diff v0.0.0-00010101000000-000000000000 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
+
+replace github.com/operator-framework/operator-lifecycle-manager => ../operator-lifecycle-manager
