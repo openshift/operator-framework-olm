@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilclock "k8s.io/apimachinery/pkg/util/clock"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
@@ -1045,7 +1046,7 @@ func (o *Operator) syncInstallPlans(obj interface{}) (syncError error) {
 				syncError = fmt.Errorf("failed to attach attenuated ServiceAccount to status - %v", updateErr)
 				return
 			}
-						
+
 			logger.WithField("attenuated-sa", reference.Name).Info("successfully attached attenuated ServiceAccount to status")
 			return
 		}
@@ -1206,7 +1207,7 @@ func (o *Operator) validateExistingCRs(gvr schema.GroupVersionResource, newCRD *
 		if err != nil {
 			return fmt.Errorf("error creating validator for schema %#v: %s", newCRD.Spec.Validation, err)
 		}
-		err = validation.ValidateCustomResource(cr.UnstructuredContent(), validator)
+		err = validation.ValidateCustomResource(field.NewPath(""), cr.UnstructuredContent(), validator).ToAggregate()
 		if err != nil {
 			return fmt.Errorf("error validating custom resource against new schema %#v: %s", newCRD.Spec.Validation, err)
 		}
@@ -1647,4 +1648,3 @@ func getCSVNameSet(plan *v1alpha1.InstallPlan) map[string]struct{} {
 
 	return csvNameSet
 }
-
