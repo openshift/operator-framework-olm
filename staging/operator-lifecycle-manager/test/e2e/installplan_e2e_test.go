@@ -660,6 +660,8 @@ func TestCreateInstallPlanWithPreExistingCRDOwners(t *testing.T) {
 		// Update the subscription resource to point to the beta CSV
 		err = crc.OperatorsV1alpha1().Subscriptions(testNamespace).DeleteCollection(metav1.NewDeleteOptions(0), metav1.ListOptions{})
 		require.NoError(t, err)
+		// Delete orphaned csv
+		require.NoError(t, crc.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Delete(mainStableCSV.GetName(), &metav1.DeleteOptions{}))
 
 		// existing cleanup should remove this
 		createSubscriptionForCatalog(t, crc, testNamespace, subscriptionName, mainCatalogSourceName, mainPackageName, betaChannel, "", v1alpha1.ApprovalAutomatic)
@@ -1193,6 +1195,8 @@ func TestInstallPlanWithDeprecatedVersionCRD(t *testing.T) {
 			// Update the subscription resource to point to the beta CSV
 			err = crc.OperatorsV1alpha1().Subscriptions(testNamespace).DeleteCollection(metav1.NewDeleteOptions(0), metav1.ListOptions{})
 			require.NoError(t, err)
+			// Delete orphaned csv
+			require.NoError(t, crc.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Delete(mainStableCSV.GetName(), &metav1.DeleteOptions{}))
 
 			// existing cleanup should remove this
 			createSubscriptionForCatalog(t, crc, testNamespace, subscriptionName, mainCatalogSourceName, mainPackageName, betaChannel, "", v1alpha1.ApprovalAutomatic)
@@ -1242,6 +1246,8 @@ func TestInstallPlanWithDeprecatedVersionCRD(t *testing.T) {
 			// Update the subscription resource to point to the beta CSV
 			err = crc.OperatorsV1alpha1().Subscriptions(testNamespace).DeleteCollection(metav1.NewDeleteOptions(0), metav1.ListOptions{})
 			require.NoError(t, err)
+			// Delete orphaned csv
+			require.NoError(t, crc.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Delete(mainBetaCSV.GetName(), &metav1.DeleteOptions{}))
 
 			// existing cleanup should remove this
 			createSubscriptionForCatalog(t, crc, testNamespace, subscriptionName, mainCatalogSourceName, mainPackageName, deltaChannel, "", v1alpha1.ApprovalAutomatic)
