@@ -449,6 +449,7 @@ bin
 
 # Ignore sqlite
 *.db
+*.db-journal
 
 # Igore apprclient meta
 pkg/apprclient/openapi/git_push.sh
