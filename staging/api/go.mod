@@ -40,5 +40,4 @@ require (
 	github.com/stretchr/testify v1.4.0
 	k8s.io/apiextensions-apiserver v0.0.0
 	k8s.io/apimachinery v0.0.0
-	k8s.io/client-go v8.0.0+incompatible
 )
