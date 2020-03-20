@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"flag"
+	"os"
 	"testing"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client"
+	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
 )
 
 var (
@@ -38,34 +39,37 @@ var (
 	communityOperatorsImage = ""
 )
 
-func TestConvert(t *testing.T) {
+func TestEndToEnd(t *testing.T) {
 	RegisterFailHandler(Fail)
 	SetDefaultEventuallyTimeout(1 * time.Minute)
 	SetDefaultEventuallyPollingInterval(1 * time.Second)
-	RunSpecs(t, "Convert Suite")
+	RunSpecs(t, "End-to-end")
 }
+
+var deprovision func() = func() {}
 
 // This function initializes a client which is used to create an operator group for a given namespace
 var _ = BeforeSuite(func() {
-
-	flag.Parse()
+	if kubeConfigPath != nil && *kubeConfigPath != "" {
+		// This flag can be deprecated in favor of the kubeconfig provisioner:
+		os.Setenv("KUBECONFIG", *kubeConfigPath)
+	}
 
 	testNamespace = *namespace
 	operatorNamespace = *olmNamespace
 	communityOperatorsImage = *communityOperators
 
 	cleaner = newNamespaceCleaner(testNamespace)
-	c, err := client.NewClient(*kubeConfigPath)
-	if err != nil {
-		panic(err)
-	}
 
-	groups, err := c.OperatorsV1().OperatorGroups(testNamespace).List(metav1.ListOptions{})
+	deprovision = ctx.MustProvision(ctx.Ctx())
+	ctx.MustInstall(ctx.Ctx())
+
+	groups, err := ctx.Ctx().OperatorClient().OperatorsV1().OperatorGroups(testNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	if len(groups.Items) == 0 {
-		_, err = c.OperatorsV1().OperatorGroups(testNamespace).Create(&v1.OperatorGroup{
+		_, err = ctx.Ctx().OperatorClient().OperatorsV1().OperatorGroups(testNamespace).Create(&v1.OperatorGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "opgroup",
 				Namespace: testNamespace,
@@ -77,7 +81,6 @@ var _ = BeforeSuite(func() {
 	}
 })
 
-// ToDO: Include clean up code after the tests are run
 var _ = AfterSuite(func() {
-
+	deprovision()
 })
