@@ -451,5 +451,13 @@ bin
 *.db
 *.db-journal
 
-# Igore apprclient meta
+# Ignore vscode
+.vscode
+
+# Ignore apprclient meta
 pkg/apprclient/openapi/git_push.sh
+
+# Never ignore testdata
+!pkg/**/testdata/**
+!test/**testdata/**
+
