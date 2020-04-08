@@ -8,6 +8,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bshuster-repo/logrus-logstash-hook v1.0.0 // indirect
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-bindata/go-bindata/v3 v3.1.3
 	github.com/mikefarah/yq/v2 v2.4.1
 	github.com/operator-framework/operator-registry v1.5.3
 	github.com/pkg/errors v0.9.1
