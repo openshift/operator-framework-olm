@@ -116,9 +116,9 @@ func TestOperatorCacheConcurrency(t *testing.T) {
 			nc := c.Namespaced(namespaces...)
 			for _, index := range indices {
 				name := fmt.Sprintf("%s/%s", keys[index].Namespace, keys[index].Name)
-				operators := nc.Find(WithCSVName(name))
-				if len(operators) != 1 {
-					return fmt.Errorf("expected 1 operator, got %d", len(operators))
+				_, err := nc.GetCSVNameFromAllCatalogs(name)
+				if err != nil {
+					return err
 				}
 			}
 
@@ -151,7 +151,11 @@ func TestOperatorCacheExpiration(t *testing.T) {
 	c := NewOperatorCache(rcp)
 	c.ttl = 0 // instantly stale
 
-	require.Len(t, c.Namespaced("dummynamespace").Catalog(key).Find(WithCSVName("csvname")), 1)
+	_, err := c.Namespaced("dummynamespace").GetCSVNameFromCatalog("csvname", key)
+	require.NoError(t, err)
+
+	_, err = c.Namespaced("dummynamespace").GetCSVNameFromCatalog("csvname", key)
+	require.NotNil(t, err)
 }
 
 func TestOperatorCacheReuse(t *testing.T) {
@@ -173,7 +177,11 @@ func TestOperatorCacheReuse(t *testing.T) {
 
 	c := NewOperatorCache(rcp)
 
-	require.Len(t, c.Namespaced("dummynamespace").Catalog(key).Find(WithCSVName("csvname")), 1)
+	_, err := c.Namespaced("dummynamespace").GetCSVNameFromCatalog("csvname", key)
+	require.NoError(t, err)
+
+	_, err = c.Namespaced("dummynamespace").GetCSVNameFromCatalog("csvname", key)
+	require.NoError(t, err)
 }
 
 func TestCatalogSnapshotExpired(t *testing.T) {
@@ -216,8 +224,8 @@ func TestCatalogSnapshotFind(t *testing.T) {
 	type tc struct {
 		Name      string
 		Predicate func(*Operator) bool
-		Operators []*Operator
-		Expected  []*Operator
+		Operators []Operator
+		Expected  []Operator
 	}
 
 	for _, tt := range []tc{
@@ -226,10 +234,10 @@ func TestCatalogSnapshotFind(t *testing.T) {
 			Predicate: func(*Operator) bool {
 				return false
 			},
-			Operators: []*Operator{
-				{name: "a"},
-				{name: "b"},
-				{name: "c"},
+			Operators: []Operator{
+				Operator{name: "a"},
+				Operator{name: "b"},
+				Operator{name: "c"},
 			},
 			Expected: nil,
 		},
@@ -246,15 +254,15 @@ func TestCatalogSnapshotFind(t *testing.T) {
 			Predicate: func(*Operator) bool {
 				return true
 			},
-			Operators: []*Operator{
-				{name: "a"},
-				{name: "b"},
-				{name: "c"},
+			Operators: []Operator{
+				Operator{name: "a"},
+				Operator{name: "b"},
+				Operator{name: "c"},
 			},
-			Expected: []*Operator{
-				{name: "a"},
-				{name: "b"},
-				{name: "c"},
+			Expected: []Operator{
+				Operator{name: "a"},
+				Operator{name: "b"},
+				Operator{name: "c"},
 			},
 		},
 		{
@@ -262,14 +270,14 @@ func TestCatalogSnapshotFind(t *testing.T) {
 			Predicate: func(o *Operator) bool {
 				return o.name != "a"
 			},
-			Operators: []*Operator{
-				{name: "a"},
-				{name: "b"},
-				{name: "c"},
+			Operators: []Operator{
+				Operator{name: "a"},
+				Operator{name: "b"},
+				Operator{name: "c"},
 			},
-			Expected: []*Operator{
-				{name: "b"},
-				{name: "c"},
+			Expected: []Operator{
+				Operator{name: "b"},
+				Operator{name: "c"},
 			},
 		},
 	} {
@@ -307,7 +315,7 @@ func TestStripPluralRequiredAndProvidedAPIKeys(t *testing.T) {
 	c := NewOperatorCache(rcp)
 
 	nc := c.Namespaced("testnamespace")
-	result, err := AtLeast(1, nc.Find(ProvidingAPI(registry.APIKey{Group: "g", Version: "v1", Kind: "K"})))
+	result, err := nc.GetRequiredAPIFromAllCatalogs(registry.APIKey{Group: "g", Version: "v1", Kind: "K"})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(result))
 	assert.Equal(t, "K.v1.g", result[0].providedAPIs.String())
