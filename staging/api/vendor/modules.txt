@@ -52,9 +52,6 @@ github.com/gobuffalo/flect
 # github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
-# github.com/golang-migrate/migrate/v4 v4.6.2
-github.com/golang-migrate/migrate/v4/source
-github.com/golang-migrate/migrate/v4/source/file
 # github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef
 github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.3.1
@@ -91,8 +88,13 @@ github.com/mailru/easyjson/jwriter
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.8
 github.com/mattn/go-isatty
+<<<<<<< HEAD
 # github.com/mattn/go-sqlite3 v1.10.0
 github.com/mattn/go-sqlite3
+=======
+# github.com/matttproud/golang_protobuf_extensions v1.0.1
+github.com/matttproud/golang_protobuf_extensions/pbutil
+>>>>>>> f851f800c (chore(modules): vendor dependencies)
 # github.com/mikefarah/yaml/v2 v2.4.0
 github.com/mikefarah/yaml/v2
 # github.com/mikefarah/yq/v2 v2.4.1
@@ -103,6 +105,7 @@ github.com/mitchellh/mapstructure
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
+<<<<<<< HEAD
 # github.com/operator-framework/operator-registry v1.5.3
 github.com/operator-framework/operator-registry/pkg/api
 github.com/operator-framework/operator-registry/pkg/containertools
@@ -110,6 +113,9 @@ github.com/operator-framework/operator-registry/pkg/registry
 github.com/operator-framework/operator-registry/pkg/sqlite
 github.com/operator-framework/operator-registry/pkg/sqlite/migrations
 # github.com/pkg/errors v0.8.1
+=======
+# github.com/pkg/errors v0.9.1
+>>>>>>> f851f800c (chore(modules): vendor dependencies)
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
