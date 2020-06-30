@@ -16,7 +16,7 @@ endif
 
 
 .PHONY: all
-all: clean test build
+all: clean test build sanity-check
 
 $(CMDS):
 	$(GO) build $(extra_flags) $(TAGS) -o $@ ./cmd/$(notdir $@)
@@ -35,6 +35,18 @@ static: build
 .PHONY: unit
 unit:
 	$(GO) test $(SPECIFIC_UNIT_TEST) $(TAGS) $(TEST_RACE) -count=1 -v ./pkg/...
+
+.PHONY: sanity-check
+sanity-check:
+	# Build a container with the most recent binaries for this project.
+	# Does not include the database, which needs to be added separately.
+	docker build -f upstream-builder.Dockerfile -t sanity-container .
+
+	# TODO: add more invocations of the opm binary here
+
+	# serve the container for a second, using the bundles.db in testdata
+	docker run --rm -it -v "$(shell pwd)"/pkg/lib/indexer/testdata/:/database sanity-container \
+		./bin/opm registry serve --database /database/bundles.db --timeout-seconds 1
 
 .PHONY: image
 image:
