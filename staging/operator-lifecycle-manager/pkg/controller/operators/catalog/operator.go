@@ -1950,6 +1950,7 @@ const (
 	PodDisruptionBudgetKind   = "PodDisruptionBudget"
 	PriorityClassKind         = "PriorityClass"
 	VerticalPodAutoscalerKind = "VerticalPodAutoscaler"
+	ConsoleYAMLSampleKind     = "ConsoleYAMLSample"
 )
 
 var supportedKinds = map[string]struct{}{
@@ -1958,6 +1959,7 @@ var supportedKinds = map[string]struct{}{
 	PodDisruptionBudgetKind:   {},
 	PriorityClassKind:         {},
 	VerticalPodAutoscalerKind: {},
+	ConsoleYAMLSampleKind:     {},
 }
 
 // isSupported returns true if OLM supports this type of CustomResource.
