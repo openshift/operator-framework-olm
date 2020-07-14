@@ -16,7 +16,7 @@ endif
 
 
 .PHONY: all
-all: clean test build sanity-check
+all: clean test build
 
 $(CMDS):
 	$(GO) build $(extra_flags) $(TAGS) -o $@ ./cmd/$(notdir $@)
