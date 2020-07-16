@@ -1083,7 +1083,7 @@ type objs struct {
 type srnFields struct {
 	clientOptions []clientfake.Option
 	existingObjs  objs
-	resolver      resolver.Resolver
+	resolver      resolver.StepResolver
 	reconciler    reconciler.RegistryReconcilerFactory
 }
 
