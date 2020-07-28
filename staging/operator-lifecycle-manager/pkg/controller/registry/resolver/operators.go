@@ -233,7 +233,7 @@ type OperatorSurface interface {
 	SourceInfo() *OperatorSourceInfo
 	Bundle() *api.Bundle
 	Inline() bool
-	Dependencies() []*api.Dependency
+	VersionDependencies() []VersionDependency
 }
 
 type Operator struct {
@@ -244,7 +244,14 @@ type Operator struct {
 	version             *semver.Version
 	bundle              *api.Bundle
 	sourceInfo          *OperatorSourceInfo
-	dependencies        []*api.Dependency
+	versionDependencies []VersionDependency
+}
+
+type VersionDependency struct {
+	Package string
+	Version semver.Version
+	// TODO: BundleImage string
+	// TODO: VersionRange string
 }
 
 var _ OperatorSurface = &Operator{}
@@ -296,14 +303,12 @@ func NewOperatorFromBundle(bundle *api.Bundle, startingCSV string, sourceKey Cat
 	}
 
 	return &Operator{
-		name:                bundle.CsvName,
-		replaces:            bundle.Replaces,
-		version:             version,
-		providedAPIs:        provided,
-		requiredAPIs:        required,
-		bundle:              bundle,
-		sourceInfo:          sourceInfo,
-		dependencies:        bundle.Dependencies,
+		name:         bundle.CsvName,
+		version:      version,
+		providedAPIs: provided,
+		requiredAPIs: required,
+		bundle:       bundle,
+		sourceInfo:   sourceInfo,
 	}, nil
 }
 
@@ -381,56 +386,6 @@ func (o *Operator) Inline() bool {
 	return o.bundle != nil && o.bundle.GetBundlePath() == ""
 }
 
-func (o *Operator) Dependencies() []*api.Dependency {
-	return o.bundle.Dependencies
+func (o *Operator) VersionDependencies() []VersionDependency {
+	return o.versionDependencies
 }
-
-func (o *Operator) DependencyPredicates() (predicates []OperatorPredicate, err error) {
-	predicates = make([]OperatorPredicate, 0)
-	for _, d := range o.bundle.Dependencies {
-		var p OperatorPredicate
-		p, err = PredicateForDependency(d)
-		if err != nil {
-			return
-		}
-		predicates = append(predicates, p)
-	}
-	return
-}
-
-// TODO: this should go in its own dependency/predicate builder package
-// TODO: can we make this more extensible, i.e. via cue
-func PredicateForDependency(dependency *api.Dependency) (OperatorPredicate, error) {
-	return predicates[dependency.Type](dependency.Value)
-}
-
-var predicates = map[string]func(string) (OperatorPredicate, error) {
-	opregistry.GVKType: predicateForGVKDependency,
-	opregistry.PackageType: predicateForPackageDependency,
-}
-
-func predicateForGVKDependency(value string) (OperatorPredicate, error) {
-	var gvk opregistry.GVKDependency
-	if err := json.Unmarshal([]byte(value), &gvk); err != nil {
-		return nil, err
-	}
-	return ProvidingAPI(registry.APIKey{
-		Group:   gvk.Group,
-		Version: gvk.Version,
-		Kind:    gvk.Kind,
-	}), nil
-}
-
-func predicateForPackageDependency(value string) (OperatorPredicate, error) {
-	var pkg opregistry.PackageDependency
-	if err := json.Unmarshal([]byte(value), &pkg); err != nil {
-		return nil, err
-	}
-	ver, err := semver.ParseRange(pkg.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	return And(WithPackage(pkg.PackageName), WithVersionInRange(ver)), nil
-}
-

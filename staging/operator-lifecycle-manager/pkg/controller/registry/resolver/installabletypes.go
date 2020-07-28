@@ -4,38 +4,40 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/sat"
 )
 
 type BundleInstallable struct {
-	identifier  solver.Identifier
-	constraints []solver.Constraint
-
-	Replaces string
+	identifier  sat.Identifier
+	constraints []sat.Constraint
 }
 
-func (i BundleInstallable) Identifier() solver.Identifier {
+func (i BundleInstallable) Identifier() sat.Identifier {
 	return i.identifier
 }
 
-func (i BundleInstallable) Constraints() []solver.Constraint {
+func (i BundleInstallable) Constraints() []sat.Constraint {
 	return i.constraints
 }
 
 func (i *BundleInstallable) MakeProhibited() {
-	i.constraints = append(i.constraints, solver.Prohibited())
+	i.constraints = append(i.constraints, sat.Prohibited())
 }
 
-func (i *BundleInstallable) AddDependency(dependencies []solver.Identifier) {
-	i.constraints = append(i.constraints, solver.Dependency(dependencies...))
+func (i *BundleInstallable) AddDependency(dependencies []sat.Identifier) {
+	i.constraints = append(i.constraints, sat.Dependency(dependencies...))
 }
 
-func (i *BundleInstallable) AddDependencyFromSet(dependencySet map[solver.Identifier]struct{}) {
-	dependencies := make([]solver.Identifier, 0)
+func (i *BundleInstallable) AddDependencyFromSet(dependencySet map[sat.Identifier]struct{}) {
+	dependencies := make([]sat.Identifier, 0)
 	for dep := range dependencySet {
 		dependencies = append(dependencies, dep)
 	}
-	i.constraints = append(i.constraints, solver.Dependency(dependencies...))
+	i.constraints = append(i.constraints, sat.Dependency(dependencies...))
+}
+
+func (i *BundleInstallable) AddWeight(weight int) {
+	i.constraints = append(i.constraints, sat.Weight(weight))
 }
 
 func (i *BundleInstallable) BundleSourceInfo() (string, string, CatalogKey, error) {
@@ -53,36 +55,41 @@ func (i *BundleInstallable) BundleSourceInfo() (string, string, CatalogKey, erro
 	return csvName, channel, catalog, nil
 }
 
-func NewBundleInstallable(bundle, channel string, catalog CatalogKey, constraints ...solver.Constraint) BundleInstallable {
+func NewBundleInstallable(bundle, channel string, catalog CatalogKey, constraints ...sat.Constraint) BundleInstallable {
 	return BundleInstallable{
-		identifier:  solver.Identifier(fmt.Sprintf("%s/%s/%s", catalog.String(), channel, bundle)),
+		identifier:  sat.Identifier(fmt.Sprintf("%s/%s/%s", catalog.String(), channel, bundle)),
 		constraints: constraints,
 	}
 }
 
-func NewSubscriptionInstallable(pkg string) SubscriptionInstallable {
-	return SubscriptionInstallable{
-		identifier:  solver.Identifier(pkg),
-		constraints: []solver.Constraint{solver.Mandatory()},
+type VirtPackageInstallable struct {
+	identifier  sat.Identifier
+	constraints []sat.Constraint
+}
+
+func (v VirtPackageInstallable) Identifier() sat.Identifier {
+	return v.identifier
+}
+
+func (v VirtPackageInstallable) Constraints() []sat.Constraint {
+	return v.constraints
+}
+
+func (v *VirtPackageInstallable) AddDependency(dependencies []sat.Identifier) {
+	v.constraints = append(v.constraints, sat.Dependency(dependencies...))
+}
+
+func (v *VirtPackageInstallable) AddDependencyFromSet(dependencySet map[sat.Identifier]struct{}) {
+	dependencies := make([]sat.Identifier, 0)
+	for dep := range dependencySet {
+		dependencies = append(dependencies, dep)
 	}
+	v.constraints = append(v.constraints, sat.Dependency(dependencies...))
 }
 
-type SubscriptionInstallable struct {
-	identifier  solver.Identifier
-	constraints []solver.Constraint
-}
-
-func (r SubscriptionInstallable) Identifier() solver.Identifier {
-	return r.identifier
-}
-
-func (r SubscriptionInstallable) Constraints() []solver.Constraint {
-	return r.constraints
-}
-
-func (r *SubscriptionInstallable) AddDependency(dependencies []solver.Identifier) {
-	if len(dependencies) > 0 {
-		r.constraints = append(r.constraints, solver.Dependency(dependencies...))
-		r.constraints = append(r.constraints, solver.AtMost(1, dependencies...))
+func NewVirtualPackageInstallable(bundle string) VirtPackageInstallable {
+	return VirtPackageInstallable{
+		identifier:  sat.Identifier(bundle),
+		constraints: []sat.Constraint{sat.Mandatory()},
 	}
 }

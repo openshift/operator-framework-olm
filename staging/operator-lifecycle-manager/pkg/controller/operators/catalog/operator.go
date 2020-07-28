@@ -132,7 +132,7 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 	// Create an OperatorLister
 	lister := operatorlister.NewLister()
 
-	operatorV1alpha1Resolver := resolver.NewOperatorsV1alpha1Resolver(lister, crClient, opClient.KubernetesInterface())
+	operatorV1alpha1Resolver := resolver.NewOperatorsV1alpha1Resolver(lister, crClient, opClient.KubernetesInterface(), resolverV2Enable)
 	successMetricsEmitter := metrics.RegisterDependencyResolutionSuccess
 	failureMetricsEmitter := metrics.RegisterDependencyResolutionFailure
 	// Allocate the new instance of an Operator.
