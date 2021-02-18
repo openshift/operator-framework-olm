@@ -9,7 +9,8 @@ This runs a series of tests against the Kubernetes API to verify that OLM is fun
 
 ## How to use
 
-`make e2e-local` in the root of the repository will fetch golang dependencies, start Minikube or using an existing Kind environment, build the appropriate images and run the tests in a fresh namespace each time.
+
+Execute `make e2e-local` in the root of the repository, which will:
 
 - optionally update `test/e2e/assets/chart/zz_chart.go` as needed
 - build local executables used during testing
