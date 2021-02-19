@@ -7,11 +7,9 @@ Operator Registry runs in a Kubernetes or OpenShift cluster to provide operator 
 
 This project provides the following binaries:
 
- * `opm`, which generates and updates registry databases as well as the index images that encapsulate them.
- * `initializer`, which takes as an input a directory of operator manifests and outputs a sqlite database containing the same data for querying
-   * Deprecated - use `opm registry|index add` instead 
+ * `opm`, which generates and updates registry databases as well as the index images that encapsulate them. 
+ * `initializer`, which takes as an input a directory of operator manifests and outputs a sqlite database containing the same data for querying.
  * `registry-server`, which takes a sqlite database loaded with manifests, and exposes a gRPC interface to it.
-   * Deprecated - use `opm registry serve` instead 
  * `configmap-server`, which takes a kubeconfig and a configmap reference, and parses the configmap into the sqlite database before exposing it via the same interface as `registry-server`.
  
 And libraries:
@@ -149,13 +147,7 @@ spec:
 
 # Using the catalog locally
 
-After starting a catalog locally:
-
-```sh
-$ docker run --rm -p 50051:50051 <index image>
-```
-
-[grpcurl](https://github.com/fullstorydev/grpcurl) is a useful tool for interacting with the api:
+[grpcurl](https://github.com/fullstorydev/grpcurl) is a useful tool for interacting with the example catalog server.
 
 ```sh
 $ grpcurl -plaintext  localhost:50051 list api.Registry
