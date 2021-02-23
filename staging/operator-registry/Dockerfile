@@ -1,8 +1,4 @@
-FROM openshift/origin-release:golang-1.14 as builder
-
-RUN yum update -y && \
-    yum install -y sqlite && \
-    yum groupinstall -y "Development Tools"
+FROM registry.svc.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
 
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
@@ -18,7 +14,7 @@ RUN make build
 # copy and build vendored grpc_health_probe
 RUN CGO_ENABLED=0 go build -mod=vendor -tags netgo -ldflags "-w" ./vendor/github.com/grpc-ecosystem/grpc-health-probe/...
 
-FROM openshift/origin-base
+FROM registry.svc.ci.openshift.org/ocp/4.7:base
 
 RUN mkdir /registry
 WORKDIR /registry

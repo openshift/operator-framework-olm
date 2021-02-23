@@ -12,6 +12,7 @@ import (
 var (
 	dockerUsername = os.Getenv("DOCKER_USERNAME")
 	dockerPassword = os.Getenv("DOCKER_PASSWORD")
+	dockerHost     = os.Getenv("DOCKER_REGISTRY_HOST") // 'DOCKER_HOST' is reserved for the docker daemon
 )
 
 func TestE2E(t *testing.T) {
@@ -20,13 +21,21 @@ func TestE2E(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	// FIXME: Since podman login doesn't work with daemonless image pulling, we need to login with docker first so podman tests don't fail.
-	if dockerUsername == "" || dockerPassword == "" {
-		// Test will be skipped anyway
+	switch {
+	case dockerUsername == "" && dockerPassword == "" && dockerHost == "":
+		// No registry credentials or local registry host provided
+		// Fail early
+		GinkgoT().Fatal("No registry credentials or local registry host provided")
+	case dockerHost != "" && dockerUsername == "" && dockerPassword == "":
+		// Running against local secure registry without credentials
+		// No need to login
 		return
 	}
 
-	dockerlogin := exec.Command("docker", "login", "-u", dockerUsername, "-p", dockerPassword, "quay.io")
-	err := dockerlogin.Run()
-	Expect(err).NotTo(HaveOccurred(), "Error logging into quay.io")
+	// FIXME: Since podman login doesn't work with daemonless image pulling, we need to login with docker first so podman tests don't fail.
+	dockerlogin := exec.Command("docker", "login", "-u", dockerUsername, "-p", dockerPassword, dockerHost)
+	out, err := dockerlogin.CombinedOutput()
+	Expect(err).ToNot(HaveOccurred(), "Error logging into %s: %s", dockerHost, out)
+
+	By(fmt.Sprintf("Using container image registry %s", dockerHost))
 })
