@@ -52,10 +52,10 @@ require (
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v0.0.0-20200709232328-d8193ee9cc3e
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.20.0
-	k8s.io/apiextensions-apiserver v0.20.0
-	k8s.io/apimachinery v0.20.0
-	k8s.io/client-go v0.20.0
+	k8s.io/api v0.20.1
+	k8s.io/apiextensions-apiserver v0.20.1
+	k8s.io/apimachinery v0.20.1
+	k8s.io/client-go v0.20.1
 	k8s.io/klog v1.0.0
 	k8s.io/kubectl v0.20.0
 )
@@ -69,6 +69,7 @@ replace (
 
 	// latest tag resolves to a very old version. this is only used for spinning up local test registries
 	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
-)
 
-replace github.com/openshift/operator-framework-olm => ../../
+	github.com/operator-framework/api => ../api
+	github.com/operator-framework/operator-registry => ../operator-registry
+)

@@ -359,7 +359,7 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v0.1.1
 ## explicit
 github.com/opencontainers/runc/libcontainer/system
-# github.com/operator-framework/api v0.5.0
+# github.com/operator-framework/api v0.5.0 => ../api
 ## explicit
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/manifests
@@ -609,7 +609,7 @@ gopkg.in/tomb.v1
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 gopkg.in/yaml.v3
-# k8s.io/api v0.20.0
+# k8s.io/api v0.20.1
 ## explicit
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
@@ -654,7 +654,7 @@ k8s.io/api/scheduling/v1beta1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.20.0
+# k8s.io/apiextensions-apiserver v0.20.1
 ## explicit
 k8s.io/apiextensions-apiserver/pkg/apihelpers
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
@@ -667,7 +667,7 @@ k8s.io/apiextensions-apiserver/pkg/apiserver/schema/defaulting
 k8s.io/apiextensions-apiserver/pkg/apiserver/schema/objectmeta
 k8s.io/apiextensions-apiserver/pkg/apiserver/schema/pruning
 k8s.io/apiextensions-apiserver/pkg/apiserver/validation
-# k8s.io/apimachinery v0.20.0
+# k8s.io/apimachinery v0.20.1
 ## explicit
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -716,7 +716,7 @@ k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/apiserver v0.20.0
+# k8s.io/apiserver v0.20.1
 k8s.io/apiserver/pkg/apis/apiserver
 k8s.io/apiserver/pkg/apis/apiserver/install
 k8s.io/apiserver/pkg/apis/apiserver/v1
@@ -725,7 +725,7 @@ k8s.io/apiserver/pkg/apis/apiserver/v1beta1
 k8s.io/apiserver/pkg/server/egressselector
 k8s.io/apiserver/pkg/server/egressselector/metrics
 k8s.io/apiserver/pkg/util/webhook
-# k8s.io/client-go v0.20.0
+# k8s.io/client-go v0.20.1
 ## explicit
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/fake
@@ -846,7 +846,7 @@ k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/homedir
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/workqueue
-# k8s.io/component-base v0.20.0
+# k8s.io/component-base v0.20.1
 k8s.io/component-base/metrics
 k8s.io/component-base/metrics/legacyregistry
 k8s.io/component-base/version
@@ -881,3 +881,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 # github.com/containerd/containerd => github.com/ecordell/containerd v1.3.1-0.20200629153125-0ff1a1be2fa5
 # github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
+# github.com/operator-framework/api => ../api
+# github.com/operator-framework/operator-registry => ../operator-registry

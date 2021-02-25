@@ -41,18 +41,18 @@ require (
 	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.1.0-rc.1.0.20201215141456-e71d38b414eb
-	k8s.io/api v0.20.0
-	k8s.io/apiextensions-apiserver v0.20.0
-	k8s.io/apimachinery v0.20.0
-	k8s.io/apiserver v0.20.0
-	k8s.io/client-go v0.20.0
-	k8s.io/code-generator v0.20.0
-	k8s.io/component-base v0.20.0
+	k8s.io/api v0.20.1
+	k8s.io/apiextensions-apiserver v0.20.1
+	k8s.io/apimachinery v0.20.1
+	k8s.io/apiserver v0.20.1
+	k8s.io/client-go v0.20.1
+	k8s.io/code-generator v0.20.1
+	k8s.io/component-base v0.20.1
 	k8s.io/klog v1.0.0
 	k8s.io/kube-aggregator v0.20.0
 	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
 	rsc.io/letsencrypt v0.0.3 // indirect
-	sigs.k8s.io/controller-runtime v0.7.0
+	sigs.k8s.io/controller-runtime v0.8.0
 	sigs.k8s.io/controller-tools v0.4.1
 	sigs.k8s.io/kind v0.7.0
 )
@@ -63,6 +63,9 @@ replace (
 	// controller runtime
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20200331152225-585af27e34fd // release-4.5
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
+
+	github.com/operator-framework/api => ../api
+	github.com/operator-framework/operator-registry => ../operator-registry
 
 	// pinned because latest etcd does not yet work with the latest grpc version (1.30.0)
 	go.etcd.io/etcd => go.etcd.io/etcd v0.5.0-alpha.5.0.20200520232829-54ba9589114f
@@ -76,5 +79,3 @@ replace (
 	// pinned because no tag supports 1.18 yet
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06
 )
-
-replace github.com/openshift/operator-framework-olm => ../../

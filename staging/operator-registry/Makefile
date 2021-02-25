@@ -1,3 +1,5 @@
+ROOT_DIR:= $(patsubst %/,%,$(dir $(realpath $(lastword $(MAKEFILE_LIST)))))
+
 GO := GOFLAGS="-mod=vendor" go
 CMDS := $(addprefix bin/, $(shell ls ./cmd | grep -v opm))
 OPM := $(addprefix bin/, opm)
@@ -42,7 +44,7 @@ static: build
 
 .PHONY: unit
 unit:
-	$(GO) test -coverprofile=coverage.out $(SPECIFIC_UNIT_TEST) $(TAGS) $(TEST_RACE) -count=1 -v ./pkg/...
+	$(GO) test -coverprofile=coverage.out $(SPECIFIC_UNIT_TEST) $(TAGS) $(TEST_RACE) -count=1 -v $(ROOT_DIR)/pkg/...
 
 .PHONY: sanity-check
 sanity-check:
