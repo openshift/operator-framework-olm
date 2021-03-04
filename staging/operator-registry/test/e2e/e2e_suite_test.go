@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	opmroot "github.com/operator-framework/operator-registry/cmd/opm/root"
+	opmroot "github.com/openshift/operator-framework-olm/staging/operator-registry/cmd/opm/root"
 )
 
 // quay.io is the default registry used if no local registry endpoint is provided

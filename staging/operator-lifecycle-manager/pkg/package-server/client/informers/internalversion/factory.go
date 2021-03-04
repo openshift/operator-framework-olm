@@ -23,9 +23,9 @@ import (
 	sync "sync"
 	time "time"
 
-	internalversion "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion"
-	internalinterfaces "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/informers/internalversion/internalinterfaces"
-	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/informers/internalversion/operators"
+	internalversion "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion"
+	internalinterfaces "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/informers/internalversion/internalinterfaces"
+	operators "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/informers/internalversion/operators"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

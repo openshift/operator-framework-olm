@@ -23,10 +23,10 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 	generic "k8s.io/apiserver/pkg/server"
 
-	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/install"
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/provider"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/storage"
+	operators "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/install"
+	operatorsv1 "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/provider"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/storage"
 )
 
 var (

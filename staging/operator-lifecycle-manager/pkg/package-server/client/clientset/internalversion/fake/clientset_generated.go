@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion"
-	operatorsinternalversion "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/typed/operators/internalversion"
-	fakeoperatorsinternalversion "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/typed/operators/internalversion/fake"
+	clientset "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion"
+	operatorsinternalversion "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/typed/operators/internalversion"
+	fakeoperatorsinternalversion "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/typed/operators/internalversion/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

@@ -13,14 +13,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilclock "k8s.io/apimachinery/pkg/util/clock"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	versionedfake "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/fake"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions"
-	registryreconciler "github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/reconciler"
-	olmfakes "github.com/operator-framework/operator-lifecycle-manager/pkg/fakes"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clientfake"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	versionedfake "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned/fake"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/informers/externalversions"
+	registryreconciler "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/reconciler"
+	olmfakes "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/fakes"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/clientfake"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubestate"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorlister"
 )
 
 func TestCatalogHealthReconcile(t *testing.T) {

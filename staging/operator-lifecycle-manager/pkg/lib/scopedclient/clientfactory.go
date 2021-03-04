@@ -4,8 +4,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
 )
 
 // NewFactory returns a new instance of Factory.

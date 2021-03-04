@@ -3,7 +3,7 @@ package inject_test
 import (
 	"testing"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/overrides/inject"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/operators/olm/overrides/inject"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"

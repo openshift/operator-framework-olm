@@ -14,13 +14,13 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/wrappers"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/certs"
-	listerfakes "github.com/operator-framework/operator-lifecycle-manager/pkg/fakes/client-go/listers"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient/operatorclientmocks"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister/operatorlisterfakes"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/wrappers"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/certs"
+	listerfakes "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/fakes/client-go/listers"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient/operatorclientmocks"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorlister/operatorlisterfakes"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 func keyPair(t *testing.T, expiration time.Time) *certs.KeyPair {

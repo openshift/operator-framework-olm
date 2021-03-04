@@ -16,15 +16,15 @@ import (
 	"gopkg.in/yaml.v2"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	"github.com/operator-framework/operator-registry/pkg/containertools"
-	"github.com/operator-framework/operator-registry/pkg/image"
-	"github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
-	"github.com/operator-framework/operator-registry/pkg/image/execregistry"
-	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
-	"github.com/operator-framework/operator-registry/pkg/lib/certs"
-	"github.com/operator-framework/operator-registry/pkg/lib/registry"
-	pregistry "github.com/operator-framework/operator-registry/pkg/registry"
-	"github.com/operator-framework/operator-registry/pkg/sqlite"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/containertools"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/image"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/image/containerdregistry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/image/execregistry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/bundle"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/certs"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/registry"
+	pregistry "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/sqlite"
 )
 
 const (

@@ -3,7 +3,7 @@ package catalog
 import (
 	"errors"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
 )
 
 var (

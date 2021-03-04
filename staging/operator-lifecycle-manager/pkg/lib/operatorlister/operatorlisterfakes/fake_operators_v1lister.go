@@ -4,8 +4,8 @@ package operatorlisterfakes
 import (
 	"sync"
 
-	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
+	v1 "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/listers/operators/v1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorlister"
 )
 
 type FakeOperatorsV1Lister struct {

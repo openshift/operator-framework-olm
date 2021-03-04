@@ -8,7 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/operator-framework/operator-registry/pkg/image"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/image"
 )
 
 type ImageInput struct {

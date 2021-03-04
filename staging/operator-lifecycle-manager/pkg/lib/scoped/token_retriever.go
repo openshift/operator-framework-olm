@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"

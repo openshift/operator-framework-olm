@@ -19,17 +19,17 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/feature"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/filemonitor"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorstatus"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/profile"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/signals"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/metrics"
-	olmversion "github.com/operator-framework/operator-lifecycle-manager/pkg/version"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/operators/olm"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/feature"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/filemonitor"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorstatus"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/profile"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/queueinformer"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/signals"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/metrics"
+	olmversion "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/version"
 )
 
 const (

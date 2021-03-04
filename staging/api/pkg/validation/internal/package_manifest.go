@@ -3,9 +3,9 @@ package internal
 import (
 	"fmt"
 
-	"github.com/operator-framework/api/pkg/manifests"
-	"github.com/operator-framework/api/pkg/validation/errors"
-	interfaces "github.com/operator-framework/api/pkg/validation/interfaces"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/manifests"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/validation/errors"
+	interfaces "github.com/openshift/operator-framework-olm/staging/api/pkg/validation/interfaces"
 )
 
 var PackageManifestValidator interfaces.Validator = interfaces.ValidatorFunc(validatePackageManifests)

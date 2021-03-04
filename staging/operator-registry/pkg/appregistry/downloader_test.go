@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/operator-framework/operator-registry/pkg/apprclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/apprclient"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"

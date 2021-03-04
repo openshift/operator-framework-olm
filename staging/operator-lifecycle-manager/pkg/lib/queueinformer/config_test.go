@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubestate"
 )
 
 func TestDefaultKeyFunc(t *testing.T) {

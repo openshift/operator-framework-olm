@@ -8,8 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	listers "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1"
+	v1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
+	listers "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/listers/operators/v1"
 )
 
 type UnionOperatorConditionLister struct {

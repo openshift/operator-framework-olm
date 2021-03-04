@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/operator-framework/operator-registry/pkg/api"
-	"github.com/operator-framework/operator-registry/pkg/client"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/client"
 )
 
 type FakeInterface struct {

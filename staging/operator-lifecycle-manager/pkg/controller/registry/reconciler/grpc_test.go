@@ -13,8 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clientfake"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/clientfake"
 )
 
 func validGrpcCatalogSource(image, address string) *v1alpha1.CatalogSource {

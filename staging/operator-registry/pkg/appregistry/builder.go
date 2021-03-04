@@ -14,8 +14,8 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/operator-framework/operator-registry/pkg/apprclient"
-	"github.com/operator-framework/operator-registry/pkg/sqlite"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/apprclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/sqlite"
 )
 
 type RegistryImageBuilder interface {

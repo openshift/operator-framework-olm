@@ -24,10 +24,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/decorators"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	operatorsv1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
+	operatorsv1alpha1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/operators/decorators"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 // AdoptionReconciler automagically associates Operator components with their respective operator resource.

@@ -19,8 +19,8 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned/scheme"
+	v1 "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

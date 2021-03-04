@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-registry/pkg/configmap"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/configmap"
 	errorwrap "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/client-go/listers/core/v1"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/projection"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/resolver"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/resolver/projection"
 )
 
 // ManifestResolver can dereference a manifest for a step. Steps may embed manifests directly or reference content

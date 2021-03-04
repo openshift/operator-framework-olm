@@ -7,7 +7,7 @@ import (
 	"github.com/blang/semver/v4"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/operator-framework/operator-lifecycle-manager/test/e2e/dsl"
+	. "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/dsl"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -16,11 +16,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/ctx"
 )
 
 var _ = Describe("Garbage collection for dependent resources", func() {

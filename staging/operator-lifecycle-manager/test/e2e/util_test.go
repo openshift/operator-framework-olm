@@ -36,14 +36,14 @@ import (
 	"k8s.io/client-go/rest"
 	k8scontrollerclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
-	controllerclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	pmversioned "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
-	"github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry"
+	controllerclient "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
+	pmversioned "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/ctx"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api/grpc_health_v1"
 )
 
 const (

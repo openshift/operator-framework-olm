@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	"github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 )
 
 func TestAddPackageChannels(t *testing.T) {

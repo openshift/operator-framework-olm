@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	hashutil "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/util/hash"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	hashutil "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/util/hash"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/ownerutil"
 
 	log "github.com/sirupsen/logrus"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"

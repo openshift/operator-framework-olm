@@ -5,12 +5,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	pclient "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client"
-	psVersioned "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
+	pclient "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client"
+	psVersioned "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"

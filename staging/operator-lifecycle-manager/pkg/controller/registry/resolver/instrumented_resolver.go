@@ -3,9 +3,9 @@ package resolver
 import (
 	"time"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry"
 )
 
 type InstrumentedResolver struct {

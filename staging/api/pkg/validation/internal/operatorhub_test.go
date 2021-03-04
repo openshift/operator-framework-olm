@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/operator-framework/api/pkg/manifests"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/manifests"
 
 	"github.com/stretchr/testify/require"
 )

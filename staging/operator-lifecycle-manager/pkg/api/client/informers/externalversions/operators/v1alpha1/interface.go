@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	internalinterfaces "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

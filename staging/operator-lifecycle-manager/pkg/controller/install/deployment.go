@@ -10,11 +10,11 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/wrappers"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/overrides/inject"
-	hashutil "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/util/hash"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/wrappers"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/operators/olm/overrides/inject"
+	hashutil "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/util/hash"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 const DeploymentSpecHashLabelKey = "olm.deployment-spec-hash"

@@ -1,5 +1,5 @@
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../client/fakes/fake_registry_client.go github.com/operator-framework/operator-registry/pkg/api.RegistryClient
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../client/fakes/fake_list_packages_client.go github.com/operator-framework/operator-registry/pkg/api.Registry_ListPackagesClient
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../client/fakes/fake_registry_client.go github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api.RegistryClient
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../client/fakes/fake_list_packages_client.go github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api.Registry_ListPackagesClient
 package provider
 
 import (
@@ -16,9 +16,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/selection"
 
-	"github.com/operator-framework/operator-registry/pkg/api"
-	registryserver "github.com/operator-framework/operator-registry/pkg/server"
-	"github.com/operator-framework/operator-registry/pkg/sqlite"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api"
+	registryserver "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/server"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/sqlite"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -27,12 +27,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/fake"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/fakes"
+	operatorsv1alpha1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned/fake"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/queueinformer"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/fakes"
 )
 
 const (

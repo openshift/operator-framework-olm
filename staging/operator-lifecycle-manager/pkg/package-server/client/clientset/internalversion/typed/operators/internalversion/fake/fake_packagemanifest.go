@@ -21,7 +21,7 @@ package fake
 import (
 	"context"
 
-	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators"
+	operators "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

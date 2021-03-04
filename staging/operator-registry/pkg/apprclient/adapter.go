@@ -5,7 +5,7 @@ import (
 
 	"github.com/antihax/optional"
 
-	"github.com/operator-framework/operator-registry/pkg/apprclient/openapi"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/apprclient/openapi"
 )
 
 const (

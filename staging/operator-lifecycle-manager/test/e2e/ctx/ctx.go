@@ -12,12 +12,12 @@ import (
 	"k8s.io/client-go/rest"
 	k8scontrollerclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	controllerclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	pversioned "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
+	operatorsv1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
+	operatorsv1alpha1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	controllerclient "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
+	pversioned "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
 )
 
 var ctx TestContext

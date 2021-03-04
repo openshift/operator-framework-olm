@@ -10,7 +10,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/operator-framework/operator-registry/pkg/apprclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/apprclient"
 )
 
 // downloadItem encapsulates the data that is needed to download a specific repository.

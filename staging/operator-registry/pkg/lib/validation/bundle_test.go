@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 

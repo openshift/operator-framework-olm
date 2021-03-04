@@ -4,7 +4,7 @@ package operatorlisterfakes
 import (
 	"sync"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorlister"
 	v1 "k8s.io/client-go/listers/core/v1"
 )
 

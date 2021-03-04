@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/operator-framework/operator-registry/pkg/containertools"
-	"github.com/operator-framework/operator-registry/pkg/lib/indexer"
-	"github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/containertools"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/indexer"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 )
 
 var (

@@ -3,9 +3,9 @@ package operators
 import (
 	"encoding/json"
 
-	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
+	opregistry "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
 )
 
 const (

@@ -14,8 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/operator-framework/operator-registry/pkg/client"
-	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/client"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/bundle"
 )
 
 // configmap keys can contain underscores, but configmap names can not

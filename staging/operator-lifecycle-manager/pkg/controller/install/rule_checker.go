@@ -3,15 +3,15 @@ package install
 import (
 	"fmt"
 
-	rbacauthorizer "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/plugin/pkg/auth/authorizer/rbac"
+	rbacauthorizer "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubernetes/plugin/pkg/auth/authorizer/rbac"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	crbacv1 "k8s.io/client-go/listers/rbac/v1"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 // RuleChecker is used to verify whether PolicyRules are satisfied by existing Roles or ClusterRoles

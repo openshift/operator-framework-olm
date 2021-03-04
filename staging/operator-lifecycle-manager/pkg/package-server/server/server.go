@@ -16,11 +16,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apiserver"
-	genericpackageserver "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apiserver/generic"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/provider"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/queueinformer"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apiserver"
+	genericpackageserver "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apiserver/generic"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/provider"
 )
 
 // NewCommandStartPackageServer provides a CLI handler for 'start master' command

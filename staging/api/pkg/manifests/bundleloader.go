@@ -13,7 +13,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
 )
 
 // bundleLoader loads a bundle directory from disk

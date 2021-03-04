@@ -16,7 +16,7 @@ import (
 	_ "github.com/googleapis/gnostic"
 	_ "github.com/maxbrunsfeld/counterfeiter/v6"
 	_ "github.com/onsi/ginkgo/ginkgo"
-	_ "github.com/operator-framework/api/crds" // operators.coreos.com CRD manifests
+	_ "github.com/openshift/operator-framework-olm/staging/api/crds" // operators.coreos.com CRD manifests
 	_ "helm.sh/helm/v3/cmd/helm"
 	_ "k8s.io/code-generator"
 	_ "k8s.io/kube-openapi/cmd/openapi-gen"

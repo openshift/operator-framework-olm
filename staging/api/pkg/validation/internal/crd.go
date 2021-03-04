@@ -3,8 +3,8 @@ package internal
 import (
 	"strings"
 
-	"github.com/operator-framework/api/pkg/validation/errors"
-	interfaces "github.com/operator-framework/api/pkg/validation/interfaces"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/validation/errors"
+	interfaces "github.com/openshift/operator-framework-olm/staging/api/pkg/validation/interfaces"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"

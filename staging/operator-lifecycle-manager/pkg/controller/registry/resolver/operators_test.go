@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry"
 
 	"github.com/blang/semver/v4"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	opver "github.com/operator-framework/api/pkg/lib/version"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-registry/pkg/api"
-	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
+	opver "github.com/openshift/operator-framework-olm/staging/api/pkg/lib/version"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api"
+	opregistry "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 )
 
 func TestGVKStringToProvidedAPISet(t *testing.T) {

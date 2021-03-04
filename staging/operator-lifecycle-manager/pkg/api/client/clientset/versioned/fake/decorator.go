@@ -19,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/testing"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clientfake"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/clientfake"
 )
 
 // ClientsetDecorator defines decorator methods for a Clientset.

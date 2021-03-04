@@ -3,7 +3,7 @@ package client
 import (
 	"k8s.io/client-go/rest"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
 )
 
 // NewClient creates a client that can interact with the ALM resources in k8s api

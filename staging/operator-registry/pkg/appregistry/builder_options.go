@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/operator-framework/operator-registry/pkg/apprclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/apprclient"
 )
 
 type AppregistryBuildOptions struct {

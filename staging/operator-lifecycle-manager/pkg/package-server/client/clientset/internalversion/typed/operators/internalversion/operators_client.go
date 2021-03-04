@@ -19,7 +19,7 @@ limitations under the License.
 package internalversion
 
 import (
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/scheme"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

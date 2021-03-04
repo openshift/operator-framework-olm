@@ -8,7 +8,7 @@
 package validation
 
 import (
-	interfaces "github.com/operator-framework/api/pkg/validation/interfaces"
+	interfaces "github.com/openshift/operator-framework-olm/staging/api/pkg/validation/interfaces"
 )
 
 // BundleValidator implements Validator to validate Bundles.

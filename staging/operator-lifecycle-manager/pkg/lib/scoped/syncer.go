@@ -12,9 +12,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/reference"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	v1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
 )
 
 // NewUserDefinedServiceAccountSyncer returns a new instance of UserDefinedServiceAccountSyncer.

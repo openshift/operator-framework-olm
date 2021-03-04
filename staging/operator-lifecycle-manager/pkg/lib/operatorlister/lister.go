@@ -7,8 +7,8 @@ import (
 	rbacv1 "k8s.io/client-go/listers/rbac/v1"
 	aregv1 "k8s.io/kube-aggregator/pkg/client/listers/apiregistration/v1"
 
-	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
+	v1 "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/listers/operators/v1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../../fakes/client-go/listers/fake_v1_service_account_lister.go k8s.io/client-go/listers/core/v1.ServiceAccountLister

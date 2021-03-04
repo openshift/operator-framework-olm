@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	"github.com/operator-framework/operator-registry/pkg/client"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/client"
 	"sync"
 	"time"
 
@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

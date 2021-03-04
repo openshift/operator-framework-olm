@@ -27,11 +27,11 @@ import (
 
 	// +kubebuilder:scaffold:imports
 
-	"github.com/operator-framework/api/crds"
-	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/decorators"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/testobj"
+	"github.com/openshift/operator-framework-olm/staging/api/crds"
+	operatorsv1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
+	operatorsv1alpha1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/operators/decorators"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/testobj"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

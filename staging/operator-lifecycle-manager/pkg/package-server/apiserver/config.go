@@ -21,9 +21,9 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/client-go/informers"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apiserver/generic"
-	generatedopenapi "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/openapi"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/version"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apiserver/generic"
+	generatedopenapi "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/openapi"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/version"
 )
 
 // Config contains configuration for launching an instance of package-server.

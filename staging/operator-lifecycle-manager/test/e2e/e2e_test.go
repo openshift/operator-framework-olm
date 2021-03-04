@@ -15,8 +15,8 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
+	v1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/ctx"
 )
 
 var (

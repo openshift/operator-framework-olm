@@ -9,8 +9,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/metrics"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubestate"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/metrics"
 )
 
 // KeyFunc returns a key for the given object and a bool which is true if the key was

@@ -4,7 +4,7 @@ package indexerfakes
 import (
 	"sync"
 
-	"github.com/operator-framework/operator-registry/pkg/lib/indexer"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/indexer"
 )
 
 type FakeIndexDeleter struct {

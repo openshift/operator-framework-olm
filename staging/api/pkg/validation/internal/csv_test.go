@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/api/pkg/validation/errors"
+	operatorsv1alpha1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/validation/errors"
 
 	"github.com/ghodss/yaml"
 )

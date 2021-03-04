@@ -6,8 +6,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/feature"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/operators"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/feature"
 )
 
 func Manager(ctx context.Context, debug bool) (ctrl.Manager, error) {

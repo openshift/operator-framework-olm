@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/operator-framework/operator-registry/pkg/image"
-	"github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/image"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"

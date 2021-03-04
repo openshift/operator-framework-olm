@@ -22,8 +22,8 @@ import (
 	"context"
 	"time"
 
-	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators"
-	scheme "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/scheme"
+	operators "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators"
+	scheme "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

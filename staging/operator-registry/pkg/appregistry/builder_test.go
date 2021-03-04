@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/operator-framework/operator-registry/pkg/apprclient"
-	"github.com/operator-framework/operator-registry/pkg/apprclient/apprclientfakes"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/apprclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/apprclient/apprclientfakes"
 )
 
 var _ = Describe("Image building", func() {

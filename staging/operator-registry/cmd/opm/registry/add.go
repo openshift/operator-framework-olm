@@ -4,9 +4,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/operator-framework/operator-registry/pkg/containertools"
-	"github.com/operator-framework/operator-registry/pkg/lib/registry"
-	reg "github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/containertools"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/registry"
+	reg "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 )
 
 func newRegistryAddCmd() *cobra.Command {

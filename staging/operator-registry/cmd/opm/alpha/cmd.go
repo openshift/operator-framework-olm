@@ -1,7 +1,7 @@
 package alpha
 
 import (
-	"github.com/operator-framework/operator-registry/cmd/opm/alpha/bundle"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/cmd/opm/alpha/bundle"
 	"github.com/spf13/cobra"
 )
 

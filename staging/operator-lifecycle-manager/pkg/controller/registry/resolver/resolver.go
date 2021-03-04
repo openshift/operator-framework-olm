@@ -10,13 +10,13 @@ import (
 	"github.com/sirupsen/logrus"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	v1alpha1listers "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/projection"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver"
-	"github.com/operator-framework/operator-registry/pkg/api"
-	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	v1alpha1listers "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/resolver/projection"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/resolver/solver"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api"
+	opregistry "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 )
 
 type OperatorResolver interface {

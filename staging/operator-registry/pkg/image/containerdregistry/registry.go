@@ -19,7 +19,7 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/sirupsen/logrus"
 
-	"github.com/operator-framework/operator-registry/pkg/image"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/image"
 )
 
 // Registry enables manipulation of images via containerd modules.

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/operator-framework/operator-registry/pkg/api"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api"
 )
 
 const (

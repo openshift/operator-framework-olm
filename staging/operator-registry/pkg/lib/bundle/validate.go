@@ -19,12 +19,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/operator-framework/api/pkg/manifests"
-	v1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	v "github.com/operator-framework/api/pkg/validation"
-	"github.com/operator-framework/operator-registry/pkg/image"
-	validation "github.com/operator-framework/operator-registry/pkg/lib/validation"
-	"github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/manifests"
+	v1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	v "github.com/openshift/operator-framework-olm/staging/api/pkg/validation"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/image"
+	validation "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/validation"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 )
 
 const (

@@ -18,12 +18,12 @@ import (
 	utilclock "k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/clientcmd"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/catalog"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/signals"
+	v1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/operators/catalog"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/operators/olm"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/signals"
 )
 
 var (

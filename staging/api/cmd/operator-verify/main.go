@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	manifests "github.com/operator-framework/api/cmd/operator-verify/manifests"
+	manifests "github.com/openshift/operator-framework-olm/staging/api/cmd/operator-verify/manifests"
 
 	"github.com/spf13/cobra"
 )

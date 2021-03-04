@@ -10,8 +10,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	v1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
 )
 
 func TestGetReference(t *testing.T) {

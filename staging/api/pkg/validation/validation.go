@@ -9,8 +9,8 @@
 package validation
 
 import (
-	interfaces "github.com/operator-framework/api/pkg/validation/interfaces"
-	"github.com/operator-framework/api/pkg/validation/internal"
+	interfaces "github.com/openshift/operator-framework-olm/staging/api/pkg/validation/interfaces"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/validation/internal"
 )
 
 // PackageManifestValidator implements Validator to validate package manifests.

@@ -7,7 +7,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme"
 )
 
 const component string = "operator-lifecycle-manager"

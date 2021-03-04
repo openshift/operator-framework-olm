@@ -20,9 +20,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/operator-framework/operator-registry/pkg/client"
-	"github.com/operator-framework/operator-registry/pkg/configmap"
-	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/client"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/configmap"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/bundle"
 )
 
 var builderCmd string

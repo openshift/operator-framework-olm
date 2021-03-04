@@ -1,4 +1,4 @@
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../../../fakes/fake_registry_store.go ../../../../vendor/github.com/operator-framework/operator-registry/pkg/registry/interface.go Query
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../../../fakes/fake_registry_store.go ../../../../vendor/github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry/interface.go Query
 package grpc
 
 import (
@@ -14,12 +14,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/fakes"
-	"github.com/operator-framework/operator-registry/pkg/api"
-	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
-	opserver "github.com/operator-framework/operator-registry/pkg/server"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/fakes"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api"
+	opregistry "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
+	opserver "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/server"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry"
 )
 
 func server(store opregistry.Query, port int) (func(), func()) {

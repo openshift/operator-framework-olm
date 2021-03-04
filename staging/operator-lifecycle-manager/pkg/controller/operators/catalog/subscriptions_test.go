@@ -12,11 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilclock "k8s.io/apimachinery/pkg/util/clock"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/reconciler"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/fakes"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clientfake"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/reconciler"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/resolver"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/fakes"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/clientfake"
 )
 
 func TestSyncSubscriptions(t *testing.T) {

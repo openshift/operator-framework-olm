@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/printers"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/printers"
 	metav1beta1 "k8s.io/apimachinery/pkg/apis/meta/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 )

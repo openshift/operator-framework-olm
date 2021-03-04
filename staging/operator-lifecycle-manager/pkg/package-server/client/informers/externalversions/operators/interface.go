@@ -19,8 +19,8 @@ limitations under the License.
 package operators
 
 import (
-	internalinterfaces "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/informers/externalversions/operators/v1"
+	internalinterfaces "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/informers/externalversions/operators/v1"
 )
 
 // Interface provides access to each of this group's versions.

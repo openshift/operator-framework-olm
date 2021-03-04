@@ -6,9 +6,9 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
-	"github.com/operator-framework/api/pkg/validation/errors"
-	interfaces "github.com/operator-framework/api/pkg/validation/interfaces"
-	"github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/validation/errors"
+	interfaces "github.com/openshift/operator-framework-olm/staging/api/pkg/validation/interfaces"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 )
 
 var RegistryBundleValidator interfaces.Validator = interfaces.ValidatorFunc(validateBundles)

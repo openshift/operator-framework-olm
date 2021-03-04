@@ -1,7 +1,7 @@
 package provider
 
 import (
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators"
 	"k8s.io/apimachinery/pkg/labels"
 )
 

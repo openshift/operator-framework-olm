@@ -13,8 +13,8 @@ import (
 	genericreq "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/provider"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/provider"
 )
 
 // LogoStorage implements Kubernetes methods needed to provide the `packagemanifests/icon` subresource

@@ -11,10 +11,10 @@ import (
 	"strings"
 
 	semver "github.com/blang/semver/v4"
-	"github.com/operator-framework/api/pkg/manifests"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/api/pkg/validation/errors"
-	interfaces "github.com/operator-framework/api/pkg/validation/interfaces"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/manifests"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/validation/errors"
+	interfaces "github.com/openshift/operator-framework-olm/staging/api/pkg/validation/interfaces"
 )
 
 var OperatorHubValidator interfaces.Validator = interfaces.ValidatorFunc(validateOperatorHub)

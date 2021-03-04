@@ -10,7 +10,7 @@ import (
 	"github.com/containers/storage"
 	"github.com/sirupsen/logrus"
 
-	"github.com/operator-framework/operator-registry/pkg/image"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/image"
 )
 
 // Registry enables manipulation of images via containerd modules.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/operator-framework/operator-registry/pkg/sqlite"
-	"github.com/operator-framework/operator-registry/pkg/sqlite/migrations"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/sqlite"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/sqlite/migrations"
 	"github.com/stretchr/testify/require"
 )
 

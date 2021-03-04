@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/operator-framework/operator-registry/pkg/api"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api"
 	extScheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -16,9 +16,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/projection"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/resolver/projection"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 const (

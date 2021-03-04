@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/bundle"
 	"github.com/otiai10/copy"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"

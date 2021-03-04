@@ -6,10 +6,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/operator-framework/api/pkg/validation/errors"
-	interfaces "github.com/operator-framework/api/pkg/validation/interfaces"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/validation/errors"
+	interfaces "github.com/openshift/operator-framework-olm/staging/api/pkg/validation/interfaces"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8svalidation "k8s.io/apimachinery/pkg/util/validation"

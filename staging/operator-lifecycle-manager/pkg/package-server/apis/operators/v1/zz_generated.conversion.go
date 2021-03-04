@@ -23,8 +23,8 @@ package v1
 import (
 	unsafe "unsafe"
 
-	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators"
+	v1alpha1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	operators "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"

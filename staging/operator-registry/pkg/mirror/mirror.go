@@ -8,7 +8,7 @@ import (
 	"github.com/docker/distribution/reference"
 	"k8s.io/apimachinery/pkg/util/errors"
 
-	"github.com/operator-framework/operator-registry/pkg/sqlite"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/sqlite"
 )
 
 type Mirrorer interface {

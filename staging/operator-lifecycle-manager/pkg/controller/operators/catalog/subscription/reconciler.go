@@ -12,13 +12,13 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/operator-framework/api/pkg/operators/reference"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	listers "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/reconciler"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/reference"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	listers "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/reconciler"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubestate"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/queueinformer"
 )
 
 // ReconcilerFromLegacySyncHandler returns a reconciler that invokes the given legacy sync handler and on delete funcs.

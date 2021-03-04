@@ -14,10 +14,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
 
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	listerfakes "github.com/operator-framework/operator-lifecycle-manager/pkg/fakes/client-go/listers"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient/operatorclientmocks"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister/operatorlisterfakes"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	listerfakes "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/fakes/client-go/listers"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient/operatorclientmocks"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorlister/operatorlisterfakes"
 )
 
 var (

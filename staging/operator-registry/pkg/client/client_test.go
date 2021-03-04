@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/operator-framework/operator-registry/pkg/api"
-	"github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api/grpc_health_v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -8,8 +8,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/operator-framework/operator-registry/pkg/apprclient/mock"
-	"github.com/operator-framework/operator-registry/pkg/apprclient/openapi"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/apprclient/mock"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/apprclient/openapi"
 )
 
 func TestRetrieveOne_PackageExists_SuccessExpected(t *testing.T) {

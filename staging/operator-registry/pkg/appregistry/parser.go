@@ -77,7 +77,7 @@ type StructuredOperatorManifestData struct {
 // one (or more) channels under a single package.
 //
 // The following type has been copied as is from OLM.
-// See https://github.com/operator-framework/operator-lifecycle-manager/blob/724b209ccfff33b6208cc5d05283800d6661d441/pkg/controller/registry/types.go#L78:6.
+// See https://github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/blob/724b209ccfff33b6208cc5d05283800d6661d441/pkg/controller/registry/types.go#L78:6.
 //
 // We use it to unmarshal 'packages' element of an operator manifest.
 type PackageManifest struct {
@@ -99,7 +99,7 @@ type PackageManifest struct {
 // version of that package.
 //
 // The following type has been directly copied as is from OLM.
-// See https://github.com/operator-framework/operator-lifecycle-manager/blob/724b209ccfff33b6208cc5d05283800d6661d441/pkg/controller/registry/types.go#L105.
+// See https://github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/blob/724b209ccfff33b6208cc5d05283800d6661d441/pkg/controller/registry/types.go#L105.
 //
 // We use it to unmarshal 'packages/package/channels' element of
 // an operator manifest.

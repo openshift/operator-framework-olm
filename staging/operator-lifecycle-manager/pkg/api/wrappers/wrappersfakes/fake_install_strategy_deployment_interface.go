@@ -4,10 +4,10 @@ package wrappersfakes
 import (
 	"sync"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/wrappers"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/wrappers"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorlister"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/ownerutil"
 	v1 "k8s.io/api/apps/v1"
 	v1b "k8s.io/api/core/v1"
 	v1a "k8s.io/api/rbac/v1"

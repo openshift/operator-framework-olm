@@ -1,7 +1,7 @@
 package validator
 
 import (
-	"github.com/operator-framework/api/pkg/validation/errors"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/validation/errors"
 )
 
 // Validator is an interface for validating arbitrary objects.

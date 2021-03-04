@@ -19,8 +19,8 @@ package validation
 import (
 	"context"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/apis/rbac"
-	rbacv1helpers "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/apis/rbac/v1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/apis/rbac"
+	rbacv1helpers "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/apis/rbac/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 

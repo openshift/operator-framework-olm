@@ -19,13 +19,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/operator-framework/api/pkg/lib/version"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/lib/version"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/ctx"
 )
 
 var _ = Describe("Catalog represents a store of bundles which OLM can use to install Operators", func() {
@@ -634,7 +634,7 @@ var _ = Describe("Catalog represents a store of bundles which OLM can use to ins
 
 	It("image update", func() {
 		if os.Getenv("GITHUB_ACTIONS") == "true" {
-			Skip("This spec fails when run using KIND cluster. See https://github.com/operator-framework/operator-lifecycle-manager/issues/1380 for more details")
+			Skip("This spec fails when run using KIND cluster. See https://github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/issues/1380 for more details")
 		}
 		// Create an image based catalog source from public Quay image
 		// Use a unique tag as identifier

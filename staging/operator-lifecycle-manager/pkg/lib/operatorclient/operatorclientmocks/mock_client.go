@@ -6,7 +6,7 @@ package operatorclientmocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	operatorclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	operatorclient "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
 	v1 "k8s.io/api/apps/v1"
 	v10 "k8s.io/api/core/v1"
 	v11 "k8s.io/api/rbac/v1"

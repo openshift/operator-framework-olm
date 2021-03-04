@@ -3,8 +3,8 @@ package internal
 import (
 	"testing"
 
-	"github.com/operator-framework/api/pkg/manifests"
-	"github.com/operator-framework/api/pkg/validation/errors"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/manifests"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/validation/errors"
 )
 
 func TestValidatePackageManifest(t *testing.T) {

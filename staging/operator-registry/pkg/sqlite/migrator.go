@@ -9,7 +9,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file" // indirect import required by golang-migrate package
 	"github.com/sirupsen/logrus"
 
-	"github.com/operator-framework/operator-registry/pkg/sqlite/migrations"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/sqlite/migrations"
 )
 
 type Migrator interface {

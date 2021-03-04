@@ -4,7 +4,7 @@ package resolver
 import (
 	"strings"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
+	v1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
 )
 
 type NamespaceSet map[string]struct{}

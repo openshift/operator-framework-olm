@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/operator-framework/api/pkg/operators"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators"
 )
 
 const (

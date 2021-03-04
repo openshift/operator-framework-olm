@@ -4,7 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/operator-framework/operator-registry/pkg/appregistry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/appregistry"
 )
 
 func BuildCmd() *cobra.Command {

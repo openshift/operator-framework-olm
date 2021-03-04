@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubestate"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"

@@ -3,7 +3,7 @@ package appregistry
 import (
 	"fmt"
 
-	"github.com/operator-framework/operator-registry/pkg/apprclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/apprclient"
 
 	log "github.com/sirupsen/logrus"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"

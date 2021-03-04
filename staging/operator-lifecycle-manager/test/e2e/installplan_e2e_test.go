@@ -33,16 +33,16 @@ import (
 	"k8s.io/client-go/util/retry"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	opver "github.com/operator-framework/api/pkg/lib/version"
-	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/catalog"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/apis/rbac"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
+	opver "github.com/openshift/operator-framework-olm/staging/api/pkg/lib/version"
+	operatorsv1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
+	operatorsv1alpha1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/operators/catalog"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/apis/rbac"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/ctx"
 )
 
 var _ = Describe("Install Plan", func() {
@@ -3052,7 +3052,7 @@ var _ = Describe("Install Plan", func() {
 		_, err = c.KubernetesInterface().CoreV1().ServiceAccounts(ns.GetName()).Create(context.TODO(), sa, metav1.CreateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 
-		// see https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/scoped-operator-install.md
+		// see https://github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/blob/master/doc/design/scoped-operator-install.md
 		role := &rbacv1.ClusterRole{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: genName("role-"),

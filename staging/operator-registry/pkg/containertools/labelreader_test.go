@@ -7,8 +7,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
-	"github.com/operator-framework/operator-registry/pkg/containertools"
-	"github.com/operator-framework/operator-registry/pkg/containertools/containertoolsfakes"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/containertools"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/containertools/containertoolsfakes"
 )
 
 func TestReadDockerLabels(t *testing.T) {

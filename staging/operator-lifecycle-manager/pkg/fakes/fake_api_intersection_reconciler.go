@@ -4,7 +4,7 @@ package fakes
 import (
 	"sync"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/resolver"
 )
 
 type FakeAPIIntersectionReconciler struct {

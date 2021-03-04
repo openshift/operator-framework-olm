@@ -18,7 +18,7 @@ limitations under the License.
 package rbac
 
 import (
-	rbacregistryvalidation "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/registry/rbac/validation"
+	rbacregistryvalidation "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/registry/rbac/validation"
 	rbacv1 "k8s.io/api/rbac/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apiserver/pkg/authentication/user"

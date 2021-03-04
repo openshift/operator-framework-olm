@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/operator-framework/api/pkg/lib/version"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/lib/version"
 )
 
 const (

@@ -3,7 +3,7 @@ package olm
 import (
 	"time"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/queueinformer"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -12,11 +12,11 @@ import (
 	"k8s.io/client-go/rest"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/labeler"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/install"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/controller/registry/resolver"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/labeler"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/operatorclient"
 )
 
 type OperatorOption func(*operatorConfig)

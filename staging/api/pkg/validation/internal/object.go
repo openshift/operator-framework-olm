@@ -2,8 +2,8 @@ package internal
 
 import (
 	"encoding/json"
-	"github.com/operator-framework/api/pkg/validation/errors"
-	interfaces "github.com/operator-framework/api/pkg/validation/interfaces"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/validation/errors"
+	interfaces "github.com/openshift/operator-framework-olm/staging/api/pkg/validation/interfaces"
 
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -55,7 +55,7 @@ func validateObjects(objs ...interface{}) (results []errors.ManifestResult) {
 }
 
 // validatePDB checks the PDB to ensure the minimum and maximum budgets are set to reasonable levels.
-// See https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/adding-pod-disruption-budgets.md#limitations-on-pod-disruption-budgets
+// See https://github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/blob/master/doc/design/adding-pod-disruption-budgets.md#limitations-on-pod-disruption-budgets
 func validatePDB(u *unstructured.Unstructured) (result errors.ManifestResult) {
 	pdb := policyv1beta1.PodDisruptionBudget{}
 
@@ -90,7 +90,7 @@ func validatePDB(u *unstructured.Unstructured) (result errors.ManifestResult) {
 }
 
 // validatePriorityClass checks the PriorityClass object to ensure globalDefault is set to false.
-// See https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/adding-priority-classes.md
+// See https://github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/blob/master/doc/design/adding-priority-classes.md
 func validatePriorityClass(u *unstructured.Unstructured) (result errors.ManifestResult) {
 	pc := schedulingv1.PriorityClass{}
 

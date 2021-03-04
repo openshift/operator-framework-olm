@@ -24,33 +24,33 @@ package openapi
 
 import (
 	spec "github.com/go-openapi/spec"
-	version "github.com/operator-framework/api/pkg/lib/version"
+	version "github.com/openshift/operator-framework-olm/staging/api/pkg/lib/version"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	common "k8s.io/kube-openapi/pkg/common"
 )
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/operator-framework/api/pkg/lib/version.OperatorVersion":                                                   schema_api_pkg_lib_version_OperatorVersion(ref),
-		"github.com/operator-framework/api/pkg/operators/v1alpha1.APIResourceReference":                                       schema_api_pkg_operators_v1alpha1_APIResourceReference(ref),
-		"github.com/operator-framework/api/pkg/operators/v1alpha1.APIServiceDefinitions":                                      schema_api_pkg_operators_v1alpha1_APIServiceDefinitions(ref),
-		"github.com/operator-framework/api/pkg/operators/v1alpha1.APIServiceDescription":                                      schema_api_pkg_operators_v1alpha1_APIServiceDescription(ref),
-		"github.com/operator-framework/api/pkg/operators/v1alpha1.ActionDescriptor":                                           schema_api_pkg_operators_v1alpha1_ActionDescriptor(ref),
-		"github.com/operator-framework/api/pkg/operators/v1alpha1.CRDDescription":                                             schema_api_pkg_operators_v1alpha1_CRDDescription(ref),
-		"github.com/operator-framework/api/pkg/operators/v1alpha1.CustomResourceDefinitions":                                  schema_api_pkg_operators_v1alpha1_CustomResourceDefinitions(ref),
-		"github.com/operator-framework/api/pkg/operators/v1alpha1.InstallMode":                                                schema_api_pkg_operators_v1alpha1_InstallMode(ref),
-		"github.com/operator-framework/api/pkg/operators/v1alpha1.SpecDescriptor":                                             schema_api_pkg_operators_v1alpha1_SpecDescriptor(ref),
-		"github.com/operator-framework/api/pkg/operators/v1alpha1.StatusDescriptor":                                           schema_api_pkg_operators_v1alpha1_StatusDescriptor(ref),
-		"github.com/operator-framework/api/pkg/operators/v1alpha1.WebhookDescription":                                         schema_api_pkg_operators_v1alpha1_WebhookDescription(ref),
-		"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink":               schema_package_server_apis_operators_v1_AppLink(ref),
-		"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.CSVDescription":        schema_package_server_apis_operators_v1_CSVDescription(ref),
-		"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Icon":                  schema_package_server_apis_operators_v1_Icon(ref),
-		"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Maintainer":            schema_package_server_apis_operators_v1_Maintainer(ref),
-		"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageChannel":        schema_package_server_apis_operators_v1_PackageChannel(ref),
-		"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifest":       schema_package_server_apis_operators_v1_PackageManifest(ref),
-		"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestList":   schema_package_server_apis_operators_v1_PackageManifestList(ref),
-		"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestSpec":   schema_package_server_apis_operators_v1_PackageManifestSpec(ref),
-		"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestStatus": schema_package_server_apis_operators_v1_PackageManifestStatus(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/lib/version.OperatorVersion":                                                   schema_api_pkg_lib_version_OperatorVersion(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIResourceReference":                                       schema_api_pkg_operators_v1alpha1_APIResourceReference(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIServiceDefinitions":                                      schema_api_pkg_operators_v1alpha1_APIServiceDefinitions(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIServiceDescription":                                      schema_api_pkg_operators_v1alpha1_APIServiceDescription(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.ActionDescriptor":                                           schema_api_pkg_operators_v1alpha1_ActionDescriptor(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.CRDDescription":                                             schema_api_pkg_operators_v1alpha1_CRDDescription(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.CustomResourceDefinitions":                                  schema_api_pkg_operators_v1alpha1_CustomResourceDefinitions(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.InstallMode":                                                schema_api_pkg_operators_v1alpha1_InstallMode(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.SpecDescriptor":                                             schema_api_pkg_operators_v1alpha1_SpecDescriptor(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.StatusDescriptor":                                           schema_api_pkg_operators_v1alpha1_StatusDescriptor(ref),
+		"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.WebhookDescription":                                         schema_api_pkg_operators_v1alpha1_WebhookDescription(ref),
+		"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink":               schema_package_server_apis_operators_v1_AppLink(ref),
+		"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.CSVDescription":        schema_package_server_apis_operators_v1_CSVDescription(ref),
+		"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Icon":                  schema_package_server_apis_operators_v1_Icon(ref),
+		"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Maintainer":            schema_package_server_apis_operators_v1_Maintainer(ref),
+		"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageChannel":        schema_package_server_apis_operators_v1_PackageChannel(ref),
+		"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifest":       schema_package_server_apis_operators_v1_PackageManifest(ref),
+		"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestList":   schema_package_server_apis_operators_v1_PackageManifestList(ref),
+		"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestSpec":   schema_package_server_apis_operators_v1_PackageManifestSpec(ref),
+		"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestStatus": schema_package_server_apis_operators_v1_PackageManifestStatus(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroup":                                                                       schema_pkg_apis_meta_v1_APIGroup(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroupList":                                                                   schema_pkg_apis_meta_v1_APIGroupList(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResource":                                                                    schema_pkg_apis_meta_v1_APIResource(ref),
@@ -167,7 +167,7 @@ func schema_api_pkg_operators_v1alpha1_APIServiceDefinitions(ref common.Referenc
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.APIServiceDescription"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIServiceDescription"),
 									},
 								},
 							},
@@ -180,7 +180,7 @@ func schema_api_pkg_operators_v1alpha1_APIServiceDefinitions(ref common.Referenc
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.APIServiceDescription"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIServiceDescription"),
 									},
 								},
 							},
@@ -190,7 +190,7 @@ func schema_api_pkg_operators_v1alpha1_APIServiceDefinitions(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/operator-framework/api/pkg/operators/v1alpha1.APIServiceDescription"},
+			"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIServiceDescription"},
 	}
 }
 
@@ -260,7 +260,7 @@ func schema_api_pkg_operators_v1alpha1_APIServiceDescription(ref common.Referenc
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.APIResourceReference"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIResourceReference"),
 									},
 								},
 							},
@@ -273,7 +273,7 @@ func schema_api_pkg_operators_v1alpha1_APIServiceDescription(ref common.Referenc
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.StatusDescriptor"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.StatusDescriptor"),
 									},
 								},
 							},
@@ -286,7 +286,7 @@ func schema_api_pkg_operators_v1alpha1_APIServiceDescription(ref common.Referenc
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.SpecDescriptor"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.SpecDescriptor"),
 									},
 								},
 							},
@@ -299,7 +299,7 @@ func schema_api_pkg_operators_v1alpha1_APIServiceDescription(ref common.Referenc
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.ActionDescriptor"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.ActionDescriptor"),
 									},
 								},
 							},
@@ -310,7 +310,7 @@ func schema_api_pkg_operators_v1alpha1_APIServiceDescription(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/operator-framework/api/pkg/operators/v1alpha1.APIResourceReference", "github.com/operator-framework/api/pkg/operators/v1alpha1.ActionDescriptor", "github.com/operator-framework/api/pkg/operators/v1alpha1.SpecDescriptor", "github.com/operator-framework/api/pkg/operators/v1alpha1.StatusDescriptor"},
+			"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIResourceReference", "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.ActionDescriptor", "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.SpecDescriptor", "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.StatusDescriptor"},
 	}
 }
 
@@ -414,7 +414,7 @@ func schema_api_pkg_operators_v1alpha1_CRDDescription(ref common.ReferenceCallba
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.APIResourceReference"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIResourceReference"),
 									},
 								},
 							},
@@ -427,7 +427,7 @@ func schema_api_pkg_operators_v1alpha1_CRDDescription(ref common.ReferenceCallba
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.StatusDescriptor"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.StatusDescriptor"),
 									},
 								},
 							},
@@ -440,7 +440,7 @@ func schema_api_pkg_operators_v1alpha1_CRDDescription(ref common.ReferenceCallba
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.SpecDescriptor"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.SpecDescriptor"),
 									},
 								},
 							},
@@ -453,7 +453,7 @@ func schema_api_pkg_operators_v1alpha1_CRDDescription(ref common.ReferenceCallba
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.ActionDescriptor"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.ActionDescriptor"),
 									},
 								},
 							},
@@ -464,7 +464,7 @@ func schema_api_pkg_operators_v1alpha1_CRDDescription(ref common.ReferenceCallba
 			},
 		},
 		Dependencies: []string{
-			"github.com/operator-framework/api/pkg/operators/v1alpha1.APIResourceReference", "github.com/operator-framework/api/pkg/operators/v1alpha1.ActionDescriptor", "github.com/operator-framework/api/pkg/operators/v1alpha1.SpecDescriptor", "github.com/operator-framework/api/pkg/operators/v1alpha1.StatusDescriptor"},
+			"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIResourceReference", "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.ActionDescriptor", "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.SpecDescriptor", "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.StatusDescriptor"},
 	}
 }
 
@@ -482,7 +482,7 @@ func schema_api_pkg_operators_v1alpha1_CustomResourceDefinitions(ref common.Refe
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.CRDDescription"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.CRDDescription"),
 									},
 								},
 							},
@@ -495,7 +495,7 @@ func schema_api_pkg_operators_v1alpha1_CustomResourceDefinitions(ref common.Refe
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.CRDDescription"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.CRDDescription"),
 									},
 								},
 							},
@@ -505,7 +505,7 @@ func schema_api_pkg_operators_v1alpha1_CustomResourceDefinitions(ref common.Refe
 			},
 		},
 		Dependencies: []string{
-			"github.com/operator-framework/api/pkg/operators/v1alpha1.CRDDescription"},
+			"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.CRDDescription"},
 	}
 }
 
@@ -824,7 +824,7 @@ func schema_package_server_apis_operators_v1_CSVDescription(ref common.Reference
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Icon"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Icon"),
 									},
 								},
 							},
@@ -834,14 +834,14 @@ func schema_package_server_apis_operators_v1_CSVDescription(ref common.Reference
 						SchemaProps: spec.SchemaProps{
 							Description: "Version is the CSV's semantic version",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/operator-framework/api/pkg/lib/version.OperatorVersion"),
+							Ref:         ref("github.com/openshift/operator-framework-olm/staging/api/pkg/lib/version.OperatorVersion"),
 						},
 					},
 					"provider": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Provider is the CSV's provider",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink"),
+							Ref:         ref("github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink"),
 						},
 					},
 					"annotations": {
@@ -895,7 +895,7 @@ func schema_package_server_apis_operators_v1_CSVDescription(ref common.Reference
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink"),
 									},
 								},
 							},
@@ -913,7 +913,7 @@ func schema_package_server_apis_operators_v1_CSVDescription(ref common.Reference
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Maintainer"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Maintainer"),
 									},
 								},
 							},
@@ -945,7 +945,7 @@ func schema_package_server_apis_operators_v1_CSVDescription(ref common.Reference
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.InstallMode"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.InstallMode"),
 									},
 								},
 							},
@@ -954,13 +954,13 @@ func schema_package_server_apis_operators_v1_CSVDescription(ref common.Reference
 					"customresourcedefinitions": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.CustomResourceDefinitions"),
+							Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.CustomResourceDefinitions"),
 						},
 					},
 					"apiservicedefinitions": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/operator-framework/api/pkg/operators/v1alpha1.APIServiceDefinitions"),
+							Ref:     ref("github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIServiceDefinitions"),
 						},
 					},
 					"nativeApis": {
@@ -1002,7 +1002,7 @@ func schema_package_server_apis_operators_v1_CSVDescription(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/operator-framework/api/pkg/lib/version.OperatorVersion", "github.com/operator-framework/api/pkg/operators/v1alpha1.APIServiceDefinitions", "github.com/operator-framework/api/pkg/operators/v1alpha1.CustomResourceDefinitions", "github.com/operator-framework/api/pkg/operators/v1alpha1.InstallMode", "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink", "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Icon", "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Maintainer", "k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionKind"},
+			"github.com/openshift/operator-framework-olm/staging/api/pkg/lib/version.OperatorVersion", "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.APIServiceDefinitions", "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.CustomResourceDefinitions", "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1.InstallMode", "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink", "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Icon", "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.Maintainer", "k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionKind"},
 	}
 }
 
@@ -1083,7 +1083,7 @@ func schema_package_server_apis_operators_v1_PackageChannel(ref common.Reference
 						SchemaProps: spec.SchemaProps{
 							Description: "CurrentCSVSpec holds the spec of the current CSV",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.CSVDescription"),
+							Ref:         ref("github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.CSVDescription"),
 						},
 					},
 				},
@@ -1091,7 +1091,7 @@ func schema_package_server_apis_operators_v1_PackageChannel(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.CSVDescription"},
+			"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.CSVDescription"},
 	}
 }
 
@@ -1125,20 +1125,20 @@ func schema_package_server_apis_operators_v1_PackageManifest(ref common.Referenc
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestSpec"),
+							Ref:     ref("github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestStatus"),
+							Ref:     ref("github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestSpec", "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestSpec", "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifestStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -1181,7 +1181,7 @@ func schema_package_server_apis_operators_v1_PackageManifestList(ref common.Refe
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifest"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifest"),
 									},
 								},
 							},
@@ -1192,7 +1192,7 @@ func schema_package_server_apis_operators_v1_PackageManifestList(ref common.Refe
 			},
 		},
 		Dependencies: []string{
-			"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifest", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageManifest", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -1248,7 +1248,7 @@ func schema_package_server_apis_operators_v1_PackageManifestStatus(ref common.Re
 						SchemaProps: spec.SchemaProps{
 							Description: "Provider is the provider of the PackageManifest's default CSV",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink"),
+							Ref:         ref("github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink"),
 						},
 					},
 					"packageName": {
@@ -1272,7 +1272,7 @@ func schema_package_server_apis_operators_v1_PackageManifestStatus(ref common.Re
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageChannel"),
+										Ref:     ref("github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageChannel"),
 									},
 								},
 							},
@@ -1291,7 +1291,7 @@ func schema_package_server_apis_operators_v1_PackageManifestStatus(ref common.Re
 			},
 		},
 		Dependencies: []string{
-			"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink", "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageChannel"},
+			"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.AppLink", "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators/v1.PackageChannel"},
 	}
 }
 

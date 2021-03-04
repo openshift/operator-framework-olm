@@ -21,7 +21,7 @@ package internalinterfaces
 import (
 	time "time"
 
-	internalversion "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion"
+	internalversion "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	cache "k8s.io/client-go/tools/cache"

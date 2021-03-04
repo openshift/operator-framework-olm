@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/testobj"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/testobj"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/proxy"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/proxy"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"

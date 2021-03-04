@@ -4,10 +4,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/operator-framework/operator-registry/cmd/opm/alpha"
-	"github.com/operator-framework/operator-registry/cmd/opm/index"
-	"github.com/operator-framework/operator-registry/cmd/opm/registry"
-	"github.com/operator-framework/operator-registry/cmd/opm/version"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/cmd/opm/alpha"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/cmd/opm/index"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/cmd/opm/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/cmd/opm/version"
 )
 
 func NewCmd() *cobra.Command {

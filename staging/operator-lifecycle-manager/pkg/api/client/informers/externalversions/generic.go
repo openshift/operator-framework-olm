@@ -21,9 +21,9 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/operator-framework/api/pkg/operators/v1"
-	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	v1alpha2 "github.com/operator-framework/api/pkg/operators/v1alpha2"
+	v1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
+	v1alpha1 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
+	v1alpha2 "github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )

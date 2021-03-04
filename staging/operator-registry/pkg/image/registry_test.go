@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/mod/sumdb/dirhash"
 
-	"github.com/operator-framework/operator-registry/pkg/image"
-	"github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
-	libimage "github.com/operator-framework/operator-registry/pkg/lib/image"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/image"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/image/containerdregistry"
+	libimage "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/image"
 )
 
 // cleanupFunc is a function that cleans up after some test infra.

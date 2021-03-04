@@ -14,14 +14,14 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/operator-framework/operator-registry/pkg/api"
-	health "github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1"
-	"github.com/operator-framework/operator-registry/pkg/lib/dns"
-	"github.com/operator-framework/operator-registry/pkg/lib/graceful"
-	"github.com/operator-framework/operator-registry/pkg/lib/log"
-	"github.com/operator-framework/operator-registry/pkg/registry"
-	"github.com/operator-framework/operator-registry/pkg/server"
-	"github.com/operator-framework/operator-registry/pkg/sqlite"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api"
+	health "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/api/grpc_health_v1"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/dns"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/graceful"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/lib/log"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/server"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/sqlite"
 )
 
 var rootCmd = &cobra.Command{

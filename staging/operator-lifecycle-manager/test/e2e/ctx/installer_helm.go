@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/assets/chart"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/assets/chart"
 )
 
 // clientAdapter implements genericclioptions.RESTClientGetter and

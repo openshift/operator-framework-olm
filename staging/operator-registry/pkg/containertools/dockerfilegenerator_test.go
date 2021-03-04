@@ -3,7 +3,7 @@ package containertools_test
 import (
 	"testing"
 
-	"github.com/operator-framework/operator-registry/pkg/containertools"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/containertools"
 
 	"github.com/golang/mock/gomock"
 	"github.com/sirupsen/logrus"

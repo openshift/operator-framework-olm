@@ -6,8 +6,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/fields"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/printers"
-	printerstorage "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/printers/storage"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/printers"
+	printerstorage "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/printers/storage"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,8 +17,8 @@ import (
 	genericreq "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/provider"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/provider"
 )
 
 type PackageManifestStorage struct {

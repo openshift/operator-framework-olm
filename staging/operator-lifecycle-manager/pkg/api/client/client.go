@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
 	"k8s.io/client-go/rest"
 )
 

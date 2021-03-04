@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	internalversion "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/typed/operators/internalversion"
+	internalversion "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/typed/operators/internalversion"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )

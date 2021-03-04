@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	operatorsinternalversion "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators"
+	operatorsinternalversion "github.com/openshift/operator-framework-olm/staging/operator-lifecycle-manager/pkg/package-server/apis/operators"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

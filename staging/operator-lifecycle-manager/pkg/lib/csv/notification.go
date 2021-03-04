@@ -1,7 +1,7 @@
 package csv
 
 import (
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1alpha1"
 )
 
 // WatchNotification is an sink interface that can be used to get notification

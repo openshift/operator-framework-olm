@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
+	opregistry "github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/operator-framework/api/pkg/operators/v1"
+	"github.com/openshift/operator-framework-olm/staging/api/pkg/operators/v1"
 )
 
 func buildAPIOperatorGroup(namespace, name string, targets []string, gvks []string) *v1.OperatorGroup {

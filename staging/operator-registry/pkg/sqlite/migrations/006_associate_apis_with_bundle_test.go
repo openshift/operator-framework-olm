@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/registry"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/operator-framework/operator-registry/pkg/sqlite/migrations"
+	"github.com/openshift/operator-framework-olm/staging/operator-registry/pkg/sqlite/migrations"
 )
 
 func TestAssociateApisWithBundleUp(t *testing.T) {
