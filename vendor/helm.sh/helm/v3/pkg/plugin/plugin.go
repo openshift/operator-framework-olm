@@ -20,17 +20,15 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 
-	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
 	"helm.sh/helm/v3/pkg/cli"
 )
 
-const PluginFileName = "plugin.yaml"
+const pluginFileName = "plugin.yaml"
 
 // Downloaders represents the plugins capability if it can retrieve
 // charts from special sources
@@ -96,12 +94,6 @@ type Metadata struct {
 	// Downloaders field is used if the plugin supply downloader mechanism
 	// for special protocols.
 	Downloaders []Downloaders `json:"downloaders"`
-
-	// UseTunnelDeprecated indicates that this command needs a tunnel.
-	// Setting this will cause a number of side effects, such as the
-	// automatic setting of HELM_HOST.
-	// DEPRECATED and unused, but retained for backwards compatibility with Helm 2 plugins. Remove in Helm 4
-	UseTunnelDeprecated bool `json:"useTunnel,omitempty"`
 }
 
 // Plugin represents a plugin.
@@ -165,51 +157,18 @@ func (p *Plugin) PrepareCommand(extraArgs []string) (string, []string, error) {
 	return main, baseArgs, nil
 }
 
-// validPluginName is a regular expression that validates plugin names.
-//
-// Plugin names can only contain the ASCII characters a-z, A-Z, 0-9, ​_​ and ​-.
-var validPluginName = regexp.MustCompile("^[A-Za-z0-9_-]+$")
-
-// validatePluginData validates a plugin's YAML data.
-func validatePluginData(plug *Plugin, filepath string) error {
-	if !validPluginName.MatchString(plug.Metadata.Name) {
-		return fmt.Errorf("invalid plugin name at %q", filepath)
-	}
-	// We could also validate SemVer, executable, and other fields should we so choose.
-	return nil
-}
-
-func detectDuplicates(plugs []*Plugin) error {
-	names := map[string]string{}
-
-	for _, plug := range plugs {
-		if oldpath, ok := names[plug.Metadata.Name]; ok {
-			return fmt.Errorf(
-				"two plugins claim the name %q at %q and %q",
-				plug.Metadata.Name,
-				oldpath,
-				plug.Dir,
-			)
-		}
-		names[plug.Metadata.Name] = plug.Dir
-	}
-
-	return nil
-}
-
 // LoadDir loads a plugin from the given directory.
 func LoadDir(dirname string) (*Plugin, error) {
-	pluginfile := filepath.Join(dirname, PluginFileName)
-	data, err := ioutil.ReadFile(pluginfile)
+	data, err := ioutil.ReadFile(filepath.Join(dirname, pluginFileName))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read plugin at %q", pluginfile)
+		return nil, err
 	}
 
 	plug := &Plugin{Dir: dirname}
-	if err := yaml.UnmarshalStrict(data, &plug.Metadata); err != nil {
-		return nil, errors.Wrapf(err, "failed to load plugin at %q", pluginfile)
+	if err := yaml.Unmarshal(data, &plug.Metadata); err != nil {
+		return nil, err
 	}
-	return plug, validatePluginData(plug, pluginfile)
+	return plug, nil
 }
 
 // LoadAll loads all plugins found beneath the base directory.
@@ -218,10 +177,10 @@ func LoadDir(dirname string) (*Plugin, error) {
 func LoadAll(basedir string) ([]*Plugin, error) {
 	plugins := []*Plugin{}
 	// We want basedir/*/plugin.yaml
-	scanpath := filepath.Join(basedir, "*", PluginFileName)
+	scanpath := filepath.Join(basedir, "*", pluginFileName)
 	matches, err := filepath.Glob(scanpath)
 	if err != nil {
-		return plugins, errors.Wrapf(err, "failed to find plugins in %q", scanpath)
+		return plugins, err
 	}
 
 	if matches == nil {
@@ -236,7 +195,7 @@ func LoadAll(basedir string) ([]*Plugin, error) {
 		}
 		plugins = append(plugins, p)
 	}
-	return plugins, detectDuplicates(plugins)
+	return plugins, nil
 }
 
 // FindPlugins returns a list of YAML files that describe plugins.

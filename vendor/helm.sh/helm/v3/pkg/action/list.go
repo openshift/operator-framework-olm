@@ -20,8 +20,6 @@ import (
 	"path"
 	"regexp"
 
-	"k8s.io/apimachinery/pkg/labels"
-
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 )
@@ -122,14 +120,12 @@ type List struct {
 	// Filter is a filter that is applied to the results
 	Filter       string
 	Short        bool
-	TimeFormat   string
 	Uninstalled  bool
 	Superseded   bool
 	Uninstalling bool
 	Deployed     bool
 	Failed       bool
 	Pending      bool
-	Selector     string
 }
 
 // NewList constructs a new *List
@@ -156,11 +152,16 @@ func (l *List) Run() ([]*release.Release, error) {
 	}
 
 	results, err := l.cfg.Releases.List(func(rel *release.Release) bool {
+		// Skip anything that the mask doesn't cover
+		currentStatus := l.StateMask.FromName(rel.Info.Status.String())
+		if l.StateMask&currentStatus == 0 {
+			return false
+		}
+
 		// Skip anything that doesn't match the filter.
 		if filter != nil && !filter.MatchString(rel.Name) {
 			return false
 		}
-
 		return true
 	})
 
@@ -172,23 +173,7 @@ func (l *List) Run() ([]*release.Release, error) {
 		return results, nil
 	}
 
-	// by definition, superseded releases are never shown if
-	// only the latest releases are returned. so if requested statemask
-	// is _only_ ListSuperseded, skip the latest release filter
-	if l.StateMask != ListSuperseded {
-		results = filterLatestReleases(results)
-	}
-
-	// State mask application must occur after filtering to
-	// latest releases, otherwise outdated entries can be returned
-	results = l.filterStateMask(results)
-
-	// Skip anything that doesn't match the selector
-	selectorObj, err := labels.Parse(l.Selector)
-	if err != nil {
-		return nil, err
-	}
-	results = l.filterSelector(results, selectorObj)
+	results = filterList(results)
 
 	// Unfortunately, we have to sort before truncating, which can incur substantial overhead
 	l.sort(results)
@@ -237,8 +222,8 @@ func (l *List) sort(rels []*release.Release) {
 	}
 }
 
-// filterLatestReleases returns a list scrubbed of old releases.
-func filterLatestReleases(releases []*release.Release) []*release.Release {
+// filterList returns a list scrubbed of old releases.
+func filterList(releases []*release.Release) []*release.Release {
 	latestReleases := make(map[string]*release.Release)
 
 	for _, rls := range releases {
@@ -257,34 +242,7 @@ func filterLatestReleases(releases []*release.Release) []*release.Release {
 	return list
 }
 
-func (l *List) filterStateMask(releases []*release.Release) []*release.Release {
-	desiredStateReleases := make([]*release.Release, 0)
-
-	for _, rls := range releases {
-		currentStatus := l.StateMask.FromName(rls.Info.Status.String())
-		mask := l.StateMask & currentStatus
-		if mask == 0 {
-			continue
-		}
-		desiredStateReleases = append(desiredStateReleases, rls)
-	}
-
-	return desiredStateReleases
-}
-
-func (l *List) filterSelector(releases []*release.Release, selector labels.Selector) []*release.Release {
-	desiredStateReleases := make([]*release.Release, 0)
-
-	for _, rls := range releases {
-		if selector.Matches(labels.Set(rls.Labels)) {
-			desiredStateReleases = append(desiredStateReleases, rls)
-		}
-	}
-
-	return desiredStateReleases
-}
-
-// SetStateMask calculates the state mask based on parameters.
+// setStateMask calculates the state mask based on parameters.
 func (l *List) SetStateMask() {
 	if l.All {
 		l.StateMask = ListAll

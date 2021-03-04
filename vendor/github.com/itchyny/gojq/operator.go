@@ -38,33 +38,6 @@ const (
 	OpUpdateAlt
 )
 
-var operatorMap = map[string]Operator{
-	"|":   OpPipe,
-	",":   OpComma,
-	"+":   OpAdd,
-	"-":   OpSub,
-	"*":   OpMul,
-	"/":   OpDiv,
-	"%":   OpMod,
-	"==":  OpEq,
-	"!=":  OpNe,
-	">":   OpGt,
-	"<":   OpLt,
-	">=":  OpGe,
-	"<=":  OpLe,
-	"and": OpAnd,
-	"or":  OpOr,
-	"//":  OpAlt,
-	"=":   OpAssign,
-	"|=":  OpModify,
-	"+=":  OpUpdateAdd,
-	"-=":  OpUpdateSub,
-	"*=":  OpUpdateMul,
-	"/=":  OpUpdateDiv,
-	"%=":  OpUpdateMod,
-	"//=": OpUpdateAlt,
-}
-
 // String implements Stringer.
 func (op Operator) String() string {
 	switch op {
@@ -122,8 +95,11 @@ func (op Operator) String() string {
 }
 
 // GoString implements GoStringer.
-func (op Operator) GoString() string {
+func (op Operator) GoString() (str string) {
+	defer func() { str = "gojq." + str }()
 	switch op {
+	case Operator(0):
+		return "Operator(0)"
 	case OpPipe:
 		return "OpPipe"
 	case OpComma:
@@ -352,7 +328,7 @@ func funcOpAdd(_, l, r interface{}) interface{} {
 			return append(append(v, l...), r...)
 		},
 		func(l, r map[string]interface{}) interface{} {
-			m := make(map[string]interface{})
+			m := make(map[string]interface{}, len(l)+len(r))
 			for k, v := range l {
 				m[k] = v
 			}
@@ -402,7 +378,7 @@ func funcOpMul(_, l, r interface{}) interface{} {
 		deepMergeObjects,
 		func(l, r interface{}) interface{} {
 			multiplyString := func(s string, cnt float64) interface{} {
-				if cnt <= 0.0 {
+				if cnt <= 0.0 || int(cnt) < 0 || int(cnt) > maxHalfInt/(16*(len(s)+1)) {
 					return nil
 				}
 				if cnt < 1.0 {
@@ -426,7 +402,7 @@ func funcOpMul(_, l, r interface{}) interface{} {
 }
 
 func deepMergeObjects(l, r map[string]interface{}) interface{} {
-	m := make(map[string]interface{})
+	m := make(map[string]interface{}, len(l)+len(r))
 	for k, v := range l {
 		m[k] = v
 	}
@@ -460,14 +436,6 @@ func funcOpDiv(_, l, r interface{}) interface{} {
 					return math.NaN()
 				}
 				return &zeroDivisionError{l, r}
-			} else if isinf(r) {
-				if isinf(l) {
-					return math.NaN()
-				}
-				if (r >= 0) == (l >= 0) {
-					return 0.0
-				}
-				return math.Copysign(0.0, -1)
 			}
 			return l / r
 		},
@@ -482,14 +450,7 @@ func funcOpDiv(_, l, r interface{}) interface{} {
 			if new(big.Int).Mul(x, r).Cmp(l) == 0 {
 				return x
 			}
-			rf := bigToFloat(r)
-			if isinf(rf) {
-				if l.Sign() == r.Sign() {
-					return 0.0
-				}
-				return math.Copysign(0.0, -1)
-			}
-			return bigToFloat(l) / rf
+			return bigToFloat(l) / bigToFloat(r)
 		},
 		func(l, r string) interface{} {
 			if l == "" {
@@ -517,7 +478,7 @@ func funcOpMod(_, l, r interface{}) interface{} {
 			return l % r
 		},
 		func(l, r float64) interface{} {
-			if r == 0.0 {
+			if int(r) == 0 {
 				return &zeroModuloError{l, r}
 			}
 			return int(l) % int(r)

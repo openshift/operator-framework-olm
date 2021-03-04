@@ -23,7 +23,6 @@ import (
 	"github.com/Masterminds/vcs"
 	"github.com/pkg/errors"
 
-	"helm.sh/helm/v3/internal/third_party/dep/fs"
 	"helm.sh/helm/v3/pkg/helmpath"
 	"helm.sh/helm/v3/pkg/plugin/cache"
 )
@@ -44,7 +43,7 @@ func existingVCSRepo(location string) (Installer, error) {
 		Repo: repo,
 		base: newBase(repo.Remote()),
 	}
-	return i, nil
+	return i, err
 }
 
 // NewVCSInstaller creates a new VCSInstaller.
@@ -66,7 +65,7 @@ func NewVCSInstaller(source, version string) (*VCSInstaller, error) {
 	return i, err
 }
 
-// Install clones a remote repository and installs into the plugin directory.
+// Install clones a remote repository and creates a symlink to the plugin directory.
 //
 // Implements Installer.
 func (i *VCSInstaller) Install() error {
@@ -88,8 +87,7 @@ func (i *VCSInstaller) Install() error {
 		return ErrMissingMetadata
 	}
 
-	debug("copying %s to %s", i.Repo.LocalPath(), i.Path())
-	return fs.CopyDir(i.Repo.LocalPath(), i.Path())
+	return i.link(i.Repo.LocalPath())
 }
 
 // Update updates a remote repository

@@ -26,12 +26,13 @@ import (
 	"github.com/spf13/cobra"
 
 	"helm.sh/helm/v3/cmd/helm/require"
+	"helm.sh/helm/v3/internal/completion"
 	"helm.sh/helm/v3/pkg/helmpath"
 	"helm.sh/helm/v3/pkg/repo"
 )
 
 type repoRemoveOptions struct {
-	names     []string
+	name      string
 	repoFile  string
 	repoCache string
 }
@@ -40,20 +41,26 @@ func newRepoRemoveCmd(out io.Writer) *cobra.Command {
 	o := &repoRemoveOptions{}
 
 	cmd := &cobra.Command{
-		Use:     "remove [REPO1 [REPO2 ...]]",
+		Use:     "remove [NAME]",
 		Aliases: []string{"rm"},
-		Short:   "remove one or more chart repositories",
-		Args:    require.MinimumNArgs(1),
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return compListRepos(toComplete, args), cobra.ShellCompDirectiveNoFileComp
-		},
+		Short:   "remove a chart repository",
+		Args:    require.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.repoFile = settings.RepositoryConfig
 			o.repoCache = settings.RepositoryCache
-			o.names = args
+			o.name = args[0]
 			return o.run(out)
 		},
 	}
+
+	// Function providing dynamic auto-completion
+	completion.RegisterValidArgsFunc(cmd, func(cmd *cobra.Command, args []string, toComplete string) ([]string, completion.BashCompDirective) {
+		if len(args) != 0 {
+			return nil, completion.BashCompDirectiveNoFileComp
+		}
+		return compListRepos(toComplete), completion.BashCompDirectiveNoFileComp
+	})
+
 	return cmd
 }
 
@@ -63,20 +70,18 @@ func (o *repoRemoveOptions) run(out io.Writer) error {
 		return errors.New("no repositories configured")
 	}
 
-	for _, name := range o.names {
-		if !r.Remove(name) {
-			return errors.Errorf("no repo named %q found", name)
-		}
-		if err := r.WriteFile(o.repoFile, 0644); err != nil {
-			return err
-		}
-
-		if err := removeRepoCache(o.repoCache, name); err != nil {
-			return err
-		}
-		fmt.Fprintf(out, "%q has been removed from your repositories\n", name)
+	if !r.Remove(o.name) {
+		return errors.Errorf("no repo named %q found", o.name)
+	}
+	if err := r.WriteFile(o.repoFile, 0644); err != nil {
+		return err
 	}
 
+	if err := removeRepoCache(o.repoCache, o.name); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(out, "%q has been removed from your repositories\n", o.name)
 	return nil
 }
 

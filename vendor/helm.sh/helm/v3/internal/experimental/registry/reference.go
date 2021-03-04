@@ -86,7 +86,6 @@ func (ref *Reference) FullName() string {
 
 // validate makes sure the ref meets our criteria
 func (ref *Reference) validate() error {
-
 	err := ref.validateRepo()
 	if err != nil {
 		return err
@@ -101,11 +100,11 @@ func (ref *Reference) validateRepo() error {
 	}
 	// Makes sure the repo results in a parsable URL (similar to what is done
 	// with containerd reference parsing)
-	_, err := url.Parse("//" + ref.Repo)
+	_, err := url.Parse(ref.Repo)
 	return err
 }
 
-// validateNumColons ensures the ref only contains a single colon character (:)
+// validateNumColon ensures the ref only contains a single colon character (:)
 // (or potentially two, there might be a port number specified i.e. :5000)
 func (ref *Reference) validateNumColons() error {
 	if strings.Contains(ref.Tag, ":") {

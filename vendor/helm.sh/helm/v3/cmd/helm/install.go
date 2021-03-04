@@ -17,8 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"io"
-	"log"
 	"time"
 
 	"github.com/pkg/errors"
@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"helm.sh/helm/v3/cmd/helm/require"
+	"helm.sh/helm/v3/internal/completion"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -59,7 +60,6 @@ or
     $ helm install --set-string long_int=1234567890 myredis ./redis
 
 or
-
     $ helm install --set-file my_script=dothings.sh myredis ./redis
 
 You can specify the '--values'/'-f' flag multiple times. The priority will be given to the
@@ -113,28 +113,29 @@ func newInstallCmd(cfg *action.Configuration, out io.Writer) *cobra.Command {
 		Short: "install a chart",
 		Long:  installDesc,
 		Args:  require.MinimumNArgs(1),
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return compInstall(args, toComplete, client)
-		},
 		RunE: func(_ *cobra.Command, args []string) error {
 			rel, err := runInstall(args, client, valueOpts, out)
 			if err != nil {
 				return err
 			}
 
-			return outfmt.Write(out, &statusPrinter{rel, settings.Debug, false})
+			return outfmt.Write(out, &statusPrinter{rel, settings.Debug})
 		},
 	}
 
-	addInstallFlags(cmd, cmd.Flags(), client, valueOpts)
+	// Function providing dynamic auto-completion
+	completion.RegisterValidArgsFunc(cmd, func(cmd *cobra.Command, args []string, toComplete string) ([]string, completion.BashCompDirective) {
+		return compInstall(args, toComplete, client)
+	})
+
+	addInstallFlags(cmd.Flags(), client, valueOpts)
 	bindOutputFlag(cmd, &outfmt)
 	bindPostRenderFlag(cmd, &client.PostRenderer)
 
 	return cmd
 }
 
-func addInstallFlags(cmd *cobra.Command, f *pflag.FlagSet, client *action.Install, valueOpts *values.Options) {
-	f.BoolVar(&client.CreateNamespace, "create-namespace", false, "create the release namespace if not present")
+func addInstallFlags(f *pflag.FlagSet, client *action.Install, valueOpts *values.Options) {
 	f.BoolVar(&client.DryRun, "dry-run", false, "simulate an install")
 	f.BoolVar(&client.DisableHooks, "no-hooks", false, "prevent hooks from running during install")
 	f.BoolVar(&client.Replace, "replace", false, "re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production")
@@ -146,26 +147,11 @@ func addInstallFlags(cmd *cobra.Command, f *pflag.FlagSet, client *action.Instal
 	f.BoolVar(&client.Devel, "devel", false, "use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored")
 	f.BoolVar(&client.DependencyUpdate, "dependency-update", false, "run helm dependency update before installing the chart")
 	f.BoolVar(&client.DisableOpenAPIValidation, "disable-openapi-validation", false, "if set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema")
-	f.BoolVar(&client.Atomic, "atomic", false, "if set, the installation process deletes the installation on failure. The --wait flag will be set automatically if --atomic is used")
+	f.BoolVar(&client.Atomic, "atomic", false, "if set, installation process purges chart on fail. The --wait flag will be set automatically if --atomic is used")
 	f.BoolVar(&client.SkipCRDs, "skip-crds", false, "if set, no CRDs will be installed. By default, CRDs are installed if not already present")
 	f.BoolVar(&client.SubNotes, "render-subchart-notes", false, "if set, render subchart notes along with the parent")
 	addValueOptionsFlags(f, valueOpts)
 	addChartPathOptionsFlags(f, &client.ChartPathOptions)
-
-	err := cmd.RegisterFlagCompletionFunc("version", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		requiredArgs := 2
-		if client.GenerateName {
-			requiredArgs = 1
-		}
-		if len(args) != requiredArgs {
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		}
-		return compVersionFlag(args[requiredArgs-1], toComplete)
-	})
-
-	if err != nil {
-		log.Fatal(err)
-	}
 }
 
 func runInstall(args []string, client *action.Install, valueOpts *values.Options, out io.Writer) (*release.Release, error) {
@@ -200,12 +186,13 @@ func runInstall(args []string, client *action.Install, valueOpts *values.Options
 		return nil, err
 	}
 
-	if err := checkIfInstallable(chartRequested); err != nil {
+	validInstallableChart, err := isChartInstallable(chartRequested)
+	if !validInstallableChart {
 		return nil, err
 	}
 
 	if chartRequested.Metadata.Deprecated {
-		warning("This chart is deprecated")
+		fmt.Fprintln(out, "WARNING: This chart is deprecated")
 	}
 
 	if req := chartRequested.Metadata.Dependencies; req != nil {
@@ -222,14 +209,9 @@ func runInstall(args []string, client *action.Install, valueOpts *values.Options
 					Getters:          p,
 					RepositoryConfig: settings.RepositoryConfig,
 					RepositoryCache:  settings.RepositoryCache,
-					Debug:            settings.Debug,
 				}
 				if err := man.Update(); err != nil {
 					return nil, err
-				}
-				// Reload the chart with the updated Chart.lock file.
-				if chartRequested, err = loader.Load(cp); err != nil {
-					return nil, errors.Wrap(err, "failed reloading chart after repo update")
 				}
 			} else {
 				return nil, err
@@ -241,19 +223,19 @@ func runInstall(args []string, client *action.Install, valueOpts *values.Options
 	return client.Run(chartRequested, vals)
 }
 
-// checkIfInstallable validates if a chart can be installed
+// isChartInstallable validates if a chart can be installed
 //
 // Application chart type is only installable
-func checkIfInstallable(ch *chart.Chart) error {
+func isChartInstallable(ch *chart.Chart) (bool, error) {
 	switch ch.Metadata.Type {
 	case "", "application":
-		return nil
+		return true, nil
 	}
-	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
+	return false, errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
 // Provide dynamic auto-completion for the install and template commands
-func compInstall(args []string, toComplete string, client *action.Install) ([]string, cobra.ShellCompDirective) {
+func compInstall(args []string, toComplete string, client *action.Install) ([]string, completion.BashCompDirective) {
 	requiredArgs := 1
 	if client.GenerateName {
 		requiredArgs = 0
@@ -261,5 +243,5 @@ func compInstall(args []string, toComplete string, client *action.Install) ([]st
 	if len(args) == requiredArgs {
 		return compListCharts(toComplete, true)
 	}
-	return nil, cobra.ShellCompDirectiveNoFileComp
+	return nil, completion.BashCompDirectiveNoFileComp
 }

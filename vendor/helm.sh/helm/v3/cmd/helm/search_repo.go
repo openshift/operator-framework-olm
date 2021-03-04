@@ -31,6 +31,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"helm.sh/helm/v3/cmd/helm/search"
+	"helm.sh/helm/v3/internal/completion"
 	"helm.sh/helm/v3/pkg/cli/output"
 	"helm.sh/helm/v3/pkg/helmpath"
 	"helm.sh/helm/v3/pkg/repo"
@@ -101,7 +102,7 @@ func newSearchRepoCmd(out io.Writer) *cobra.Command {
 func (o *searchRepoOptions) run(out io.Writer, args []string) error {
 	o.setupSearchedVersion()
 
-	index, err := o.buildIndex()
+	index, err := o.buildIndex(out)
 	if err != nil {
 		return err
 	}
@@ -154,33 +155,23 @@ func (o *searchRepoOptions) applyConstraint(res []*search.Result) ([]*search.Res
 
 	data := res[:0]
 	foundNames := map[string]bool{}
-	appendSearchResults := func(res *search.Result) {
-		data = append(data, res)
-		if !o.versions {
-			foundNames[res.Name] = true // If user hasn't requested all versions, only show the latest that matches
-		}
-	}
 	for _, r := range res {
 		if _, found := foundNames[r.Name]; found {
 			continue
 		}
 		v, err := semver.NewVersion(r.Chart.Version)
-
-		if err != nil {
-			// If the current version number check appears ErrSegmentStartsZero or ErrInvalidPrerelease error and not devel mode, ignore
-			if (err == semver.ErrSegmentStartsZero || err == semver.ErrInvalidPrerelease) && !o.devel {
-				continue
+		if err != nil || constraint.Check(v) {
+			data = append(data, r)
+			if !o.versions {
+				foundNames[r.Name] = true // If user hasn't requested all versions, only show the latest that matches
 			}
-			appendSearchResults(r)
-		} else if constraint.Check(v) {
-			appendSearchResults(r)
 		}
 	}
 
 	return data, nil
 }
 
-func (o *searchRepoOptions) buildIndex() (*search.Index, error) {
+func (o *searchRepoOptions) buildIndex(out io.Writer) (*search.Index, error) {
 	// Load the repositories.yaml
 	rf, err := repo.LoadFile(o.repoFile)
 	if isNotExist(err) || len(rf.Repositories) == 0 {
@@ -193,7 +184,8 @@ func (o *searchRepoOptions) buildIndex() (*search.Index, error) {
 		f := filepath.Join(o.repoCacheDir, helmpath.CacheIndexFile(n))
 		ind, err := repo.LoadIndexFile(f)
 		if err != nil {
-			warning("Repo %q is corrupt or missing. Try 'helm repo update'.", n)
+			// TODO should print to stderr
+			fmt.Fprintf(out, "WARNING: Repo %q is corrupt or missing. Try 'helm repo update'.", n)
 			continue
 		}
 
@@ -298,15 +290,15 @@ func compListChartsOfRepo(repoName string, prefix string) []string {
 
 // Provide dynamic auto-completion for commands that operate on charts (e.g., helm show)
 // When true, the includeFiles argument indicates that completion should include local files (e.g., local charts)
-func compListCharts(toComplete string, includeFiles bool) ([]string, cobra.ShellCompDirective) {
-	cobra.CompDebugln(fmt.Sprintf("compListCharts with toComplete %s", toComplete), settings.Debug)
+func compListCharts(toComplete string, includeFiles bool) ([]string, completion.BashCompDirective) {
+	completion.CompDebugln(fmt.Sprintf("compListCharts with toComplete %s", toComplete))
 
 	noSpace := false
 	noFile := false
 	var completions []string
 
 	// First check completions for repos
-	repos := compListRepos("", nil)
+	repos := compListRepos("")
 	for _, repo := range repos {
 		repoWithSlash := fmt.Sprintf("%s/", repo)
 		if strings.HasPrefix(toComplete, repoWithSlash) {
@@ -320,7 +312,7 @@ func compListCharts(toComplete string, includeFiles bool) ([]string, cobra.Shell
 			noSpace = true
 		}
 	}
-	cobra.CompDebugln(fmt.Sprintf("Completions after repos: %v", completions), settings.Debug)
+	completion.CompDebugln(fmt.Sprintf("Completions after repos: %v", completions))
 
 	// Now handle completions for url prefixes
 	for _, url := range []string{"https://", "http://", "file://"} {
@@ -336,7 +328,7 @@ func compListCharts(toComplete string, includeFiles bool) ([]string, cobra.Shell
 			noSpace = true
 		}
 	}
-	cobra.CompDebugln(fmt.Sprintf("Completions after urls: %v", completions), settings.Debug)
+	completion.CompDebugln(fmt.Sprintf("Completions after urls: %v", completions))
 
 	// Finally, provide file completion if we need to.
 	// We only do this if:
@@ -355,26 +347,40 @@ func compListCharts(toComplete string, includeFiles bool) ([]string, cobra.Shell
 			}
 		}
 	}
-	cobra.CompDebugln(fmt.Sprintf("Completions after files: %v", completions), settings.Debug)
+	completion.CompDebugln(fmt.Sprintf("Completions after files: %v", completions))
 
 	// If the user didn't provide any input to completion,
 	// we provide a hint that a path can also be used
 	if includeFiles && len(toComplete) == 0 {
 		completions = append(completions, "./", "/")
 	}
-	cobra.CompDebugln(fmt.Sprintf("Completions after checking empty input: %v", completions), settings.Debug)
+	completion.CompDebugln(fmt.Sprintf("Completions after checking empty input: %v", completions))
 
-	directive := cobra.ShellCompDirectiveDefault
+	directive := completion.BashCompDirectiveDefault
 	if noFile {
-		directive = directive | cobra.ShellCompDirectiveNoFileComp
+		directive = directive | completion.BashCompDirectiveNoFileComp
 	}
 	if noSpace {
-		directive = directive | cobra.ShellCompDirectiveNoSpace
-	}
-	if !includeFiles {
-		// If we should not include files in the completions,
-		// we should disable file completion
-		directive = directive | cobra.ShellCompDirectiveNoFileComp
+		directive = directive | completion.BashCompDirectiveNoSpace
+		// The completion.BashCompDirective flags do not work for zsh right now.
+		// We handle it ourselves instead.
+		completions = compEnforceNoSpace(completions)
 	}
 	return completions, directive
+}
+
+// This function prevents the shell from adding a space after
+// a completion by adding a second, fake completion.
+// It is only needed for zsh, but we cannot tell which shell
+// is being used here, so we do the fake completion all the time;
+// there are no real downsides to doing this for bash as well.
+func compEnforceNoSpace(completions []string) []string {
+	// To prevent the shell from adding space after the completion,
+	// we trick it by pretending there is a second, longer match.
+	// We only do this if there is a single choice for completion.
+	if len(completions) == 1 {
+		completions = append(completions, completions[0]+".")
+		completion.CompDebugln(fmt.Sprintf("compEnforceNoSpace: completions now are %v", completions))
+	}
+	return completions
 }

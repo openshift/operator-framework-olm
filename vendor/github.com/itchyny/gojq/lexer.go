@@ -1,14 +1,13 @@
 package gojq
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 )
 
 type lexer struct {
-	source    []byte
+	source    string
 	offset    int
 	result    *Query
 	token     string
@@ -18,7 +17,7 @@ type lexer struct {
 }
 
 func newLexer(src string) *lexer {
-	return &lexer{source: []byte(src)}
+	return &lexer{source: src}
 }
 
 const eof = -1
@@ -67,7 +66,7 @@ func (l *lexer) Lex(lval *yySymType) (tokenType int) {
 	case isIdent(ch, false):
 		i := l.offset - 1
 		j, isModule := l.scanIdentOrModule()
-		l.token = string(l.source[i:j])
+		l.token = l.source[i:j]
 		lval.token = l.token
 		if isModule {
 			return tokModuleIdent
@@ -80,10 +79,10 @@ func (l *lexer) Lex(lval *yySymType) (tokenType int) {
 		i := l.offset - 1
 		j := l.scanNumber(numberStateLead)
 		if j < 0 {
-			l.token = string(l.source[i:-j])
+			l.token = l.source[i:-j]
 			return tokInvalid
 		}
-		l.token = string(l.source[i:j])
+		l.token = l.source[i:j]
 		lval.token = l.token
 		return tokNumber
 	}
@@ -96,17 +95,17 @@ func (l *lexer) Lex(lval *yySymType) (tokenType int) {
 			l.token = ".."
 			return tokRecurse
 		case isIdent(ch, false):
-			l.token = string(l.source[l.offset-1 : l.scanIdent()])
+			l.token = l.source[l.offset-1 : l.scanIdent()]
 			lval.token = l.token[1:]
 			return tokIndex
 		case isNumber(ch):
 			i := l.offset - 1
 			j := l.scanNumber(numberStateFloat)
 			if j < 0 {
-				l.token = string(l.source[i:-j])
+				l.token = l.source[i:-j]
 				return tokInvalid
 			}
-			l.token = string(l.source[i:j])
+			l.token = l.source[i:j]
 			lval.token = l.token
 			return tokNumber
 		default:
@@ -116,7 +115,7 @@ func (l *lexer) Lex(lval *yySymType) (tokenType int) {
 		if isIdent(l.peek(), false) {
 			i := l.offset - 1
 			j, isModule := l.scanIdentOrModule()
-			l.token = string(l.source[i:j])
+			l.token = l.source[i:j]
 			lval.token = l.token
 			if isModule {
 				return tokModuleVariable
@@ -138,6 +137,7 @@ func (l *lexer) Lex(lval *yySymType) (tokenType int) {
 				l.token = "?//"
 				return tokDestAltOp
 			}
+			l.offset--
 		}
 	case '+':
 		if l.peek() == '=' {
@@ -224,8 +224,8 @@ func (l *lexer) Lex(lval *yySymType) (tokenType int) {
 		lval.operator = OpLt
 		return tokCompareOp
 	case '@':
-		if isIdent(l.peek(), false) {
-			l.token = string(l.source[l.offset-1 : l.scanIdent()])
+		if isIdent(l.peek(), true) {
+			l.token = l.source[l.offset-1 : l.scanIdent()]
 			lval.token = l.token
 			return tokFormat
 		}
@@ -235,7 +235,7 @@ func (l *lexer) Lex(lval *yySymType) (tokenType int) {
 		return tok
 	default:
 		if ch >= utf8.RuneSelf {
-			r, _ := utf8.DecodeRune(l.source[l.offset-1:])
+			r, _ := utf8.DecodeRuneInString(l.source[l.offset-1:])
 			l.token = string(r)
 			l.offset += len(l.token)
 		}
@@ -300,6 +300,14 @@ func (l *lexer) scanIdentOrModule() (int, bool) {
 	return index, isModule
 }
 
+func (l *lexer) validVarName() bool {
+	if l.peek() != '$' {
+		return false
+	}
+	l.offset++
+	return isIdent(l.peek(), false) && l.scanIdent() == len(l.source)
+}
+
 const (
 	numberStateLead = iota
 	numberStateFloat
@@ -317,7 +325,8 @@ func (l *lexer) scanNumber(state int) int {
 				switch ch {
 				case '.':
 					if state != numberStateLead {
-						return l.offset
+						l.offset++
+						return -l.offset
 					}
 					l.offset++
 					state = numberStateFloat
@@ -342,7 +351,7 @@ func (l *lexer) scanNumber(state int) int {
 					l.offset++
 					return -l.offset
 				}
-				if state == numberStateExpLead && len(l.source) == l.offset {
+				if state == numberStateExpLead {
 					return -l.offset
 				}
 				return l.offset
@@ -353,6 +362,22 @@ func (l *lexer) scanNumber(state int) int {
 			panic(state)
 		}
 	}
+}
+
+func (l *lexer) validNumber() bool {
+	ch := l.peek()
+	switch ch {
+	case '+', '-':
+		l.offset++
+		ch = l.peek()
+	}
+	state := numberStateLead
+	if ch == '.' {
+		l.offset++
+		ch = l.peek()
+		state = numberStateFloat
+	}
+	return isNumber(ch) && l.scanNumber(state) == len(l.source)
 }
 
 func (l *lexer) scanString(start int) (int, string) {
@@ -366,7 +391,7 @@ func (l *lexer) scanString(start int) (int, string) {
 			if !quote {
 				if !l.inString {
 					l.offset = i + 1
-					l.token = string(l.source[start:l.offset])
+					l.token = l.source[start:l.offset]
 					str, err := strconv.Unquote(l.token)
 					if err != nil {
 						return tokInvalid, ""
@@ -375,7 +400,7 @@ func (l *lexer) scanString(start int) (int, string) {
 				}
 				if i > l.offset {
 					l.offset = i
-					l.token = string(l.source[start:l.offset])
+					l.token = l.source[start:l.offset]
 					str, err := strconv.Unquote("\"" + l.token + "\"")
 					if err != nil {
 						return tokInvalid, ""
@@ -392,7 +417,7 @@ func (l *lexer) scanString(start int) (int, string) {
 				if l.inString {
 					if i > l.offset+1 {
 						l.offset = i - 1
-						l.token = string(l.source[start:l.offset])
+						l.token = l.source[start:l.offset]
 						str, err := strconv.Unquote("\"" + l.token + "\"")
 						if err != nil {
 							return tokInvalid, ""
@@ -411,7 +436,7 @@ func (l *lexer) scanString(start int) (int, string) {
 				if !('a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' ||
 					'0' <= ch && ch <= '9' || ch == '\'' || ch == '"') {
 					l.offset = i + 1
-					l.token = string(l.source[l.offset-2 : l.offset])
+					l.token = l.source[l.offset-2 : l.offset]
 					return tokInvalid, ""
 				}
 				quote = false
@@ -419,7 +444,7 @@ func (l *lexer) scanString(start int) (int, string) {
 		}
 	}
 	l.offset = len(l.source)
-	l.token = string(l.source[start:l.offset])
+	l.token = l.source[start:l.offset]
 	return tokInvalid, ""
 }
 
@@ -445,9 +470,9 @@ func (err *parseError) Error() string {
 			message = "\"" + err.token + "\""
 		}
 	default:
-		message = strconv.Quote(string(err.tokenType))
+		message = strconv.Quote(string(rune(err.tokenType)))
 	}
-	return fmt.Sprintf("%s token %s", prefix, message)
+	return prefix + " token " + message
 }
 
 func (err *parseError) Token() (string, int) {
@@ -462,7 +487,7 @@ func (l *lexer) Error(e string) {
 	case l.tokenType >= utf8.RuneSelf:
 		offset -= len(token) - 1
 	default:
-		token = fmt.Sprintf("%c", l.tokenType)
+		token = string(rune(l.tokenType))
 	}
 	l.err = &parseError{offset, token, l.tokenType}
 }

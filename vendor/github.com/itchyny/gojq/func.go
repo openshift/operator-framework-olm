@@ -1,7 +1,6 @@
 package gojq
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -10,14 +9,15 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
-	"github.com/lestrrat-go/strftime"
-	"github.com/pbnjay/strptime"
+	"github.com/itchyny/timefmt-go"
 )
 
-//go:generate go run _tools/gen_builtin.go -i builtin.jq -o builtin.go
+//go:generate go run -modfile=go.dev.mod _tools/gen_builtin.go -i builtin.jq -o builtin.go
 var builtinFuncDefs map[string][]*FuncDef
 
 const (
@@ -45,6 +45,7 @@ func init() {
 		"debug":          argFunc0(nil),
 		"stderr":         argFunc0(nil),
 		"env":            argFunc0(nil),
+		"builtins":       argFunc0(nil),
 		"input":          argFunc0(nil),
 		"modulemeta":     argFunc0(nil),
 		"length":         argFunc0(funcLength),
@@ -174,36 +175,39 @@ func init() {
 		"error":          {argcount0 | argcount1, funcError},
 		"halt":           argFunc0(funcHalt),
 		"halt_error":     {argcount0 | argcount1, funcHaltError},
-		"builtins":       argFunc0(funcBuiltins),
 		"_type_error":    argFunc1(internalfuncTypeError),
 	}
 }
 
 func argFunc0(fn func(interface{}) interface{}) function {
-	return function{argcount0, func(v interface{}, _ []interface{}) interface{} {
-		return fn(v)
-	},
+	return function{
+		argcount0, func(v interface{}, _ []interface{}) interface{} {
+			return fn(v)
+		},
 	}
 }
 
 func argFunc1(fn func(interface{}, interface{}) interface{}) function {
-	return function{argcount1, func(v interface{}, args []interface{}) interface{} {
-		return fn(v, args[0])
-	},
+	return function{
+		argcount1, func(v interface{}, args []interface{}) interface{} {
+			return fn(v, args[0])
+		},
 	}
 }
 
 func argFunc2(fn func(interface{}, interface{}, interface{}) interface{}) function {
-	return function{argcount2, func(v interface{}, args []interface{}) interface{} {
-		return fn(v, args[0], args[1])
-	},
+	return function{
+		argcount2, func(v interface{}, args []interface{}) interface{} {
+			return fn(v, args[0], args[1])
+		},
 	}
 }
 
 func argFunc3(fn func(interface{}, interface{}, interface{}, interface{}) interface{}) function {
-	return function{argcount3, func(v interface{}, args []interface{}) interface{} {
-		return fn(v, args[0], args[1], args[2])
-	},
+	return function{
+		argcount3, func(v interface{}, args []interface{}) interface{} {
+			return fn(v, args[0], args[1], args[2])
+		},
 	}
 }
 
@@ -276,7 +280,7 @@ func funcLength(v interface{}) interface{} {
 func funcUtf8ByteLength(v interface{}) interface{} {
 	switch v := v.(type) {
 	case string:
-		return len([]byte(v))
+		return len(v)
 	default:
 		return &funcTypeError{"utf8bytelength", v}
 	}
@@ -353,7 +357,7 @@ func funcAdd(v interface{}) interface{} {
 		case map[string]interface{}:
 			switch w := v.(type) {
 			case nil:
-				m := make(map[string]interface{})
+				m := make(map[string]interface{}, len(y))
 				for k, e := range y {
 					m[k] = e
 				}
@@ -385,14 +389,12 @@ func funcAdd(v interface{}) interface{} {
 	return v
 }
 
-var numberPattern = regexp.MustCompile(`^[-+]?(?:(?:\d*\.)?\d+|\d+\.)(?:[eE][-+]?\d+)?$`)
-
 func funcToNumber(v interface{}) interface{} {
 	switch v := v.(type) {
 	case int, float64, *big.Int:
 		return v
 	case string:
-		if !numberPattern.MatchString(v) {
+		if !newLexer(v).validNumber() {
 			return fmt.Errorf("invalid number: %q", v)
 		}
 		return normalizeNumbers(json.Number(v))
@@ -540,37 +542,20 @@ func funcSplit(v interface{}, args []interface{}) interface{} {
 }
 
 func implode(v []interface{}) interface{} {
-	var rs []rune
+	var sb strings.Builder
+	sb.Grow(len(v))
 	for _, r := range v {
-		if r, ok := toInt(r); ok {
-			rs = append(rs, rune(r))
-			continue
+		if r, ok := toInt(r); ok && 0 <= r && r <= utf8.MaxRune {
+			sb.WriteRune(rune(r))
+		} else {
+			return &funcTypeError{"implode", v}
 		}
-		return &funcTypeError{"implode", v}
 	}
-	return string(rs)
+	return sb.String()
 }
 
 func funcToJSON(v interface{}) interface{} {
-	s, err := encodeJSON(v)
-	if err != nil {
-		return err
-	}
-	return s
-}
-
-func encodeJSON(v interface{}) (string, error) {
-	buf := new(bytes.Buffer)
-	enc := json.NewEncoder(buf)
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(v); err != nil {
-		buf.Reset()
-		if err = enc.Encode(normalizeValues(v)); err != nil {
-			return "", err
-		}
-	}
-	s := buf.String()
-	return s[:len(s)-1], nil // trim last newline character
+	return jsonMarshal(v)
 }
 
 func funcFromJSON(v interface{}) interface{} {
@@ -636,14 +621,11 @@ func funcToSh(v interface{}) interface{} {
 		case map[string]interface{}, []interface{}:
 			return &formatShError{x}
 		case string:
-			s.WriteString("'" + strings.ReplaceAll(x, "'", `'\''`) + "'")
+			s.WriteByte('\'')
+			s.WriteString(strings.ReplaceAll(x, "'", `'\''`))
+			s.WriteByte('\'')
 		default:
-			switch v := funcToJSON(x).(type) {
-			case error:
-				return v
-			case string:
-				s.WriteString(v)
-			}
+			s.WriteString(jsonMarshal(x))
 		}
 	}
 	return s.String()
@@ -673,17 +655,10 @@ func toCSVTSV(typ string, v interface{}, escape func(string) string) (string, er
 	case string:
 		return escape(v), nil
 	default:
-		switch v := funcToJSON(v).(type) {
-		case error:
-			return "", v
-		case string:
-			if v != "null" {
-				return v, nil
-			}
-			return "", nil
-		default:
-			panic("unreachable")
+		if s := jsonMarshal(v); s != "null" {
+			return s, nil
 		}
+		return "", nil
 	}
 }
 
@@ -820,6 +795,7 @@ func funcSlice(_, v, end, start interface{}) (r interface{}) {
 				r = implode([]interface{}{s})
 			case nil:
 				r = ""
+			case error:
 			default:
 				panic(r)
 			}
@@ -897,8 +873,11 @@ func toIndex(a []interface{}, i int) int {
 	}
 }
 
-func funcBreak(x interface{}) interface{} {
-	return &breakError{x.(string)}
+func funcBreak(v interface{}) interface{} {
+	if v, ok := v.(string); ok {
+		return &breakError{v}
+	}
+	return &funcTypeError{"_break", v}
 }
 
 func funcMinBy(v, x interface{}) interface{} {
@@ -1015,7 +994,7 @@ func sortItems(v, x interface{}) ([]*sortItem, error) {
 }
 
 func funcSignificand(v float64) float64 {
-	if math.IsNaN(v) || isinf(v) || v == 0.0 {
+	if math.IsNaN(v) || math.IsInf(v, 0) || v == 0.0 {
 		return v
 	}
 	return math.Float64frombits((math.Float64bits(v) & 0x800fffffffffffff) | 0x3ff0000000000000)
@@ -1081,20 +1060,17 @@ func funcFma(x, y, z float64) float64 {
 }
 
 func funcInfinite(interface{}) interface{} {
-	return math.MaxFloat64
+	return math.Inf(1)
 }
 
 func funcIsfinite(v interface{}) interface{} {
-	return typeof(v) == "number" && !funcIsinfinite(v).(bool)
+	x, ok := toFloat(v)
+	return ok && !math.IsInf(x, 0)
 }
 
 func funcIsinfinite(v interface{}) interface{} {
 	x, ok := toFloat(v)
-	return ok && isinf(x)
-}
-
-func isinf(f float64) bool {
-	return f >= math.MaxFloat64 || f <= -math.MaxFloat64
+	return ok && math.IsInf(x, 0)
 }
 
 func funcNan(interface{}) interface{} {
@@ -1114,7 +1090,7 @@ func funcIsnan(v interface{}) interface{} {
 
 func funcIsnormal(v interface{}) interface{} {
 	x, ok := toFloat(v)
-	return ok && !math.IsNaN(x) && !isinf(x) && x != 0.0
+	return ok && !math.IsNaN(x) && !math.IsInf(x, 0) && x != 0.0
 }
 
 func funcSetpath(v, p, w interface{}) interface{} {
@@ -1408,11 +1384,7 @@ func funcStrftime(v, x interface{}) interface{} {
 			if err != nil {
 				return err
 			}
-			got, err := strftime.Format(format, t)
-			if err != nil {
-				return err
-			}
-			return got
+			return timefmt.Format(t, format)
 		}
 		return &funcTypeError{"strftime", x}
 	}
@@ -1429,11 +1401,7 @@ func funcStrflocaltime(v, x interface{}) interface{} {
 			if err != nil {
 				return err
 			}
-			got, err := strftime.Format(format, t)
-			if err != nil {
-				return err
-			}
-			return got
+			return timefmt.Format(t, format)
 		}
 		return &funcTypeError{"strflocaltime", x}
 	}
@@ -1443,7 +1411,7 @@ func funcStrflocaltime(v, x interface{}) interface{} {
 func funcStrptime(v, x interface{}) interface{} {
 	if v, ok := v.(string); ok {
 		if format, ok := x.(string); ok {
-			t, err := strptime.Parse(v, format)
+			t, err := timefmt.Parse(v, format)
 			if err != nil {
 				return err
 			}
@@ -1580,7 +1548,7 @@ func compileRegexp(re, flags string) (*regexp.Regexp, error) {
 	}
 	r, err := regexp.Compile(re)
 	if err != nil {
-		return nil, fmt.Errorf("invalid regular expression %q: %v", re, err)
+		return nil, fmt.Errorf("invalid regular expression %q: %s", re, err)
 	}
 	return r, nil
 }
@@ -1601,8 +1569,9 @@ func funcHalt(interface{}) interface{} {
 }
 
 func funcHaltError(v interface{}, args []interface{}) interface{} {
-	code, ok := 5, false
+	code := 5
 	if len(args) > 0 {
+		var ok bool
 		if code, ok = toInt(args[0]); !ok {
 			return &funcTypeError{"halt_error", args[0]}
 		}
@@ -1610,34 +1579,11 @@ func funcHaltError(v interface{}, args []interface{}) interface{} {
 	return &exitCodeError{v, code, true}
 }
 
-func funcBuiltins(interface{}) interface{} {
-	var xs []string
-	for name, fn := range internalFuncs {
-		if name[0] != '_' {
-			for i, cnt := 0, fn.argcount; cnt > 0; i, cnt = i+1, cnt>>1 {
-				if cnt&1 > 0 {
-					xs = append(xs, name+"/"+fmt.Sprint(i))
-				}
-			}
-		}
-	}
-	for _, fds := range builtinFuncDefs {
-		for _, fd := range fds {
-			if fd.Name[0] != '_' {
-				xs = append(xs, fd.Name+"/"+fmt.Sprint(len(fd.Args)))
-			}
-		}
-	}
-	sort.Strings(xs)
-	ys := make([]interface{}, len(xs))
-	for i, x := range xs {
-		ys[i] = x
-	}
-	return ys
-}
-
 func internalfuncTypeError(v, x interface{}) interface{} {
-	return &funcTypeError{x.(string), v}
+	if x, ok := x.(string); ok {
+		return &funcTypeError{x, v}
+	}
+	return &funcTypeError{"_type_error", v}
 }
 
 func toInt(x interface{}) (int, bool) {
@@ -1678,9 +1624,8 @@ func bigToFloat(x *big.Int) float64 {
 	if x.IsInt64() {
 		return float64(x.Int64())
 	}
-	bs, _ := json.Marshal(x)
-	if f, err := json.Number(string(bs)).Float64(); err == nil {
+	if f, err := strconv.ParseFloat(x.String(), 64); err == nil {
 		return f
 	}
-	return math.Copysign(math.MaxFloat64, float64(x.Sign()))
+	return math.Inf(x.Sign())
 }

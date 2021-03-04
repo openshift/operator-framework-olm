@@ -17,7 +17,6 @@ limitations under the License.
 package action
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"time"
@@ -25,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
-	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/release"
 )
 
@@ -52,7 +50,7 @@ func (r *ReleaseTesting) Run(name string) (*release.Release, error) {
 		return nil, err
 	}
 
-	if err := chartutil.ValidateReleaseName(name); err != nil {
+	if err := validateReleaseName(name); err != nil {
 		return nil, errors.Errorf("releaseTest: Release name is invalid: %s", name)
 	}
 
@@ -83,7 +81,7 @@ func (r *ReleaseTesting) GetPodLogs(out io.Writer, rel *release.Release) error {
 		for _, e := range h.Events {
 			if e == release.HookTest {
 				req := client.CoreV1().Pods(r.Namespace).GetLogs(h.Name, &v1.PodLogOptions{})
-				logReader, err := req.Stream(context.Background())
+				logReader, err := req.Stream()
 				if err != nil {
 					return errors.Wrapf(err, "unable to get pod logs for %s", h.Name)
 				}
