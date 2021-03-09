@@ -1,26 +1,22 @@
-#!/bin/bash -x
+#!/bin/bash
 
 case "$*" in
 	*" -h"*|"-h"|*" --help"*|"--help")
-	echo "Add the remotes in $repo_list to the local git repository"
+	echo "Add the remotes in ${repo_list} to the local git repository"
 	echo "usage: $0"
 	exit 0
 	;;
 esac
 
-repo_list="scripts/tracked"
-repo_root=$(git rev-parse --show-toplevel)
+repo_list="$(git rev-parse --show-toplevel)/scripts/tracked"
 
-cd $repo_root
-
-while read -r line; do
-	remote_name=$(echo "$line" | awk '{print $1}')
-	remote_url=$(echo "$line" | awk '{print $2}')
-	if git remote get-url $remote_name &>/dev/null; then
-		if [ $(git remote get-url $remote_name) != "$remote_url" ]; then
-			echo -e "\e[91mremote $remote_name present but does not track $remote_url\e[0m"
+while read -r remote_name remote_url; do
+	if git remote get-url "${remote_name}" &>/dev/null; then
+		tracked_url=$(git remote get-url "${remote_name}")
+		if [ "${tracked_url}" != "${remote_url}" ]; then
+			echo -e "\e[91mremote ${remote_name} present but does not track ${remote_url}\e[0m"
 		fi
 	else
-		git remote add $remote_name $remote_url
+		git remote add "${remote_name}" "${remote_url}"
 	fi
-done <$repo_list
+done<<<"$(awk '{print $1, $2;}' ${repo_list})"
