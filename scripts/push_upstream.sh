@@ -1,32 +1,43 @@
-#!/bin/bash -x
+#!/bin/bash
 
 set -eu
 
 if [ $# -lt 2 ]; then
 	echo "Push a commit range or list to a staged upstream repository"
+	echo "If provided a ref, it will cherrypick only the commit pointed to"
 	echo "usage: $0 <subtree to push> <ref> [<ref>...]"
 	exit 0
 fi
 
 source "$(dirname $0)/utils.sh"
 
-remote=$1
-repodir=staging/$1
+remote_name=$1
+remote_dir="${staging_dir}/${remote_name}"
 
-git fetch -t $remote
+tracked_ref=$(grep "^${remote_name} " "${repo_list}" | awk '{print $3;}')
+remote_ref=${tracked_ref:-master}
 
-localrev=$(git subtree split --prefix="$repodir") || exit_on_error "failed to create subtree branch"
+if [ "$remote_dir" = "${staging_dir}/" ] || [ ! -d "${remote_dir}" ]; then
+	echo "Missing remote from ${repo_list}"
+	exit 1
+fi
+
+rel_remote_dir="$(realpath --relative-to ${repo_root} ${remote_dir})"
+
+git fetch -t "${remote_name}" "${remote_ref}"
+
+localrev=$(git subtree split --prefix="${rel_remote_dir}") || exit_on_error "failed to create subtree branch"
 
 refs=" ${@:2:$#} "
 mapped_refs=""
-cachedir=".git/subtree-cache/$(ls -t .git/subtree-cache/ | head -n 1)"
+cachedir="${repo_root}/.git/subtree-cache/$(ls -t ${repo_root}/.git/subtree-cache/ | head -n 1)"
 
 st=0
 ln=0
 sst=0
 sln=0
 for i in $(seq 0 $(( ${#refs} - 1 )) ); do
-	if [[ ${refs:$i:1} =~ [a-f0-9] ]]; then
+	if [[ ${refs:$i:1} =~ [^\ ~:^\.\\] ]]; then
 		if [ $sln -gt 0 ]; then
 			mapped_refs="$mapped_refs""${refs:$sst:$sln}"
 			sln=0
@@ -37,16 +48,16 @@ for i in $(seq 0 $(( ${#refs} - 1 )) ); do
 		fi
 	else
 		if [ $ln -gt 0 ]; then
-			ds_commit="${refs:$st:$ln}"
-			commit_count=$(ls "$cachedir/$ds_commit"* | wc -l)
-			if [ $commit_count -eq 0 ]; then
-				exit_on_error "no commit $ds_commit found for subtree"
-			elif [ $commit_count -gt 1 ]; then
-				exit_on_error "ambiguous ref $ds_commit: "$(ls $cachedir | grep "^$ds_commit")
+			ds_ref="${refs:$st:$ln}"
+			ds_commit=$(git rev-parse "${ds_ref}")
+			commit_count=$(ls "${cachedir}/${ds_commit}"* | wc -l)
+			if [ "${commit_count}" -eq 0 ]; then
+				exit_on_error "no commit ${ds_commit} found for subtree"
+			elif [ "${commit_count}" -gt 1 ]; then
+				exit_on_error "ambiguous ref ${ds_commit}: $(ls ${cachedir}/${ds_commit}*)"
 			fi
-			ds_hash=$(ls "$cachedir" | grep "^$ds_commit")
-			us_commit=$(cat "$cachedir/$ds_hash")
-			mapped_refs="$mapped_refs""$us_commit"
+			us_commit=$(cat "${cachedir}/${ds_commit}*")
+			mapped_refs="${mapped_refs}""${us_commit}"
 			ln=0
 			sst=$i
 			sln=1
@@ -56,28 +67,31 @@ for i in $(seq 0 $(( ${#refs} - 1 )) ); do
 	fi
 done
 
-newbranch="$remote-downstream-cherry-pick-$(date "+%s")"
-git checkout -b $newbranch $remote/master
-git branch -D $temp_branch
-temp_branch=$newbranch
+newbranch="${remote_name}-downstream-cherry-pick-$(date "+%s")"
 
-git cherry-pick $mapped_refs
+git checkout -b "${newbranch}" "${remote_name}/${remote_ref}"
+git branch -D "${temp_branch}"
+temp_branch="${newbranch}"
 
-git checkout $remote/master -- OWNERS
+git cherry-pick "${mapped_refs}"
 
-sh -c "go mod edit -dropreplace $downstream_repo"
+# revert go build files
+git checkout "${remote_name}/${remote_ref}" -- OWNERS go.mod go.sum vendor
+
+sh -c "go mod edit -dropreplace ${downstream_repo}"
 git add go.mod
 git commit --amend --no-edit
 
-#git push $remote $newbranch:"refs/heads/$newbranch"
-
-echo "** Ready to push changes!"
+git diff --dirstat "${current_branch}".."${temp_branch}"
+printf "\\n\\n!!! Upstream cherry-pick complete!\\n"
+echo "!!! You can now inspect the branch."
 echo ""
-git diff --dirstat $remote/master..$temp_branch
-echo "** Once the updates have been verified, you can push using"
-echo "$ git push $remote $newbranch"
+echo "!!! To switch back to your original branch, run:"
+echo "  git checkout ${current_branch}"
 echo ""
-echo "The original downstream repo is present at the branch ${current_branch}"
+echo "!!! Once the changes look good, you can push the changes to the remote repository with:"
+echo "  git push ${remote_name} ${temp_branch}:<target branch>"
+#git push ${remote_name} ${temp_branch}:"refs/heads/${temp_branch}"
 
 #cleanup_and_reset_branch
 
