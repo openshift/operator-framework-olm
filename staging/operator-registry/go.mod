@@ -33,7 +33,7 @@ require (
 	github.com/onsi/gomega v1.10.2
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/opencontainers/runc v0.1.1 // indirect
-	github.com/operator-framework/api v0.5.0
+	github.com/operator-framework/api  v0.0.0-00010101000000-000000000000
 	github.com/otiai10/copy v1.2.0
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
@@ -70,3 +70,5 @@ replace (
 	// latest tag resolves to a very old version. this is only used for spinning up local test registries
 	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
 )
+
+replace github.com/operator-framework/api => ../api
