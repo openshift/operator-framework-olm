@@ -14,9 +14,9 @@ require (
 	github.com/onsi/gomega v1.10.3
 	github.com/openshift/api v0.0.0-20200331152225-585af27e34fd
 	github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0
-	github.com/operator-framework/api v0.5.1
+	github.com/operator-framework/api v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
-	github.com/operator-framework/operator-registry v1.13.6
+	github.com/operator-framework/operator-registry v0.0.0-00010101000000-000000000000
 	github.com/otiai10/copy v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
