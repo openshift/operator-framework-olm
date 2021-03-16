@@ -15,7 +15,6 @@ import (
 	"github.com/operator-framework/operator-registry/pkg/api"
 	health "github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1"
 	"github.com/operator-framework/operator-registry/pkg/lib/dns"
-	"github.com/operator-framework/operator-registry/pkg/lib/graceful"
 	"github.com/operator-framework/operator-registry/pkg/lib/log"
 	"github.com/operator-framework/operator-registry/pkg/lib/tmp"
 	"github.com/operator-framework/operator-registry/pkg/server"
@@ -65,7 +64,7 @@ func runCmdFunc(cmd *cobra.Command, args []string) error {
 	}
 	// Ensure there is a default nsswitch config
 	if err := dns.EnsureNsswitch(); err != nil {
-		logrus.WithError(err).Warn("unable to write default nsswitch config")
+		return err
 	}
 	dbName, err := cmd.Flags().GetString("database")
 	if err != nil {
@@ -86,7 +85,7 @@ func runCmdFunc(cmd *cobra.Command, args []string) error {
 	}
 	defer os.Remove(tmpdb)
 
-	db, err := sqlite.Open(tmpdb)
+	db, err := sql.Open("sqlite3", tmpdb)
 	if err != nil {
 		return err
 	}
@@ -117,12 +116,11 @@ func runCmdFunc(cmd *cobra.Command, args []string) error {
 	health.RegisterHealthServer(s, server.NewHealthServer())
 	reflection.Register(s)
 	logger.Info("serving registry")
+	if err := s.Serve(lis); err != nil {
+		logger.Fatalf("failed to serve: %s", err)
+	}
 
-	return graceful.Shutdown(logger, func() error {
-		return s.Serve(lis)
-	}, func() {
-		s.GracefulStop()
-	})
+	return nil
 }
 
 func migrate(cmd *cobra.Command, db *sql.DB) error {

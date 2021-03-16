@@ -461,4 +461,3 @@ pkg/apprclient/openapi/git_push.sh
 !pkg/**/testdata/**
 !test/**testdata/**
 
-/coverage.out

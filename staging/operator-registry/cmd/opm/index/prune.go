@@ -95,11 +95,6 @@ func runIndexPruneCmdFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	skipTLS, err := cmd.Flags().GetBool("skip-tls")
-	if err != nil {
-		return err
-	}
-
 	logger := logrus.WithFields(logrus.Fields{"packages": packages})
 
 	logger.Info("pruning the index")
@@ -114,7 +109,6 @@ func runIndexPruneCmdFunc(cmd *cobra.Command, args []string) error {
 		Packages:          packages,
 		Tag:               tag,
 		Permissive:        permissive,
-		SkipTLS:           skipTLS,
 	}
 
 	err = indexPruner.PruneFromIndex(request)
