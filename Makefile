@@ -13,6 +13,8 @@ REGISTRY_PKG := $(GO_PKG)/operator-registry
 OLM_PKG := $(GO_PKG)/operator-lifecycle-manager
 API_PKG := $(GO_PKG)/api
 
+arch_flags=GOOS=linux GOARCH=386
+
 OLM_CMDS  := $(shell go list -mod=vendor $(OLM_PKG)/cmd/...)
 REGISTRY_CMDS  := $(shell go list -mod=vendor $(REGISTRY_PKG)/cmd/...)
 
@@ -31,6 +33,15 @@ ifeq (, $(wildcard $(KUBEBUILDER_ASSETS)/kube-apiserver))
 	$(error kube-apiserver $(KUBEBUILDER_ASSETS_ERR))
 endif
 
+# Phony prerequisite for targets that rely on the go build cache to determine staleness.
+.PHONY: FORCE
+FORCE:
+
+build-util: bin/cpb
+
+bin/cpb: FORCE
+	CGO_ENABLED=0 $(arch_flags) go build $(GO_BUILD_OPTS) -ldflags '-extldflags "-static"' -o $@ ./util/cpb
+
 .PHONY: vendor
 vendor:
 	go mod tidy
@@ -46,6 +57,10 @@ $(REGISTRY_CMDS):
 $(OLM_CMDS): version_flags=-ldflags "-X $(OLM_PKG)/pkg/version.GitCommit=$(GIT_COMMIT) -X $(OLM_PKG)/pkg/version.OLMVersion=`cat staging/operator-lifecycle-manager/OLM_VERSION`"
 $(OLM_CMDS):
 	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o bin/$(shell basename $@) $@
+
+build/olm: version_flags=-ldflags "-X $(OLM_PKG)/pkg/version.GitCommit=$(GIT_COMMIT) -X $(OLM_PKG)/pkg/version.OLMVersion=`cat staging/operator-lifecycle-manager/OLM_VERSION`"
+build/olm:
+	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o bin/olm $(OLM_PKG)/cmd/olm
 
 bin/kubebuilder:
 	$(ROOT_DIR)/scripts/install_kubebuilder.sh
@@ -64,3 +79,11 @@ unit:
 
 e2e/operator-registry:
 	go run -mod=vendor github.com/onsi/ginkgo/ginkgo --v --randomizeAllSpecs --randomizeSuites --race $(TAGS) $(REGISTRY_PKG)/test/e2e
+
+olm:
+	podman build -f operator-lifecycle-manager.Dockerfile -t test:test --build-arg STAGING_DIR=./staging/operator-lifecycle-manager .
+
+# TODO(tflannag): Do we care about non-opm binary packages in operator-registry?
+# DO we still build the things like the initializer, app-registry, etc. binaries?
+registry:
+	podman build -f operator-registry.Dockerfile -t test:test --build-arg STAGING_DIR=./staging/operator-registry .

@@ -11,17 +11,9 @@ COPY .git/HEAD .git/HEAD
 COPY .git/refs/heads/. .git/refs/heads
 RUN mkdir -p .git/objects
 
-COPY Makefile Makefile
-COPY OLM_VERSION OLM_VERSION
-COPY pkg pkg
-COPY staging staging
-COPY vendor vendor
-COPY cmd cmd
-COPY util util
-COPY test test
-COPY go.mod go.mod
-COPY go.sum go.sum
-RUN CGO_ENABLED=1 make build
+ARG STAGING_DIR
+COPY . .
+RUN make build
 RUN make build-util
 
 FROM registry.ci.openshift.org/ocp/4.8:base
