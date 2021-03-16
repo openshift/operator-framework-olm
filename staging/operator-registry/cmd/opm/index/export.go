@@ -1,8 +1,6 @@
 package index
 
 import (
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -14,8 +12,9 @@ import (
 var exportLong = templates.LongDesc(`
 	Export an operator from an index image into the appregistry format. 
 
-	This command will take an index image (specified by the --index option), parse it for the given operator(s) (set by 
-	the --package option) and export the operator metadata into an appregistry compliant format (a package.yaml file). 
+	This command will take an index image (specified by the --index option), parse it for the given operator (set by 
+	the --operator option) and export the operator metadata into an appregistry compliant format (a package.yaml file). 
+	This command requires access to docker or podman to complete successfully.
 
 	Note: the appregistry format is being deprecated in favor of the new index image and image bundle format. 
 	`)
@@ -35,21 +34,19 @@ func newIndexExportCmd() *cobra.Command {
 
 		RunE: runIndexExportCmdFunc,
 	}
+
 	indexCmd.Flags().Bool("debug", false, "enable debug logging")
 	indexCmd.Flags().StringP("index", "i", "", "index to get package from")
 	if err := indexCmd.MarkFlagRequired("index"); err != nil {
 		logrus.Panic("Failed to set required `index` flag for `index export`")
 	}
-	indexCmd.Flags().StringSliceP("package", "p", nil, "comma separated list of packages to export")
+	indexCmd.Flags().StringP("package", "o", "", "the package to export")
+	if err := indexCmd.MarkFlagRequired("package"); err != nil {
+		logrus.Panic("Failed to set required `package` flag for `index export`")
+	}
 	indexCmd.Flags().StringP("download-folder", "f", "downloaded", "directory where downloaded operator bundle(s) will be stored")
 	indexCmd.Flags().StringP("container-tool", "c", "none", "tool to interact with container images (save, build, etc.). One of: [none, docker, podman]")
 	if err := indexCmd.Flags().MarkHidden("debug"); err != nil {
-		logrus.Panic(err.Error())
-	}
-
-	// Create hidden option so we can provide deprecated shorthand
-	indexCmd.Flags().StringSliceP("xpackage", "o", nil, "deprecated, please use --package option instead")
-	if err := indexCmd.Flags().MarkHidden("xpackage"); err != nil {
 		logrus.Panic(err.Error())
 	}
 
@@ -63,29 +60,9 @@ func runIndexExportCmdFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	pkgFlag := cmd.Flag("package")
-	if pkgFlag == nil {
-		return fmt.Errorf("unable to get the package flag")
-	}
-
-	xPkgFlag := cmd.Flag("xpackage")
-	if xPkgFlag == nil {
-		return fmt.Errorf("unable to get the package flag for deprecated shorthand '-o'")
-	}
-
-	if xPkgFlag.Changed && pkgFlag.Changed {
-		return fmt.Errorf("cannot simultaneously set '-p' and '-o' flags, remove '-o'")
-	}
-
-	packages, err := cmd.Flags().GetStringSlice("package")
+	packageName, err := cmd.Flags().GetString("package")
 	if err != nil {
 		return err
-	}
-	if xPkgFlag.Changed {
-		// Use the deprecated shorthand
-		if packages, err = cmd.Flags().GetStringSlice("xpackage"); err != nil {
-			return err
-		}
 	}
 
 	downloadPath, err := cmd.Flags().GetString("download-folder")
@@ -98,12 +75,7 @@ func runIndexExportCmdFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	skipTLS, err := cmd.Flags().GetBool("skip-tls")
-	if err != nil {
-		return err
-	}
-
-	logger := logrus.WithFields(logrus.Fields{"index": index, "package": packages})
+	logger := logrus.WithFields(logrus.Fields{"index": index, "package": packageName})
 
 	logger.Info("export from the index")
 
@@ -111,10 +83,9 @@ func runIndexExportCmdFunc(cmd *cobra.Command, args []string) error {
 
 	request := indexer.ExportFromIndexRequest{
 		Index:         index,
-		Packages:      packages,
+		Package:       packageName,
 		DownloadPath:  downloadPath,
 		ContainerTool: containertools.NewContainerTool(containerTool, containertools.NoneTool),
-		SkipTLS:       skipTLS,
 	}
 
 	err = indexExporter.ExportFromIndex(request)

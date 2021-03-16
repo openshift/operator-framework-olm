@@ -2,6 +2,7 @@ package mirror
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -70,7 +71,7 @@ func (b *IndexImageMirrorer) Mirror() (map[string]string, error) {
 		return nil, err
 	}
 
-	db, err := sqlite.Open(dbPath)
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, err
 	}

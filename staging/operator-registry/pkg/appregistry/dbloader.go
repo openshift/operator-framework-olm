@@ -12,7 +12,7 @@ import (
 )
 
 func NewDbLoader(dbName string, logger *logrus.Entry) (*dbLoader, error) {
-	db, err := sqlite.Open(dbName)
+	db, err := sql.Open("sqlite3", dbName)
 	if err != nil {
 		return nil, err
 	}

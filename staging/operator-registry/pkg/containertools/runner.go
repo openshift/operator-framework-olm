@@ -22,53 +22,14 @@ type CommandRunner interface {
 type ContainerCommandRunner struct {
 	logger        *logrus.Entry
 	containerTool ContainerTool
-	config        *RunnerConfig
-}
-
-type RunnerConfig struct {
-	SkipTLS bool
-}
-
-type RunnerOption func(config *RunnerConfig)
-
-func SkipTLS(skip bool) RunnerOption {
-	return func(config *RunnerConfig) {
-		config.SkipTLS = skip
-	}
-}
-
-func (r *RunnerConfig) apply(options []RunnerOption) {
-	for _, option := range options {
-		option(r)
-	}
-}
-
-func (r *ContainerCommandRunner) argsForCmd(cmd string, args ...string) []string {
-	cmdArgs := []string{cmd}
-	switch r.containerTool {
-	case PodmanTool:
-		switch cmd {
-		case "pull", "push", "login", "search":
-			// --tls-verify is a valid flag for these podman subcommands
-			if r.config.SkipTLS {
-				cmdArgs = append(cmdArgs, "--tls-verify=false")
-			}
-		}
-	default:
-	}
-	cmdArgs = append(cmdArgs, args...)
-	return cmdArgs
 }
 
 // NewCommandRunner takes the containerTool as an input string and returns a
 // CommandRunner to run commands with that cli tool
-func NewCommandRunner(containerTool ContainerTool, logger *logrus.Entry, opts ...RunnerOption) *ContainerCommandRunner {
-	var config RunnerConfig
-	config.apply(opts)
+func NewCommandRunner(containerTool ContainerTool, logger *logrus.Entry) *ContainerCommandRunner {
 	r := &ContainerCommandRunner{
 		logger:        logger,
 		containerTool: containerTool,
-		config:        &config,
 	}
 	return r
 }
@@ -81,7 +42,7 @@ func (r *ContainerCommandRunner) GetToolName() string {
 // Pull takes a container image path hosted on a container registry and runs the
 // pull command to download it onto the local environment
 func (r *ContainerCommandRunner) Pull(image string) error {
-	args := r.argsForCmd("pull", image)
+	args := []string{"pull", image}
 
 	command := exec.Command(r.containerTool.String(), args...)
 
@@ -123,7 +84,7 @@ func (r *ContainerCommandRunner) Build(dockerfile, tag string) error {
 
 // Unpack copies a directory from a local container image to a directory in the local filesystem.
 func (r *ContainerCommandRunner) Unpack(image, src, dst string) error {
-	args := r.argsForCmd("create", image, "")
+	args := []string{"create", image, ""}
 
 	command := exec.Command(r.containerTool.String(), args...)
 
@@ -137,7 +98,7 @@ func (r *ContainerCommandRunner) Unpack(image, src, dst string) error {
 	}
 
 	id := strings.TrimSuffix(string(out), "\n")
-	args = r.argsForCmd("cp", id+":"+src, dst)
+	args = []string{"cp", id + ":" + src, dst}
 	command = exec.Command(r.containerTool.String(), args...)
 
 	r.logger.Infof("running %s cp", r.containerTool)
@@ -149,7 +110,7 @@ func (r *ContainerCommandRunner) Unpack(image, src, dst string) error {
 		return fmt.Errorf("error copying container directory %s: %v", string(out), err)
 	}
 
-	args = r.argsForCmd("rm", id)
+	args = []string{"rm", id}
 	command = exec.Command(r.containerTool.String(), args...)
 
 	r.logger.Infof("running %s rm", r.containerTool)
@@ -167,7 +128,7 @@ func (r *ContainerCommandRunner) Unpack(image, src, dst string) error {
 // Inspect runs the 'inspect' command to get image metadata of a local container
 // image and returns a byte array of the command's output
 func (r *ContainerCommandRunner) Inspect(image string) ([]byte, error) {
-	args := r.argsForCmd("inspect", image)
+	args := []string{"inspect", image}
 
 	command := exec.Command(r.containerTool.String(), args...)
 
