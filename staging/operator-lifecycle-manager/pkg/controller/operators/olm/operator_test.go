@@ -31,10 +31,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	utilclock "k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/apimachinery/pkg/util/diff"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
@@ -3112,7 +3112,7 @@ func TestTransitionCSV(t *testing.T) {
 	}
 }
 
-func TestWebhookCABundleRetrieval(t *testing.T) {
+func TestCaBundleRetrevial(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 	namespace := "ns"
 	missingCAError := fmt.Errorf("Unable to find ca")
@@ -3122,7 +3122,6 @@ func TestWebhookCABundleRetrieval(t *testing.T) {
 		csvs []runtime.Object
 		crds []runtime.Object
 		objs []runtime.Object
-		desc v1alpha1.WebhookDescription
 	}
 	type expected struct {
 		caBundle []byte
@@ -3150,10 +3149,6 @@ func TestWebhookCABundleRetrieval(t *testing.T) {
 						v1alpha1.CSVPhaseInstalling,
 					),
 				},
-				desc: v1alpha1.WebhookDescription{
-					GenerateName: "webhook",
-					Type:         v1alpha1.ValidatingAdmissionWebhook,
-				},
 			},
 			expected: expected{
 				caBundle: nil,
@@ -3180,11 +3175,6 @@ func TestWebhookCABundleRetrieval(t *testing.T) {
 				crds: []runtime.Object{
 					crdWithConversionWebhook(crd("c1", "v1", "g1"), caBundle),
 				},
-				desc: v1alpha1.WebhookDescription{
-					GenerateName:   "webhook",
-					Type:           v1alpha1.ConversionWebhook,
-					ConversionCRDs: []string{"c1.g1"},
-				},
 			},
 			expected: expected{
 				caBundle: caBundle,
@@ -3210,11 +3200,6 @@ func TestWebhookCABundleRetrieval(t *testing.T) {
 				},
 				crds: []runtime.Object{
 					crd("c1", "v1", "g1"),
-				},
-				desc: v1alpha1.WebhookDescription{
-					GenerateName:   "webhook",
-					Type:           v1alpha1.ConversionWebhook,
-					ConversionCRDs: []string{"c1.g1"},
 				},
 			},
 			expected: expected{
@@ -3248,7 +3233,7 @@ func TestWebhookCABundleRetrieval(t *testing.T) {
 								"olm.owner":                             "csv1",
 								"olm.owner.namespace":                   namespace,
 								"olm.owner.kind":                        v1alpha1.ClusterServiceVersionKind,
-								"olm.webhook-description-generate-name": "webhook",
+								"olm.webhook-description-generate-name": "",
 							},
 						},
 						Webhooks: []admissionregistrationv1.ValidatingWebhook{
@@ -3260,10 +3245,6 @@ func TestWebhookCABundleRetrieval(t *testing.T) {
 							},
 						},
 					},
-				},
-				desc: v1alpha1.WebhookDescription{
-					GenerateName: "webhook",
-					Type:         v1alpha1.ValidatingAdmissionWebhook,
 				},
 			},
 			expected: expected{
@@ -3297,7 +3278,7 @@ func TestWebhookCABundleRetrieval(t *testing.T) {
 								"olm.owner":                             "csv1",
 								"olm.owner.namespace":                   namespace,
 								"olm.owner.kind":                        v1alpha1.ClusterServiceVersionKind,
-								"olm.webhook-description-generate-name": "webhook",
+								"olm.webhook-description-generate-name": "",
 							},
 						},
 						Webhooks: []admissionregistrationv1.MutatingWebhook{
@@ -3309,10 +3290,6 @@ func TestWebhookCABundleRetrieval(t *testing.T) {
 							},
 						},
 					},
-				},
-				desc: v1alpha1.WebhookDescription{
-					GenerateName: "webhook",
-					Type:         v1alpha1.MutatingAdmissionWebhook,
 				},
 			},
 			expected: expected{
@@ -3338,7 +3315,7 @@ func TestWebhookCABundleRetrieval(t *testing.T) {
 
 			// run csv sync for each CSV
 			for _, csv := range tt.initial.csvs {
-				caBundle, err := op.getWebhookCABundle(csv.(*v1alpha1.ClusterServiceVersion), &tt.initial.desc)
+				caBundle, err := op.getCABundle(csv.(*v1alpha1.ClusterServiceVersion))
 				require.Equal(t, tt.expected.err, err)
 				require.Equal(t, tt.expected.caBundle, caBundle)
 			}
@@ -3679,11 +3656,6 @@ func TestSyncOperatorGroups(t *testing.T) {
 		v1alpha1.CSVPhaseNone,
 	), labels.Set{resolver.APILabelKeyPrefix + "9f4c46c37bdff8d0": "provided"})
 
-	operatorCSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{corev1.EnvVar{
-		Name:  "OPERATOR_CONDITION_NAME",
-		Value: operatorCSV.GetName(),
-	}}
-
 	serverVersion := version.Get().String()
 	// after state transitions from operatorgroups, this is the operator csv we expect
 	operatorCSVFinal := operatorCSV.DeepCopy()
@@ -3783,7 +3755,6 @@ func TestSyncOperatorGroups(t *testing.T) {
 	ownerutil.AddNonBlockingOwner(serviceAccount, operatorCSV)
 
 	ownedDeployment := deployment(deploymentName, operatorNamespace, serviceAccount.GetName(), nil)
-	ownedDeployment.Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{{Name: "OPERATOR_CONDITION_NAME", Value: "csv1"}}
 	ownerutil.AddNonBlockingOwner(ownedDeployment, operatorCSV)
 	deploymentSpec := installStrategy(deploymentName, permissions, nil).StrategySpec.DeploymentSpecs[0].Spec
 	ownedDeployment.SetLabels(map[string]string{

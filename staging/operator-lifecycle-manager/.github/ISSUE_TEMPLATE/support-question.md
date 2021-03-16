@@ -2,7 +2,7 @@
 name: Support Question
 about: Any support questions you might have.
 title: ''
-labels: 'kind/support'
+labels: ''
 assignees: ''
 
 ---

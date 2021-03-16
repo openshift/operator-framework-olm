@@ -4,20 +4,17 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/blang/semver/v4"
+	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/operator-framework/api/pkg/lib/version"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver"
 	"github.com/operator-framework/operator-registry/pkg/api"
 	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
+
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver"
 )
 
 func TestSolveOperators(t *testing.T) {
@@ -1360,14 +1357,14 @@ func TestSolveOperators_WithoutDeprecated(t *testing.T) {
 	assert.IsType(t, solver.NotSatisfiable{}, err)
 }
 
-func TestSolveOperators_WithSkipsAndStartingCSV(t *testing.T) {
+func TestSolveOperators_WithSkips(t *testing.T) {
 	APISet := APISet{opregistry.APIKey{"g", "v", "k", "ks"}: struct{}{}}
 	Provides := APISet
 
 	namespace := "olm"
 	catalog := registry.CatalogKey{"community", namespace}
 
-	newSub := newSub(namespace, "packageB", "alpha", catalog, withStartingCSV("packageB.v1"))
+	newSub := newSub(namespace, "packageB", "alpha", catalog)
 	subs := []*v1alpha1.Subscription{newSub}
 
 	opToAddVersionDeps := []*api.Dependency{
@@ -1378,8 +1375,6 @@ func TestSolveOperators_WithSkipsAndStartingCSV(t *testing.T) {
 	}
 
 	opB := genOperator("packageB.v1", "1.0.0", "", "packageB", "alpha", "community", "olm", nil, nil, opToAddVersionDeps, "", false)
-	opB2 := genOperator("packageB.v2", "2.0.0", "", "packageB", "alpha", "community", "olm", nil, nil, opToAddVersionDeps, "", false)
-	opB2.skips = []string{"packageB.v1"}
 	op1 := genOperator("packageA.v1", "1.0.0", "", "packageA", "alpha", "community", "olm", nil, Provides, nil, "", false)
 	op2 := genOperator("packageA.v2", "2.0.0", "packageA.v1", "packageA", "alpha", "community", "olm", nil, Provides, nil, "", false)
 	op3 := genOperator("packageA.v3", "3.0.0", "packageA.v2", "packageA", "alpha", "community", "olm", nil, Provides, nil, "", false)
@@ -1400,7 +1395,7 @@ func TestSolveOperators_WithSkipsAndStartingCSV(t *testing.T) {
 					Name:      "community",
 				},
 				operators: []*Operator{
-					opB, opB2, op1, op2, op3, op4, op5, op6,
+					opB, op1, op2, op3, op4, op5, op6,
 				},
 			},
 		},
@@ -1412,253 +1407,10 @@ func TestSolveOperators_WithSkipsAndStartingCSV(t *testing.T) {
 
 	operators, err := satResolver.SolveOperators([]string{"olm"}, nil, subs)
 	assert.NoError(t, err)
-	opB.SourceInfo().StartingCSV = "packageB.v1"
+
 	expected := OperatorSet{
-		"packageB.v1": opB,
-		"packageA.v6": op6,
+		"packageB.v1": genOperator("packageB.v1", "1.0.0", "", "packageB", "alpha", "community", "olm", nil, nil, opToAddVersionDeps, "", false),
+		"packageA.v6": genOperator("packageA.v6", "6.0.0", "packageA.v5", "packageA", "alpha", "community", "olm", nil, Provides, nil, "", false),
 	}
 	require.EqualValues(t, expected, operators)
-}
-
-func TestSolveOperators_WithSkips(t *testing.T) {
-	namespace := "olm"
-	catalog := registry.CatalogKey{"community", namespace}
-
-	newSub := newSub(namespace, "packageB", "alpha", catalog)
-	subs := []*v1alpha1.Subscription{newSub}
-
-	opB := genOperator("packageB.v1", "1.0.0", "", "packageB", "alpha", "community", "olm", nil, nil, nil, "", false)
-	opB2 := genOperator("packageB.v2", "2.0.0", "", "packageB", "alpha", "community", "olm", nil, nil, nil, "", false)
-	opB2.skips = []string{"packageB.v1"}
-
-	fakeNamespacedOperatorCache := NamespacedOperatorCache{
-		snapshots: map[registry.CatalogKey]*CatalogSnapshot{
-			registry.CatalogKey{
-				Namespace: "olm",
-				Name:      "community",
-			}: {
-				key: registry.CatalogKey{
-					Namespace: "olm",
-					Name:      "community",
-				},
-				operators: []*Operator{
-					opB, opB2,
-				},
-			},
-		},
-	}
-	satResolver := SatResolver{
-		cache: getFakeOperatorCache(fakeNamespacedOperatorCache),
-		log:   logrus.New(),
-	}
-
-	operators, err := satResolver.SolveOperators([]string{"olm"}, nil, subs)
-	assert.NoError(t, err)
-	expected := OperatorSet{
-		"packageB.v2": opB2,
-	}
-	require.EqualValues(t, expected, operators)
-}
-
-func TestInferProperties(t *testing.T) {
-	catalog := registry.CatalogKey{Namespace: "namespace", Name: "name"}
-
-	for _, tc := range []struct {
-		Name          string
-		Cache         NamespacedOperatorCache
-		CSV           *v1alpha1.ClusterServiceVersion
-		Subscriptions []*v1alpha1.Subscription
-		Expected      []*api.Property
-	}{
-		{
-			Name: "no subscriptions infers no properties",
-			CSV: &v1alpha1.ClusterServiceVersion{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "a",
-				},
-			},
-		},
-		{
-			Name: "one unrelated subscription infers no properties",
-			CSV: &v1alpha1.ClusterServiceVersion{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "a",
-				},
-			},
-			Subscriptions: []*v1alpha1.Subscription{
-				{
-					Spec: &v1alpha1.SubscriptionSpec{
-						Package: "x",
-					},
-					Status: v1alpha1.SubscriptionStatus{
-						InstalledCSV: "b",
-					},
-				},
-			},
-		},
-		{
-			Name: "one subscription with empty package field infers no properties",
-			CSV: &v1alpha1.ClusterServiceVersion{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "a",
-				},
-			},
-			Subscriptions: []*v1alpha1.Subscription{
-				{
-					Spec: &v1alpha1.SubscriptionSpec{
-						Package: "",
-					},
-					Status: v1alpha1.SubscriptionStatus{
-						InstalledCSV: "a",
-					},
-				},
-			},
-		},
-		{
-			Name: "two related subscriptions infers no properties",
-			CSV: &v1alpha1.ClusterServiceVersion{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "a",
-				},
-			},
-			Subscriptions: []*v1alpha1.Subscription{
-				{
-					Spec: &v1alpha1.SubscriptionSpec{
-						Package: "x",
-					},
-					Status: v1alpha1.SubscriptionStatus{
-						InstalledCSV: "a",
-					},
-				},
-				{
-					Spec: &v1alpha1.SubscriptionSpec{
-						Package: "x",
-					},
-					Status: v1alpha1.SubscriptionStatus{
-						InstalledCSV: "a",
-					},
-				},
-			},
-		},
-		{
-			Name: "one matching subscription infers package property",
-			Cache: NamespacedOperatorCache{
-				snapshots: map[registry.CatalogKey]*CatalogSnapshot{
-					catalog: {
-						key: catalog,
-						operators: []*Operator{
-							{
-								name: "a",
-								bundle: &api.Bundle{
-									PackageName: "x",
-								},
-							},
-						},
-					},
-				},
-			},
-			CSV: &v1alpha1.ClusterServiceVersion{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "a",
-				},
-				Spec: v1alpha1.ClusterServiceVersionSpec{
-					Version: version.OperatorVersion{Version: semver.MustParse("1.2.3")},
-				},
-			},
-			Subscriptions: []*v1alpha1.Subscription{
-				{
-					Spec: &v1alpha1.SubscriptionSpec{
-						Package:                "x",
-						CatalogSource:          catalog.Name,
-						CatalogSourceNamespace: catalog.Namespace,
-					},
-					Status: v1alpha1.SubscriptionStatus{
-						InstalledCSV: "a",
-					},
-				},
-			},
-			Expected: []*api.Property{
-				{
-					Type:  "olm.package",
-					Value: `{"packageName":"x","version":"1.2.3"}`,
-				},
-			},
-		},
-		{
-			Name: "one matching subscription without catalog entry infers no properties",
-			CSV: &v1alpha1.ClusterServiceVersion{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "a",
-				},
-				Spec: v1alpha1.ClusterServiceVersionSpec{
-					Version: version.OperatorVersion{Version: semver.MustParse("1.2.3")},
-				},
-			},
-			Subscriptions: []*v1alpha1.Subscription{
-				{
-					Spec: &v1alpha1.SubscriptionSpec{
-						Package: "x",
-					},
-					Status: v1alpha1.SubscriptionStatus{
-						InstalledCSV: "a",
-					},
-				},
-			},
-		},
-		{
-			Name: "one matching subscription infers package property without csv version",
-			Cache: NamespacedOperatorCache{
-				snapshots: map[registry.CatalogKey]*CatalogSnapshot{
-					catalog: {
-						key: catalog,
-						operators: []*Operator{
-							{
-								name: "a",
-								bundle: &api.Bundle{
-									PackageName: "x",
-								},
-							},
-						},
-					},
-				},
-			},
-			CSV: &v1alpha1.ClusterServiceVersion{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "a",
-				},
-			},
-			Subscriptions: []*v1alpha1.Subscription{
-				{
-					Spec: &v1alpha1.SubscriptionSpec{
-						Package:                "x",
-						CatalogSource:          catalog.Name,
-						CatalogSourceNamespace: catalog.Namespace,
-					},
-					Status: v1alpha1.SubscriptionStatus{
-						InstalledCSV: "a",
-					},
-				},
-			},
-			Expected: []*api.Property{
-				{
-					Type:  "olm.package",
-					Value: `{"packageName":"x","version":""}`,
-				},
-			},
-		},
-	} {
-		t.Run(tc.Name, func(t *testing.T) {
-			require := require.New(t)
-			logger, _ := test.NewNullLogger()
-			r := SatResolver{
-				log: logger,
-				cache: &FakeOperatorCache{
-					fakedNamespacedOperatorCache: tc.Cache,
-				},
-			}
-			actual, err := r.inferProperties(tc.CSV, tc.Subscriptions)
-			require.NoError(err)
-			require.Equal(tc.Expected, actual)
-		})
-	}
 }

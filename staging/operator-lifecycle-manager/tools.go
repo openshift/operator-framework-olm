@@ -3,11 +3,10 @@
 package tools
 
 import (
-	_ "github.com/go-bindata/go-bindata/v3/go-bindata"
+	_ "github.com/go-bindata/go-bindata/v3/go-bindata/"
 	_ "github.com/golang/mock/mockgen"
-	_ "github.com/googleapis/gnostic"
 	_ "github.com/maxbrunsfeld/counterfeiter/v6"
-	_ "github.com/mikefarah/yq/v3"
+	_ "github.com/mikefarah/yq/v2"
 	_ "github.com/onsi/ginkgo/ginkgo"
 	_ "github.com/operator-framework/api/crds" // operators.coreos.com CRD manifests
 	_ "helm.sh/helm/v3/cmd/helm"

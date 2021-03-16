@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -34,16 +35,7 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
 )
 
-var _ = Describe("ClusterServiceVersion", func() {
-	var (
-		c   operatorclient.ClientInterface
-		crc versioned.Interface
-	)
-	BeforeEach(func() {
-
-		c = newKubeClient()
-		crc = newCRClient()
-	})
+var _ = Describe("CSV", func() {
 	AfterEach(func() {
 		TearDown(testNamespace)
 	})
@@ -85,7 +77,8 @@ var _ = Describe("ClusterServiceVersion", func() {
 			Expect(ctx.Ctx().Client().Create(context.Background(), &original)).To(Succeed())
 
 			Eventually(func() error {
-				key := client.ObjectKeyFromObject(&original)
+				key, err := client.ObjectKeyFromObject(&original)
+				Expect(err).ToNot(HaveOccurred())
 				key.Namespace = target.GetName()
 				return ctx.Ctx().Client().Get(context.Background(), key, &copy)
 			}).Should(Succeed())
@@ -99,7 +92,10 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		It("is synchronized with the original csv", func() {
 			Eventually(func() error {
-				key := client.ObjectKeyFromObject(&copy)
+				key, err := client.ObjectKeyFromObject(&copy)
+				if err != nil {
+					return err
+				}
 
 				key.Namespace = target.Name
 				if err := ctx.Ctx().Client().Get(context.Background(), key, &copy); err != nil {
@@ -111,7 +107,10 @@ var _ = Describe("ClusterServiceVersion", func() {
 			}).Should(Succeed())
 
 			Eventually(func() (bool, error) {
-				key := client.ObjectKeyFromObject(&original)
+				key, err := client.ObjectKeyFromObject(&original)
+				if err != nil {
+					return false, err
+				}
 
 				if err := ctx.Ctx().Client().Get(context.Background(), key, &original); err != nil {
 					return false, err
@@ -128,6 +127,8 @@ var _ = Describe("ClusterServiceVersion", func() {
 	})
 
 	It("create with unmet requirements min kube version", func() {
+		c := newKubeClient()
+		crc := newCRClient()
 
 		depName := genName("dep-")
 		csv := v1alpha1.ClusterServiceVersion{
@@ -163,20 +164,21 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvPendingChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Shouldn't create deployment
-		Consistently(func() bool {
-			_, err := c.GetDeployment(testNamespace, depName)
-			return k8serrors.IsNotFound(err)
-		}).Should(BeTrue())
+		_, err = c.GetDeployment(testNamespace, depName)
+		require.Error(GinkgoT(), err)
 	})
 	// TODO: same test but missing serviceaccount instead
 	It("create with unmet requirements CRD", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		depName := genName("dep-")
 		csv := v1alpha1.ClusterServiceVersion{
@@ -223,20 +225,20 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvPendingChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Shouldn't create deployment
-		Consistently(func() bool {
-			_, err := c.GetDeployment(testNamespace, depName)
-			return k8serrors.IsNotFound(err)
-		}).Should(BeTrue())
+		_, err = c.GetDeployment(testNamespace, depName)
+		require.Error(GinkgoT(), err)
 	})
-
 	It("create with unmet permissions CRD", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		saName := genName("dep-")
 		permissions := []v1alpha1.StrategyDeploymentPermissions{
@@ -327,23 +329,24 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Scope: "Namespaced",
 			},
 		})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
 
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, true, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvPendingChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Shouldn't create deployment
-		Consistently(func() bool {
-			_, err := c.GetDeployment(testNamespace, depName)
-			return k8serrors.IsNotFound(err)
-		}).Should(BeTrue())
+		_, err = c.GetDeployment(testNamespace, depName)
+		require.Error(GinkgoT(), err)
 	})
 	It("create with unmet requirements API service", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		depName := genName("dep-")
 		csv := v1alpha1.ClusterServiceVersion{
@@ -390,19 +393,20 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvPendingChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Shouldn't create deployment
-		Consistently(func() bool {
-			_, err := c.GetDeployment(testNamespace, depName)
-			return k8serrors.IsNotFound(err)
-		}).Should(BeTrue())
+		_, err = c.GetDeployment(testNamespace, depName)
+		require.Error(GinkgoT(), err)
 	})
 	It("create with unmet permissions API service", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		saName := genName("dep-")
 		permissions := []v1alpha1.StrategyDeploymentPermissions{
@@ -477,19 +481,20 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvPendingChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Shouldn't create deployment
-		Consistently(func() bool {
-			_, err := c.GetDeployment(testNamespace, depName)
-			return k8serrors.IsNotFound(err)
-		}).Should(BeTrue())
+		_, err = c.GetDeployment(testNamespace, depName)
+		require.Error(GinkgoT(), err)
 	})
 	It("create with unmet requirements native API", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		depName := genName("dep-")
 		csv := v1alpha1.ClusterServiceVersion{
@@ -526,21 +531,20 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvPendingChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Shouldn't create deployment
-		Consistently(func() bool {
-			_, err := c.GetDeployment(testNamespace, depName)
-			return k8serrors.IsNotFound(err)
-		}).Should(BeTrue())
+		_, err = c.GetDeployment(testNamespace, depName)
+		require.Error(GinkgoT(), err)
 	})
 	// TODO: same test but create serviceaccount instead
 	It("create requirements met CRD", func() {
-
+		c := newKubeClient()
+		crc := newCRClient()
 		saName := genName("sa-")
 		permissions := []v1alpha1.StrategyDeploymentPermissions{
 			{
@@ -620,11 +624,11 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create CSV first, knowing it will fail
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, true, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		fetchedCSV, err := fetchCSV(crc, csv.Name, testNamespace, csvPendingChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		sa := corev1.ServiceAccount{}
 		sa.SetName(saName)
@@ -662,7 +666,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}})
 		cleanupCRD, err := createCRD(c, crd)
 		defer cleanupCRD()
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Create Role/Cluster Roles and RoleBindings
 		role := rbacv1.Role{
@@ -677,7 +681,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		role.SetName(genName("dep-"))
 		role.SetNamespace(testNamespace)
 		_, err = c.CreateRole(&role)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create Role")
+		require.NoError(GinkgoT(), err, "could not create Role")
 
 		roleBinding := rbacv1.RoleBinding{
 			Subjects: []rbacv1.Subject{
@@ -697,7 +701,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		roleBinding.SetName(genName("dep-"))
 		roleBinding.SetNamespace(testNamespace)
 		_, err = c.CreateRoleBinding(&roleBinding)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create RoleBinding")
+		require.NoError(GinkgoT(), err, "could not create RoleBinding")
 
 		clusterRole := rbacv1.ClusterRole{
 			Rules: []rbacv1.PolicyRule{
@@ -710,7 +714,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 		clusterRole.SetName(genName("dep-"))
 		_, err = c.CreateClusterRole(&clusterRole)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create ClusterRole")
+		require.NoError(GinkgoT(), err, "could not create ClusterRole")
 
 		nonResourceClusterRole := rbacv1.ClusterRole{
 			Rules: []rbacv1.PolicyRule{
@@ -722,7 +726,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 		nonResourceClusterRole.SetName(genName("dep-"))
 		_, err = c.CreateClusterRole(&nonResourceClusterRole)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create ClusterRole")
+		require.NoError(GinkgoT(), err, "could not create ClusterRole")
 
 		clusterRoleBinding := rbacv1.ClusterRoleBinding{
 			Subjects: []rbacv1.Subject{
@@ -741,7 +745,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 		clusterRoleBinding.SetName(genName("dep-"))
 		_, err = c.CreateClusterRoleBinding(&clusterRoleBinding)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create ClusterRoleBinding")
+		require.NoError(GinkgoT(), err, "could not create ClusterRoleBinding")
 
 		nonResourceClusterRoleBinding := rbacv1.ClusterRoleBinding{
 			Subjects: []rbacv1.Subject{
@@ -760,55 +764,59 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 		nonResourceClusterRoleBinding.SetName(genName("dep-"))
 		_, err = c.CreateClusterRoleBinding(&nonResourceClusterRoleBinding)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create ClusterRoleBinding")
+		require.NoError(GinkgoT(), err, "could not create ClusterRoleBinding")
 
-		ctx.Ctx().Logf("checking for deployment")
+		fmt.Println("checking for deployment")
 		// Poll for deployment to be ready
-		Eventually(func() (bool, error) {
+		err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
 			dep, err := c.GetDeployment(testNamespace, depName)
 			if k8serrors.IsNotFound(err) {
-				ctx.Ctx().Logf("deployment %s not found\n", depName)
+				fmt.Printf("deployment %s not found\n", depName)
 				return false, nil
 			} else if err != nil {
-				ctx.Ctx().Logf("unexpected error fetching deployment %s\n", depName)
+				fmt.Printf("unexpected error fetching deployment %s\n", depName)
 				return false, err
 			}
 			if dep.Status.UpdatedReplicas == *(dep.Spec.Replicas) &&
 				dep.Status.Replicas == *(dep.Spec.Replicas) &&
 				dep.Status.AvailableReplicas == *(dep.Spec.Replicas) {
-				ctx.Ctx().Logf("deployment ready")
+				fmt.Println("deployment ready")
 				return true, nil
 			}
-			ctx.Ctx().Logf("deployment not ready")
+			fmt.Println("deployment not ready")
 			return false, nil
-		}).Should(BeTrue())
+		})
+		require.NoError(GinkgoT(), err)
 
 		fetchedCSV, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Delete CRD
 		cleanupCRD()
 
 		// Wait for CSV failure
 		fetchedCSV, err = fetchCSV(crc, csv.Name, testNamespace, csvPendingChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Recreate the CRD
 		cleanupCRD, err = createCRD(c, crd)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
 
 		// Wait for CSV success again
 		fetchedCSV, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 	})
 	It("create requirements met API service", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		sa := corev1.ServiceAccount{}
 		sa.SetName(genName("sa-"))
 		sa.SetNamespace(testNamespace)
 		_, err := c.CreateServiceAccount(&sa)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create ServiceAccount")
+		require.NoError(GinkgoT(), err, "could not create ServiceAccount")
 
 		permissions := []v1alpha1.StrategyDeploymentPermissions{
 			{
@@ -894,7 +902,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		role.SetName(genName("dep-"))
 		role.SetNamespace(testNamespace)
 		_, err = c.CreateRole(&role)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create Role")
+		require.NoError(GinkgoT(), err, "could not create Role")
 
 		roleBinding := rbacv1.RoleBinding{
 			Subjects: []rbacv1.Subject{
@@ -914,7 +922,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		roleBinding.SetName(genName("dep-"))
 		roleBinding.SetNamespace(testNamespace)
 		_, err = c.CreateRoleBinding(&roleBinding)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create RoleBinding")
+		require.NoError(GinkgoT(), err, "could not create RoleBinding")
 
 		clusterRole := rbacv1.ClusterRole{
 			Rules: []rbacv1.PolicyRule{
@@ -927,7 +935,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 		clusterRole.SetName(genName("dep-"))
 		_, err = c.CreateClusterRole(&clusterRole)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create ClusterRole")
+		require.NoError(GinkgoT(), err, "could not create ClusterRole")
 
 		clusterRoleBinding := rbacv1.ClusterRoleBinding{
 			Subjects: []rbacv1.Subject{
@@ -946,21 +954,24 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 		clusterRoleBinding.SetName(genName("dep-"))
 		_, err = c.CreateClusterRoleBinding(&clusterRoleBinding)
-		Expect(err).ShouldNot(HaveOccurred(), "could not create ClusterRoleBinding")
+		require.NoError(GinkgoT(), err, "could not create ClusterRoleBinding")
 
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		fetchedCSV, err := fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err := fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		compareResources(GinkgoT(), fetchedCSV, sameCSV)
 	})
 	It("create with owned API service", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		depName := genName("hat-server")
 		mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
@@ -1028,10 +1039,10 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create the APIService CSV
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer func() {
 			watcher, err := c.ApiregistrationV1Interface().ApiregistrationV1().APIServices().Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + apiServiceName})
-			Expect(err).ShouldNot(HaveOccurred())
+			require.NoError(GinkgoT(), err)
 
 			deleted := make(chan struct{})
 			go func() {
@@ -1045,7 +1056,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 							return
 						}
 					case <-time.After(pollDuration):
-						Fail("API service not cleaned up after CSV deleted")
+						require.FailNow(GinkgoT(), "apiservice not cleaned up after CSV deleted")
 					}
 				}
 			}()
@@ -1055,45 +1066,45 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}()
 
 		fetchedCSV, err := fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should create Deployment
 		dep, err := c.GetDeployment(testNamespace, depName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Deployment")
+		require.NoError(GinkgoT(), err, "error getting expected Deployment")
 
 		// Should create APIService
 		apiService, err := c.GetAPIService(apiServiceName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected APIService")
+		require.NoError(GinkgoT(), err, "error getting expected APIService")
 
 		// Should create Service
 		serviceName := fmt.Sprintf("%s-service", depName)
 		_, err = c.GetService(testNamespace, serviceName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Service")
+		require.NoError(GinkgoT(), err, "error getting expected Service")
 
 		// Should create certificate Secret
 		secretName := fmt.Sprintf("%s-cert", serviceName)
 		_, err = c.GetSecret(testNamespace, secretName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Secret")
+		require.NoError(GinkgoT(), err, "error getting expected Secret")
 
 		// Should create a Role for the Secret
 		_, err = c.GetRole(testNamespace, secretName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Secret Role")
+		require.NoError(GinkgoT(), err, "error getting expected Secret Role")
 
 		// Should create a RoleBinding for the Secret
 		_, err = c.GetRoleBinding(testNamespace, secretName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting exptected Secret RoleBinding")
+		require.NoError(GinkgoT(), err, "error getting exptected Secret RoleBinding")
 
 		// Should create a system:auth-delegator Cluster RoleBinding
 		_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", serviceName))
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected system:auth-delegator ClusterRoleBinding")
+		require.NoError(GinkgoT(), err, "error getting expected system:auth-delegator ClusterRoleBinding")
 
 		// Should create an extension-apiserver-authentication-reader RoleBinding in kube-system
 		_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", serviceName))
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected extension-apiserver-authentication-reader RoleBinding")
+		require.NoError(GinkgoT(), err, "error getting expected extension-apiserver-authentication-reader RoleBinding")
 
 		// Store the ca sha annotation
 		oldCAAnnotation, ok := dep.Spec.Template.GetAnnotations()[install.OLMCAHashAnnotationKey]
-		Expect(ok).Should(BeTrue(), "expected olm sha annotation not present on existing pod template")
+		require.True(GinkgoT(), ok, "expected olm sha annotation not present on existing pod template")
 
 		// Induce a cert rotation
 		Eventually(Apply(fetchedCSV, func(csv *v1alpha1.ClusterServiceVersion) error {
@@ -1106,16 +1117,11 @@ var _ = Describe("ClusterServiceVersion", func() {
 		_, err = fetchCSV(crc, csv.Name, testNamespace, func(csv *v1alpha1.ClusterServiceVersion) bool {
 			// Should create deployment
 			dep, err = c.GetDeployment(testNamespace, depName)
-			if err != nil {
-				return false
-			}
+			require.NoError(GinkgoT(), err)
 
 			// Should have a new ca hash annotation
 			newCAAnnotation, ok := dep.Spec.Template.GetAnnotations()[install.OLMCAHashAnnotationKey]
-			if !ok {
-				ctx.Ctx().Logf("expected olm sha annotation not present in new pod template")
-				return false
-			}
+			require.True(GinkgoT(), ok, "expected olm sha annotation not present in new pod template")
 
 			if newCAAnnotation != oldCAAnnotation {
 				// Check for success
@@ -1124,31 +1130,37 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 			return false
 		})
-		Expect(err).ShouldNot(HaveOccurred(), "failed to rotate cert")
+		require.NoError(GinkgoT(), err, "failed to rotate cert")
 
 		// Get the APIService UID
 		oldAPIServiceUID := apiService.GetUID()
 
 		// Delete the APIService
 		err = c.DeleteAPIService(apiServiceName, &metav1.DeleteOptions{})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Wait for CSV success
 		fetchedCSV, err = fetchCSV(crc, csv.GetName(), testNamespace, func(csv *v1alpha1.ClusterServiceVersion) bool {
 			// Should create an APIService
 			apiService, err := c.GetAPIService(apiServiceName)
 			if err != nil {
+				require.True(GinkgoT(), k8serrors.IsNotFound(err))
 				return false
 			}
 
 			if csvSucceededChecker(csv) {
-				return apiService.GetUID() != oldAPIServiceUID
+				require.NotEqual(GinkgoT(), oldAPIServiceUID, apiService.GetUID())
+				return true
 			}
+
 			return false
 		})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 	})
 	It("update with owned API service", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		depName := genName("hat-server")
 		mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
@@ -1216,44 +1228,44 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create the APIService CSV
 		_, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should create Deployment
 		_, err = c.GetDeployment(testNamespace, depName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Deployment")
+		require.NoError(GinkgoT(), err, "error getting expected Deployment")
 
 		// Should create APIService
 		_, err = c.GetAPIService(apiServiceName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected APIService")
+		require.NoError(GinkgoT(), err, "error getting expected APIService")
 
 		// Should create Service
 		serviceName := fmt.Sprintf("%s-service", depName)
 		_, err = c.GetService(testNamespace, serviceName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Service")
+		require.NoError(GinkgoT(), err, "error getting expected Service")
 
 		// Should create certificate Secret
 		secretName := fmt.Sprintf("%s-cert", serviceName)
 		_, err = c.GetSecret(testNamespace, secretName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Secret")
+		require.NoError(GinkgoT(), err, "error getting expected Secret")
 
 		// Should create a Role for the Secret
 		_, err = c.GetRole(testNamespace, secretName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Secret Role")
+		require.NoError(GinkgoT(), err, "error getting expected Secret Role")
 
 		// Should create a RoleBinding for the Secret
 		_, err = c.GetRoleBinding(testNamespace, secretName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting exptected Secret RoleBinding")
+		require.NoError(GinkgoT(), err, "error getting exptected Secret RoleBinding")
 
 		// Should create a system:auth-delegator Cluster RoleBinding
 		_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", serviceName))
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected system:auth-delegator ClusterRoleBinding")
+		require.NoError(GinkgoT(), err, "error getting expected system:auth-delegator ClusterRoleBinding")
 
 		// Should create an extension-apiserver-authentication-reader RoleBinding in kube-system
 		_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", serviceName))
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected extension-apiserver-authentication-reader RoleBinding")
+		require.NoError(GinkgoT(), err, "error getting expected extension-apiserver-authentication-reader RoleBinding")
 
 		// Create a new CSV that owns the same API Service and replace the old CSV
 		csv2 := v1alpha1.ClusterServiceVersion{
@@ -1291,77 +1303,65 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create CSV2 to replace CSV
 		cleanupCSV2, err := createCSV(c, crc, csv2, testNamespace, false, true)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV2()
 
 		_, err = fetchCSV(crc, csv2.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should create Deployment
 		_, err = c.GetDeployment(testNamespace, depName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Deployment")
+		require.NoError(GinkgoT(), err, "error getting expected Deployment")
 
 		// Should create APIService
 		_, err = c.GetAPIService(apiServiceName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected APIService")
+		require.NoError(GinkgoT(), err, "error getting expected APIService")
 
 		// Should create Service
-		Eventually(func() error {
-			_, err := c.GetService(testNamespace, serviceName)
-			return err
-		}, timeout, interval).ShouldNot(HaveOccurred())
+		_, err = c.GetService(testNamespace, serviceName)
+		require.NoError(GinkgoT(), err, "error getting expected Service")
 
 		// Should create certificate Secret
 		secretName = fmt.Sprintf("%s-cert", serviceName)
-		Eventually(func() error {
-			_, err = c.GetSecret(testNamespace, secretName)
-			return err
-		}, timeout, interval).ShouldNot(HaveOccurred())
+		_, err = c.GetSecret(testNamespace, secretName)
+		require.NoError(GinkgoT(), err, "error getting expected Secret")
 
 		// Should create a Role for the Secret
 		_, err = c.GetRole(testNamespace, secretName)
-		Eventually(func() error {
-			_, err = c.GetRole(testNamespace, secretName)
-			return err
-		}, timeout, interval).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err, "error getting expected Secret Role")
 
 		// Should create a RoleBinding for the Secret
-		Eventually(func() error {
-			_, err = c.GetRoleBinding(testNamespace, secretName)
-			return err
-		}, timeout, interval).ShouldNot(HaveOccurred())
+		_, err = c.GetRoleBinding(testNamespace, secretName)
+		require.NoError(GinkgoT(), err, "error getting exptected Secret RoleBinding")
 
 		// Should create a system:auth-delegator Cluster RoleBinding
-		Eventually(func() error {
-			_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", serviceName))
-			return err
-		}, timeout, interval).ShouldNot(HaveOccurred())
+		_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", serviceName))
+		require.NoError(GinkgoT(), err, "error getting expected system:auth-delegator ClusterRoleBinding")
 
 		// Should create an extension-apiserver-authentication-reader RoleBinding in kube-system
-		Eventually(func() error {
-			_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", serviceName))
-			return err
-		}, timeout, interval).ShouldNot(HaveOccurred())
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected extension-apiserver-authentication-reader RoleBinding")
+		_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", serviceName))
+		require.NoError(GinkgoT(), err, "error getting expected extension-apiserver-authentication-reader RoleBinding")
 
 		// Should eventually GC the CSV
-		Eventually(func() bool {
-			return csvExists(crc, csv.Name)
-		}).Should(BeFalse())
+		err = waitForCSVToDelete(GinkgoT(), crc, csv.Name)
+		require.NoError(GinkgoT(), err)
 
 		// Rename the initial CSV
 		csv.SetName("csv-hat-3")
 
 		// Recreate the old CSV
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, true)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		fetched, err := fetchCSV(crc, csv.Name, testNamespace, buildCSVReasonChecker(v1alpha1.CSVReasonOwnerConflict))
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(fetched.Status.Phase).Should(Equal(v1alpha1.CSVPhaseFailed))
+		require.NoError(GinkgoT(), err)
+		require.Equal(GinkgoT(), string(v1alpha1.CSVPhaseFailed), string(fetched.Status.Phase))
 	})
 	It("create same CSV with owned API service multi namespace", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		// Create new namespace in a new operator group
 		secondNamespaceName := genName(testNamespace + "-")
@@ -1373,10 +1373,10 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Labels: matchingLabel,
 			},
 		}, metav1.CreateOptions{})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer func() {
 			err = c.KubernetesInterface().CoreV1().Namespaces().Delete(context.TODO(), secondNamespaceName, metav1.DeleteOptions{})
-			Expect(err).ShouldNot(HaveOccurred())
+			require.NoError(GinkgoT(), err)
 		}()
 
 		// Create a new operator group for the new namespace
@@ -1392,20 +1392,28 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 		_, err = crc.OperatorsV1().OperatorGroups(secondNamespaceName).Create(context.TODO(), &operatorGroup, metav1.CreateOptions{})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer func() {
 			err = crc.OperatorsV1().OperatorGroups(secondNamespaceName).Delete(context.TODO(), operatorGroup.Name, metav1.DeleteOptions{})
-			Expect(err).ShouldNot(HaveOccurred())
+			require.NoError(GinkgoT(), err)
 		}()
 
-		ctx.Ctx().Logf("Waiting on new operator group to have correct status")
-		Eventually(func() ([]string, error) {
-			og, err := crc.OperatorsV1().OperatorGroups(secondNamespaceName).Get(context.TODO(), operatorGroup.Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, err
+		expectedOperatorGroupStatus := v1.OperatorGroupStatus{
+			Namespaces: []string{secondNamespaceName},
+		}
+		GinkgoT().Log("Waiting on new operator group to have correct status")
+		err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+			fetched, fetchErr := crc.OperatorsV1().OperatorGroups(secondNamespaceName).Get(context.TODO(), operatorGroup.Name, metav1.GetOptions{})
+			if fetchErr != nil {
+				return false, fetchErr
 			}
-			return og.Status.Namespaces, nil
-		}).Should(ConsistOf([]string{secondNamespaceName}))
+			if len(fetched.Status.Namespaces) > 0 {
+				require.ElementsMatch(GinkgoT(), expectedOperatorGroupStatus.Namespaces, fetched.Status.Namespaces)
+				return true, nil
+			}
+			return false, nil
+		})
+		require.NoError(GinkgoT(), err)
 
 		depName := genName("hat-server")
 		mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
@@ -1473,45 +1481,45 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create the initial CSV
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should create Deployment
 		_, err = c.GetDeployment(testNamespace, depName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Deployment")
+		require.NoError(GinkgoT(), err, "error getting expected Deployment")
 
 		// Should create APIService
 		_, err = c.GetAPIService(apiServiceName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected APIService")
+		require.NoError(GinkgoT(), err, "error getting expected APIService")
 
 		// Should create Service
 		serviceName := fmt.Sprintf("%s-service", depName)
 		_, err = c.GetService(testNamespace, serviceName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Service")
+		require.NoError(GinkgoT(), err, "error getting expected Service")
 
 		// Should create certificate Secret
 		secretName := fmt.Sprintf("%s-cert", serviceName)
 		_, err = c.GetSecret(testNamespace, secretName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Secret")
+		require.NoError(GinkgoT(), err, "error getting expected Secret")
 
 		// Should create a Role for the Secret
 		_, err = c.GetRole(testNamespace, secretName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected Secret Role")
+		require.NoError(GinkgoT(), err, "error getting expected Secret Role")
 
 		// Should create a RoleBinding for the Secret
 		_, err = c.GetRoleBinding(testNamespace, secretName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting exptected Secret RoleBinding")
+		require.NoError(GinkgoT(), err, "error getting exptected Secret RoleBinding")
 
 		// Should create a system:auth-delegator Cluster RoleBinding
 		_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", serviceName))
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected system:auth-delegator ClusterRoleBinding")
+		require.NoError(GinkgoT(), err, "error getting expected system:auth-delegator ClusterRoleBinding")
 
 		// Should create an extension-apiserver-authentication-reader RoleBinding in kube-system
 		_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", serviceName))
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected extension-apiserver-authentication-reader RoleBinding")
+		require.NoError(GinkgoT(), err, "error getting expected extension-apiserver-authentication-reader RoleBinding")
 
 		// Create a new CSV that owns the same API Service but in a different namespace
 		csv2 := v1alpha1.ClusterServiceVersion{
@@ -1548,12 +1556,14 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create CSV2 to replace CSV
 		_, err = createCSV(c, crc, csv2, secondNamespaceName, false, true)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		_, err = fetchCSV(crc, csv2.Name, secondNamespaceName, csvFailedChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 	})
 	It("orphaned API service clean up", func() {
+
+		c := newKubeClient()
 
 		mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
 		version := "v1alpha1"
@@ -1572,7 +1582,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		watcher, err := c.ApiregistrationV1Interface().ApiregistrationV1().APIServices().Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + apiServiceName})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		deleted := make(chan struct{})
 		quit := make(chan struct{})
@@ -1589,110 +1599,37 @@ var _ = Describe("ClusterServiceVersion", func() {
 						deleted <- struct{}{}
 					}
 				case <-time.After(pollDuration):
-					Fail("orphaned apiservice not cleaned up as expected")
+					require.FailNow(GinkgoT(), "orphaned apiservice not cleaned up as expected")
 				}
 			}
 		}()
 
 		_, err = c.CreateAPIService(apiService)
-		Expect(err).ShouldNot(HaveOccurred(), "error creating expected APIService")
+		require.NoError(GinkgoT(), err, "error creating expected APIService")
 		orphanedAPISvc, err := c.GetAPIService(apiServiceName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected APIService")
+		require.NoError(GinkgoT(), err, "error getting expected APIService")
 
 		newLabels := map[string]string{"olm.owner": "hat-serverfd4r5", "olm.owner.kind": "ClusterServiceVersion", "olm.owner.namespace": "nonexistent-namespace"}
 		orphanedAPISvc.SetLabels(newLabels)
 		_, err = c.UpdateAPIService(orphanedAPISvc)
-		Expect(err).ShouldNot(HaveOccurred(), "error updating APIService")
+		require.NoError(GinkgoT(), err, "error updating APIService")
 		<-deleted
 
 		_, err = c.CreateAPIService(apiService)
-		Expect(err).ShouldNot(HaveOccurred(), "error creating expected APIService")
+		require.NoError(GinkgoT(), err, "error creating expected APIService")
 		orphanedAPISvc, err = c.GetAPIService(apiServiceName)
-		Expect(err).ShouldNot(HaveOccurred(), "error getting expected APIService")
+		require.NoError(GinkgoT(), err, "error getting expected APIService")
 
 		newLabels = map[string]string{"olm.owner": "hat-serverfd4r5", "olm.owner.kind": "ClusterServiceVersion", "olm.owner.namespace": testNamespace}
 		orphanedAPISvc.SetLabels(newLabels)
 		_, err = c.UpdateAPIService(orphanedAPISvc)
-		Expect(err).ShouldNot(HaveOccurred(), "error updating APIService")
+		require.NoError(GinkgoT(), err, "error updating APIService")
 		<-deleted
 	})
-	It("CSV annotations overwrite pod template annotations defined in a StrategyDetailsDeployment", func() {
-		// Create a StrategyDetailsDeployment that defines the `foo1` and `foo2` annotations on a pod template
-		nginxName := genName("nginx-")
-		strategy := v1alpha1.StrategyDetailsDeployment{
-			DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
-				{
-					Name: genName("dep-"),
-					Spec: newNginxDeployment(nginxName),
-				},
-			},
-		}
-		strategy.DeploymentSpecs[0].Spec.Template.Annotations = map[string]string{
-			"foo1": "notBar1",
-			"foo2": "bar2",
-		}
-
-		// Create a CSV that defines the `foo1` and `foo3` annotations
-		csv := v1alpha1.ClusterServiceVersion{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       v1alpha1.ClusterServiceVersionKind,
-				APIVersion: v1alpha1.ClusterServiceVersionAPIVersion,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: genName("csv"),
-				Annotations: map[string]string{
-					"foo1": "bar1",
-					"foo3": "bar3",
-				},
-			},
-			Spec: v1alpha1.ClusterServiceVersionSpec{
-				MinKubeVersion: "0.0.0",
-				InstallModes: []v1alpha1.InstallMode{
-					{
-						Type:      v1alpha1.InstallModeTypeOwnNamespace,
-						Supported: true,
-					},
-					{
-						Type:      v1alpha1.InstallModeTypeSingleNamespace,
-						Supported: true,
-					},
-					{
-						Type:      v1alpha1.InstallModeTypeMultiNamespace,
-						Supported: true,
-					},
-					{
-						Type:      v1alpha1.InstallModeTypeAllNamespaces,
-						Supported: true,
-					},
-				},
-				InstallStrategy: v1alpha1.NamedInstallStrategy{
-					StrategyName: v1alpha1.InstallStrategyNameDeployment,
-					StrategySpec: strategy,
-				},
-			},
-		}
-
-		// Create the CSV and make sure to clean it up
-		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
-		defer cleanupCSV()
-
-		// Wait for current CSV to succeed
-		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
-
-		// Should have created deployment
-		dep, err := c.GetDeployment(testNamespace, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(dep).ShouldNot(BeNil())
-
-		// Make sure that the pods annotations are correct
-		annotations := dep.Spec.Template.Annotations
-		Expect(annotations["foo1"]).Should(Equal("bar1"))
-		Expect(annotations["foo2"]).Should(Equal("bar2"))
-		Expect(annotations["foo3"]).Should(Equal("bar3"))
-	})
 	It("update same deployment name", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		// Create dependency first (CRD)
 		crdPlural := genName("ins")
@@ -1725,9 +1662,9 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
 		csv := v1alpha1.ClusterServiceVersion{
 			TypeMeta: metav1.TypeMeta{
@@ -1777,16 +1714,16 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Don't need to cleanup this CSV, it will be deleted by the upgrade process
 		_, err = createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Wait for current CSV to succeed
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should have created deployment
 		dep, err := c.GetDeployment(testNamespace, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(dep).ShouldNot(BeNil())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), dep)
 
 		// Create "updated" CSV
 		strategyNew := v1alpha1.StrategyDetailsDeployment{
@@ -1800,7 +1737,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		csvNew := v1alpha1.ClusterServiceVersion{
 			TypeMeta: metav1.TypeMeta{
@@ -1849,30 +1786,32 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupNewCSV, err := createCSV(c, crc, csvNew, testNamespace, true, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupNewCSV()
 
 		// Wait for updated CSV to succeed
 		fetchedCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should have updated existing deployment
 		depUpdated, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(depUpdated).ShouldNot(BeNil())
-		Expect(strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name).Should(Equal(depUpdated.Spec.Template.Spec.Containers[0].Name))
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), depUpdated)
+		require.Equal(GinkgoT(), depUpdated.Spec.Template.Spec.Containers[0].Name, strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name)
 
 		// Should eventually GC the CSV
-		Eventually(func() bool {
-			return csvExists(crc, csv.Name)
-		}).Should(BeFalse())
+		err = waitForCSVToDelete(GinkgoT(), crc, csv.Name)
+		require.NoError(GinkgoT(), err)
 
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		compareResources(GinkgoT(), fetchedCSV, sameCSV)
 	})
 	It("update different deployment name", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		// Create dependency first (CRD)
 		crdPlural := genName("ins2")
@@ -1893,7 +1832,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Scope: "Namespaced",
 			},
 		})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
 
 		// create "current" CSV
@@ -1906,7 +1845,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		csv := v1alpha1.ClusterServiceVersion{
 			TypeMeta: metav1.TypeMeta{
@@ -1956,16 +1895,16 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// don't need to clean up this CSV, it will be deleted by the upgrade process
 		_, err = createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Wait for current CSV to succeed
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should have created deployment
 		dep, err := c.GetDeployment(testNamespace, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(dep).ShouldNot(BeNil())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), dep)
 
 		// Create "updated" CSV
 		strategyNew := v1alpha1.StrategyDetailsDeployment{
@@ -1977,7 +1916,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		csvNew := v1alpha1.ClusterServiceVersion{
 			TypeMeta: metav1.TypeMeta{
@@ -2026,31 +1965,33 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupNewCSV, err := createCSV(c, crc, csvNew, testNamespace, true, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupNewCSV()
 
 		// Wait for updated CSV to succeed
 		fetchedCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		compareResources(GinkgoT(), fetchedCSV, sameCSV)
 
 		// Should have created new deployment and deleted old
 		depNew, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(depNew).ShouldNot(BeNil())
-		err = waitForDeploymentToDelete(c, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), depNew)
+		err = waitForDeploymentToDelete(GinkgoT(), c, strategy.DeploymentSpecs[0].Name)
+		require.NoError(GinkgoT(), err)
 
 		// Should eventually GC the CSV
-		Eventually(func() bool {
-			return csvExists(crc, csv.Name)
-		}).Should(BeFalse())
+		err = waitForCSVToDelete(GinkgoT(), crc, csv.Name)
+		require.NoError(GinkgoT(), err)
 	})
 	It("update multiple intermediates", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		// Create dependency first (CRD)
 		crdPlural := genName("ins3")
@@ -2077,7 +2018,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Scope: "Namespaced",
 			},
 		})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
 
 		// create "current" CSV
@@ -2090,7 +2031,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		csv := v1alpha1.ClusterServiceVersion{
 			TypeMeta: metav1.TypeMeta{
@@ -2140,16 +2081,16 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// don't need to clean up this CSV, it will be deleted by the upgrade process
 		_, err = createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Wait for current CSV to succeed
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should have created deployment
 		dep, err := c.GetDeployment(testNamespace, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(dep).ShouldNot(BeNil())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), dep)
 
 		// Create "updated" CSV
 		strategyNew := v1alpha1.StrategyDetailsDeployment{
@@ -2161,7 +2102,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		csvNew := v1alpha1.ClusterServiceVersion{
 			TypeMeta: metav1.TypeMeta{
@@ -2210,31 +2151,33 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupNewCSV, err := createCSV(c, crc, csvNew, testNamespace, true, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupNewCSV()
 
 		// Wait for updated CSV to succeed
 		fetchedCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		compareResources(GinkgoT(), fetchedCSV, sameCSV)
 
 		// Should have created new deployment and deleted old
 		depNew, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(depNew).ShouldNot(BeNil())
-		err = waitForDeploymentToDelete(c, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), depNew)
+		err = waitForDeploymentToDelete(GinkgoT(), c, strategy.DeploymentSpecs[0].Name)
+		require.NoError(GinkgoT(), err)
 
 		// Should eventually GC the CSV
-		Eventually(func() bool {
-			return csvExists(crc, csv.Name)
-		}).Should(BeFalse())
+		err = waitForCSVToDelete(GinkgoT(), crc, csv.Name)
+		require.NoError(GinkgoT(), err)
 	})
 	It("update in place", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		// Create dependency first (CRD)
 		crdPlural := genName("ins")
@@ -2267,9 +2210,9 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
 		csv := v1alpha1.ClusterServiceVersion{
 			TypeMeta: metav1.TypeMeta{
@@ -2318,17 +2261,17 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, true)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		// Wait for current CSV to succeed
 		fetchedCSV, err := fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should have created deployment
 		dep, err := c.GetDeployment(testNamespace, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(dep).ShouldNot(BeNil())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), dep)
 
 		// Create "updated" CSV
 		strategyNew := strategy
@@ -2349,40 +2292,44 @@ var _ = Describe("ClusterServiceVersion", func() {
 		var five int32 = 5
 		strategyNew.DeploymentSpecs[0].Spec.Replicas = &five
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		fetchedCSV.Spec.InstallStrategy.StrategySpec = strategyNew
 
 		// Update CSV directly
 		_, err = crc.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Update(context.TODO(), fetchedCSV, metav1.UpdateOptions{})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// wait for deployment spec to be updated
-		Eventually(func() (string, error) {
+		err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
 			fetched, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
 			if err != nil {
-				return "", err
+				return false, err
 			}
-			ctx.Ctx().Logf("waiting for deployment to update...")
-			return fetched.Spec.Template.Spec.Containers[0].Name, nil
-		}).Should(Equal(strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name))
+			fmt.Println("waiting for deployment to update...")
+			return fetched.Spec.Template.Spec.Containers[0].Name == strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name, nil
+		})
+		require.NoError(GinkgoT(), err)
 
 		// Wait for updated CSV to succeed
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		depUpdated, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(depUpdated).ShouldNot(BeNil())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), depUpdated)
 
 		// Deployment should have changed even though the CSV is otherwise the same
-		Expect(strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name).Should(Equal(depUpdated.Spec.Template.Spec.Containers[0].Name))
-		Expect(strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Image).Should(Equal(depUpdated.Spec.Template.Spec.Containers[0].Image))
+		require.Equal(GinkgoT(), depUpdated.Spec.Template.Spec.Containers[0].Name, strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name)
+		require.Equal(GinkgoT(), depUpdated.Spec.Template.Spec.Containers[0].Image, strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Image)
 
 		// Field updated even though template spec didn't change, because it was part of a template spec change as well
-		Expect(*strategyNew.DeploymentSpecs[0].Spec.Replicas).Should(Equal(*depUpdated.Spec.Replicas))
+		require.Equal(GinkgoT(), *depUpdated.Spec.Replicas, *strategyNew.DeploymentSpecs[0].Spec.Replicas)
 	})
 	It("update multiple version CRD", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		// Create initial CRD which has 2 versions: v1alpha1 & v1alpha2
 		crdPlural := genName("ins4")
@@ -2414,7 +2361,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Scope: "Namespaced",
 			},
 		})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
 
 		// create initial deployment strategy
@@ -2427,7 +2374,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// First CSV with owning CRD v1alpha1
 		csv := v1alpha1.ClusterServiceVersion{
@@ -2478,16 +2425,16 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// CSV will be deleted by the upgrade process later
 		_, err = createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Wait for current CSV to succeed
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should have created deployment
 		dep, err := c.GetDeployment(testNamespace, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(dep).ShouldNot(BeNil())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), dep)
 
 		// Create updated deployment strategy
 		strategyNew := v1alpha1.StrategyDetailsDeployment{
@@ -2499,7 +2446,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Second CSV with owning CRD v1alpha1 and v1alpha2
 		csvNew := v1alpha1.ClusterServiceVersion{
@@ -2557,23 +2504,23 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create newly updated CSV
 		_, err = createCSV(c, crc, csvNew, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Wait for updated CSV to succeed
 		fetchedCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		compareResources(GinkgoT(), fetchedCSV, sameCSV)
 
 		// Should have created new deployment and deleted old one
 		depNew, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(depNew).ShouldNot(BeNil())
-		err = waitForDeploymentToDelete(c, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), depNew)
+		err = waitForDeploymentToDelete(GinkgoT(), c, strategy.DeploymentSpecs[0].Name)
+		require.NoError(GinkgoT(), err)
 
 		// Create updated deployment strategy
 		strategyNew2 := v1alpha1.StrategyDetailsDeployment{
@@ -2584,7 +2531,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				},
 			},
 		}
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Third CSV with owning CRD v1alpha2
 		csvNew2 := v1alpha1.ClusterServiceVersion{
@@ -2635,31 +2582,33 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create newly updated CSV
 		cleanupNewCSV, err := createCSV(c, crc, csvNew2, testNamespace, true, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupNewCSV()
 
 		// Wait for updated CSV to succeed
 		fetchedCSV, err = fetchCSV(crc, csvNew2.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err = fetchCSV(crc, csvNew2.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		compareResources(GinkgoT(), fetchedCSV, sameCSV)
 
 		// Should have created new deployment and deleted old one
 		depNew, err = c.GetDeployment(testNamespace, strategyNew2.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(depNew).ShouldNot(BeNil())
-		err = waitForDeploymentToDelete(c, strategyNew.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), depNew)
+		err = waitForDeploymentToDelete(GinkgoT(), c, strategyNew.DeploymentSpecs[0].Name)
+		require.NoError(GinkgoT(), err)
 
 		// Should clean up the CSV
-		Eventually(func() bool {
-			return csvExists(crc, csvNew.Name)
-		}).Should(BeFalse())
+		err = waitForCSVToDelete(GinkgoT(), crc, csvNew.Name)
+		require.NoError(GinkgoT(), err)
 	})
 	It("update modify deployment name", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		// Create dependency first (CRD)
 		crdPlural := genName("ins2")
@@ -2680,7 +2629,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Scope: "Namespaced",
 			},
 		})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
 
 		// create "current" CSV
@@ -2697,7 +2646,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		csv := v1alpha1.ClusterServiceVersion{
 			TypeMeta: metav1.TypeMeta{
@@ -2745,20 +2694,20 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, true, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		// Wait for current CSV to succeed
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should have created deployments
 		dep, err := c.GetDeployment(testNamespace, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(dep).ShouldNot(BeNil())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), dep)
 		dep2, err := c.GetDeployment(testNamespace, strategy.DeploymentSpecs[1].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(dep2).ShouldNot(BeNil())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), dep2)
 
 		// Create "updated" CSV
 		strategyNew := v1alpha1.StrategyDetailsDeployment{
@@ -2774,42 +2723,43 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Fetch the current csv
 		fetchedCSV, err := fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Update csv with same strategy with different deployment's name
 		fetchedCSV.Spec.InstallStrategy.StrategySpec = strategyNew
 
 		// Update the current csv with the new csv
 		_, err = crc.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Update(context.TODO(), fetchedCSV, metav1.UpdateOptions{})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Wait for new deployment to exist
 		err = waitForDeployment(c, strategyNew.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Wait for updated CSV to succeed
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Should have created new deployment and deleted old
 		depNew, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(depNew).ShouldNot(BeNil())
-
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), depNew)
 		// Make sure the unchanged deployment still exists
 		depNew2, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[1].Name)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(depNew2).ShouldNot(BeNil())
-
-		err = waitForDeploymentToDelete(c, strategy.DeploymentSpecs[0].Name)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
+		require.NotNil(GinkgoT(), depNew2)
+		err = waitForDeploymentToDelete(GinkgoT(), c, strategy.DeploymentSpecs[0].Name)
+		require.NoError(GinkgoT(), err)
 	})
 
 	It("emits CSV requirement events", func() {
+
+		c := ctx.Ctx().KubeClient()
+		crc := ctx.Ctx().OperatorClient()
 
 		csv := &v1alpha1.ClusterServiceVersion{
 			Spec: v1alpha1.ClusterServiceVersionSpec{
@@ -2894,6 +2844,9 @@ var _ = Describe("ClusterServiceVersion", func() {
 	// TODO: test behavior when replaces field doesn't point to existing CSV
 	It("status invalid CSV", func() {
 
+		c := newKubeClient()
+		crc := newCRClient()
+
 		// Create CRD
 		crdPlural := genName("ins")
 		crdName := crdPlural + ".cluster.com"
@@ -2913,7 +2866,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Scope: "Namespaced",
 			},
 		})
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
 
 		// create CSV
@@ -2926,7 +2879,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 			},
 		}
 
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		csv := v1alpha1.ClusterServiceVersion{
 			TypeMeta: metav1.TypeMeta{
@@ -2974,7 +2927,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, true, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		notServedStatus := v1alpha1.RequirementStatus{
@@ -2997,12 +2950,15 @@ var _ = Describe("ClusterServiceVersion", func() {
 		}
 
 		fetchedCSV, err := fetchCSV(crc, csv.Name, testNamespace, csvCheckPhaseAndRequirementStatus)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
-		Expect(fetchedCSV.Status.RequirementStatus).Should(ContainElement(notServedStatus))
+		require.Contains(GinkgoT(), fetchedCSV.Status.RequirementStatus, notServedStatus)
 	})
 
 	It("api service resource migrated if adoptable", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		depName := genName("hat-server")
 		mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
@@ -3073,16 +3029,19 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create the APIService CSV
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		checkLegacyAPIResources(owned[0], true)
 	})
 
 	It("API service resource not migrated if not adoptable", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		depName := genName("hat-server")
 		mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
@@ -3153,11 +3112,11 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create the APIService CSV
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		checkLegacyAPIResources(owned[0], false)
 
@@ -3166,6 +3125,9 @@ var _ = Describe("ClusterServiceVersion", func() {
 	})
 
 	It("multiple API services on a single pod", func() {
+
+		c := newKubeClient()
+		crc := newCRClient()
 
 		// Create the deployment that both APIServices will be deployed to.
 		depName := genName("hat-server")
@@ -3268,20 +3230,20 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		// Create the APIService CSV
 		cleanupCSV, err := createCSV(c, crc, csv, testNamespace, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
 		_, err = fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		// Check that the APIService caBundles are equal
 		apiService1, err := c.GetAPIService(apiService1Name)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
 		apiService2, err := c.GetAPIService(apiService2Name)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 
-		Expect(apiService2.Spec.CABundle).Should(Equal(apiService1.Spec.CABundle))
+		require.Equal(GinkgoT(), apiService1.Spec.CABundle, apiService2.Spec.CABundle)
 	})
 })
 
@@ -3310,7 +3272,7 @@ func findLastEvent(events *corev1.EventList) (event corev1.Event) {
 func buildCSVCleanupFunc(c operatorclient.ClientInterface, crc versioned.Interface, csv v1alpha1.ClusterServiceVersion, namespace string, deleteCRDs, deleteAPIServices bool) cleanupFunc {
 	return func() {
 		err := crc.OperatorsV1alpha1().ClusterServiceVersions(namespace).Delete(context.TODO(), csv.GetName(), metav1.DeleteOptions{})
-		Expect(err).ShouldNot(HaveOccurred())
+		Expect(err).ToNot(HaveOccurred())
 
 		if deleteCRDs {
 			for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
@@ -3328,8 +3290,7 @@ func buildCSVCleanupFunc(c operatorclient.ClientInterface, crc versioned.Interfa
 			_, err := crc.OperatorsV1alpha1().ClusterServiceVersions(namespace).Get(context.TODO(), csv.GetName(), metav1.GetOptions{})
 			return err
 		})
-		Expect(err).ShouldNot(HaveOccurred())
-
+		Expect(err).ToNot(HaveOccurred())
 	}
 }
 
@@ -3529,29 +3490,29 @@ var csvAnyChecker = buildCSVConditionChecker(v1alpha1.CSVPhasePending, v1alpha1.
 var csvCopiedChecker = buildCSVReasonChecker(v1alpha1.CSVReasonCopied)
 
 func fetchCSV(c versioned.Interface, name, namespace string, checker csvConditionChecker) (*v1alpha1.ClusterServiceVersion, error) {
-	var fetchedCSV *v1alpha1.ClusterServiceVersion
-	var err error
-
-	Eventually(func() (bool, error) {
-		fetchedCSV, err = c.OperatorsV1alpha1().ClusterServiceVersions(namespace).Get(context.TODO(), name, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		ctx.Ctx().Logf("%s (%s): %s", fetchedCSV.Status.Phase, fetchedCSV.Status.Reason, fetchedCSV.Status.Message)
-		return checker(fetchedCSV), nil
-	}).Should(BeTrue())
-
-	if err != nil {
-		ctx.Ctx().Logf("never got correct status: %#v", fetchedCSV.Status)
-	}
-	return fetchedCSV, err
-}
-
-func awaitCSV(c versioned.Interface, namespace, name string, checker csvConditionChecker) (*v1alpha1.ClusterServiceVersion, error) {
 	var fetched *v1alpha1.ClusterServiceVersion
 	var err error
 
-	Eventually(func() (bool, error) {
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetched, err = c.OperatorsV1alpha1().ClusterServiceVersions(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		ctx.Ctx().Logf("%s (%s): %s", fetched.Status.Phase, fetched.Status.Reason, fetched.Status.Message)
+		return checker(fetched), nil
+	})
+
+	if err != nil {
+		ctx.Ctx().Logf("never got correct status: %#v", fetched.Status)
+	}
+	return fetched, err
+}
+
+func awaitCSV(t GinkgoTInterface, c versioned.Interface, namespace, name string, checker csvConditionChecker) (*v1alpha1.ClusterServiceVersion, error) {
+	var fetched *v1alpha1.ClusterServiceVersion
+	var err error
+
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
 		fetched, err = c.OperatorsV1alpha1().ClusterServiceVersions(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if k8serrors.IsNotFound(err) {
@@ -3559,12 +3520,12 @@ func awaitCSV(c versioned.Interface, namespace, name string, checker csvConditio
 			}
 			return false, err
 		}
-		ctx.Ctx().Logf("%s - %s (%s): %s", name, fetched.Status.Phase, fetched.Status.Reason, fetched.Status.Message)
+		t.Logf("%s - %s (%s): %s", name, fetched.Status.Phase, fetched.Status.Reason, fetched.Status.Message)
 		return checker(fetched), nil
-	}).Should(BeTrue())
+	})
 
 	if err != nil {
-		ctx.Ctx().Logf("never got correct status: %#v", fetched.Status)
+		t.Logf("never got correct status: %#v", fetched.Status)
 	}
 	return fetched, err
 }
@@ -3582,36 +3543,55 @@ func waitForDeployment(c operatorclient.ClientInterface, name string) error {
 	})
 }
 
-func waitForDeploymentToDelete(c operatorclient.ClientInterface, name string) error {
-	var err error
-
-	Eventually(func() (bool, error) {
-		ctx.Ctx().Logf("waiting for deployment %s to delete", name)
+func waitForDeploymentToDelete(t GinkgoTInterface, c operatorclient.ClientInterface, name string) error {
+	return wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		t.Logf("waiting for deployment %s to delete", name)
 		_, err := c.GetDeployment(testNamespace, name)
 		if errors.IsNotFound(err) {
-			ctx.Ctx().Logf("deleted %s", name)
+			t.Logf("deleted %s", name)
 			return true, nil
 		}
 		if err != nil {
-			ctx.Ctx().Logf("err trying to delete %s: %s", name, err)
+			t.Logf("err trying to delete %s: %s", name, err)
 			return false, err
 		}
 		return false, nil
-	}).Should(BeTrue())
+	})
+}
+
+func waitForCSVToDelete(t GinkgoTInterface, c versioned.Interface, name string) error {
+	var err error
+
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetched, err := c.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return true, nil
+		}
+		t.Logf("%s (%s): %s", fetched.Status.Phase, fetched.Status.Reason, fetched.Status.Message)
+		if err != nil {
+			return false, err
+		}
+		return false, nil
+	})
+
 	return err
 }
 
-func csvExists(c versioned.Interface, name string) bool {
+func waitForNotFound(t GinkgoTInterface, getFunction func() error) error {
+	var err error
 
-	fetched, err := c.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Get(context.TODO(), name, metav1.GetOptions{})
-	if errors.IsNotFound(err) {
-		return false
-	}
-	ctx.Ctx().Logf("%s (%s): %s", fetched.Status.Phase, fetched.Status.Reason, fetched.Status.Message)
-	if err != nil {
-		return true
-	}
-	return true
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		err := getFunction()
+		if errors.IsNotFound(err) {
+			return true, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		return false, nil
+	})
+
+	return err
 }
 
 func deleteLegacyAPIResources(desc v1alpha1.APIServiceDescription) {
@@ -3620,22 +3600,22 @@ func deleteLegacyAPIResources(desc v1alpha1.APIServiceDescription) {
 	apiServiceName := fmt.Sprintf("%s.%s", desc.Version, desc.Group)
 
 	err := c.DeleteService(testNamespace, strings.Replace(apiServiceName, ".", "-", -1), &metav1.DeleteOptions{})
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 
 	err = c.DeleteSecret(testNamespace, apiServiceName+"-cert", &metav1.DeleteOptions{})
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 
 	err = c.DeleteRole(testNamespace, apiServiceName+"-cert", &metav1.DeleteOptions{})
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 
 	err = c.DeleteRoleBinding(testNamespace, apiServiceName+"-cert", &metav1.DeleteOptions{})
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 
 	err = c.DeleteClusterRoleBinding(apiServiceName+"-system:auth-delegator", &metav1.DeleteOptions{})
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 
 	err = c.DeleteRoleBinding("kube-system", apiServiceName+"-auth-reader", &metav1.DeleteOptions{})
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 }
 
 func createLegacyAPIResources(csv *v1alpha1.ClusterServiceVersion, desc v1alpha1.APIServiceDescription) {
@@ -3649,12 +3629,12 @@ func createLegacyAPIResources(csv *v1alpha1.ClusterServiceVersion, desc v1alpha1
 	service.SetNamespace(testNamespace)
 	if csv != nil {
 		err := ownerutil.AddOwnerLabels(&service, csv)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 	}
 
 	service.Spec.Ports = []corev1.ServicePort{{Port: 433, TargetPort: intstr.FromInt(443)}}
 	_, err := c.CreateService(&service)
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 
 	// Attempt to create the legacy secret
 	secret := corev1.Secret{}
@@ -3662,12 +3642,12 @@ func createLegacyAPIResources(csv *v1alpha1.ClusterServiceVersion, desc v1alpha1
 	secret.SetNamespace(testNamespace)
 	if csv != nil {
 		err = ownerutil.AddOwnerLabels(&secret, csv)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 	}
 
 	_, err = c.CreateSecret(&secret)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 	}
 
 	// Attempt to create the legacy secret role
@@ -3676,10 +3656,10 @@ func createLegacyAPIResources(csv *v1alpha1.ClusterServiceVersion, desc v1alpha1
 	role.SetNamespace(testNamespace)
 	if csv != nil {
 		err = ownerutil.AddOwnerLabels(&role, csv)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 	}
 	_, err = c.CreateRole(&role)
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 
 	// Attempt to create the legacy secret role binding
 	roleBinding := rbacv1.RoleBinding{}
@@ -3692,11 +3672,11 @@ func createLegacyAPIResources(csv *v1alpha1.ClusterServiceVersion, desc v1alpha1
 	}
 	if csv != nil {
 		err = ownerutil.AddOwnerLabels(&roleBinding, csv)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 	}
 
 	_, err = c.CreateRoleBinding(&roleBinding)
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 
 	// Attempt to create the legacy authDelegatorClusterRoleBinding
 	clusterRoleBinding := rbacv1.ClusterRoleBinding{}
@@ -3708,10 +3688,10 @@ func createLegacyAPIResources(csv *v1alpha1.ClusterServiceVersion, desc v1alpha1
 	}
 	if csv != nil {
 		err = ownerutil.AddOwnerLabels(&clusterRoleBinding, csv)
-		Expect(err).ShouldNot(HaveOccurred())
+		require.NoError(GinkgoT(), err)
 	}
 	_, err = c.CreateClusterRoleBinding(&clusterRoleBinding)
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 
 	// Attempt to create the legacy authReadingRoleBinding
 	roleBinding.SetName(apiServiceName + "-auth-reader")
@@ -3722,7 +3702,7 @@ func createLegacyAPIResources(csv *v1alpha1.ClusterServiceVersion, desc v1alpha1
 		Name:     "extension-apiserver-authentication-reader",
 	}
 	_, err = c.CreateRoleBinding(&roleBinding)
-	Expect(err).ShouldNot(HaveOccurred())
+	require.NoError(GinkgoT(), err)
 }
 
 func checkLegacyAPIResources(desc v1alpha1.APIServiceDescription, expectedIsNotFound bool) {
@@ -3731,25 +3711,25 @@ func checkLegacyAPIResources(desc v1alpha1.APIServiceDescription, expectedIsNotF
 
 	// Attempt to create the legacy service
 	_, err := c.GetService(testNamespace, strings.Replace(apiServiceName, ".", "-", -1))
-	Expect(errors.IsNotFound(err)).Should(Equal(expectedIsNotFound))
+	require.Equal(GinkgoT(), expectedIsNotFound, errors.IsNotFound(err))
 
 	// Attempt to create the legacy secret
 	_, err = c.GetSecret(testNamespace, apiServiceName+"-cert")
-	Expect(errors.IsNotFound(err)).Should(Equal(expectedIsNotFound))
+	require.Equal(GinkgoT(), expectedIsNotFound, errors.IsNotFound(err))
 
 	// Attempt to create the legacy secret role
 	_, err = c.GetRole(testNamespace, apiServiceName+"-cert")
-	Expect(errors.IsNotFound(err)).Should(Equal(expectedIsNotFound))
+	require.Equal(GinkgoT(), expectedIsNotFound, errors.IsNotFound(err))
 
 	// Attempt to create the legacy secret role binding
 	_, err = c.GetRoleBinding(testNamespace, apiServiceName+"-cert")
-	Expect(errors.IsNotFound(err)).Should(Equal(expectedIsNotFound))
+	require.Equal(GinkgoT(), expectedIsNotFound, errors.IsNotFound(err))
 
 	// Attempt to create the legacy authDelegatorClusterRoleBinding
 	_, err = c.GetClusterRoleBinding(apiServiceName + "-system:auth-delegator")
-	Expect(errors.IsNotFound(err)).Should(Equal(expectedIsNotFound))
+	require.Equal(GinkgoT(), expectedIsNotFound, errors.IsNotFound(err))
 
 	// Attempt to create the legacy authReadingRoleBinding
 	_, err = c.GetRoleBinding("kube-system", apiServiceName+"-auth-reader")
-	Expect(errors.IsNotFound(err)).Should(Equal(expectedIsNotFound))
+	require.Equal(GinkgoT(), expectedIsNotFound, errors.IsNotFound(err))
 }

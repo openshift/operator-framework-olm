@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/decorators"
@@ -63,13 +62,13 @@ var _ = Describe("Operator Controller", func() {
 				)
 
 				for _, obj := range objs {
-					Expect(k8sClient.Create(ctx, obj.(client.Object))).To(Succeed())
+					Expect(k8sClient.Create(ctx, obj)).To(Succeed())
 				}
 			})
 
 			AfterEach(func() {
 				for _, obj := range objs {
-					Expect(k8sClient.Delete(ctx, obj.(client.Object), deleteOpts)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, obj, deleteOpts)).To(Succeed())
 				}
 				Expect(k8sClient.Delete(ctx, operator, deleteOpts)).To(Succeed())
 			})
@@ -144,7 +143,7 @@ var _ = Describe("Operator Controller", func() {
 				)
 
 				for _, obj := range objs {
-					Expect(k8sClient.Create(ctx, obj.(client.Object))).To(Succeed())
+					Expect(k8sClient.Create(ctx, obj)).To(Succeed())
 				}
 
 				expectedRefs = toRefs(scheme, objs...)
@@ -152,7 +151,7 @@ var _ = Describe("Operator Controller", func() {
 
 			AfterEach(func() {
 				for _, obj := range objs {
-					Expect(k8sClient.Delete(ctx, obj.(client.Object), deleteOpts)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, obj, deleteOpts)).To(Succeed())
 				}
 			})
 
@@ -185,7 +184,7 @@ var _ = Describe("Operator Controller", func() {
 					)
 
 					for _, obj := range newObjs {
-						Expect(k8sClient.Create(ctx, obj.(client.Object))).To(Succeed())
+						Expect(k8sClient.Create(ctx, obj)).To(Succeed())
 					}
 
 					objs = append(objs, newObjs...)
@@ -203,7 +202,7 @@ var _ = Describe("Operator Controller", func() {
 			Context("when component labels are removed", func() {
 				BeforeEach(func() {
 					for _, obj := range testobj.StripLabel(expectedKey, objs...) {
-						Expect(k8sClient.Update(ctx, obj.(client.Object))).To(Succeed())
+						Expect(k8sClient.Update(ctx, obj)).To(Succeed())
 					}
 				})
 

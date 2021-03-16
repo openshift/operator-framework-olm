@@ -3,8 +3,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"reflect"
-
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -12,6 +10,7 @@ import (
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+	"reflect"
 	k8scontrollerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -131,7 +130,10 @@ func (c *ServerSideApplier) Apply(ctx context.Context, obj Object, changeFunc in
 		_, applyStatus = unstructuredObj.Object["status"]
 	}
 
-	key := k8scontrollerclient.ObjectKeyFromObject(obj)
+	key, err := k8scontrollerclient.ObjectKeyFromObject(obj)
+	if err != nil {
+		panic(fmt.Sprintf("unable to extract key from resource: %s", err))
+	}
 
 	// Ensure the GVK is set before patching
 	SetDefaultGroupVersionKind(obj, c.Scheme)

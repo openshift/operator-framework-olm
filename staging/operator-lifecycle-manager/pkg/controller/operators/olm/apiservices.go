@@ -6,6 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -247,62 +248,57 @@ func (a *Operator) areAPIServicesAvailable(csv *v1alpha1.ClusterServiceVersion) 
 	return true, nil
 }
 
-// getAPIServiceCABundle returns the CA associated with an API service
-func (a *Operator) getAPIServiceCABundle(csv *v1alpha1.ClusterServiceVersion, desc *v1alpha1.APIServiceDescription) ([]byte, error) {
-	apiServiceName := desc.GetName()
-	apiService, err := a.lister.APIRegistrationV1().APIServiceLister().Get(apiServiceName)
-
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve generated APIService: %v", err)
+// getCABundle returns the CA associated with a deployment
+func (a *Operator) getCABundle(csv *v1alpha1.ClusterServiceVersion) ([]byte, error) {
+	for _, desc := range csv.GetOwnedAPIServiceDescriptions() {
+		apiServiceName := desc.GetName()
+		apiService, err := a.lister.APIRegistrationV1().APIServiceLister().Get(apiServiceName)
+		if err != nil {
+			return nil, fmt.Errorf("could not retrieve generated APIService: %v", err)
+		}
+		if len(apiService.Spec.CABundle) > 0 {
+			return apiService.Spec.CABundle, nil
+		}
 	}
 
-	if len(apiService.Spec.CABundle) > 0 {
-		return apiService.Spec.CABundle, nil
-	}
+	for _, desc := range csv.Spec.WebhookDefinitions {
+		webhookLabels := ownerutil.OwnerLabel(csv, v1alpha1.ClusterServiceVersionKind)
+		webhookLabels[install.WebhookDescKey] = desc.GenerateName
+		webhookSelector := labels.SelectorFromSet(webhookLabels).String()
 
-	return nil, fmt.Errorf("Unable to find ca")
-}
-
-// getWebhookCABundle returns the CA associated with a webhook
-func (a *Operator) getWebhookCABundle(csv *v1alpha1.ClusterServiceVersion, desc *v1alpha1.WebhookDescription) ([]byte, error) {
-	webhookLabels := ownerutil.OwnerLabel(csv, v1alpha1.ClusterServiceVersionKind)
-	webhookLabels[install.WebhookDescKey] = desc.GenerateName
-	webhookSelector := labels.SelectorFromSet(webhookLabels).String()
-
-	switch desc.Type {
-	case v1alpha1.MutatingAdmissionWebhook:
-		existingWebhooks, err := a.opClient.KubernetesInterface().AdmissionregistrationV1().MutatingWebhookConfigurations().List(context.TODO(), metav1.ListOptions{LabelSelector: webhookSelector})
-		if err != nil {
-			return nil, fmt.Errorf("could not retrieve generated MutatingWebhookConfiguration: %v", err)
-		}
-
-		if len(existingWebhooks.Items) > 0 {
-			return existingWebhooks.Items[0].Webhooks[0].ClientConfig.CABundle, nil
-		}
-	case v1alpha1.ValidatingAdmissionWebhook:
-		existingWebhooks, err := a.opClient.KubernetesInterface().AdmissionregistrationV1().ValidatingWebhookConfigurations().List(context.TODO(), metav1.ListOptions{LabelSelector: webhookSelector})
-		if err != nil {
-			return nil, fmt.Errorf("could not retrieve generated ValidatingWebhookConfiguration: %v", err)
-		}
-
-		if len(existingWebhooks.Items) > 0 {
-			return existingWebhooks.Items[0].Webhooks[0].ClientConfig.CABundle, nil
-		}
-	case v1alpha1.ConversionWebhook:
-		for _, conversionCRD := range desc.ConversionCRDs {
-			// check if CRD exists on cluster
-			crd, err := a.opClient.ApiextensionsInterface().ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), conversionCRD, metav1.GetOptions{})
+		switch desc.Type {
+		case v1alpha1.MutatingAdmissionWebhook:
+			existingWebhooks, err := a.opClient.KubernetesInterface().AdmissionregistrationV1().MutatingWebhookConfigurations().List(context.TODO(), metav1.ListOptions{LabelSelector: webhookSelector})
 			if err != nil {
-				continue
-			}
-			if crd.Spec.Conversion == nil || crd.Spec.Conversion.Webhook == nil || crd.Spec.Conversion.Webhook.ClientConfig == nil && crd.Spec.Conversion.Webhook.ClientConfig.CABundle == nil {
-				continue
+				return nil, fmt.Errorf("could not retrieve generated MutatingWebhookConfiguration: %v", err)
 			}
 
-			return crd.Spec.Conversion.Webhook.ClientConfig.CABundle, nil
+			if len(existingWebhooks.Items) > 0 {
+				return existingWebhooks.Items[0].Webhooks[0].ClientConfig.CABundle, nil
+			}
+		case v1alpha1.ValidatingAdmissionWebhook:
+			existingWebhooks, err := a.opClient.KubernetesInterface().AdmissionregistrationV1().ValidatingWebhookConfigurations().List(context.TODO(), metav1.ListOptions{LabelSelector: webhookSelector})
+			if err != nil {
+				return nil, fmt.Errorf("could not retrieve generated ValidatingWebhookConfiguration: %v", err)
+			}
+
+			if len(existingWebhooks.Items) > 0 {
+				return existingWebhooks.Items[0].Webhooks[0].ClientConfig.CABundle, nil
+			}
+		case v1alpha1.ConversionWebhook:
+			for _, conversionCRD := range desc.ConversionCRDs {
+				// check if CRD exists on cluster
+				crd, err := a.opClient.ApiextensionsInterface().ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), conversionCRD, metav1.GetOptions{})
+				if err != nil {
+					continue
+				}
+				if crd.Spec.Conversion == nil || crd.Spec.Conversion.Webhook == nil || crd.Spec.Conversion.Webhook.ClientConfig == nil && crd.Spec.Conversion.Webhook.ClientConfig.CABundle == nil {
+					continue
+				}
+				return crd.Spec.Conversion.Webhook.ClientConfig.CABundle, nil
+			}
 		}
 	}
-
 	return nil, fmt.Errorf("Unable to find ca")
 }
 
@@ -326,13 +322,13 @@ func (a *Operator) updateDeploymentSpecsWithApiServiceData(csv *v1alpha1.Cluster
 		depSpecs[sddSpec.Name] = sddSpec.Spec
 	}
 
-	for _, desc := range csv.Spec.APIServiceDefinitions.Owned {
-		caBundle, err := a.getAPIServiceCABundle(csv, &desc)
-		if err != nil {
-			return nil, fmt.Errorf("could not retrieve caBundle for owned APIServices %s: %v", fmt.Sprintf("%s.%s", desc.Version, desc.Group), err)
-		}
-		caHash := certs.PEMSHA256(caBundle)
+	caBundle, err := a.getCABundle(csv)
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve caBundle: %v", err)
+	}
+	caHash := certs.PEMSHA256(caBundle)
 
+	for _, desc := range csv.Spec.APIServiceDefinitions.Owned {
 		depSpec, ok := depSpecs[desc.DeploymentName]
 		if !ok {
 			return nil, fmt.Errorf("StrategyDetailsDeployment missing deployment %s for owned APIServices %s", desc.DeploymentName, fmt.Sprintf("%s.%s", desc.Version, desc.Group))
@@ -348,16 +344,67 @@ func (a *Operator) updateDeploymentSpecsWithApiServiceData(csv *v1alpha1.Cluster
 			return nil, fmt.Errorf("Unable to get secret %s", install.SecretName(install.ServiceName(desc.DeploymentName)))
 		}
 
-		install.AddDefaultCertVolumeAndVolumeMounts(&depSpec, secret.GetName())
+		volume := corev1.Volume{
+			Name: "apiservice-cert",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: secret.GetName(),
+					Items: []corev1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "apiserver.crt",
+						},
+						{
+							Key:  "tls.key",
+							Path: "apiserver.key",
+						},
+					},
+				},
+			},
+		}
+
+		replaced := false
+		for i, v := range depSpec.Template.Spec.Volumes {
+			if v.Name == volume.Name {
+				depSpec.Template.Spec.Volumes[i] = volume
+				replaced = true
+				break
+			}
+		}
+		if !replaced {
+			depSpec.Template.Spec.Volumes = append(depSpec.Template.Spec.Volumes, volume)
+		}
+
+		mount := corev1.VolumeMount{
+			Name:      volume.Name,
+			MountPath: "/apiserver.local.config/certificates",
+		}
+		for i, container := range depSpec.Template.Spec.Containers {
+			found := false
+			for j, m := range container.VolumeMounts {
+				if m.Name == mount.Name {
+					found = true
+					break
+				}
+
+				// Replace if mounting to the same location.
+				if m.MountPath == mount.MountPath {
+					container.VolumeMounts[j] = mount
+					found = true
+					break
+				}
+			}
+			if !found {
+				container.VolumeMounts = append(container.VolumeMounts, mount)
+			}
+
+			depSpec.Template.Spec.Containers[i] = container
+		}
 		depSpec.Template.ObjectMeta.SetAnnotations(map[string]string{install.OLMCAHashAnnotationKey: caHash})
 		depSpecs[desc.DeploymentName] = depSpec
 	}
 
 	for _, desc := range csv.Spec.WebhookDefinitions {
-		caBundle, err := a.getWebhookCABundle(csv, &desc)
-		if err != nil {
-			return nil, fmt.Errorf("could not retrieve caBundle for WebhookDescription %s: %v", desc.GenerateName, err)
-		}
 		caHash := certs.PEMSHA256(caBundle)
 
 		depSpec, ok := depSpecs[desc.DeploymentName]
@@ -374,8 +421,63 @@ func (a *Operator) updateDeploymentSpecsWithApiServiceData(csv *v1alpha1.Cluster
 		if err != nil {
 			return nil, fmt.Errorf("Unable to get secret %s", install.SecretName(install.ServiceName(desc.DeploymentName)))
 		}
-		install.AddDefaultCertVolumeAndVolumeMounts(&depSpec, secret.GetName())
 
+		volume := corev1.Volume{
+			Name: "apiservice-cert",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: secret.GetName(),
+					Items: []corev1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "apiserver.crt",
+						},
+						{
+							Key:  "tls.key",
+							Path: "apiserver.key",
+						},
+					},
+				},
+			},
+		}
+
+		replaced := false
+		for i, v := range depSpec.Template.Spec.Volumes {
+			if v.Name == volume.Name {
+				depSpec.Template.Spec.Volumes[i] = volume
+				replaced = true
+				break
+			}
+		}
+		if !replaced {
+			depSpec.Template.Spec.Volumes = append(depSpec.Template.Spec.Volumes, volume)
+		}
+
+		mount := corev1.VolumeMount{
+			Name:      volume.Name,
+			MountPath: "/apiserver.local.config/certificates",
+		}
+		for i, container := range depSpec.Template.Spec.Containers {
+			found := false
+			for j, m := range container.VolumeMounts {
+				if m.Name == mount.Name {
+					found = true
+					break
+				}
+
+				// Replace if mounting to the same location.
+				if m.MountPath == mount.MountPath {
+					container.VolumeMounts[j] = mount
+					found = true
+					break
+				}
+			}
+			if !found {
+				container.VolumeMounts = append(container.VolumeMounts, mount)
+			}
+
+			depSpec.Template.Spec.Containers[i] = container
+		}
 		depSpec.Template.ObjectMeta.SetAnnotations(map[string]string{install.OLMCAHashAnnotationKey: caHash})
 		depSpecs[desc.DeploymentName] = depSpec
 	}

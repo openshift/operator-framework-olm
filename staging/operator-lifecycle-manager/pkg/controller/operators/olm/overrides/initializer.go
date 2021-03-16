@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/overrides/inject"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/proxy"
@@ -68,27 +67,27 @@ func (d *DeploymentInitializer) initialize(ownerCSV ownerutil.Owner, deployment 
 	}
 
 	podSpec := &deployment.Spec.Template.Spec
-	if err := inject.InjectEnvIntoDeployment(podSpec, merged); err != nil {
+	if err := InjectEnvIntoDeployment(podSpec, merged); err != nil {
 		return fmt.Errorf("failed to inject proxy env variable(s) into deployment spec name=%s - %v", deployment.Name, err)
 	}
 
-	if err = inject.InjectVolumesIntoDeployment(podSpec, volumeOverrides); err != nil {
+	if err = InjectVolumesIntoDeployment(podSpec, volumeOverrides); err != nil {
 		return fmt.Errorf("failed to inject volume(s) into deployment spec name=%s - %v", deployment.Name, err)
 	}
 
-	if err = inject.InjectVolumeMountsIntoDeployment(podSpec, volumeMountOverrides); err != nil {
+	if err = InjectVolumeMountsIntoDeployment(podSpec, volumeMountOverrides); err != nil {
 		return fmt.Errorf("failed to inject volumeMounts(s) into deployment spec name=%s - %v", deployment.Name, err)
 	}
 
-	if err = inject.InjectTolerationsIntoDeployment(podSpec, tolerationOverrides); err != nil {
+	if err = InjectTolerationsIntoDeployment(podSpec, tolerationOverrides); err != nil {
 		return fmt.Errorf("failed to inject toleration(s) into deployment spec name=%s - %v", deployment.Name, err)
 	}
 
-	if err = inject.InjectResourcesIntoDeployment(podSpec, resourcesOverride); err != nil {
+	if err = InjectResourcesIntoDeployment(podSpec, resourcesOverride); err != nil {
 		return fmt.Errorf("failed to inject resources into deployment spec name=%s - %v", deployment.Name, err)
 	}
 
-	if err = inject.InjectNodeSelectorIntoDeployment(podSpec, nodeSelectorOverride); err != nil {
+	if err = InjectNodeSelectorIntoDeployment(podSpec, nodeSelectorOverride); err != nil {
 		return fmt.Errorf("failed to inject nodeSelector into deployment spec name=%s - %v", deployment.Name, err)
 	}
 

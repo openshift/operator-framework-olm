@@ -340,24 +340,6 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 									},
 								},
 							},
-							{
-								Name: "webhook-cert",
-								VolumeSource: corev1.VolumeSource{
-									Secret: &corev1.SecretVolumeSource{
-										SecretName: "test-service-cert",
-										Items: []corev1.KeyToPath{
-											{
-												Key:  "tls.crt",
-												Path: "tls.crt",
-											},
-											{
-												Key:  "tls.key",
-												Path: "tls.key",
-											},
-										},
-									},
-								},
-							},
 						},
 					},
 				},
@@ -552,24 +534,6 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 											{
 												Key:  "tls.key",
 												Path: "apiserver.key",
-											},
-										},
-									},
-								},
-							},
-							{
-								Name: "webhook-cert",
-								VolumeSource: corev1.VolumeSource{
-									Secret: &corev1.SecretVolumeSource{
-										SecretName: "test-service-cert",
-										Items: []corev1.KeyToPath{
-											{
-												Key:  "tls.crt",
-												Path: "tls.crt",
-											},
-											{
-												Key:  "tls.key",
-												Path: "tls.key",
 											},
 										},
 									},

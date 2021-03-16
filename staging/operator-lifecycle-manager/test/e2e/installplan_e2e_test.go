@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blang/semver/v4"
+	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -118,7 +118,8 @@ var _ = Describe("Install Plan", func() {
 			Expect(ctx.Ctx().Client().Create(context.Background(), plan)).To(Succeed())
 			Expect(ctx.Ctx().Client().Status().Update(context.Background(), plan)).To(Succeed())
 
-			key := runtimeclient.ObjectKeyFromObject(plan)
+			key, err := runtimeclient.ObjectKeyFromObject(plan)
+			Expect(err).ToNot(HaveOccurred())
 
 			HavePhase := func(goal operatorsv1alpha1.InstallPlanPhase) types.GomegaMatcher {
 				return WithTransform(func(plan *operatorsv1alpha1.InstallPlan) operatorsv1alpha1.InstallPlanPhase {
@@ -223,12 +224,11 @@ var _ = Describe("Install Plan", func() {
 
 		// Fetch installplan again to check for unnecessary control loops
 		fetchedInstallPlan, err = fetchInstallPlan(GinkgoT(), crc, fetchedInstallPlan.GetName(), func(fip *operatorsv1alpha1.InstallPlan) bool {
-			// Don't compare object meta as labels can be applied by the operator controller.
-			compareResources(GinkgoT(), fetchedInstallPlan.Spec, fip.Spec)
-			compareResources(GinkgoT(), fetchedInstallPlan.Status, fip.Status)
+			compareResources(GinkgoT(), fetchedInstallPlan, fip)
 			return true
 		})
 		require.NoError(GinkgoT(), err)
+
 		require.Equal(GinkgoT(), len(expectedStepSources), len(fetchedInstallPlan.Status.Plan), "Number of resolved steps matches the number of expected steps")
 
 		// Ensure resolved step resources originate from the correct catalog sources
@@ -263,7 +263,7 @@ var _ = Describe("Install Plan", func() {
 		require.Equal(GinkgoT(), dependentCSV.GetName(), dependentSubscription.Status.CurrentCSV)
 
 		// Verify CSV is created
-		_, err = awaitCSV(crc, testNamespace, dependentCSV.GetName(), csvAnyChecker)
+		_, err = awaitCSV(GinkgoT(), crc, testNamespace, dependentCSV.GetName(), csvAnyChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Update dependent subscription in catalog and wait for csv to update
@@ -291,7 +291,7 @@ var _ = Describe("Install Plan", func() {
 		require.NotEqual(GinkgoT(), fetchedInstallPlan.GetName(), fetchedUpdatedDepInstallPlan.GetName())
 
 		// Wait for csv to update
-		_, err = awaitCSV(crc, testNamespace, updatedDependentCSV.GetName(), csvAnyChecker)
+		_, err = awaitCSV(GinkgoT(), crc, testNamespace, updatedDependentCSV.GetName(), csvAnyChecker)
 		require.NoError(GinkgoT(), err)
 	})
 
@@ -1257,7 +1257,7 @@ var _ = Describe("Install Plan", func() {
 			require.Equal(GinkgoT(), operatorsv1alpha1.InstallPlanPhaseComplete, fetchedInstallPlan.Status.Phase)
 
 			// Verify CSV is created
-			_, err = awaitCSV(crc, testNamespace, mainCSV.GetName(), csvSucceededChecker)
+			_, err = awaitCSV(GinkgoT(), crc, testNamespace, mainCSV.GetName(), csvSucceededChecker)
 			require.NoError(GinkgoT(), err)
 
 			// Update CatalogSource with a new CSV with more permissions
@@ -1323,7 +1323,7 @@ var _ = Describe("Install Plan", func() {
 			require.Equal(GinkgoT(), operatorsv1alpha1.InstallPlanPhaseComplete, fetchedUpdatedInstallPlan.Status.Phase)
 
 			// Wait for csv to update
-			_, err = awaitCSV(crc, testNamespace, updatedCSV.GetName(), csvSucceededChecker)
+			_, err = awaitCSV(GinkgoT(), crc, testNamespace, updatedCSV.GetName(), csvSucceededChecker)
 			require.NoError(GinkgoT(), err)
 
 			// If the CSV is succeeded, we successfully rolled out the RBAC changes
@@ -1444,7 +1444,7 @@ var _ = Describe("Install Plan", func() {
 			require.Equal(GinkgoT(), operatorsv1alpha1.InstallPlanPhaseComplete, fetchedInstallPlan.Status.Phase)
 
 			// Verify CSV is created
-			_, err = awaitCSV(crc, testNamespace, mainCSV.GetName(), csvSucceededChecker)
+			_, err = awaitCSV(GinkgoT(), crc, testNamespace, mainCSV.GetName(), csvSucceededChecker)
 			require.NoError(GinkgoT(), err)
 
 			// Update CatalogSource with a new CSV with more permissions
@@ -1504,7 +1504,7 @@ var _ = Describe("Install Plan", func() {
 			require.Equal(GinkgoT(), operatorsv1alpha1.InstallPlanPhaseComplete, fetchedUpdatedInstallPlan.Status.Phase)
 
 			// Wait for csv to update
-			_, err = awaitCSV(crc, testNamespace, updatedCSV.GetName(), csvSucceededChecker)
+			_, err = awaitCSV(GinkgoT(), crc, testNamespace, updatedCSV.GetName(), csvSucceededChecker)
 			require.NoError(GinkgoT(), err)
 
 			newSecrets, err := c.KubernetesInterface().CoreV1().Secrets(testNamespace).List(context.TODO(), metav1.ListOptions{})
@@ -1648,10 +1648,10 @@ var _ = Describe("Install Plan", func() {
 			require.Equal(GinkgoT(), operatorsv1alpha1.InstallPlanPhaseComplete, fetchedInstallPlan.Status.Phase)
 
 			// Verify CSV is created
-			csv, err := awaitCSV(crc, testNamespace, mainCSV.GetName(), csvSucceededChecker)
+			csv, err := awaitCSV(GinkgoT(), crc, testNamespace, mainCSV.GetName(), csvSucceededChecker)
 			require.NoError(GinkgoT(), err)
 
-			addedEnvVar := corev1.EnvVar{Name: "EXAMPLE", Value: "value"}
+			modifiedEnv := []corev1.EnvVar{{Name: "EXAMPLE", Value: "value"}}
 			modifiedDetails := operatorsv1alpha1.StrategyDetailsDeployment{
 				DeploymentSpecs: []operatorsv1alpha1.StrategyDeploymentSpec{
 					{
@@ -1671,7 +1671,7 @@ var _ = Describe("Install Plan", func() {
 										Image:           *dummyImage,
 										Ports:           []corev1.ContainerPort{{ContainerPort: 80}},
 										ImagePullPolicy: corev1.PullIfNotPresent,
-										Env:             []corev1.EnvVar{addedEnvVar},
+										Env:             modifiedEnv,
 									},
 								}},
 							},
@@ -1689,7 +1689,7 @@ var _ = Describe("Install Plan", func() {
 			require.NoError(GinkgoT(), err)
 
 			// Wait for csv to update
-			_, err = awaitCSV(crc, testNamespace, csv.GetName(), csvSucceededChecker)
+			_, err = awaitCSV(GinkgoT(), crc, testNamespace, csv.GetName(), csvSucceededChecker)
 			require.NoError(GinkgoT(), err)
 
 			// Should have the updated env var
@@ -1701,12 +1701,7 @@ var _ = Describe("Install Plan", func() {
 				if len(dep.Spec.Template.Spec.Containers[0].Env) == 0 {
 					return false, nil
 				}
-				for _, envVar := range dep.Spec.Template.Spec.Containers[0].Env {
-					if envVar == addedEnvVar {
-						return true, nil
-					}
-				}
-				return false, nil
+				return modifiedEnv[0] == dep.Spec.Template.Spec.Containers[0].Env[0], nil
 			})
 			require.NoError(GinkgoT(), err)
 
@@ -1737,7 +1732,7 @@ var _ = Describe("Install Plan", func() {
 			require.Equal(GinkgoT(), operatorsv1alpha1.InstallPlanPhaseComplete, fetchedUpdatedInstallPlan.Status.Phase)
 
 			// Wait for csv to update
-			_, err = awaitCSV(crc, testNamespace, updatedCSV.GetName(), csvSucceededChecker)
+			_, err = awaitCSV(GinkgoT(), crc, testNamespace, updatedCSV.GetName(), csvSucceededChecker)
 			require.NoError(GinkgoT(), err)
 
 			// Should have created deployment and stomped on the env changes
@@ -1746,9 +1741,8 @@ var _ = Describe("Install Plan", func() {
 			require.NotNil(GinkgoT(), updatedDep)
 
 			// Should have the updated env var
-			for _, envVar := range updatedDep.Spec.Template.Spec.Containers[0].Env {
-				require.False(GinkgoT(), envVar == addedEnvVar)
-			}
+			var emptyEnv []corev1.EnvVar = nil
+			require.Equal(GinkgoT(), emptyEnv, updatedDep.Spec.Template.Spec.Containers[0].Env)
 		})
 		It("UpdateSingleExistingCRDOwner", func() {
 
@@ -1867,7 +1861,7 @@ var _ = Describe("Install Plan", func() {
 			require.NoError(GinkgoT(), err)
 
 			// Verify CSV is created
-			_, err = awaitCSV(crc, testNamespace, mainCSV.GetName(), csvAnyChecker)
+			_, err = awaitCSV(GinkgoT(), crc, testNamespace, mainCSV.GetName(), csvAnyChecker)
 			require.NoError(GinkgoT(), err)
 
 			mainManifests = []registry.PackageManifest{
@@ -1891,7 +1885,7 @@ var _ = Describe("Install Plan", func() {
 			require.NotEqual(GinkgoT(), fetchedInstallPlan.GetName(), fetchedUpdatedInstallPlan.GetName())
 
 			// Wait for csv to update
-			_, err = awaitCSV(crc, testNamespace, betaCSV.GetName(), csvAnyChecker)
+			_, err = awaitCSV(GinkgoT(), crc, testNamespace, betaCSV.GetName(), csvAnyChecker)
 			require.NoError(GinkgoT(), err)
 
 			// Get the CRD to see if it is updated
@@ -2050,7 +2044,7 @@ var _ = Describe("Install Plan", func() {
 			require.NoError(GinkgoT(), err)
 
 			// Verify CSV is created
-			_, err = awaitCSV(crc, testNamespace, mainCSV.GetName(), csvAnyChecker)
+			_, err = awaitCSV(GinkgoT(), crc, testNamespace, mainCSV.GetName(), csvAnyChecker)
 			require.NoError(GinkgoT(), err)
 
 			// Get the CRD to see if it is updated
@@ -2118,12 +2112,6 @@ var _ = Describe("Install Plan", func() {
 						Verbs:     []string{rbac.VerbAll},
 						APIGroups: []string{"cluster.com"},
 						Resources: []string{crdPlural},
-					},
-					// Permissions must be different than ClusterPermissions defined below if OLM is going to lift role/rolebindings to cluster level.
-					{
-						Verbs:     []string{rbac.VerbAll},
-						APIGroups: []string{corev1.GroupName},
-						Resources: []string{corev1.ResourceConfigMaps.String()},
 					},
 				},
 			},
@@ -2219,7 +2207,6 @@ var _ = Describe("Install Plan", func() {
 					}
 					return true, nil
 				})
-				require.NoError(GinkgoT(), err)
 			}
 			if step.Resource.Kind == "RoleBinding" {
 				err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
@@ -2232,7 +2219,6 @@ var _ = Describe("Install Plan", func() {
 					}
 					return true, nil
 				})
-				require.NoError(GinkgoT(), err)
 			}
 		}
 
@@ -2254,9 +2240,15 @@ var _ = Describe("Install Plan", func() {
 			GinkgoT().Logf("Monitoring cluster role binding %v", binding.GetName())
 		}
 
+		// can't query by owner reference, so just use the name we know is in the install plan
+		createdServiceAccountNames := map[string]struct{}{serviceAccountName: {}}
+		GinkgoT().Logf("Monitoring service account %v", serviceAccountName)
+
 		crWatcher, err := c.KubernetesInterface().RbacV1().ClusterRoles().Watch(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v=%v", ownerutil.OwnerKey, stableCSVName)})
 		require.NoError(GinkgoT(), err)
 		crbWatcher, err := c.KubernetesInterface().RbacV1().ClusterRoleBindings().Watch(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v=%v", ownerutil.OwnerKey, stableCSVName)})
+		require.NoError(GinkgoT(), err)
+		saWatcher, err := c.KubernetesInterface().CoreV1().ServiceAccounts(testNamespace).Watch(context.TODO(), metav1.ListOptions{})
 		require.NoError(GinkgoT(), err)
 
 		done := make(chan struct{})
@@ -2276,7 +2268,7 @@ var _ = Describe("Install Plan", func() {
 							continue
 						}
 						delete(createdClusterRoleNames, cr.GetName())
-						if len(createdClusterRoleNames) == 0 && len(createdClusterRoleBindingNames) == 0 {
+						if len(createdClusterRoleNames) == 0 && len(createdClusterRoleBindingNames) == 0 && len(createdServiceAccountNames) == 0 {
 							done <- struct{}{}
 							return
 						}
@@ -2292,7 +2284,23 @@ var _ = Describe("Install Plan", func() {
 							continue
 						}
 						delete(createdClusterRoleBindingNames, crb.GetName())
-						if len(createdClusterRoleNames) == 0 && len(createdClusterRoleBindingNames) == 0 {
+						if len(createdClusterRoleNames) == 0 && len(createdClusterRoleBindingNames) == 0 && len(createdServiceAccountNames) == 0 {
+							done <- struct{}{}
+							return
+						}
+					}
+				case evt, ok := <-saWatcher.ResultChan():
+					if !ok {
+						errExit <- errors.New("sa watch channel closed unexpectedly")
+						return
+					}
+					if evt.Type == watch.Deleted {
+						sa, ok := evt.Object.(*corev1.ServiceAccount)
+						if !ok {
+							continue
+						}
+						delete(createdServiceAccountNames, sa.GetName())
+						if len(createdClusterRoleNames) == 0 && len(createdClusterRoleBindingNames) == 0 && len(createdServiceAccountNames) == 0 {
 							done <- struct{}{}
 							return
 						}
@@ -2314,17 +2322,7 @@ var _ = Describe("Install Plan", func() {
 
 		require.Emptyf(GinkgoT(), createdClusterRoleNames, "unexpected cluster role remain: %v", createdClusterRoleNames)
 		require.Emptyf(GinkgoT(), createdClusterRoleBindingNames, "unexpected cluster role binding remain: %v", createdClusterRoleBindingNames)
-
-		Eventually(func() error {
-			_, err := c.GetServiceAccount(testNamespace, serviceAccountName)
-			if err == nil {
-				return fmt.Errorf("The %v/%v ServiceAccount should have been deleted", testNamespace, serviceAccountName)
-			}
-			if !k8serrors.IsNotFound(err) {
-				return err
-			}
-			return nil
-		}, timeout, interval).Should(BeNil())
+		require.Emptyf(GinkgoT(), createdServiceAccountNames, "unexpected service account remain: %v", createdServiceAccountNames)
 	})
 
 	It("CRD validation", func() {
@@ -2636,7 +2634,7 @@ var _ = Describe("Install Plan", func() {
 		require.Equal(GinkgoT(), operatorsv1alpha1.InstallPlanPhaseComplete, fetchedInstallPlan.Status.Phase)
 
 		// Verify CSV is created
-		_, err = awaitCSV(crc, ns.GetName(), mainCSV.GetName(), csvSucceededChecker)
+		_, err = awaitCSV(GinkgoT(), crc, ns.GetName(), mainCSV.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Make sure to clean up the installed CRD
@@ -2946,7 +2944,8 @@ var _ = Describe("Install Plan", func() {
 		Expect(ctx.Ctx().Client().Create(context.Background(), plan)).To(Succeed())
 		Expect(ctx.Ctx().Client().Status().Update(context.Background(), plan)).To(Succeed())
 
-		key := runtimeclient.ObjectKeyFromObject(plan)
+		key, err := runtimeclient.ObjectKeyFromObject(plan)
+		Expect(err).ToNot(HaveOccurred())
 
 		HavePhase := func(goal operatorsv1alpha1.InstallPlanPhase) types.GomegaMatcher {
 			return WithTransform(func(plan *operatorsv1alpha1.InstallPlan) operatorsv1alpha1.InstallPlanPhase {
@@ -3022,7 +3021,8 @@ var _ = Describe("Install Plan", func() {
 		Expect(ctx.Ctx().Client().Create(context.Background(), newPlan)).To(Succeed())
 		Expect(ctx.Ctx().Client().Status().Update(context.Background(), newPlan)).To(Succeed())
 
-		newKey := runtimeclient.ObjectKeyFromObject(newPlan)
+		newKey, err := runtimeclient.ObjectKeyFromObject(newPlan)
+		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() (*operatorsv1alpha1.InstallPlan, error) {
 			return newPlan, ctx.Ctx().Client().Get(context.Background(), newKey, newPlan)
@@ -3209,7 +3209,8 @@ var _ = Describe("Install Plan", func() {
 		Expect(ctx.Ctx().Client().Create(context.Background(), plan)).To(Succeed())
 		Expect(ctx.Ctx().Client().Status().Update(context.Background(), plan)).To(Succeed())
 
-		key := runtimeclient.ObjectKeyFromObject(plan)
+		key, err := runtimeclient.ObjectKeyFromObject(plan)
+		Expect(err).ToNot(HaveOccurred())
 
 		HavePhase := func(goal operatorsv1alpha1.InstallPlanPhase) types.GomegaMatcher {
 			return WithTransform(func(plan *operatorsv1alpha1.InstallPlan) operatorsv1alpha1.InstallPlanPhase {
@@ -3261,7 +3262,8 @@ var _ = Describe("Install Plan", func() {
 		Expect(ctx.Ctx().Client().Create(context.Background(), newPlan)).To(Succeed())
 		Expect(ctx.Ctx().Client().Status().Update(context.Background(), newPlan)).To(Succeed())
 
-		newKey := runtimeclient.ObjectKeyFromObject(newPlan)
+		newKey, err := runtimeclient.ObjectKeyFromObject(newPlan)
+		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() (*operatorsv1alpha1.InstallPlan, error) {
 			return newPlan, ctx.Ctx().Client().Get(context.Background(), newKey, newPlan)
@@ -3425,7 +3427,7 @@ func newCRD(plural string) apiextensions.CustomResourceDefinition {
 func newCSV(name, namespace, replaces string, version semver.Version, owned []apiextensions.CustomResourceDefinition, required []apiextensions.CustomResourceDefinition, namedStrategy *operatorsv1alpha1.NamedInstallStrategy) operatorsv1alpha1.ClusterServiceVersion {
 	csvType = metav1.TypeMeta{
 		Kind:       operatorsv1alpha1.ClusterServiceVersionKind,
-		APIVersion: operatorsv1alpha1.SchemeGroupVersion.String(),
+		APIVersion: operatorsv1alpha1.GroupVersion,
 	}
 
 	// set a simple default strategy if none given

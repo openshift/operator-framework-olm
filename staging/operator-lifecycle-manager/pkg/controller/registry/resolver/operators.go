@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/blang/semver/v4"
+	"github.com/blang/semver"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"

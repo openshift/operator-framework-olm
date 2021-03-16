@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,8 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
-
-	"k8s.io/klog"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm"
@@ -84,10 +81,6 @@ func main() {
 	// Get exit signal context
 	ctx, cancel := context.WithCancel(signals.Context())
 	defer cancel()
-
-	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
-	klog.InitFlags(klogFlags)
-
 	pflag.Parse()
 
 	// Parse the command-line flags.
@@ -114,8 +107,6 @@ func main() {
 	logger := logrus.New()
 	if *debug {
 		logger.SetLevel(logrus.DebugLevel)
-		klogVerbosity := klogFlags.Lookup("v")
-		klogVerbosity.Value.Set("99")
 	}
 	logger.Infof("log level %s", logger.Level)
 
@@ -240,7 +231,7 @@ func main() {
 	}
 
 	// Start the controller manager
-	if err := mgr.Start(ctx); err != nil {
+	if err := mgr.Start(ctx.Done()); err != nil {
 		logger.WithError(err).Fatal("controller manager stopped")
 	}
 

@@ -1,7 +1,6 @@
 package operators
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -46,7 +45,7 @@ var (
 	cfg       *rest.Config
 	k8sClient client.Client
 	testEnv   *envtest.Environment
-	ctx       context.Context
+	stop      chan struct{}
 
 	scheme            = runtime.NewScheme()
 	gracePeriod int64 = 0
@@ -83,19 +82,19 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
+
 	By("bootstrapping test environment")
 	useExisting := false
 	testEnv = &envtest.Environment{
 		UseExistingCluster: &useExisting,
-		CRDs: []client.Object{
+		CRDs: []runtime.Object{
 			crds.CatalogSource(),
 			crds.ClusterServiceVersion(),
 			crds.InstallPlan(),
 			crds.Subscription(),
 			crds.OperatorGroup(),
 			crds.Operator(),
-			crds.OperatorCondition(),
 		},
 	}
 
@@ -124,36 +123,20 @@ var _ = BeforeSuite(func() {
 	)
 	Expect(err).ToNot(HaveOccurred())
 
-	operatorConditionReconciler, err := NewOperatorConditionReconciler(
-		mgr.GetClient(),
-		ctrl.Log.WithName("controllers").WithName("OperatorCondition"),
-		mgr.GetScheme(),
-	)
-	Expect(err).ToNot(HaveOccurred())
-
-	operatorConditionGeneratorReconciler, err := NewOperatorConditionGeneratorReconciler(
-		mgr.GetClient(),
-		ctrl.Log.WithName("controllers").WithName("OperatorCondition"),
-		mgr.GetScheme(),
-	)
-	Expect(err).ToNot(HaveOccurred())
-
 	By("Adding controllers to the manager")
 	Expect(operatorReconciler.SetupWithManager(mgr)).ToNot(HaveOccurred())
 	Expect(adoptionReconciler.SetupWithManager(mgr)).ToNot(HaveOccurred())
-	Expect(operatorConditionReconciler.SetupWithManager(mgr)).ToNot(HaveOccurred())
-	Expect(operatorConditionGeneratorReconciler.SetupWithManager(mgr)).ToNot(HaveOccurred())
 
-	ctx = ctrl.SetupSignalHandler()
+	stop = make(chan struct{})
 	go func() {
 		defer GinkgoRecover()
 
 		By("Starting managed controllers")
-		err := mgr.Start(ctx)
+		err = mgr.Start(stop)
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
-	Expect(mgr.GetCache().WaitForCacheSync(ctx)).To(BeTrue(), "Cache sync failed on startup")
+	Expect(mgr.GetCache().WaitForCacheSync(stop)).To(BeTrue(), "Cache sync failed on startup")
 
 	k8sClient = mgr.GetClient()
 	Expect(k8sClient).ToNot(BeNil())
@@ -161,7 +144,7 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("stopping the controller manager")
-	ctx.Done()
+	close(stop)
 
 	By("tearing down the test environment")
 	err := testEnv.Stop()

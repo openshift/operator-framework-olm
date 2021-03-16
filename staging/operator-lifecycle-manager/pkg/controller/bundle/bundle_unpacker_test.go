@@ -113,9 +113,6 @@ func TestConfigMapUnpacker(t *testing.T) {
 							Namespace: "ns-a",
 							Name:      "src-a",
 						},
-						Spec: operatorsv1alpha1.CatalogSourceSpec{
-							Secrets: []string{"my-secret"},
-						},
 					},
 				},
 			},
@@ -196,8 +193,7 @@ func TestConfigMapUnpacker(t *testing.T) {
 									Name: pathHash,
 								},
 								Spec: corev1.PodSpec{
-									RestartPolicy:    corev1.RestartPolicyOnFailure,
-									ImagePullSecrets: []corev1.LocalObjectReference{{Name: "my-secret"}},
+									RestartPolicy: corev1.RestartPolicyOnFailure,
 									Containers: []corev1.Container{
 										{
 											Name:    "extract",
