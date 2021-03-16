@@ -68,6 +68,7 @@ github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
 # github.com/blang/semver/v4 v4.0.0
+## explicit
 github.com/blang/semver/v4
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
@@ -379,6 +380,7 @@ github.com/nxadm/tail/winfile
 ## explicit
 github.com/onsi/ginkgo
 github.com/onsi/ginkgo/config
+github.com/onsi/ginkgo/extensions/table
 github.com/onsi/ginkgo/ginkgo
 github.com/onsi/ginkgo/ginkgo/convert
 github.com/onsi/ginkgo/ginkgo/interrupthandler
@@ -521,6 +523,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/scoped
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/scopedclient
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/signals
+github.com/operator-framework/operator-lifecycle-manager/pkg/lib/testobj
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/time
 github.com/operator-framework/operator-lifecycle-manager/pkg/metrics
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators
@@ -532,6 +535,8 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/clie
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/test/e2e/assets/chart
 github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx
+github.com/operator-framework/operator-lifecycle-manager/test/e2e/dsl
+github.com/operator-framework/operator-lifecycle-manager/test/e2e/testdata/vpa
 # github.com/operator-framework/operator-registry v1.13.6 => ./staging/operator-registry
 ## explicit
 github.com/operator-framework/operator-registry/cmd/opm/alpha
@@ -550,9 +555,7 @@ github.com/operator-framework/operator-registry/pkg/image
 github.com/operator-framework/operator-registry/pkg/image/containerdregistry
 github.com/operator-framework/operator-registry/pkg/image/execregistry
 github.com/operator-framework/operator-registry/pkg/lib/bundle
-github.com/operator-framework/operator-registry/pkg/lib/certs
 github.com/operator-framework/operator-registry/pkg/lib/dns
-github.com/operator-framework/operator-registry/pkg/lib/graceful
 github.com/operator-framework/operator-registry/pkg/lib/indexer
 github.com/operator-framework/operator-registry/pkg/lib/log
 github.com/operator-framework/operator-registry/pkg/lib/registry
@@ -583,8 +586,10 @@ github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp
 # github.com/prometheus/client_model v0.2.0
+## explicit
 github.com/prometheus/client_model/go
 # github.com/prometheus/common v0.10.0
+## explicit
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model

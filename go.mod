@@ -3,6 +3,7 @@ module github.com/openshift/operator-framework-olm
 go 1.15
 
 require (
+	github.com/blang/semver/v4 v4.0.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-bindata/go-bindata/v3 v3.1.3
 	github.com/golang/mock v1.4.4
@@ -20,6 +21,8 @@ require (
 	github.com/otiai10/copy v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
+	github.com/prometheus/client_model v0.2.0
+	github.com/prometheus/common v0.10.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
