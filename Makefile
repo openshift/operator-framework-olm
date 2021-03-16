@@ -1,6 +1,21 @@
 SHELL := /bin/bash
 ROOT_DIR:= $(patsubst %/,%,$(dir $(realpath $(lastword $(MAKEFILE_LIST)))))
 
+GO_BUILD_OPTS := -mod=vendor
+GO_BUILD_TAGS := -tags "json1"
+
+GIT_COMMIT := $(or $(SOURCE_GIT_COMMIT),$(shell git rev-parse --short HEAD))
+OPM_VERSION := $(or $(SOURCE_GIT_TAG),$(shell git describe --always --tags HEAD))
+BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+GO_PKG := github.com/operator-framework
+REGISTRY_PKG := $(GO_PKG)/operator-registry
+OLM_PKG := $(GO_PKG)/operator-lifecycle-manager
+API_PKG := $(GO_PKG)/api
+
+OLM_CMDS  := $(shell go list -mod=vendor $(OLM_PKG)/cmd/...)
+REGISTRY_CMDS  := $(shell go list -mod=vendor $(REGISTRY_PKG)/cmd/...)
+
 KUBEBUILDER_ASSETS := $(or $(or $(KUBEBUILDER_ASSETS),$(dir $(shell command -v kubebuilder))),/usr/local/kubebuilder/bin)
 export KUBEBUILDER_ASSETS
 # Ensure kubebuilder is installed before continuing
@@ -22,6 +37,16 @@ vendor:
 	go mod vendor
 	go mod verify
 
+build: $(OLM_CMDS) $(REGISTRY_CMDS)
+
+$(REGISTRY_CMDS): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
+$(REGISTRY_CMDS):
+	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o bin/$(shell basename $@) $@
+
+$(OLM_CMDS): version_flags=-ldflags "-X $(OLM_PKG)/pkg/version.GitCommit=$(GIT_COMMIT) -X $(OLM_PKG)/pkg/version.OLMVersion=`cat staging/operator-lifecycle-manager/OLM_VERSION`"
+$(OLM_CMDS):
+	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o bin/$(shell basename $@) $@
+
 bin/kubebuilder:
 	$(ROOT_DIR)/scripts/install_kubebuilder.sh
 
@@ -36,3 +61,6 @@ unit/api:
 
 unit:
 	$(ROOT_DIR)/scripts/unit.sh
+
+e2e/operator-registry:
+	go run -mod=vendor github.com/onsi/ginkgo/ginkgo --v --randomizeAllSpecs --randomizeSuites --race $(TAGS) $(REGISTRY_PKG)/test/e2e
