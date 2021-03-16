@@ -10,9 +10,11 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/feature"
 )
 
+var log = ctrl.Log.WithName("manager")
+
 func Manager(ctx context.Context, debug bool) (ctrl.Manager, error) {
 	ctrl.SetLogger(zap.New(zap.UseDevMode(debug)))
-	setupLog := ctrl.Log.WithName("setup").V(1)
+	setupLog := log.WithName("setup").V(4)
 
 	// Setup a Manager
 	setupLog.Info("configuring manager")
