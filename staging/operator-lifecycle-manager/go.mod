@@ -76,5 +76,3 @@ replace (
 	// pinned because no tag supports 1.18 yet
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06
 )
-
-replace github.com/openshift/operator-framework-olm => ../../
