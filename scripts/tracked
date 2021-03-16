@@ -1,3 +1,3 @@
 operator-lifecycle-manager git@github.com:operator-framework/operator-lifecycle-manager.git
 operator-registry git@github.com:operator-framework/operator-registry.git
-api git@github.com:operator-framework/api.git
+api git@github.com:operator-framework/api.git v0.5.1 87dc9934582bbd87da13b1cee337963e6e9e04fc
