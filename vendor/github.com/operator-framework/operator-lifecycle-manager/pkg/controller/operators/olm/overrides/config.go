@@ -33,7 +33,7 @@ func (o *operatorConfig) GetConfigOverrides(ownerCSV ownerutil.Owner) (envVarOve
 	volumeOverrides = owner.Spec.Config.Volumes
 	volumeMountOverrides = owner.Spec.Config.VolumeMounts
 	tolerationOverrides = owner.Spec.Config.Tolerations
-	resourcesOverride = owner.Spec.Config.Resources
+	resourcesOverride = *owner.Spec.Config.Resources
 	nodeSelectorOverride = owner.Spec.Config.NodeSelector
 
 	return

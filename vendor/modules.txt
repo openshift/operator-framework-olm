@@ -426,10 +426,8 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v0.1.1
 github.com/opencontainers/runc/libcontainer/system
 # github.com/openshift/api v0.0.0-20200331152225-585af27e34fd => github.com/openshift/api v0.0.0-20200331152225-585af27e34fd
-## explicit
 github.com/openshift/api/config/v1
 # github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0
-## explicit
 github.com/openshift/client-go/config/clientset/versioned
 github.com/openshift/client-go/config/clientset/versioned/scheme
 github.com/openshift/client-go/config/clientset/versioned/typed/config/v1
@@ -440,7 +438,6 @@ github.com/openshift/client-go/config/informers/externalversions/internalinterfa
 github.com/openshift/client-go/config/listers/config/v1
 # github.com/operator-framework/api v0.5.1 => ./staging/api
 ## explicit
-github.com/operator-framework/api/cmd/operator-verify/manifests
 github.com/operator-framework/api/crds
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/manifests
@@ -456,16 +453,14 @@ github.com/operator-framework/api/pkg/validation/interfaces
 github.com/operator-framework/api/pkg/validation/internal
 # github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000 => ./staging/operator-lifecycle-manager
 ## explicit
+github.com/operator-framework/operator-lifecycle-manager/cmd/catalog
+github.com/operator-framework/operator-lifecycle-manager/cmd/olm
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned
-github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/fake
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1
-github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1/fake
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1
-github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1/fake
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha2
-github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha2/fake
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions/internalinterfaces
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions/operators
@@ -494,7 +489,6 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/projection
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver
 github.com/operator-framework/operator-lifecycle-manager/pkg/feature
-github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clientfake
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/codec
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/comparison
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client
@@ -534,10 +528,13 @@ github.com/operator-framework/operator-lifecycle-manager/test/e2e/assets/chart
 github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx
 # github.com/operator-framework/operator-registry v1.13.6 => ./staging/operator-registry
 ## explicit
+github.com/operator-framework/operator-registry/cmd/opm
 github.com/operator-framework/operator-registry/cmd/opm/alpha
 github.com/operator-framework/operator-registry/cmd/opm/alpha/bundle
 github.com/operator-framework/operator-registry/cmd/opm/index
 github.com/operator-framework/operator-registry/cmd/opm/registry
+github.com/operator-framework/operator-registry/cmd/opm/root
+github.com/operator-framework/operator-registry/cmd/opm/version
 github.com/operator-framework/operator-registry/pkg/api
 github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1
 github.com/operator-framework/operator-registry/pkg/apprclient
@@ -578,7 +575,6 @@ github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/prometheus/client_golang v1.7.1
-## explicit
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp
@@ -613,7 +609,6 @@ github.com/spf13/cast
 github.com/spf13/cobra
 github.com/spf13/cobra/doc
 # github.com/spf13/pflag v1.0.5
-## explicit
 github.com/spf13/pflag
 # github.com/stretchr/testify v1.6.1
 ## explicit
@@ -953,12 +948,9 @@ k8s.io/apiextensions-apiserver/pkg/apiserver/schema/objectmeta
 k8s.io/apiextensions-apiserver/pkg/apiserver/schema/pruning
 k8s.io/apiextensions-apiserver/pkg/apiserver/validation
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset
-k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1
-k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1/fake
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
-k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake
 k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions
 k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions
 k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1
@@ -1058,7 +1050,6 @@ k8s.io/cli-runtime/pkg/resource
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/cached/disk
 k8s.io/client-go/discovery/cached/memory
-k8s.io/client-go/discovery/fake
 k8s.io/client-go/dynamic
 k8s.io/client-go/informers
 k8s.io/client-go/informers/admissionregistration
@@ -1120,94 +1111,50 @@ k8s.io/client-go/informers/storage/v1
 k8s.io/client-go/informers/storage/v1alpha1
 k8s.io/client-go/informers/storage/v1beta1
 k8s.io/client-go/kubernetes
-k8s.io/client-go/kubernetes/fake
 k8s.io/client-go/kubernetes/scheme
 k8s.io/client-go/kubernetes/typed/admissionregistration/v1
-k8s.io/client-go/kubernetes/typed/admissionregistration/v1/fake
 k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1
-k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1
-k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1/fake
 k8s.io/client-go/kubernetes/typed/apps/v1
-k8s.io/client-go/kubernetes/typed/apps/v1/fake
 k8s.io/client-go/kubernetes/typed/apps/v1beta1
-k8s.io/client-go/kubernetes/typed/apps/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/apps/v1beta2
-k8s.io/client-go/kubernetes/typed/apps/v1beta2/fake
 k8s.io/client-go/kubernetes/typed/authentication/v1
-k8s.io/client-go/kubernetes/typed/authentication/v1/fake
 k8s.io/client-go/kubernetes/typed/authentication/v1beta1
-k8s.io/client-go/kubernetes/typed/authentication/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/authorization/v1
-k8s.io/client-go/kubernetes/typed/authorization/v1/fake
 k8s.io/client-go/kubernetes/typed/authorization/v1beta1
-k8s.io/client-go/kubernetes/typed/authorization/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/autoscaling/v1
-k8s.io/client-go/kubernetes/typed/autoscaling/v1/fake
 k8s.io/client-go/kubernetes/typed/autoscaling/v2beta1
-k8s.io/client-go/kubernetes/typed/autoscaling/v2beta1/fake
 k8s.io/client-go/kubernetes/typed/autoscaling/v2beta2
-k8s.io/client-go/kubernetes/typed/autoscaling/v2beta2/fake
 k8s.io/client-go/kubernetes/typed/batch/v1
-k8s.io/client-go/kubernetes/typed/batch/v1/fake
 k8s.io/client-go/kubernetes/typed/batch/v1beta1
-k8s.io/client-go/kubernetes/typed/batch/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/batch/v2alpha1
-k8s.io/client-go/kubernetes/typed/batch/v2alpha1/fake
 k8s.io/client-go/kubernetes/typed/certificates/v1
-k8s.io/client-go/kubernetes/typed/certificates/v1/fake
 k8s.io/client-go/kubernetes/typed/certificates/v1beta1
-k8s.io/client-go/kubernetes/typed/certificates/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/coordination/v1
-k8s.io/client-go/kubernetes/typed/coordination/v1/fake
 k8s.io/client-go/kubernetes/typed/coordination/v1beta1
-k8s.io/client-go/kubernetes/typed/coordination/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/core/v1
-k8s.io/client-go/kubernetes/typed/core/v1/fake
 k8s.io/client-go/kubernetes/typed/discovery/v1alpha1
-k8s.io/client-go/kubernetes/typed/discovery/v1alpha1/fake
 k8s.io/client-go/kubernetes/typed/discovery/v1beta1
-k8s.io/client-go/kubernetes/typed/discovery/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/events/v1
-k8s.io/client-go/kubernetes/typed/events/v1/fake
 k8s.io/client-go/kubernetes/typed/events/v1beta1
-k8s.io/client-go/kubernetes/typed/events/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/extensions/v1beta1
-k8s.io/client-go/kubernetes/typed/extensions/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/flowcontrol/v1alpha1
-k8s.io/client-go/kubernetes/typed/flowcontrol/v1alpha1/fake
 k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta1
-k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/networking/v1
-k8s.io/client-go/kubernetes/typed/networking/v1/fake
 k8s.io/client-go/kubernetes/typed/networking/v1beta1
-k8s.io/client-go/kubernetes/typed/networking/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/node/v1
-k8s.io/client-go/kubernetes/typed/node/v1/fake
 k8s.io/client-go/kubernetes/typed/node/v1alpha1
-k8s.io/client-go/kubernetes/typed/node/v1alpha1/fake
 k8s.io/client-go/kubernetes/typed/node/v1beta1
-k8s.io/client-go/kubernetes/typed/node/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/policy/v1beta1
-k8s.io/client-go/kubernetes/typed/policy/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/rbac/v1
-k8s.io/client-go/kubernetes/typed/rbac/v1/fake
 k8s.io/client-go/kubernetes/typed/rbac/v1alpha1
-k8s.io/client-go/kubernetes/typed/rbac/v1alpha1/fake
 k8s.io/client-go/kubernetes/typed/rbac/v1beta1
-k8s.io/client-go/kubernetes/typed/rbac/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/scheduling/v1
-k8s.io/client-go/kubernetes/typed/scheduling/v1/fake
 k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1
-k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1/fake
 k8s.io/client-go/kubernetes/typed/scheduling/v1beta1
-k8s.io/client-go/kubernetes/typed/scheduling/v1beta1/fake
 k8s.io/client-go/kubernetes/typed/storage/v1
-k8s.io/client-go/kubernetes/typed/storage/v1/fake
 k8s.io/client-go/kubernetes/typed/storage/v1alpha1
-k8s.io/client-go/kubernetes/typed/storage/v1alpha1/fake
 k8s.io/client-go/kubernetes/typed/storage/v1beta1
-k8s.io/client-go/kubernetes/typed/storage/v1beta1/fake
 k8s.io/client-go/listers/admissionregistration/v1
 k8s.io/client-go/listers/admissionregistration/v1beta1
 k8s.io/client-go/listers/apiserverinternal/v1alpha1
@@ -1259,7 +1206,6 @@ k8s.io/client-go/plugin/pkg/client/auth/gcp
 k8s.io/client-go/plugin/pkg/client/auth/oidc
 k8s.io/client-go/plugin/pkg/client/auth/openstack
 k8s.io/client-go/rest
-k8s.io/client-go/rest/fake
 k8s.io/client-go/rest/watch
 k8s.io/client-go/restmapper
 k8s.io/client-go/scale
@@ -1361,12 +1307,9 @@ k8s.io/kube-aggregator/pkg/apis/apiregistration
 k8s.io/kube-aggregator/pkg/apis/apiregistration/v1
 k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1
 k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset
-k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/fake
 k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/scheme
 k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1
-k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1/fake
 k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1beta1
-k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1beta1/fake
 k8s.io/kube-aggregator/pkg/client/informers/externalversions
 k8s.io/kube-aggregator/pkg/client/informers/externalversions/apiregistration
 k8s.io/kube-aggregator/pkg/client/informers/externalversions/apiregistration/v1
