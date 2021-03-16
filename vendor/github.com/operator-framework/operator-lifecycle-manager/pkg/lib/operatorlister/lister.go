@@ -102,10 +102,8 @@ type OperatorsV1alpha1Lister interface {
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . OperatorsV1Lister
 type OperatorsV1Lister interface {
 	RegisterOperatorGroupLister(namespace string, lister v1.OperatorGroupLister)
-	RegisterOperatorConditionLister(namespace string, lister v1.OperatorConditionLister)
 
 	OperatorGroupLister() v1.OperatorGroupLister
-	OperatorConditionLister() v1.OperatorConditionLister
 }
 
 type appsV1Lister struct {
@@ -191,14 +189,12 @@ func newOperatorsV1alpha1Lister() *operatorsV1alpha1Lister {
 }
 
 type operatorsV1Lister struct {
-	operatorGroupLister     *UnionOperatorGroupLister
-	operatorConditionLister *UnionOperatorConditionLister
+	operatorGroupLister *UnionOperatorGroupLister
 }
 
 func newOperatorsV1Lister() *operatorsV1Lister {
 	return &operatorsV1Lister{
-		operatorGroupLister:     &UnionOperatorGroupLister{},
-		operatorConditionLister: &UnionOperatorConditionLister{},
+		operatorGroupLister: &UnionOperatorGroupLister{},
 	}
 }
 

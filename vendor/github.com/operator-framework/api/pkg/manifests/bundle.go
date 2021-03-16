@@ -30,10 +30,6 @@ func (b *Bundle) ObjectsToValidate() []interface{} {
 		objs = append(objs, crd)
 	}
 	objs = append(objs, b.CSV)
-
-	for _, o := range b.Objects {
-		objs = append(objs, o)
-	}
 	objs = append(objs, b)
 
 	return objs

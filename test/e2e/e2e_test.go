@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"testing"
 	"time"
@@ -43,12 +42,9 @@ var (
 	testNamespace           = ""
 	operatorNamespace       = ""
 	communityOperatorsImage = ""
-
-	dockerUsername = os.Getenv("DOCKER_USERNAME")
-	dockerPassword = os.Getenv("DOCKER_PASSWORD")
 )
 
-func TestOLMEndToEnd(t *testing.T) {
+func TestEndToEnd(t *testing.T) {
 	RegisterFailHandler(Fail)
 	SetDefaultEventuallyTimeout(1 * time.Minute)
 	SetDefaultEventuallyPollingInterval(1 * time.Second)
@@ -59,8 +55,6 @@ func TestOLMEndToEnd(t *testing.T) {
 	} else {
 		RunSpecs(t, "End-to-end")
 	}
-
-	RunSpecs(t, "E2E Suite")
 }
 
 var deprovision func() = func() {}
@@ -93,16 +87,6 @@ var _ = BeforeSuite(func() {
 			panic(err)
 		}
 	}
-
-	// FIXME: Since podman login doesn't work with daemonless image pulling, we need to login with docker first so podman tests don't fail.
-	if dockerUsername == "" || dockerPassword == "" {
-		// Test will be skipped anyway
-		return
-	}
-
-	dockerlogin := exec.Command("docker", "login", "-u", dockerUsername, "-p", dockerPassword, "quay.io")
-	err = dockerlogin.Run()
-	Expect(err).NotTo(HaveOccurred(), "Error logging into quay.io")
 })
 
 var _ = AfterSuite(func() {

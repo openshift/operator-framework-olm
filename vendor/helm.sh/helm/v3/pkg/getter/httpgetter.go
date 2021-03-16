@@ -17,7 +17,6 @@ package getter
 
 import (
 	"bytes"
-	"crypto/tls"
 	"io"
 	"net/http"
 
@@ -90,10 +89,6 @@ func NewHTTPGetter(options ...Option) (Getter, error) {
 }
 
 func (g *HTTPGetter) httpClient() (*http.Client, error) {
-	transport := &http.Transport{
-		DisableCompression: true,
-		Proxy:              http.ProxyFromEnvironment,
-	}
 	if (g.opts.certFile != "" && g.opts.keyFile != "") || g.opts.caFile != "" {
 		tlsConf, err := tlsutil.NewClientTLS(g.opts.certFile, g.opts.keyFile, g.opts.caFile)
 		if err != nil {
@@ -107,20 +102,14 @@ func (g *HTTPGetter) httpClient() (*http.Client, error) {
 		}
 		tlsConf.ServerName = sni
 
-		transport.TLSClientConfig = tlsConf
-	}
-
-	if g.opts.insecureSkipVerifyTLS {
-		transport.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
+		client := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: tlsConf,
+				Proxy:           http.ProxyFromEnvironment,
+			},
 		}
 
+		return client, nil
 	}
-
-	client := &http.Client{
-		Transport: transport,
-		Timeout:   g.opts.timeout,
-	}
-
-	return client, nil
+	return http.DefaultClient, nil
 }

@@ -26,8 +26,6 @@ import (
 type Interface interface {
 	// Operators returns a OperatorInformer.
 	Operators() OperatorInformer
-	// OperatorConditions returns a OperatorConditionInformer.
-	OperatorConditions() OperatorConditionInformer
 	// OperatorGroups returns a OperatorGroupInformer.
 	OperatorGroups() OperatorGroupInformer
 }
@@ -46,11 +44,6 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Operators returns a OperatorInformer.
 func (v *version) Operators() OperatorInformer {
 	return &operatorInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// OperatorConditions returns a OperatorConditionInformer.
-func (v *version) OperatorConditions() OperatorConditionInformer {
-	return &operatorConditionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // OperatorGroups returns a OperatorGroupInformer.

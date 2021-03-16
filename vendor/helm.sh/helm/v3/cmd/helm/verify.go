@@ -16,7 +16,6 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -44,23 +43,8 @@ func newVerifyCmd(out io.Writer) *cobra.Command {
 		Short: "verify that a chart at the given path has been signed and is valid",
 		Long:  verifyDesc,
 		Args:  require.ExactArgs(1),
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			if len(args) == 0 {
-				// Allow file completion when completing the argument for the path
-				return nil, cobra.ShellCompDirectiveDefault
-			}
-			// No more completions, so disable file completion
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := client.Run(args[0])
-			if err != nil {
-				return err
-			}
-
-			fmt.Fprint(out, client.Out)
-
-			return nil
+			return client.Run(args[0])
 		},
 	}
 

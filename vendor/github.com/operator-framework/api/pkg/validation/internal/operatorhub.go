@@ -1,16 +1,12 @@
 package internal
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/mail"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 
-	semver "github.com/blang/semver/v4"
+	"github.com/blang/semver"
 	"github.com/operator-framework/api/pkg/manifests"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/api/pkg/validation/errors"
@@ -74,19 +70,16 @@ func validateBundleOperatorHub(bundle *manifests.Bundle) errors.ManifestResult {
 		return result
 	}
 
-	errs, warns := validateHubCSVSpec(*bundle.CSV)
+	errs := validateHubCSVSpec(*bundle.CSV)
 	for _, err := range errs {
 		result.Add(errors.ErrInvalidCSV(err.Error(), bundle.CSV.GetName()))
 	}
-	for _, warn := range warns {
-		result.Add(errors.WarnInvalidCSV(warn.Error(), bundle.CSV.GetName()))
-	}
+
 	return result
 }
 
-func validateHubCSVSpec(csv v1alpha1.ClusterServiceVersion) ([]error, []error) {
+func validateHubCSVSpec(csv v1alpha1.ClusterServiceVersion) []error {
 	var errs []error
-	var warns []error
 
 	if csv.Spec.Provider.Name == "" {
 		errs = append(errs, fmt.Errorf("csv.Spec.Provider.Name not specified"))
@@ -149,63 +142,18 @@ func validateHubCSVSpec(csv v1alpha1.ClusterServiceVersion) ([]error, []error) {
 			}
 		}
 	} else {
-		warns = append(warns, fmt.Errorf("csv.Spec.Icon not specified"))
+		errs = append(errs, fmt.Errorf("csv.Spec.Icon not specified"))
 	}
 
 	if categories, ok := csv.ObjectMeta.Annotations["categories"]; ok {
 		categorySlice := strings.Split(categories, ",")
 
-		// use custom categories for validation if provided
-		customCategoriesPath := os.Getenv("OPERATOR_BUNDLE_CATEGORIES")
-		if customCategoriesPath != "" {
-			customCategories, err := extractCategories(customCategoriesPath)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("could not extract custom categories from categories %#v: %s", customCategories, err))
-				return errs, warns
-			}
-			for _, category := range categorySlice {
-				if _, ok := customCategories[strings.TrimSpace(category)]; !ok {
-					errs = append(errs, fmt.Errorf("csv.Metadata.Annotations.Categories %s is not a valid custom category", category))
-				}
-			}
-		} else {
-			// use default categories
-			for _, category := range categorySlice {
-				if _, ok := validCategories[strings.TrimSpace(category)]; !ok {
-					errs = append(errs, fmt.Errorf("csv.Metadata.Annotations.Categories %s is not a valid category", category))
-				}
+		for _, category := range categorySlice {
+			if _, ok := validCategories[category]; !ok {
+				errs = append(errs, fmt.Errorf("csv.Metadata.Annotations.Categories %s is not a valid category", category))
 			}
 		}
 	}
 
-	return errs, warns
-}
-
-type categories struct {
-	Contents []string `json:"categories"`
-}
-
-// extractCategories reads a custom categories file and returns the contents in a map[string]struct{}
-func extractCategories(path string) (map[string]struct{}, error) {
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return nil, fmt.Errorf("finding category file: %w", err)
-	}
-
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading category file: %w", err)
-	}
-
-	cat := categories{}
-	err = json.Unmarshal(data, &cat)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshaling category file: %w", err)
-	}
-
-	customCategories := make(map[string]struct{})
-	for _, c := range cat.Contents {
-		customCategories[c] = struct{}{}
-	}
-	return customCategories, nil
+	return errs
 }

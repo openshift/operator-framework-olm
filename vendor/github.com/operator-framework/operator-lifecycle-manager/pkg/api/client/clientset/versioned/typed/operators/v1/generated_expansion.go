@@ -20,6 +20,4 @@ package v1
 
 type OperatorExpansion interface{}
 
-type OperatorConditionExpansion interface{}
-
 type OperatorGroupExpansion interface{}

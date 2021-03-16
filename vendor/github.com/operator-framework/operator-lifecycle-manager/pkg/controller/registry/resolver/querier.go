@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/blang/semver/v4"
+	"github.com/blang/semver"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 

@@ -19,10 +19,8 @@ package repo // import "helm.sh/helm/v3/pkg/repo"
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"os"
 	"path"
@@ -40,14 +38,13 @@ import (
 
 // Entry represents a collection of parameters for chart repository
 type Entry struct {
-	Name                  string `json:"name"`
-	URL                   string `json:"url"`
-	Username              string `json:"username"`
-	Password              string `json:"password"`
-	CertFile              string `json:"certFile"`
-	KeyFile               string `json:"keyFile"`
-	CAFile                string `json:"caFile"`
-	InsecureSkipTLSverify bool   `json:"insecure_skip_tls_verify"`
+	Name     string `json:"name"`
+	URL      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	CertFile string `json:"certFile"`
+	KeyFile  string `json:"keyFile"`
+	CAFile   string `json:"caFile"`
 }
 
 // ChartRepository represents a chart repository
@@ -124,7 +121,6 @@ func (r *ChartRepository) DownloadIndexFile() (string, error) {
 	// TODO add user-agent
 	resp, err := r.Client.Get(indexURL,
 		getter.WithURL(r.Config.URL),
-		getter.WithInsecureSkipVerifyTLS(r.Config.InsecureSkipTLSverify),
 		getter.WithTLSClientConfig(r.Config.CertFile, r.Config.KeyFile, r.Config.CAFile),
 		getter.WithBasicAuth(r.Config.Username, r.Config.Password),
 	)
@@ -205,14 +201,6 @@ func FindChartInRepoURL(repoURL, chartName, chartVersion, certFile, keyFile, caF
 // without adding repo to repositories, like FindChartInRepoURL,
 // but it also receives credentials for the chart repository.
 func FindChartInAuthRepoURL(repoURL, username, password, chartName, chartVersion, certFile, keyFile, caFile string, getters getter.Providers) (string, error) {
-	return FindChartInAuthAndTLSRepoURL(repoURL, username, password, chartName, chartVersion, certFile, keyFile, caFile, false, getters)
-}
-
-// FindChartInAuthAndTLSRepoURL finds chart in chart repository pointed by repoURL
-// without adding repo to repositories, like FindChartInRepoURL,
-// but it also receives credentials and TLS verify flag for the chart repository.
-// TODO Helm 4, FindChartInAuthAndTLSRepoURL should be integrated into FindChartInAuthRepoURL.
-func FindChartInAuthAndTLSRepoURL(repoURL, username, password, chartName, chartVersion, certFile, keyFile, caFile string, insecureSkipTLSverify bool, getters getter.Providers) (string, error) {
 
 	// Download and write the index file to a temporary location
 	buf := make([]byte, 20)
@@ -220,14 +208,13 @@ func FindChartInAuthAndTLSRepoURL(repoURL, username, password, chartName, chartV
 	name := strings.ReplaceAll(base64.StdEncoding.EncodeToString(buf), "/", "-")
 
 	c := Entry{
-		URL:                   repoURL,
-		Username:              username,
-		Password:              password,
-		CertFile:              certFile,
-		KeyFile:               keyFile,
-		CAFile:                caFile,
-		Name:                  name,
-		InsecureSkipTLSverify: insecureSkipTLSverify,
+		URL:      repoURL,
+		Username: username,
+		Password: password,
+		CertFile: certFile,
+		KeyFile:  keyFile,
+		CAFile:   caFile,
+		Name:     name,
 	}
 	r, err := NewChartRepository(&c, getters)
 	if err != nil {
@@ -283,12 +270,4 @@ func ResolveReferenceURL(baseURL, refURL string) (string, error) {
 	// We need a trailing slash for ResolveReference to work, but make sure there isn't already one
 	parsedBaseURL.Path = strings.TrimSuffix(parsedBaseURL.Path, "/") + "/"
 	return parsedBaseURL.ResolveReference(parsedRefURL).String(), nil
-}
-
-func (e *Entry) String() string {
-	buf, err := json.Marshal(e)
-	if err != nil {
-		log.Panic(err)
-	}
-	return string(buf)
 }

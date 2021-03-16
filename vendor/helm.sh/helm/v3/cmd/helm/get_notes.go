@@ -19,11 +19,11 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/spf13/cobra"
 
 	"helm.sh/helm/v3/cmd/helm/require"
+	"helm.sh/helm/v3/internal/completion"
 	"helm.sh/helm/v3/pkg/action"
 )
 
@@ -39,12 +39,6 @@ func newGetNotesCmd(cfg *action.Configuration, out io.Writer) *cobra.Command {
 		Short: "download the notes for a named release",
 		Long:  getNotesHelp,
 		Args:  require.ExactArgs(1),
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			if len(args) != 0 {
-				return nil, cobra.ShellCompDirectiveNoFileComp
-			}
-			return compListReleases(toComplete, cfg)
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			res, err := client.Run(args[0])
 			if err != nil {
@@ -57,18 +51,23 @@ func newGetNotesCmd(cfg *action.Configuration, out io.Writer) *cobra.Command {
 		},
 	}
 
-	f := cmd.Flags()
-	f.IntVar(&client.Version, "revision", 0, "get the named release with revision")
-	err := cmd.RegisterFlagCompletionFunc("revision", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		if len(args) == 1 {
-			return compListRevisions(toComplete, cfg, args[0])
+	// Function providing dynamic auto-completion
+	completion.RegisterValidArgsFunc(cmd, func(cmd *cobra.Command, args []string, toComplete string) ([]string, completion.BashCompDirective) {
+		if len(args) != 0 {
+			return nil, completion.BashCompDirectiveNoFileComp
 		}
-		return nil, cobra.ShellCompDirectiveNoFileComp
+		return compListReleases(toComplete, cfg)
 	})
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	f := cmd.Flags()
+	f.IntVar(&client.Version, "revision", 0, "get the named release with revision")
+	flag := f.Lookup("revision")
+	completion.RegisterFlagCompletionFunc(flag, func(cmd *cobra.Command, args []string, toComplete string) ([]string, completion.BashCompDirective) {
+		if len(args) == 1 {
+			return compListRevisions(cfg, args[0])
+		}
+		return nil, completion.BashCompDirectiveNoFileComp
+	})
 
 	return cmd
 }

@@ -17,8 +17,6 @@ var (
 		Add operator bundles to an index.
 
 		This command will add the given set of bundle images (specified by the --bundles option) to an index image (provided by the --from-index option).
-
-		If multiple bundles are given with '--mode=replaces' (the default), bundles are added to the index by order of ascending (semver) version unless the update graph specified by replaces requires a different input order; e.g. 1.0.0 replaces 1.0.1 would result in [1.0.1, 1.0.0] instead of the [1.0.0, 1.0.1] normally expected of semver. However, for most cases (e.g. 1.0.1 replaces 1.0.0) the bundle with the highest version is used to set the default channel of the related package.
 	`)
 
 	addExample = templates.Examples(`
@@ -51,11 +49,11 @@ func addIndexAddCmd(parent *cobra.Command) {
 	indexCmd.Flags().Bool("generate", false, "if enabled, just creates the dockerfile and saves it to local disk")
 	indexCmd.Flags().StringP("out-dockerfile", "d", "", "if generating the dockerfile, this flag is used to (optionally) specify a dockerfile name")
 	indexCmd.Flags().StringP("from-index", "f", "", "previous index to add to")
-	// adding empty list of strings is a valid value.
 	indexCmd.Flags().StringSliceP("bundles", "b", nil, "comma separated list of bundles to add")
 	if err := indexCmd.MarkFlagRequired("bundles"); err != nil {
 		logrus.Panic("Failed to set required `bundles` flag for `index add`")
 	}
+	indexCmd.Flags().Bool("skip-tls", false, "skip TLS certificate verification for container image registries while pulling bundles")
 	indexCmd.Flags().StringP("binary-image", "i", "", "container image for on-image `opm` command")
 	indexCmd.Flags().StringP("container-tool", "c", "", "tool to interact with container images (save, build, etc.). One of: [docker, podman]")
 	indexCmd.Flags().StringP("build-tool", "u", "", "tool to build container images. One of: [docker, podman]. Defaults to podman. Overrides part of container-tool.")
@@ -64,10 +62,6 @@ func addIndexAddCmd(parent *cobra.Command) {
 	indexCmd.Flags().Bool("permissive", false, "allow registry load errors")
 	indexCmd.Flags().StringP("mode", "", "replaces", "graph update mode that defines how channel graphs are updated. One of: [replaces, semver, semver-skippatch]")
 
-	indexCmd.Flags().Bool("overwrite-latest", false, "overwrite the latest bundles (channel heads) with those of the same csv name given by --bundles")
-	if err := indexCmd.Flags().MarkHidden("overwrite-latest"); err != nil {
-		logrus.Panic(err.Error())
-	}
 	if err := indexCmd.Flags().MarkHidden("debug"); err != nil {
 		logrus.Panic(err.Error())
 	}
@@ -124,11 +118,6 @@ func runIndexAddCmdFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	overwrite, err := cmd.Flags().GetBool("overwrite-latest")
-	if err != nil {
-		return err
-	}
-
 	modeEnum, err := registry.GetModeFromString(mode)
 	if err != nil {
 		return err
@@ -158,7 +147,6 @@ func runIndexAddCmdFunc(cmd *cobra.Command, args []string) error {
 		Permissive:        permissive,
 		Mode:              modeEnum,
 		SkipTLS:           skipTLS,
-		Overwrite:         overwrite,
 	}
 
 	err = indexAdder.AddToIndex(request)
@@ -195,8 +183,9 @@ func getContainerTools(cmd *cobra.Command) (string, string, error) {
 	if containerTool != "" {
 		if pullTool == "" && buildTool == "" {
 			return containerTool, containerTool, nil
+		} else {
+			return "", "", fmt.Errorf("container-tool cannot be set alongside pull-tool or build-tool")
 		}
-		return "", "", fmt.Errorf("container-tool cannot be set alongside pull-tool or build-tool")
 	}
 
 	// Check for defaults, then return

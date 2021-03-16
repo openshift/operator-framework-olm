@@ -37,24 +37,21 @@ Information is cached locally, where it is used by commands like 'helm search'.
 var errNoRepositories = errors.New("no repositories found. You must add one before updating")
 
 type repoUpdateOptions struct {
-	update    func([]*repo.ChartRepository, io.Writer)
-	repoFile  string
-	repoCache string
+	update   func([]*repo.ChartRepository, io.Writer)
+	repoFile string
 }
 
 func newRepoUpdateCmd(out io.Writer) *cobra.Command {
 	o := &repoUpdateOptions{update: updateCharts}
 
 	cmd := &cobra.Command{
-		Use:               "update",
-		Aliases:           []string{"up"},
-		Short:             "update information of available charts locally from chart repositories",
-		Long:              updateDesc,
-		Args:              require.NoArgs,
-		ValidArgsFunction: noCompletions,
+		Use:     "update",
+		Aliases: []string{"up"},
+		Short:   "update information of available charts locally from chart repositories",
+		Long:    updateDesc,
+		Args:    require.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.repoFile = settings.RepositoryConfig
-			o.repoCache = settings.RepositoryCache
 			return o.run(out)
 		},
 	}
@@ -71,9 +68,6 @@ func (o *repoUpdateOptions) run(out io.Writer) error {
 		r, err := repo.NewChartRepository(cfg, getter.All(settings))
 		if err != nil {
 			return err
-		}
-		if o.repoCache != "" {
-			r.CachePath = o.repoCache
 		}
 		repos = append(repos, r)
 	}
@@ -97,5 +91,5 @@ func updateCharts(repos []*repo.ChartRepository, out io.Writer) {
 		}(re)
 	}
 	wg.Wait()
-	fmt.Fprintln(out, "Update Complete. ⎈Happy Helming!⎈")
+	fmt.Fprintln(out, "Update Complete. ⎈ Happy Helming!⎈ ")
 }

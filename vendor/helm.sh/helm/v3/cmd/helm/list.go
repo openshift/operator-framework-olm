@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"helm.sh/helm/v3/cmd/helm/require"
+	"helm.sh/helm/v3/internal/completion"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli/output"
 	"helm.sh/helm/v3/pkg/release"
@@ -46,8 +47,8 @@ regular expressions (Perl compatible) that are applied to the list of releases.
 Only items that match the filter will be returned.
 
     $ helm list --filter 'ara[a-z]+'
-    NAME                UPDATED                                  CHART
-    maudlin-arachnid    2020-06-18 14:17:46.125134977 +0000 UTC  alpine-0.1.0
+    NAME                UPDATED                     CHART
+    maudlin-arachnid    Mon May  9 16:07:08 2016    alpine-0.1.0
 
 If no results are found, 'helm list' will exit 0, but with no output (or in
 the case of no '-q' flag, only headers).
@@ -63,12 +64,11 @@ func newListCmd(cfg *action.Configuration, out io.Writer) *cobra.Command {
 	var outfmt output.Format
 
 	cmd := &cobra.Command{
-		Use:               "list",
-		Short:             "list releases",
-		Long:              listHelp,
-		Aliases:           []string{"ls"},
-		Args:              require.NoArgs,
-		ValidArgsFunction: noCompletions,
+		Use:     "list",
+		Short:   "list releases",
+		Long:    listHelp,
+		Aliases: []string{"ls"},
+		Args:    require.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if client.AllNamespaces {
 				if err := cfg.Init(settings.RESTClientGetter(), "", os.Getenv("HELM_DRIVER"), debug); err != nil {
@@ -83,38 +83,18 @@ func newListCmd(cfg *action.Configuration, out io.Writer) *cobra.Command {
 			}
 
 			if client.Short {
-
-				names := make([]string, 0)
 				for _, res := range results {
-					names = append(names, res.Name)
+					fmt.Fprintln(out, res.Name)
 				}
-
-				outputFlag := cmd.Flag("output")
-
-				switch outputFlag.Value.String() {
-				case "json":
-					output.EncodeJSON(out, names)
-					return nil
-				case "yaml":
-					output.EncodeYAML(out, names)
-					return nil
-				case "table":
-					for _, res := range results {
-						fmt.Fprintln(out, res.Name)
-					}
-					return nil
-				default:
-					return outfmt.Write(out, newReleaseListWriter(results, client.TimeFormat))
-				}
+				return nil
 			}
 
-			return outfmt.Write(out, newReleaseListWriter(results, client.TimeFormat))
+			return outfmt.Write(out, newReleaseListWriter(results))
 		},
 	}
 
 	f := cmd.Flags()
 	f.BoolVarP(&client.Short, "short", "q", false, "output short (quiet) listing format")
-	f.StringVar(&client.TimeFormat, "time-format", "", "format time. Example: --time-format 2009-11-17 20:34:10 +0000 UTC")
 	f.BoolVarP(&client.ByDate, "date", "d", false, "sort by release date")
 	f.BoolVarP(&client.SortReverse, "reverse", "r", false, "reverse the sort order")
 	f.BoolVarP(&client.All, "all", "a", false, "show all releases without any filter applied")
@@ -128,7 +108,6 @@ func newListCmd(cfg *action.Configuration, out io.Writer) *cobra.Command {
 	f.IntVarP(&client.Limit, "max", "m", 256, "maximum number of releases to fetch")
 	f.IntVar(&client.Offset, "offset", 0, "next release name in the list, used to offset from start value")
 	f.StringVarP(&client.Filter, "filter", "f", "", "a regular expression (Perl compatible). Any releases that match the expression will be included in the results")
-	f.StringVarP(&client.Selector, "selector", "l", "", "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2). Works only for secret(default) and configmap storage backends.")
 	bindOutputFlag(cmd, &outfmt)
 
 	return cmd
@@ -148,7 +127,7 @@ type releaseListWriter struct {
 	releases []releaseElement
 }
 
-func newReleaseListWriter(releases []*release.Release, timeFormat string) *releaseListWriter {
+func newReleaseListWriter(releases []*release.Release) *releaseListWriter {
 	// Initialize the array so no results returns an empty array instead of null
 	elements := make([]releaseElement, 0, len(releases))
 	for _, r := range releases {
@@ -160,17 +139,11 @@ func newReleaseListWriter(releases []*release.Release, timeFormat string) *relea
 			Chart:      fmt.Sprintf("%s-%s", r.Chart.Metadata.Name, r.Chart.Metadata.Version),
 			AppVersion: r.Chart.Metadata.AppVersion,
 		}
-
 		t := "-"
 		if tspb := r.Info.LastDeployed; !tspb.IsZero() {
-			if timeFormat != "" {
-				t = tspb.Format(timeFormat)
-			} else {
-				t = tspb.String()
-			}
+			t = tspb.String()
 		}
 		element.Updated = t
-
 		elements = append(elements, element)
 	}
 	return &releaseListWriter{elements}
@@ -194,8 +167,8 @@ func (r *releaseListWriter) WriteYAML(out io.Writer) error {
 }
 
 // Provide dynamic auto-completion for release names
-func compListReleases(toComplete string, cfg *action.Configuration) ([]string, cobra.ShellCompDirective) {
-	cobra.CompDebugln(fmt.Sprintf("compListReleases with toComplete %s", toComplete), settings.Debug)
+func compListReleases(toComplete string, cfg *action.Configuration) ([]string, completion.BashCompDirective) {
+	completion.CompDebugln(fmt.Sprintf("compListReleases with toComplete %s", toComplete))
 
 	client := action.NewList(cfg)
 	client.All = true
@@ -205,7 +178,7 @@ func compListReleases(toComplete string, cfg *action.Configuration) ([]string, c
 	client.SetStateMask()
 	results, err := client.Run()
 	if err != nil {
-		return nil, cobra.ShellCompDirectiveDefault
+		return nil, completion.BashCompDirectiveDefault
 	}
 
 	var choices []string
@@ -213,5 +186,5 @@ func compListReleases(toComplete string, cfg *action.Configuration) ([]string, c
 		choices = append(choices, res.Name)
 	}
 
-	return choices, cobra.ShellCompDirectiveNoFileComp
+	return choices, completion.BashCompDirectiveNoFileComp
 }

@@ -5,6 +5,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -117,7 +118,7 @@ func (b *AppregistryImageBuilder) Build() error {
 }
 
 func BuildDatabase(manifestPath, databasePath string) error {
-	db, err := sqlite.Open(databasePath)
+	db, err := sql.Open("sqlite3", databasePath)
 	if err != nil {
 		return err
 	}

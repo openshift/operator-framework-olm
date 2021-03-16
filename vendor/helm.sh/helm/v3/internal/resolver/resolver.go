@@ -27,7 +27,6 @@ import (
 	"github.com/pkg/errors"
 
 	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/helmpath"
 	"helm.sh/helm/v3/pkg/provenance"
 	"helm.sh/helm/v3/pkg/repo"
@@ -69,22 +68,14 @@ func (r *Resolver) Resolve(reqs []*chart.Dependency, repoNames map[string]string
 		}
 		if strings.HasPrefix(d.Repository, "file://") {
 
-			chartpath, err := GetLocalPath(d.Repository, r.chartpath)
-			if err != nil {
-				return nil, err
-			}
-
-			// The version of the chart locked will be the version of the chart
-			// currently listed in the file system within the chart.
-			ch, err := loader.LoadDir(chartpath)
-			if err != nil {
+			if _, err := GetLocalPath(d.Repository, r.chartpath); err != nil {
 				return nil, err
 			}
 
 			locked[i] = &chart.Dependency{
 				Name:       d.Name,
 				Repository: d.Repository,
-				Version:    ch.Metadata.Version,
+				Version:    d.Version,
 			}
 			continue
 		}

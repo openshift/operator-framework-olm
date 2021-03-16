@@ -24,7 +24,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/release"
 	helmtime "helm.sh/helm/v3/pkg/time"
 )
@@ -43,7 +42,6 @@ type Rollback struct {
 	Recreate      bool // will (if true) recreate pods after a rollback.
 	Force         bool // will (if true) force resource upgrade through uninstall/recreate if needed
 	CleanupOnFail bool
-	MaxHistory    int // MaxHistory limits the maximum number of revisions saved per release
 }
 
 // NewRollback creates a new Rollback object with the given configuration.
@@ -58,8 +56,6 @@ func (r *Rollback) Run(name string) error {
 	if err := r.cfg.KubeClient.IsReachable(); err != nil {
 		return err
 	}
-
-	r.cfg.Releases.MaxHistory = r.MaxHistory
 
 	r.cfg.Log("preparing rollback of %s", name)
 	currentRelease, targetRelease, err := r.prepareRollback(name)
@@ -91,7 +87,7 @@ func (r *Rollback) Run(name string) error {
 // prepareRollback finds the previous release and prepares a new release object with
 // the previous release's configuration
 func (r *Rollback) prepareRollback(name string) (*release.Release, *release.Release, error) {
-	if err := chartutil.ValidateReleaseName(name); err != nil {
+	if err := validateReleaseName(name); err != nil {
 		return nil, nil, errors.Errorf("prepareRollback: Release name is invalid: %s", name)
 	}
 
@@ -215,7 +211,7 @@ func (r *Rollback) performRollback(currentRelease, targetRelease *release.Releas
 	}
 
 	deployed, err := r.cfg.Releases.DeployedAll(currentRelease.Name)
-	if err != nil && !strings.Contains(err.Error(), "has no deployed releases") {
+	if err != nil {
 		return nil, err
 	}
 	// Supersede all previous deployments, see issue #2941.

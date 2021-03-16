@@ -46,7 +46,7 @@ func newLintCmd(out io.Writer) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "lint PATH",
-		Short: "examine a chart for possible issues",
+		Short: "examines a chart for possible issues",
 		Long:  longLintHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			paths := []string{"."}
@@ -106,7 +106,7 @@ func newLintCmd(out io.Writer) *cobra.Command {
 				fmt.Fprint(&message, "\n")
 			}
 
-			fmt.Fprint(out, message.String())
+			fmt.Fprintf(out, message.String())
 
 			summary := fmt.Sprintf("%d chart(s) linted, %d chart(s) failed", len(paths), failed)
 			if failed > 0 {
