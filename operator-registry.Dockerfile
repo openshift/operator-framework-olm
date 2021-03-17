@@ -5,8 +5,16 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
 WORKDIR /src
 
-COPY . .
-RUN make build cross
+# copy just enough of the git repo to parse HEAD, used to record version in OLM binaries
+COPY .git/HEAD .git/HEAD
+COPY .git/refs/heads/. .git/refs/heads
+
+ARG STAGING_DIR
+RUN echo ${STAGING_DIR}
+COPY ${STAGING_DIR} .
+COPY vendor vendor
+COPY Makefile Makefile
+RUN make build
 
 # copy and build vendored grpc_health_probe
 RUN CGO_ENABLED=0 go build -mod=vendor -tags netgo -ldflags "-w" ./vendor/github.com/grpc-ecosystem/grpc-health-probe/...
