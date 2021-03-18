@@ -11,7 +11,6 @@ COPY .git/HEAD .git/HEAD
 COPY .git/refs/heads/. .git/refs/heads
 RUN mkdir -p .git/objects
 
-ARG STAGING_DIR
 COPY . .
 RUN make build
 RUN make build-util

@@ -5,15 +5,7 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
 WORKDIR /src
 
-# copy just enough of the git repo to parse HEAD, used to record version in OLM binaries
-COPY .git/HEAD .git/HEAD
-COPY .git/refs/heads/. .git/refs/heads
-
-ARG STAGING_DIR
-RUN echo ${STAGING_DIR}
-COPY ${STAGING_DIR} .
-COPY vendor vendor
-COPY Makefile Makefile
+COPY . .
 RUN make build
 
 # copy and build vendored grpc_health_probe
@@ -31,9 +23,7 @@ RUN chgrp -R 0 /registry && \
     chmod -R g+rwx /registry
 WORKDIR /registry
 
-# This image doesn't need to run as root user
 USER 1001
-
 EXPOSE 50051
 
 ENTRYPOINT ["/bin/registry-server"]
