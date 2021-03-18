@@ -20,7 +20,7 @@ const (
 	RegistryV1Type      = "registry+v1"
 	PlainType           = "plain"
 	HelmType            = "helm"
-	AnnotationsFile     = "test.annotations.yaml"
+	AnnotationsFile     = "annotations.yaml"
 	DockerFile          = "bundle.Dockerfile"
 	ManifestsDir        = "manifests/"
 	MetadataDir         = "metadata/"
