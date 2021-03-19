@@ -36,7 +36,9 @@ ifeq (, $(wildcard $(KUBEBUILDER_ASSETS)/kube-apiserver))
 	$(error kube-apiserver $(KUBEBUILDER_ASSETS_ERR))
 endif
 
-build: $(REGISTRY_CMDS) $(OLM_CMDS)
+build: build/registry build/olm
+build/olm: $(OLM_CMDS)
+build/registry: $(REGISTRY_CMDS)
 
 $(REGISTRY_CMDS): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
 $(REGISTRY_CMDS):
