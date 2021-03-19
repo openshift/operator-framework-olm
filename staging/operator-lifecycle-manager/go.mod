@@ -41,18 +41,18 @@ require (
 	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.1.0-rc.1.0.20201215141456-e71d38b414eb
-	k8s.io/api v0.20.0
-	k8s.io/apiextensions-apiserver v0.20.0
-	k8s.io/apimachinery v0.20.0
-	k8s.io/apiserver v0.20.0
-	k8s.io/client-go v0.20.0
-	k8s.io/code-generator v0.20.0
-	k8s.io/component-base v0.20.0
+	k8s.io/api v0.20.1
+	k8s.io/apiextensions-apiserver v0.20.1
+	k8s.io/apimachinery v0.20.1
+	k8s.io/apiserver v0.20.1
+	k8s.io/client-go v0.20.1
+	k8s.io/code-generator v0.20.1
+	k8s.io/component-base v0.20.1
 	k8s.io/klog v1.0.0
 	k8s.io/kube-aggregator v0.20.0
 	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
 	rsc.io/letsencrypt v0.0.3 // indirect
-	sigs.k8s.io/controller-runtime v0.7.0
+	sigs.k8s.io/controller-runtime v0.8.0
 	sigs.k8s.io/controller-tools v0.4.1
 	sigs.k8s.io/kind v0.7.0
 )
