@@ -24,7 +24,7 @@ func CreateTestDbAt(t *testing.T, key int) (*sql.DB, sqlite.Migrator, func()) {
 	dbName := fmt.Sprintf("%d.db", rand.Int())
 	logrus.SetLevel(logrus.DebugLevel)
 
-	db, err := sqlite.Open(dbName)
+	db, err := sql.Open("sqlite3", dbName)
 	require.NoError(t, err)
 
 	_, err = db.Exec("PRAGMA foreign_keys = ON", nil)

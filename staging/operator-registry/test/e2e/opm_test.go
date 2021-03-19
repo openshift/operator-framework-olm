@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,8 +21,6 @@ import (
 	"github.com/operator-framework/operator-registry/pkg/image/execregistry"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 	"github.com/operator-framework/operator-registry/pkg/lib/indexer"
-	lregistry "github.com/operator-framework/operator-registry/pkg/lib/registry"
-	"github.com/operator-framework/operator-registry/pkg/registry"
 	"github.com/operator-framework/operator-registry/pkg/sqlite"
 )
 
@@ -43,30 +40,11 @@ var (
 	indexTag2  = rand.String(6)
 	indexTag3  = rand.String(6)
 
-	bundleImage = dockerHost + "/olmtest/e2e-bundle"
-	indexImage  = dockerHost + "/olmtest/e2e-index"
-	indexImage1 = dockerHost + "/olmtest/e2e-index:" + indexTag1
-	indexImage2 = dockerHost + "/olmtest/e2e-index:" + indexTag2
-	indexImage3 = dockerHost + "/olmtest/e2e-index:" + indexTag3
-
-	// publishedIndex is an index used to check for regressions in opm's behavior.
-	publishedIndex = os.Getenv("PUBLISHED_INDEX")
+	bundleImage = "quay.io/olmtest/e2e-bundle"
+	indexImage1 = "quay.io/olmtest/e2e-index:" + indexTag1
+	indexImage2 = "quay.io/olmtest/e2e-index:" + indexTag2
+	indexImage3 = "quay.io/olmtest/e2e-index:" + indexTag3
 )
-
-type bundleLocation struct {
-	image, path string
-}
-
-type bundleLocations []bundleLocation
-
-func (bl bundleLocations) images() []string {
-	images := make([]string, len(bl))
-	for i, b := range bl {
-		images[i] = b.image
-	}
-
-	return images
-}
 
 func inTemporaryBuildContext(f func() error) (rerr error) {
 	td, err := ioutil.TempDir(".", "opm-")
@@ -94,20 +72,23 @@ func inTemporaryBuildContext(f func() error) (rerr error) {
 	return f()
 }
 
-func buildIndexWith(containerTool, fromIndexImage, toIndexImage string, bundleImages []string, mode registry.Mode, overwriteLatest bool) error {
-	logger := logrus.WithFields(logrus.Fields{"bundles": bundleImages})
+func buildIndexWith(containerTool, indexImage, bundleImage string, bundleTags []string) error {
+	bundles := make([]string, 0)
+	for _, tag := range bundleTags {
+		bundles = append(bundles, bundleImage+":"+tag)
+	}
+
+	logger := logrus.WithFields(logrus.Fields{"bundles": bundles})
 	indexAdder := indexer.NewIndexAdder(containertools.NewContainerTool(containerTool, containertools.NoneTool), containertools.NewContainerTool(containerTool, containertools.NoneTool), logger)
 
 	request := indexer.AddToIndexRequest{
 		Generate:          false,
-		FromIndex:         fromIndexImage,
+		FromIndex:         "",
 		BinarySourceImage: "",
 		OutDockerfile:     "",
-		Tag:               toIndexImage,
-		Mode:              mode,
-		Bundles:           bundleImages,
+		Tag:               indexImage,
+		Bundles:           bundles,
 		Permissive:        false,
-		Overwrite:         overwriteLatest,
 	}
 
 	return indexAdder.AddToIndex(request)
@@ -153,34 +134,16 @@ func pruneIndexWith(containerTool string) error {
 
 func pushWith(containerTool, image string) error {
 	dockerpush := exec.Command(containerTool, "push", image)
-	dockerpush.Stderr = GinkgoWriter
-	dockerpush.Stdout = GinkgoWriter
 	return dockerpush.Run()
 }
 
-func exportPackageWith(containerTool string) error {
-	packages := []string{packageName}
-	logger := logrus.WithFields(logrus.Fields{"package": packages})
+func exportWith(containerTool string) error {
+	logger := logrus.WithFields(logrus.Fields{"package": packageName})
 	indexExporter := indexer.NewIndexExporter(containertools.NewContainerTool(containerTool, containertools.NoneTool), logger)
 
 	request := indexer.ExportFromIndexRequest{
 		Index:         indexImage2,
-		Packages:      packages,
-		DownloadPath:  "downloaded",
-		ContainerTool: containertools.NewContainerTool(containerTool, containertools.NoneTool),
-	}
-
-	return indexExporter.ExportFromIndex(request)
-}
-
-func exportIndexImageWith(containerTool string) error {
-
-	logger := logrus.NewEntry(logrus.New())
-	indexExporter := indexer.NewIndexExporter(containertools.NewContainerTool(containerTool, containertools.NoneTool), logger)
-
-	request := indexer.ExportFromIndexRequest{
-		Index:         indexImage2,
-		Packages:      []string{},
+		Package:       packageName,
 		DownloadPath:  "downloaded",
 		ContainerTool: containertools.NewContainerTool(containerTool, containertools.NoneTool),
 	}
@@ -195,7 +158,7 @@ func initialize() error {
 	}
 	defer os.Remove(tmpDB.Name())
 
-	db, err := sqlite.Open(tmpDB.Name())
+	db, err := sql.Open("sqlite3", tmpDB.Name())
 	if err != nil {
 		return err
 	}
@@ -215,6 +178,16 @@ func initialize() error {
 
 var _ = Describe("opm", func() {
 	IncludeSharedSpecs := func(containerTool string) {
+		BeforeEach(func() {
+			if dockerUsername == "" || dockerPassword == "" {
+				Skip("registry credentials are not available")
+			}
+
+			dockerlogin := exec.Command(containerTool, "login", "-u", dockerUsername, "-p", dockerPassword, "quay.io")
+			err := dockerlogin.Run()
+			Expect(err).NotTo(HaveOccurred(), "Error logging into quay.io")
+		})
+
 		It("builds and validates a bundle image", func() {
 			By("building bundle")
 			img := bundleImage + ":" + bundleTag3
@@ -256,26 +229,27 @@ var _ = Describe("opm", func() {
 
 		It("builds and manipulates bundle and index images", func() {
 			By("building bundles")
-			bundles := bundleLocations{
-				{bundleImage + ":" + bundleTag1, bundlePath1},
-				{bundleImage + ":" + bundleTag2, bundlePath2},
-				{bundleImage + ":" + bundleTag3, bundlePath3},
+			tagPaths := map[string]string{
+				bundleTag1: bundlePath1,
+				bundleTag2: bundlePath2,
+				bundleTag3: bundlePath3,
 			}
 			var err error
-			for _, b := range bundles {
+			for tag, path := range tagPaths {
 				err = inTemporaryBuildContext(func() error {
-					return bundle.BuildFunc(b.path, "", b.image, containerTool, packageName, channels, defaultChannel, false)
+					return bundle.BuildFunc(path, "", bundleImage+":"+tag, containerTool, packageName, channels, defaultChannel, false)
 				})
 				Expect(err).NotTo(HaveOccurred())
 			}
 
 			By("pushing bundles")
-			for _, b := range bundles {
-				Expect(pushWith(containerTool, b.image)).NotTo(HaveOccurred())
+			for tag, _ := range tagPaths {
+				err = pushWith(containerTool, bundleImage+":"+tag)
+				Expect(err).NotTo(HaveOccurred())
 			}
 
 			By("building an index")
-			err = buildIndexWith(containerTool, "", indexImage1, bundles[:2].images(), registry.ReplacesMode, false)
+			err = buildIndexWith(containerTool, indexImage1, bundleImage, []string{bundleTag1, bundleTag2})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("pushing an index")
@@ -298,8 +272,8 @@ var _ = Describe("opm", func() {
 			err = pushWith(containerTool, indexImage3)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("exporting a package from an index to disk")
-			err = exportPackageWith(containerTool)
+			By("exporting an index to disk")
+			err = exportWith(containerTool)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("loading manifests from a directory")
@@ -310,193 +284,61 @@ var _ = Describe("opm", func() {
 			err = os.RemoveAll("downloaded")
 			Expect(err).NotTo(HaveOccurred())
 
-			By("exporting a package from an index to disk with containerd")
-			err = exportPackageWith(containertools.NoneTool.String())
+			By("exporting an index to disk with containerd")
+			err = exportWith(containertools.NoneTool.String())
 			Expect(err).NotTo(HaveOccurred())
 
 			By("loading manifests from a containerd-extracted directory")
 			err = initialize()
 			Expect(err).NotTo(HaveOccurred())
-
-			// clean containerd-extracted directory
-			err = os.RemoveAll("downloaded")
-			Expect(err).NotTo(HaveOccurred())
-
-			By("exporting an entire index to disk")
-			err = exportIndexImageWith(containerTool)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("loading manifests from a directory")
-			err = initialize()
-			Expect(err).NotTo(HaveOccurred())
-
 		})
 
 		It("build bundles and index via inference", func() {
 
-			bundles := bundleLocations{
-				{bundleImage + ":" + rand.String(6), "./testdata/aqua/0.0.1"},
-				{bundleImage + ":" + rand.String(6), "./testdata/aqua/0.0.2"},
-				{bundleImage + ":" + rand.String(6), "./testdata/aqua/1.0.0"},
-				{bundleImage + ":" + rand.String(6), "./testdata/aqua/1.0.1"},
-			}
+			bundlePaths := []string{"./testdata/aqua/0.0.1", "./testdata/aqua/0.0.2", "./testdata/aqua/1.0.0",
+				"./testdata/aqua/1.0.1"}
+
+			bundleTags := func() (tags []string) {
+				for range bundlePaths {
+					tags = append(tags, rand.String(6))
+				}
+				return
+			}()
+
+			indexImage := "quay.io/olmtest/e2e-index:" + rand.String(6)
 
 			By("building bundles")
-			for _, b := range bundles {
+			for i := range bundlePaths {
 				td, err := ioutil.TempDir(".", "opm-")
 				Expect(err).NotTo(HaveOccurred())
 				defer os.RemoveAll(td)
 
-				err = bundle.BuildFunc(b.path, td, b.image, containerTool, "", "", "", true)
+				err = bundle.BuildFunc(bundlePaths[i], td, bundleImage+":"+bundleTags[i], containerTool, "", "", "", true)
 				Expect(err).NotTo(HaveOccurred())
 			}
 
 			By("pushing bundles")
-			for _, b := range bundles {
-				Expect(pushWith(containerTool, b.image)).NotTo(HaveOccurred())
-			}
-
-			By("building an index")
-			indexImage := indexImage + ":" + rand.String(6)
-			err := buildIndexWith(containerTool, "", indexImage, bundles.images(), registry.ReplacesMode, false)
-			Expect(err).NotTo(HaveOccurred())
-		})
-		It("build index without bundles", func() {
-			indexImage := indexImage + ":" + rand.String(6)
-			By("building an index")
-			err := buildIndexWith(containerTool, "", indexImage, []string{}, registry.ReplacesMode, true)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		PIt("can overwrite existing bundles in an index", func() {
-			// TODO fix regression overwriting existing bundles in an index
-			bundles := bundleLocations{
-				{bundleImage + ":" + rand.String(6), "./testdata/aqua/0.0.1"},
-				{bundleImage + ":" + rand.String(6), "./testdata/aqua/0.0.2"},
-				{bundleImage + ":" + rand.String(6), "./testdata/aqua/1.0.0"},
-				{bundleImage + ":" + rand.String(6), "./testdata/aqua/1.0.1"},
-				{bundleImage + ":" + rand.String(6), "./testdata/aqua/1.0.1-overwrite"},
-			}
-
-			for _, b := range bundles {
-				td, err := ioutil.TempDir(".", "opm-")
-				Expect(err).NotTo(HaveOccurred())
-				defer os.RemoveAll(td)
-
-				err = bundle.BuildFunc(b.path, td, b.image, containerTool, "", "", "", true)
+			for _, tag := range bundleTags {
+				err := pushWith(containerTool, bundleImage+":"+tag)
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			By("pushing bundles")
-			for _, b := range bundles {
-				Expect(pushWith(containerTool, b.image)).NotTo(HaveOccurred())
-			}
-
-			indexImage := indexImage + ":" + rand.String(6)
-			By("adding net-new bundles to an index")
-			err := buildIndexWith(containerTool, "", indexImage, bundles[:4].images(), registry.ReplacesMode, true) // 0.0.1, 0.0.2, 1.0.0, 1.0.1
+			By("building an index")
+			err := buildIndexWith(containerTool, indexImage, bundleImage, bundleTags)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(pushWith(containerTool, indexImage)).NotTo(HaveOccurred())
 
-			By("failing to overwrite a non-latest bundle")
-			nextIndex := indexImage + "-next"
-			err = buildIndexWith(containerTool, indexImage, nextIndex, bundles[1:2].images(), registry.ReplacesMode, true) // 0.0.2
-			Expect(err).To(HaveOccurred())
-
-			By("failing to overwrite in a non-replace mode")
-			err = buildIndexWith(containerTool, indexImage, nextIndex, bundles[4:].images(), registry.SemVerMode, true) // 1.0.1-overwrite
-			Expect(err).To(HaveOccurred())
-
-			By("overwriting the latest bundle in an index")
-			err = buildIndexWith(containerTool, indexImage, nextIndex, bundles[4:].images(), registry.ReplacesMode, true) // 1.0.1-overwrite
+			workingDir, err := os.Getwd()
 			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("doesn't change published content on overwrite", func() {
-			if publishedIndex == "" {
-				Skip("Set the PUBLISHED_INDEX environment variable to enable this test")
-			}
-
-			logger := logrus.NewEntry(logrus.StandardLogger())
-			logger.Logger.SetLevel(logrus.WarnLevel)
-			tool := containertools.NewContainerTool(containerTool, containertools.NoneTool)
-			imageIndexer := indexer.ImageIndexer{
-				PullTool: tool,
-				Logger:   logger,
-			}
-			dbFile, err := imageIndexer.ExtractDatabase(".", publishedIndex, "", true)
-			Expect(err).NotTo(HaveOccurred(), "error extracting registry db")
-
-			db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s", dbFile))
-			Expect(err).NotTo(HaveOccurred(), "Error reading db file")
-
-			querier := sqlite.NewSQLLiteQuerierFromDb(db)
-
-			graphLoader, err := sqlite.NewSQLGraphLoaderFromDB(db)
-			Expect(err).NotTo(HaveOccurred(), "Error reading db file")
-
-			packages, err := querier.ListPackages(context.TODO())
-			Expect(err).NotTo(HaveOccurred(), "Error listing packages")
-
-			var errs []error
-
-			adder := lregistry.NewRegistryAdder(logger)
-			for _, pkg := range packages {
-				existing, err := graphLoader.Generate(pkg)
-				Expect(err).NotTo(HaveOccurred(), "Error generating graph for package %s", pkg, existing)
-
-				for name, ch := range existing.Channels {
-					replacement, err := querier.GetBundleThatReplaces(context.TODO(), ch.Head.CsvName, pkg, name)
-					if err != nil && err.Error() != fmt.Errorf("no entry found for %s %s", pkg, name).Error() {
-						errs = append(errs, err)
-						continue
-					}
-
-					if replacement != nil {
-						continue
-					}
-
-					request := lregistry.AddToRegistryRequest{
-						Permissive:    false,
-						SkipTLS:       false,
-						InputDatabase: dbFile,
-						Bundles:       []string{ch.Head.BundlePath},
-						Mode:          registry.ReplacesMode,
-						ContainerTool: tool,
-						Overwrite:     true,
-					}
-
-					err = adder.AddToRegistry(request)
-					if err != nil {
-						errs = append(errs, fmt.Errorf("Error overwriting bundles for package %s: %s", pkg, err))
-					}
-				}
-
-				overwritten, err := graphLoader.Generate(pkg)
-				Expect(err).NotTo(HaveOccurred(), "Error generating graph for package %s", pkg)
-
-				if !reflect.DeepEqual(existing, overwritten) {
-					errs = append(errs, fmt.Errorf("the update graph has changed during overwrite-latest for package: %s\nWas\n%s\nIs now\n%s", pkg, existing, overwritten))
-				}
-			}
-
-			Expect(errs).To(BeEmpty(), fmt.Sprintf("%s", errs))
+			err = os.Remove(workingDir + "/" + bundle.DockerFile)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	}
 
 	Context("using docker", func() {
-		if err := exec.Command("docker").Run(); err != nil {
-			GinkgoT().Logf("container tool docker not found - skipping docker-based opm e2e tests: %s", err)
-			return
-		}
 		IncludeSharedSpecs("docker")
 	})
 
 	Context("using podman", func() {
-		if err := exec.Command("podman", "info").Run(); err != nil {
-			GinkgoT().Log("container tool podman not found - skipping podman-based opm e2e tests: %s", err)
-			return
-		}
 		IncludeSharedSpecs("podman")
 	})
 })
