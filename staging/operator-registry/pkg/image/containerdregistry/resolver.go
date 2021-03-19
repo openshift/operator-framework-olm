@@ -40,7 +40,8 @@ func NewResolver(configDir string, insecure bool, roots *x509.CertPool) (remotes
 	headers := http.Header{}
 	headers.Set("User-Agent", "opm/alpha")
 
-	client := &http.Client{Transport: transport}
+	client := http.DefaultClient
+	client.Transport = transport
 
 	cfg, err := loadConfig(configDir)
 	if err != nil {

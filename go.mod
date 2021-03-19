@@ -12,9 +12,9 @@ require (
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.3
-	github.com/operator-framework/api v0.5.1
+	github.com/operator-framework/api v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
-	github.com/operator-framework/operator-registry v1.13.6
+	github.com/operator-framework/operator-registry v0.0.0-00010101000000-000000000000
 	github.com/otiai10/copy v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.0

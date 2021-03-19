@@ -2,8 +2,9 @@
 
 current_branch=$(git symbolic-ref --short HEAD)
 repo_root=$(git rev-parse --show-toplevel)
-staging_dir="staging"
-repo_list="scripts/tracked"
+staging_dir="${repo_root}/staging"
+scripts_dir="${repo_root}/scripts"
+repo_list="${scripts_dir}/tracked"
 temp_branch="automated-sync-$(date +%s)"
 downstream_repo="github.com/openshift/operator-framework-olm"
 
@@ -28,12 +29,12 @@ function exit_on_error {
                 return
         fi
         msg="[ERROR] line $(caller)"
-        if [ ${last} -gt -1 ]; then
+        if [ "${last}" -gt -1 ]; then
                 msg="${msg}: ${@:1:${last}}"
         fi
         echo -e "\e[91m${msg}\e[0m"
 	cleanup_and_reset_branch
-        exit ${code}
+        exit "${code}"
 }
 
 ## required for creating automated PRs with hub
@@ -46,7 +47,7 @@ if ! which git > /dev/null; then
 fi
 
 git subtree &>/dev/null || subtree_exit_code=$? 
-if [ $subtree_exit_code -eq 1 ]; then
+if [ "$subtree_exit_code" -eq 1 ]; then
 	exit_on_error "installed git version does not support subtree command, please see https://github.com/git/git/tree/master/contrib/subtree"
 fi
 
@@ -57,19 +58,17 @@ fi
 
 trap 'exit_on_error "$0:" $?' ERR
 
-cd ${repo_root}
-
-if [[ -e ".git/rebase-apply" ]]; then
+if [[ -e "${repo_root}/.git/rebase-apply" ]]; then
   exit_on_error "!!! 'git rebase' or 'git am' in progress, aborting"
 fi
 
-git checkout -b ${temp_branch}
+git checkout -b "${temp_branch}"
 
-if [ ! -f ${repo_list} ]; then
-	touch ${repo_list}
+if [ ! -f "${repo_list}" ]; then
+	mkdir -p "${scripts_dir}" && touch "${repo_list}"
 fi
 
 if [ ! -d "${staging_dir}" ]; then
-	mkdir ${staging_dir}
+	mkdir -p "${staging_dir}"
 fi
 

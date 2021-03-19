@@ -112,6 +112,9 @@ func GenerateFunc(directory, outputDir, packageName, channels, channelDefault st
 
 		if channelDefault == "" {
 			channelDefault = i.GetDefaultChannel()
+			if !containsString(strings.Split(channels, ","), channelDefault) {
+				channelDefault = ""
+			}
 			log.Infof("Inferred default channel: %s", channelDefault)
 		}
 	}
@@ -296,18 +299,16 @@ func ValidateAnnotations(existing, expected []byte) error {
 func GenerateAnnotations(mediaType, manifests, metadata, packageName, channels, channelDefault string) ([]byte, error) {
 	annotations := &AnnotationMetadata{
 		Annotations: map[string]string{
-			MediatypeLabel: mediaType,
-			ManifestsLabel: manifests,
-			MetadataLabel:  metadata,
-			PackageLabel:   packageName,
-			ChannelsLabel:  channels,
+			MediatypeLabel:      mediaType,
+			ManifestsLabel:      manifests,
+			MetadataLabel:       metadata,
+			PackageLabel:        packageName,
+			ChannelsLabel:       channels,
+			ChannelDefaultLabel: channelDefault,
 		},
 	}
 
-	// Only add defaultChannel annotation if present
-	if channelDefault != "" {
-		annotations.Annotations[ChannelDefaultLabel] = channelDefault
-	}
+	annotations.Annotations[ChannelDefaultLabel] = channelDefault
 
 	afile, err := yaml.Marshal(annotations)
 	if err != nil {
@@ -327,13 +328,11 @@ func GenerateDockerfile(mediaType, manifests, metadata, copyManifestDir, copyMet
 	if err != nil {
 		return nil, err
 	}
-	relativeManifestDirectory = filepath.ToSlash(relativeManifestDirectory)
 
 	relativeMetadataDirectory, err := filepath.Rel(workingDir, copyMetadataDir)
 	if err != nil {
 		return nil, err
 	}
-	relativeMetadataDirectory = filepath.ToSlash(relativeMetadataDirectory)
 
 	// FROM
 	fileContent += "FROM scratch\n\n"
@@ -344,11 +343,7 @@ func GenerateDockerfile(mediaType, manifests, metadata, copyManifestDir, copyMet
 	fileContent += fmt.Sprintf("LABEL %s=%s\n", MetadataLabel, metadata)
 	fileContent += fmt.Sprintf("LABEL %s=%s\n", PackageLabel, packageName)
 	fileContent += fmt.Sprintf("LABEL %s=%s\n", ChannelsLabel, channels)
-
-	// Only add defaultChannel annotation if present
-	if channelDefault != "" {
-		fileContent += fmt.Sprintf("LABEL %s=%s\n\n", ChannelDefaultLabel, channelDefault)
-	}
+	fileContent += fmt.Sprintf("LABEL %s=%s\n\n", ChannelDefaultLabel, channelDefault)
 
 	// CONTENT
 	fileContent += fmt.Sprintf("COPY %s %s\n", relativeManifestDirectory, "/manifests/")
@@ -357,7 +352,7 @@ func GenerateDockerfile(mediaType, manifests, metadata, copyManifestDir, copyMet
 	return []byte(fileContent), nil
 }
 
-// WriteFile writes `fileName` file with `content` into a `directory`
+// Write `fileName` file with `content` into a `directory`
 // Note: Will overwrite the existing `fileName` file if it exists
 func WriteFile(fileName, directory string, content []byte) error {
 	if _, err := os.Stat(directory); os.IsNotExist(err) {

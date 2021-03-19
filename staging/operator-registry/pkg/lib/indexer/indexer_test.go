@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"database/sql"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -8,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
+	"github.com/operator-framework/operator-registry/pkg/sqlite"
 
 	pregistry "github.com/operator-framework/operator-registry/pkg/registry"
-	"github.com/operator-framework/operator-registry/pkg/sqlite"
 )
 
 func TestGetBundlesToExport(t *testing.T) {
@@ -18,7 +19,7 @@ func TestGetBundlesToExport(t *testing.T) {
 		"quay.io/olmtest/example-bundle:etcdoperator.v0.6.1"}
 	sort.Strings(expected)
 
-	db, err := sqlite.Open("./testdata/bundles.db")
+	db, err := sql.Open("sqlite3", "./testdata/bundles.db")
 	if err != nil {
 		t.Fatalf("opening db: %s", err)
 	}
@@ -29,16 +30,10 @@ func TestGetBundlesToExport(t *testing.T) {
 		t.Fatalf("creating querier: %s", err)
 	}
 
-	bundleMap, err := getBundlesToExport(dbQuerier, []string {"etcd"})
+	bundleImages, err := getBundlesToExport(dbQuerier, "etcd")
 	if err != nil {
 		t.Fatalf("exporting bundles from db: %s", err)
 	}
-
-	var bundleImages []string
-	for bundlePath, _ := range bundleMap {
-		bundleImages = append(bundleImages, bundlePath)
-	}
-
 	sort.Strings(bundleImages)
 
 	if !reflect.DeepEqual(expected, bundleImages) {
@@ -47,7 +42,7 @@ func TestGetBundlesToExport(t *testing.T) {
 }
 
 func TestGeneratePackageYaml(t *testing.T) {
-	db, err := sqlite.Open("./testdata/bundles.db")
+	db, err := sql.Open("sqlite3", "./testdata/bundles.db")
 	if err != nil {
 		t.Fatalf("opening db: %s", err)
 	}

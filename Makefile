@@ -36,7 +36,7 @@ ifeq (, $(wildcard $(KUBEBUILDER_ASSETS)/kube-apiserver))
 	$(error kube-apiserver $(KUBEBUILDER_ASSETS_ERR))
 endif
 
-build: $(REGISTRY_CMDS) $(OLM_CMDS)
+build: $(REGISTRY_CMDS) $(OLM_CMDS) ## build opm and olm binaries
 
 $(REGISTRY_CMDS): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
 $(REGISTRY_CMDS):
@@ -69,13 +69,13 @@ unit/registry:
 unit/api:
 	$(MAKE) unit WHAT=api TARGET_NAME=test
 
-unit:
+unit: ## Run unit tests
 	$(ROOT_DIR)/scripts/unit.sh
 
-e2e/operator-registry:
+e2e/operator-registry: ## Run e2e registry tests
 	go run -mod=vendor github.com/onsi/ginkgo/ginkgo --v --randomizeAllSpecs --randomizeSuites --race $(TAGS) ./staging/operator-registry/test/e2e/
 
-e2e/olm:
+e2e/olm: ## Run e2e olm tests
 	scripts/e2e.sh
 
 .PHONY: vendor
@@ -87,3 +87,7 @@ vendor:
 .PHONY: sanity
 sanity:
 	$(MAKE) vendor && git diff --stat HEAD --ignore-submodules --exit-code
+
+.PHONY: help
+help: ## Display this help.
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
