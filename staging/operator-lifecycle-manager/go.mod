@@ -9,7 +9,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-bindata/go-bindata/v3 v3.1.3
 	github.com/go-logr/logr v0.3.0
 	github.com/go-openapi/spec v0.19.4
 	github.com/golang/mock v1.4.1
