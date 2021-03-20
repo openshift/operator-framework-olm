@@ -72,11 +72,14 @@ unit/api:
 unit: ## Run unit tests
 	$(ROOT_DIR)/scripts/unit.sh
 
+e2e:
+	scripts/e2e.sh
+
 e2e/operator-registry: ## Run e2e registry tests
-	go run -mod=vendor github.com/onsi/ginkgo/ginkgo --v --randomizeAllSpecs --randomizeSuites --race $(TAGS) ./staging/operator-registry/test/e2e/
+	$(MAKE) e2e WHAT=operator-registry
 
 e2e/olm: ## Run e2e olm tests
-	scripts/e2e.sh
+	$(MAKE) e2e WHAT=operator-lifecycle-manager
 
 .PHONY: vendor
 vendor:
