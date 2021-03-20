@@ -10,35 +10,17 @@ set -o nounset
 set -o pipefail
 
 : "${KUBECONFIG:?}"
+: "${WHAT:?}"
 
 ROOT_DIR=$(dirname "${BASH_SOURCE[0]}")/..
 
-function run_olm_tests() {
-    pushd "${ROOT_DIR}/staging/operator-lifecycle-manager"
+function run_test() {
+    local staging_dir=$1
 
-    echo "Running OLM e2e tests"
-    go test \
-        -mod=vendor \
-        -v \
-        -failfast \
-        -timeout 150m \
-        ./test/e2e/... \
-        -namespace=openshift-operators \
-        -kubeconfig="${KUBECONFIG}" \
-        -olmNamespace=openshift-operator-lifecycle-manager \
-        -dummyImage=bitnami/nginx:latest \
-        -ginkgo.flakeAttempts=3
-
+    pushd "${ROOT_DIR}/staging/${staging_dir}"
+    echo "Running ${staging_dir} e2e tests"
+    make e2e
     popd
 }
 
-function run_registry_tests() {
-    pushd "${ROOT_DIR}/staging/operator-registry"
-
-    echo "Running registry e2e tests"
-    go run -mod=vendor github.com/onsi/ginkgo/ginkgo --v --randomizeAllSpecs --randomizeSuites --race -tags "json1" ./test/e2e
-
-    popd
-}
-
-run_registry_tests
+run_test "${WHAT}"
