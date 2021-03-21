@@ -38,6 +38,12 @@ endif
 
 build: $(REGISTRY_CMDS) $(OLM_CMDS) ## build opm and olm binaries
 
+build/registry:
+	$(MAKE) $(REGISTRY_CMDS)
+
+build/olm:
+	$(MAKE) $(OLM_CMDS)
+
 $(REGISTRY_CMDS): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
 $(REGISTRY_CMDS):
 	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $@ $(REGISTRY_PKG)/cmd/$(notdir $@)
