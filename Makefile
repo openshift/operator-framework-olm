@@ -38,6 +38,12 @@ endif
 
 build: $(REGISTRY_CMDS) $(OLM_CMDS) ## build opm and olm binaries
 
+build/registry:
+	$(MAKE) $(REGISTRY_CMDS)
+
+build/olm:
+	$(MAKE) $(OLM_CMDS)
+
 $(REGISTRY_CMDS): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
 $(REGISTRY_CMDS):
 	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $@ $(REGISTRY_PKG)/cmd/$(notdir $@)
@@ -72,11 +78,14 @@ unit/api:
 unit: ## Run unit tests
 	$(ROOT_DIR)/scripts/unit.sh
 
+e2e:
+	scripts/e2e.sh
+
 e2e/operator-registry: ## Run e2e registry tests
-	go run -mod=vendor github.com/onsi/ginkgo/ginkgo --v --randomizeAllSpecs --randomizeSuites --race $(TAGS) ./staging/operator-registry/test/e2e/
+	$(MAKE) e2e WHAT=operator-registry
 
 e2e/olm: ## Run e2e olm tests
-	scripts/e2e.sh
+	$(MAKE) e2e WHAT=operator-lifecycle-manager
 
 .PHONY: vendor
 vendor:
