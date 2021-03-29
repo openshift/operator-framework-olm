@@ -6,7 +6,7 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 WORKDIR /src
 
 COPY . .
-RUN make build/registry
+RUN make build/registry cross
 
 # copy and build vendored grpc_health_probe
 RUN CGO_ENABLED=0 go build -mod=vendor -tags netgo -ldflags "-w" ./vendor/github.com/grpc-ecosystem/grpc-health-probe/...
