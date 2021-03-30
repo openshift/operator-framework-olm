@@ -1,6 +1,6 @@
 # Dockerfile to bootstrap build and test in openshift-ci
 
-FROM registry.ci.openshift.org/ocp/builder:golang-1.15
+FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.16-openshift-4.8
 
 ARG KUBEBUILDER_RELEASE=2.3.1
 # Install test dependencies
