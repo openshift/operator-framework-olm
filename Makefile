@@ -2,19 +2,26 @@ SHELL := /bin/bash
 ROOT_DIR:= $(patsubst %/,%,$(dir $(realpath $(lastword $(MAKEFILE_LIST)))))
 CONTAINER_ENGINE := docker
 
-GO_BUILD_OPTS := -mod=vendor
-GO_BUILD_TAGS := -tags "json1"
-
-GIT_COMMIT := $(or $(SOURCE_GIT_COMMIT),$(shell git rev-parse --short HEAD))
 OPM_VERSION := $(or $(SOURCE_GIT_TAG),$(shell git describe --always --tags HEAD))
 BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+# ART builds are performed in dist-git, with content (but not commits) copied
+# from the source repo. Thus at build time if your code is inspecting the local
+# git repo it is getting unrelated commits and tags from the dist-git repo,
+# not the source repo.
+# For ART image builds, SOURCE_GIT_COMMIT, SOURCE_GIT_TAG, SOURCE_DATE_EPOCH
+# variables are inserted in Dockerfile to enable recovering the original git
+# metadata at build time.
+GIT_COMMIT := $(if $(SOURCE_GIT_COMMIT),$(SOURCE_GIT_COMMIT),$(shell git rev-parse HEAD))
+
+GO_BUILD_OPTS := -mod=vendor
+GO_BUILD_TAGS := -tags "json1"
 
 GO_PKG := github.com/operator-framework
 REGISTRY_PKG := $(GO_PKG)/operator-registry
 OLM_PKG := $(GO_PKG)/operator-lifecycle-manager
 API_PKG := $(GO_PKG)/api
-OPM := $(addprefix bin/, opm)
 
+OPM := $(addprefix bin/, opm)
 OLM_CMDS  := $(shell go list -mod=vendor $(OLM_PKG)/cmd/...)
 REGISTRY_CMDS  := $(addprefix bin/, $(shell ls staging/operator-registry/cmd | grep -v opm))
 
