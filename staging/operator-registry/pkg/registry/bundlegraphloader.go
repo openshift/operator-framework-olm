@@ -38,15 +38,6 @@ func (g *BundleGraphLoader) AddBundleToGraph(bundle *Bundle, graph *Package, new
 		graph.DefaultChannel = newDefaultChannel
 	}
 
-	if graph.DefaultChannel == "" {
-		// Infer default channel from channel list
-		if annotations.SelectDefaultChannel() != "" {
-			graph.DefaultChannel = annotations.SelectDefaultChannel()
-		} else {
-			return nil, fmt.Errorf("Default channel is missing and can't be inferred")
-		}
-	}
-
 	// generate the DAG for each channel the new bundle is being insert into
 	for _, channel := range bundle.Channels {
 		replaces := make(map[BundleKey]struct{}, 0)

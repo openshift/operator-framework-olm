@@ -22,7 +22,7 @@ fi
 
 rel_remote_dir="$(realpath --relative-to ${repo_root} ${remote_dir})"
 
-git fetch -t "${remote_name}" "${remote_ref}"
+git fetch "${remote_name}" "${remote_ref}"
 
 localrev=$(git subtree split --prefix="${rel_remote_dir}") || exit_on_error "failed to create subtree branch"
 
@@ -48,7 +48,7 @@ for i in $(seq 0 $(( ${#refs} - 1 )) ); do
 		if [ $ln -gt 0 ]; then
 			ds_ref="${refs:$st:$ln}"
 			ds_commit=$(git rev-parse "${ds_ref}")
-			commit_count=$(ls "${cachedir}/${ds_commit}"* | wc -l)
+			commit_count=$(ls "${cachedir}/${ds_commit}*" | wc -l)
 			if [ "${commit_count}" -eq 0 ]; then
 				exit_on_error "no commit ${ds_commit} found for subtree"
 			elif [ "${commit_count}" -gt 1 ]; then
@@ -67,28 +67,42 @@ done
 
 newbranch="${remote_name}-downstream-cherry-pick-$(date "+%s")"
 
+staged_mods=$(find "${staging_dir}" -mindepth 1 -maxdepth 1 ! -path "${remote_dir}" -exec sh -c "cd {} &&  go list -m -mod=mod" \;)
+
 git checkout -b "${newbranch}" "${remote_name}/${remote_ref}"
 git branch -D "${temp_branch}"
 temp_branch="${newbranch}"
-
-git cherry-pick "${mapped_refs}"
+git cherry-pick ${mapped_refs} --strategy recursive -X theirs
 
 # revert go build files
-git checkout "${remote_name}/${remote_ref}" -- OWNERS go.mod go.sum vendor
-
-sh -c "go mod edit -dropreplace ${downstream_repo}"
-git add go.mod
+git checkout "${remote_name}/${remote_ref}" -- OWNERS vendor
+go mod edit -dropreplace "${downstream_repo}"
+git show "${remote_name}/${remote_ref}":go.mod > ".go.mod.bk"
+for mod in ${staged_mods}; do
+	go mod edit -dropreplace "${mod}"
+	mod_version=$(grep "${mod}" ".go.mod.bk" | awk '{print $2;}' || true)
+	if [ -n "${mod_version}" ]; then
+		go mod edit -require "${mod}@${mod_version}"
+	else
+		go mod edit -droprequire "${mod}"
+	fi
+done
+go mod tidy && go mod vendor || true # leave vendor errors to be corrected later
+rm ".go.mod.bk"
+git add go.mod go.sum
 git commit --amend --no-edit
 
-printf "\\n!!! Upstream cherry-pick complete!\\n"
+git diff --dirstat "${current_branch}".."${temp_branch}"
+echo ""
+echo "!!! Upstream cherry-pick complete!"
+echo ""
 echo "!!! You can now inspect the branch."
 echo ""
-git diff --dirstat "${remote_name}/${remote_ref}..${temp_branch}"
 echo "!!! To switch back to your original branch, run:"
-echo "$ git checkout ${current_branch}"
+echo "  git checkout ${current_branch}"
 echo ""
 echo "!!! Once the changes look good, you can push the changes to the remote repository with:"
-echo "$ git push ${remote_name} ${temp_branch}:<target branch>"
+echo "  git push ${remote_name} ${temp_branch}:<target branch>"
 #git push ${remote_name} ${temp_branch}:"refs/heads/${temp_branch}"
 
 #cleanup_and_reset_branch

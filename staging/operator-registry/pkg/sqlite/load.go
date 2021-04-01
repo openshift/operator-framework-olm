@@ -510,38 +510,6 @@ func (s *sqlLoader) getBundleSkipsReplacesVersion(tx *sql.Tx, bundleName string)
 	return
 }
 
-func (s *sqlLoader) getBundlePathIfExists(tx *sql.Tx, bundleName string) (bundlePath string, err error) {
-	getBundlePath, err := tx.Prepare(`
-	  SELECT bundlepath
-	  FROM operatorbundle
-	  WHERE operatorbundle.name=? LIMIT 1`)
-	if err != nil {
-		return
-	}
-	defer getBundlePath.Close()
-
-	rows, rerr := getBundlePath.Query(bundleName)
-	if err != nil {
-		err = rerr
-		return
-	}
-	if !rows.Next() {
-		// no bundlepath set
-		return
-	}
-
-	var bundlePathSQL sql.NullString
-	if err = rows.Scan(&bundlePathSQL); err != nil {
-		return
-	}
-
-	if bundlePathSQL.Valid {
-		bundlePath = bundlePathSQL.String
-	}
-
-	return
-}
-
 func (s *sqlLoader) addAPIs(tx *sql.Tx, bundle *registry.Bundle) error {
 	if bundle.Name == "" {
 		return fmt.Errorf("cannot add apis for bundle with no name: %#v", bundle)
