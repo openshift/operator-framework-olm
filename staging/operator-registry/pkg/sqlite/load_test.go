@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -80,7 +81,7 @@ func TestAddPackageChannels(t *testing.T) {
 			description: "MissingReplacesInPackage/AggregatesAndContinues",
 			fields: fields{
 				bundles: []*registry.Bundle{
-					newBundle(t, "csv-a", "pkg-0", []string{"stable"}, newUnstructuredCSV(t, "csv-a", "non-existant")),
+					newBundle(t, "csv-a", "pkg-0", []string{"stable"}, newUnstructuredCSV(t, "csv-a", "csv-d")),
 					newBundle(t, "csv-b", "pkg-0", []string{"alpha"}, newUnstructuredCSV(t, "csv-b", "")),
 					newBundle(t, "csv-c", "pkg-1", []string{"stable"}, newUnstructuredCSV(t, "csv-c", "")),
 				},
@@ -114,7 +115,7 @@ func TestAddPackageChannels(t *testing.T) {
 			},
 			expected: expected{
 				errs: []error{
-					utilerrors.NewAggregate([]error{fmt.Errorf("csv-a specifies replacement that couldn't be found")}),
+					utilerrors.NewAggregate([]error{fmt.Errorf("Invalid bundle csv-a, replaces nonexistent bundle csv-d")}),
 					nil,
 				},
 				pkgs: []string{
@@ -239,7 +240,10 @@ func newUnstructuredCSVwithSkips(t *testing.T, name, replaces string, skips ...s
 }
 
 func newBundle(t *testing.T, name, pkgName string, channels []string, objs ...*unstructured.Unstructured) *registry.Bundle {
-	bundle := registry.NewBundle(name, pkgName, channels, objs...)
+	bundle := registry.NewBundle(name, &registry.Annotations{
+		PackageName: pkgName,
+		Channels:    strings.Join(channels, ","),
+	}, objs...)
 
 	// Bust the bundle cache to set the CSV and CRDs
 	_, err := bundle.ClusterServiceVersion()

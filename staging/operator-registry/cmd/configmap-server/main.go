@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/operator-framework/operator-registry/pkg/api"
 	health "github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1"
 	"github.com/operator-framework/operator-registry/pkg/lib/dns"
+	"github.com/operator-framework/operator-registry/pkg/lib/graceful"
 	"github.com/operator-framework/operator-registry/pkg/lib/log"
 	"github.com/operator-framework/operator-registry/pkg/registry"
 	"github.com/operator-framework/operator-registry/pkg/server"
@@ -70,7 +70,7 @@ func runCmdFunc(cmd *cobra.Command, args []string) error {
 	}
 	// Ensure there is a default nsswitch config
 	if err := dns.EnsureNsswitch(); err != nil {
-		return err
+		logrus.WithError(err).Warn("unable to write default nsswitch config")
 	}
 	kubeconfig, err := cmd.Flags().GetString("kubeconfig")
 	if err != nil {
@@ -104,7 +104,7 @@ func runCmdFunc(cmd *cobra.Command, args []string) error {
 		logger.Fatalf("error getting configmap: %s", err)
 	}
 
-	db, err := sql.Open("sqlite3", dbName)
+	db, err := sqlite.Open(dbName)
 	if err != nil {
 		return err
 	}
@@ -155,10 +155,11 @@ func runCmdFunc(cmd *cobra.Command, args []string) error {
 	reflection.Register(s)
 
 	logger.Info("serving registry")
-	if err := s.Serve(lis); err != nil {
-		logger.Fatalf("failed to serve: %s", err)
-	}
-	return nil
+	return graceful.Shutdown(logger, func() error {
+		return s.Serve(lis)
+	}, func() {
+		s.GracefulStop()
+	})
 }
 
 // NewClient creates a kubernetes client or bails out on on failures.
