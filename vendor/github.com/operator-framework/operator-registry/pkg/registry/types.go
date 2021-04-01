@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/blang/semver"
@@ -36,6 +37,15 @@ type PackageVersionAlreadyAddedErr struct {
 }
 
 func (e PackageVersionAlreadyAddedErr) Error() string {
+	return e.ErrorString
+}
+
+// OverwritesErr is an error that describes that an error with the add request with --force enabled.
+type OverwriteErr struct {
+	ErrorString string
+}
+
+func (e OverwriteErr) Error() string {
 	return e.ErrorString
 }
 
@@ -196,7 +206,7 @@ type PackageDependency struct {
 }
 
 type LabelDependency struct {
-	// The version range of dependency in semver range format
+	// The Label name of dependency
 	Label string `json:"label" yaml:"label"`
 }
 
@@ -224,7 +234,7 @@ type DeprecatedProperty struct {
 }
 
 type LabelProperty struct {
-	// The version range of dependency in semver range format
+	// The name of Label
 	Label string `json:"label" yaml:"label"`
 }
 
@@ -243,7 +253,7 @@ func (gd *GVKDependency) Validate() []error {
 	return errs
 }
 
-// Validate will validate GVK dependency type and return error(s)
+// Validate will validate Label dependency type and return error(s)
 func (ld *LabelDependency) Validate() []error {
 	errs := []error{}
 	if *ld == (LabelDependency{}) {
@@ -333,12 +343,17 @@ func (a *AnnotationsFile) GetChannels() []string {
 
 // GetDefaultChannelName returns the name of the default channel
 func (a *AnnotationsFile) GetDefaultChannelName() string {
-	if a.Annotations.DefaultChannelName != "" {
-		return a.Annotations.DefaultChannelName
-	}
-	channels := a.GetChannels()
-	if len(channels) == 1 {
+	return a.Annotations.DefaultChannelName
+}
+
+// SelectDefaultChannel returns the first item in channel list that is sorted
+// in lexicographic order.
+func (a *AnnotationsFile) SelectDefaultChannel() string {
+	if a.Annotations.Channels != "" {
+		channels := strings.Split(a.Annotations.Channels, ",")
+		sort.Strings(channels)
 		return channels[0]
 	}
+
 	return ""
 }
