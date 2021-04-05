@@ -12,8 +12,7 @@ COPY .git/refs/heads/. .git/refs/heads
 RUN mkdir -p .git/objects
 
 COPY . .
-RUN make build/olm
-RUN make build-util
+RUN make build/olm bin/cpb
 
 FROM registry.ci.openshift.org/ocp/4.8:base
 

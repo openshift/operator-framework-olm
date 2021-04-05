@@ -84,10 +84,8 @@ build/registry-container:
 bin/kubebuilder:
 	$(ROOT_DIR)/scripts/install_kubebuilder.sh
 
-build-util: bin/cpb
-bin/cpb: arch_flags=GOOS=linux GOARCH=386
 bin/cpb: FORCE
-	CGO_ENABLED=0 $(arch_flags) go build $(GO_BUILD_OPTS) -ldflags '-extldflags "-static"' -o $@ ./util/cpb
+	CGO_ENABLED=0 go build $(GO_BUILD_OPTS) -ldflags '-extldflags "-static"' -o $@ ./util/cpb
 
 unit/olm: bin/kubebuilder
 	$(MAKE) unit WHAT=operator-lifecycle-manager
