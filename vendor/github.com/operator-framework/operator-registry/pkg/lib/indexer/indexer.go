@@ -2,13 +2,15 @@ package indexer
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -19,32 +21,35 @@ import (
 	"github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
 	"github.com/operator-framework/operator-registry/pkg/image/execregistry"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
+	"github.com/operator-framework/operator-registry/pkg/lib/certs"
 	"github.com/operator-framework/operator-registry/pkg/lib/registry"
 	pregistry "github.com/operator-framework/operator-registry/pkg/registry"
 	"github.com/operator-framework/operator-registry/pkg/sqlite"
 )
 
 const (
-	defaultDockerfileName = "index.Dockerfile"
-	defaultImageTag       = "operator-registry-index:latest"
-	defaultDatabaseFolder = "database"
-	defaultDatabaseFile   = "index.db"
-	tmpDirPrefix          = "index_tmp_"
-	tmpBuildDirPrefix     = "index_build_tmp"
+	defaultDockerfileName     = "index.Dockerfile"
+	defaultImageTag           = "operator-registry-index:latest"
+	defaultDatabaseFolder     = "database"
+	defaultDatabaseFile       = "index.db"
+	tmpDirPrefix              = "index_tmp_"
+	tmpBuildDirPrefix         = "index_build_tmp"
+	concurrencyLimitForExport = 10
 )
 
 // ImageIndexer is a struct implementation of the Indexer interface
 type ImageIndexer struct {
-	DockerfileGenerator containertools.DockerfileGenerator
-	CommandRunner       containertools.CommandRunner
-	LabelReader         containertools.LabelReader
-	RegistryAdder       registry.RegistryAdder
-	RegistryDeleter     registry.RegistryDeleter
-	RegistryPruner      registry.RegistryPruner
-	RegistryDeprecator  registry.RegistryDeprecator
-	BuildTool           containertools.ContainerTool
-	PullTool            containertools.ContainerTool
-	Logger              *logrus.Entry
+	DockerfileGenerator    containertools.DockerfileGenerator
+	CommandRunner          containertools.CommandRunner
+	LabelReader            containertools.LabelReader
+	RegistryAdder          registry.RegistryAdder
+	RegistryDeleter        registry.RegistryDeleter
+	RegistryPruner         registry.RegistryPruner
+	RegistryStrandedPruner registry.RegistryStrandedPruner
+	RegistryDeprecator     registry.RegistryDeprecator
+	BuildTool              containertools.ContainerTool
+	PullTool               containertools.ContainerTool
+	Logger                 *logrus.Entry
 }
 
 // AddToIndexRequest defines the parameters to send to the AddToIndex API
@@ -57,7 +62,9 @@ type AddToIndexRequest struct {
 	Bundles           []string
 	Tag               string
 	Mode              pregistry.Mode
+	CaFile            string
 	SkipTLS           bool
+	Overwrite         bool
 }
 
 // AddToIndex is an aggregate API used to generate a registry index image with additional bundles
@@ -68,7 +75,7 @@ func (i ImageIndexer) AddToIndex(request AddToIndexRequest) error {
 		return err
 	}
 
-	databasePath, err := i.extractDatabase(buildDir, request.FromIndex)
+	databasePath, err := i.ExtractDatabase(buildDir, request.FromIndex, request.CaFile, request.SkipTLS)
 	if err != nil {
 		return err
 	}
@@ -81,6 +88,7 @@ func (i ImageIndexer) AddToIndex(request AddToIndexRequest) error {
 		Mode:          request.Mode,
 		SkipTLS:       request.SkipTLS,
 		ContainerTool: i.PullTool,
+		Overwrite:     request.Overwrite,
 	}
 
 	// Add the bundles to the registry
@@ -119,6 +127,8 @@ type DeleteFromIndexRequest struct {
 	OutDockerfile     string
 	Tag               string
 	Operators         []string
+	SkipTLS           bool
+	CaFile            string
 }
 
 // DeleteFromIndex is an aggregate API used to generate a registry index image
@@ -130,7 +140,7 @@ func (i ImageIndexer) DeleteFromIndex(request DeleteFromIndexRequest) error {
 		return err
 	}
 
-	databasePath, err := i.extractDatabase(buildDir, request.FromIndex)
+	databasePath, err := i.ExtractDatabase(buildDir, request.FromIndex, request.CaFile, request.SkipTLS)
 	if err != nil {
 		return err
 	}
@@ -168,6 +178,61 @@ func (i ImageIndexer) DeleteFromIndex(request DeleteFromIndexRequest) error {
 	return nil
 }
 
+// PruneStrandedFromIndexRequest defines the parameters to send to the PruneStrandedFromIndex API
+type PruneStrandedFromIndexRequest struct {
+	Generate          bool
+	BinarySourceImage string
+	FromIndex         string
+	OutDockerfile     string
+	Tag               string
+	CaFile            string
+	SkipTLS           bool
+}
+
+// PruneStrandedFromIndex is an aggregate API used to generate a registry index image
+// that has removed stranded bundles from the index
+func (i ImageIndexer) PruneStrandedFromIndex(request PruneStrandedFromIndexRequest) error {
+	buildDir, outDockerfile, cleanup, err := buildContext(request.Generate, request.OutDockerfile)
+	defer cleanup()
+	if err != nil {
+		return err
+	}
+
+	databasePath, err := i.ExtractDatabase(buildDir, request.FromIndex, request.CaFile, request.SkipTLS)
+	if err != nil {
+		return err
+	}
+
+	// Run opm registry prune-stranded on the database
+	pruneStrandedFromRegistryReq := registry.PruneStrandedFromRegistryRequest{
+		InputDatabase: databasePath,
+	}
+
+	// Delete the stranded bundles from the registry
+	err = i.RegistryStrandedPruner.PruneStrandedFromRegistry(pruneStrandedFromRegistryReq)
+	if err != nil {
+		return err
+	}
+
+	// generate the dockerfile
+	dockerfile := i.DockerfileGenerator.GenerateIndexDockerfile(request.BinarySourceImage, databasePath)
+	err = write(dockerfile, outDockerfile, i.Logger)
+	if err != nil {
+		return err
+	}
+
+	if request.Generate {
+		return nil
+	}
+
+	// build the dockerfile
+	err = build(outDockerfile, request.Tag, i.CommandRunner, i.Logger)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // PruneFromIndexRequest defines the parameters to send to the PruneFromIndex API
 type PruneFromIndexRequest struct {
 	Generate          bool
@@ -177,6 +242,8 @@ type PruneFromIndexRequest struct {
 	OutDockerfile     string
 	Tag               string
 	Packages          []string
+	CaFile            string
+	SkipTLS           bool
 }
 
 func (i ImageIndexer) PruneFromIndex(request PruneFromIndexRequest) error {
@@ -186,7 +253,7 @@ func (i ImageIndexer) PruneFromIndex(request PruneFromIndexRequest) error {
 		return err
 	}
 
-	databasePath, err := i.extractDatabase(buildDir, request.FromIndex)
+	databasePath, err := i.ExtractDatabase(buildDir, request.FromIndex, request.CaFile, request.SkipTLS)
 	if err != nil {
 		return err
 	}
@@ -224,15 +291,15 @@ func (i ImageIndexer) PruneFromIndex(request PruneFromIndexRequest) error {
 	return nil
 }
 
-// extractDatabase sets a temp directory for unpacking an image
-func (i ImageIndexer) extractDatabase(buildDir, fromIndex string) (string, error) {
+// ExtractDatabase sets a temp directory for unpacking an image
+func (i ImageIndexer) ExtractDatabase(buildDir, fromIndex, caFile string, skipTLS bool) (string, error) {
 	tmpDir, err := ioutil.TempDir("./", tmpDirPrefix)
 	if err != nil {
 		return "", err
 	}
 	defer os.RemoveAll(tmpDir)
 
-	databaseFile, err := i.getDatabaseFile(tmpDir, fromIndex)
+	databaseFile, err := i.getDatabaseFile(tmpDir, fromIndex, caFile, skipTLS)
 	if err != nil {
 		return "", err
 	}
@@ -240,7 +307,7 @@ func (i ImageIndexer) extractDatabase(buildDir, fromIndex string) (string, error
 	return copyDatabaseTo(databaseFile, filepath.Join(buildDir, defaultDatabaseFolder))
 }
 
-func (i ImageIndexer) getDatabaseFile(workingDir, fromIndex string) (string, error) {
+func (i ImageIndexer) getDatabaseFile(workingDir, fromIndex, caFile string, skipTLS bool) (string, error) {
 	if fromIndex == "" {
 		return path.Join(workingDir, defaultDatabaseFile), nil
 	}
@@ -252,11 +319,15 @@ func (i ImageIndexer) getDatabaseFile(workingDir, fromIndex string) (string, err
 	var rerr error
 	switch i.PullTool {
 	case containertools.NoneTool:
-		reg, rerr = containerdregistry.NewRegistry(containerdregistry.WithLog(i.Logger))
+		rootCAs, err := certs.RootCAs(caFile)
+		if err != nil {
+			return "", fmt.Errorf("failed to get RootCAs: %v", err)
+		}
+		reg, rerr = containerdregistry.NewRegistry(containerdregistry.SkipTLS(skipTLS), containerdregistry.WithLog(i.Logger), containerdregistry.WithRootCAs(rootCAs))
 	case containertools.PodmanTool:
 		fallthrough
 	case containertools.DockerTool:
-		reg, rerr = execregistry.NewRegistry(i.PullTool, i.Logger)
+		reg, rerr = execregistry.NewRegistry(i.PullTool, i.Logger, containertools.SkipTLS(skipTLS))
 	}
 	if rerr != nil {
 		return "", rerr
@@ -401,9 +472,11 @@ func write(dockerfileText, outDockerfile string, logger *logrus.Entry) error {
 // ExportFromIndexRequest defines the parameters to send to the ExportFromIndex API
 type ExportFromIndexRequest struct {
 	Index         string
-	Package       string
+	Packages      []string
 	DownloadPath  string
 	ContainerTool containertools.ContainerTool
+	CaFile        string
+	SkipTLS       bool
 }
 
 // ExportFromIndex is an aggregate API used to specify operators from
@@ -417,26 +490,32 @@ func (i ImageIndexer) ExportFromIndex(request ExportFromIndexRequest) error {
 	defer os.RemoveAll(workingDir)
 
 	// extract the index database to the file
-	databaseFile, err := i.getDatabaseFile(workingDir, request.Index)
+	databaseFile, err := i.getDatabaseFile(workingDir, request.Index, request.CaFile, request.SkipTLS)
 	if err != nil {
 		return err
 	}
 
-	db, err := sql.Open("sqlite3", databaseFile)
+	db, err := sqlite.Open(databaseFile)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
 	dbQuerier := sqlite.NewSQLLiteQuerierFromDb(db)
+
+	// fetch all packages from the index image if packages is empty
+	if len(request.Packages) == 0 {
+		request.Packages, err = dbQuerier.ListPackages(context.TODO())
+		if err != nil {
+			return err
+		}
+	}
+
+	bundles, err := getBundlesToExport(dbQuerier, request.Packages)
 	if err != nil {
 		return err
 	}
 
-	bundles, err := getBundlesToExport(dbQuerier, request.Package)
-	if err != nil {
-		return err
-	}
 	i.Logger.Infof("Preparing to pull bundles %+q", bundles)
 
 	// Creating downloadPath dir
@@ -445,40 +524,68 @@ func (i ImageIndexer) ExportFromIndex(request ExportFromIndexRequest) error {
 	}
 
 	var errs []error
-	for _, bundleImage := range bundles {
-		// try to name the folder
-		folderName, err := dbQuerier.GetBundleVersion(context.TODO(), bundleImage)
-		if err != nil {
-			return err
-		}
-		if folderName == "" {
-			// operator-registry does not care about the folder name
-			folderName = bundleImage
-		}
-		exporter := bundle.NewExporterForBundle(bundleImage, filepath.Join(request.DownloadPath, folderName), request.ContainerTool)
-		if err := exporter.Export(); err != nil {
-			err = fmt.Errorf("error exporting bundle from image: %s", err)
-			errs = append(errs, err)
-		}
+	var wg sync.WaitGroup
+	wg.Add(len(bundles))
+	var mu = &sync.Mutex{}
+
+	sem := make(chan struct{}, concurrencyLimitForExport)
+
+	for bundleImage, bundleDir := range bundles {
+		go func(bundleImage string, bundleDir bundleDirPrefix) {
+			defer wg.Done()
+
+			sem <- struct{}{}
+			defer func() {
+				<-sem
+			}()
+
+			// generate a random folder name if bundle version is empty
+			if bundleDir.bundleVersion == "" {
+				bundleDir.bundleVersion = strconv.Itoa(rand.Intn(10000))
+			}
+			exporter := bundle.NewExporterForBundle(bundleImage, filepath.Join(request.DownloadPath, bundleDir.pkgName, bundleDir.bundleVersion), request.ContainerTool)
+			if err := exporter.Export(); err != nil {
+				err = fmt.Errorf("exporting bundle image:%s failed with %s", bundleImage, err)
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
+			}
+		}(bundleImage, bundleDir)
 	}
-	if err != nil {
-		errs = append(errs, err)
+	// Wait for all the go routines to finish export
+	wg.Wait()
+
+	if errs != nil {
 		return utilerrors.NewAggregate(errs)
 	}
 
-	err = generatePackageYaml(dbQuerier, request.Package, request.DownloadPath)
-	if err != nil {
-		errs = append(errs, err)
+	for _, packageName := range request.Packages {
+		err := generatePackageYaml(dbQuerier, packageName, filepath.Join(request.DownloadPath, packageName))
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
 	return utilerrors.NewAggregate(errs)
 }
 
-func getBundlesToExport(dbQuerier pregistry.Query, packageName string) ([]string, error) {
-	bundles, err := dbQuerier.GetBundlePathsForPackage(context.TODO(), packageName)
-	if err != nil {
-		return nil, err
+type bundleDirPrefix struct {
+	pkgName, bundleVersion string
+}
+
+func getBundlesToExport(dbQuerier pregistry.Query, packages []string) (map[string]bundleDirPrefix, error) {
+	bundleMap := make(map[string]bundleDirPrefix)
+
+	for _, packageName := range packages {
+		bundlesForPackage, err := dbQuerier.GetBundlesForPackage(context.TODO(), packageName)
+		if err != nil {
+			return nil, err
+		}
+		for k, _ := range bundlesForPackage {
+			bundleMap[k.BundlePath] = bundleDirPrefix{pkgName: packageName, bundleVersion: k.Version}
+		}
 	}
-	return bundles, nil
+
+	return bundleMap, nil
 }
 
 func generatePackageYaml(dbQuerier pregistry.Query, packageName, downloadPath string) error {
@@ -538,6 +645,8 @@ type DeprecateFromIndexRequest struct {
 	OutDockerfile     string
 	Bundles           []string
 	Tag               string
+	CaFile            string
+	SkipTLS           bool
 }
 
 // DeprecateFromIndex takes a DeprecateFromIndexRequest and deprecates the requested
@@ -549,7 +658,7 @@ func (i ImageIndexer) DeprecateFromIndex(request DeprecateFromIndexRequest) erro
 		return err
 	}
 
-	databasePath, err := i.extractDatabase(buildDir, request.FromIndex)
+	databasePath, err := i.ExtractDatabase(buildDir, request.FromIndex, request.CaFile, request.SkipTLS)
 	if err != nil {
 		return err
 	}

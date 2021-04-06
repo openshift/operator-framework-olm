@@ -10,11 +10,11 @@ import (
 	"github.com/operator-framework/operator-registry/pkg/lib/indexer"
 )
 
-func newIndexPruneCmd() *cobra.Command {
+func newIndexPruneStrandedCmd() *cobra.Command {
 	indexCmd := &cobra.Command{
-		Use:   "prune",
-		Short: "prune an index of all but specified packages",
-		Long:  `prune an index of all but specified packages`,
+		Use:   "prune-stranded",
+		Short: "prune an index of stranded bundles",
+		Long:  `prune an index of stranded bundles - bundles that are not associated with a particular package`,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if debug, _ := cmd.Flags().GetBool("debug"); debug {
@@ -23,7 +23,7 @@ func newIndexPruneCmd() *cobra.Command {
 			return nil
 		},
 
-		RunE: runIndexPruneCmdFunc,
+		RunE: runIndexPruneStrandedCmdFunc,
 	}
 
 	indexCmd.Flags().Bool("debug", false, "enable debug logging")
@@ -31,16 +31,11 @@ func newIndexPruneCmd() *cobra.Command {
 	indexCmd.Flags().StringP("out-dockerfile", "d", "", "if generating the dockerfile, this flag is used to (optionally) specify a dockerfile name")
 	indexCmd.Flags().StringP("from-index", "f", "", "index to prune")
 	if err := indexCmd.MarkFlagRequired("from-index"); err != nil {
-		logrus.Panic("Failed to set required `from-index` flag for `index prune`")
-	}
-	indexCmd.Flags().StringSliceP("packages", "p", nil, "comma separated list of packages to keep")
-	if err := indexCmd.MarkFlagRequired("packages"); err != nil {
-		logrus.Panic("Failed to set required `packages` flag for `index prune`")
+		logrus.Panic("Failed to set required `from-index` flag for `index prune-stranded`")
 	}
 	indexCmd.Flags().StringP("binary-image", "i", "", "container image for on-image `opm` command")
 	indexCmd.Flags().StringP("container-tool", "c", "podman", "tool to interact with container images (save, build, etc.). One of: [docker, podman]")
 	indexCmd.Flags().StringP("tag", "t", "", "custom tag for container image being built")
-	indexCmd.Flags().Bool("permissive", false, "allow registry load errors")
 
 	if err := indexCmd.Flags().MarkHidden("debug"); err != nil {
 		logrus.Panic(err.Error())
@@ -50,7 +45,7 @@ func newIndexPruneCmd() *cobra.Command {
 
 }
 
-func runIndexPruneCmdFunc(cmd *cobra.Command, args []string) error {
+func runIndexPruneStrandedCmdFunc(cmd *cobra.Command, args []string) error {
 	generate, err := cmd.Flags().GetBool("generate")
 	if err != nil {
 		return err
@@ -62,11 +57,6 @@ func runIndexPruneCmdFunc(cmd *cobra.Command, args []string) error {
 	}
 
 	fromIndex, err := cmd.Flags().GetString("from-index")
-	if err != nil {
-		return err
-	}
-
-	packages, err := cmd.Flags().GetStringSlice("packages")
 	if err != nil {
 		return err
 	}
@@ -90,34 +80,27 @@ func runIndexPruneCmdFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	permissive, err := cmd.Flags().GetBool("permissive")
-	if err != nil {
-		return err
-	}
-
 	skipTLS, err := cmd.Flags().GetBool("skip-tls")
 	if err != nil {
 		return err
 	}
 
-	logger := logrus.WithFields(logrus.Fields{"packages": packages})
+	logger := logrus.WithFields(logrus.Fields{})
 
-	logger.Info("pruning the index")
+	logger.Info("pruning stranded bundles from the index")
 
-	indexPruner := indexer.NewIndexPruner(containertools.NewContainerTool(containerTool, containertools.PodmanTool), logger)
+	indexPruner := indexer.NewIndexStrandedPruner(containertools.NewContainerTool(containerTool, containertools.PodmanTool), logger)
 
-	request := indexer.PruneFromIndexRequest{
+	request := indexer.PruneStrandedFromIndexRequest{
 		Generate:          generate,
 		FromIndex:         fromIndex,
 		BinarySourceImage: binaryImage,
 		OutDockerfile:     outDockerfile,
-		Packages:          packages,
 		Tag:               tag,
-		Permissive:        permissive,
 		SkipTLS:           skipTLS,
 	}
 
-	err = indexPruner.PruneFromIndex(request)
+	err = indexPruner.PruneStrandedFromIndex(request)
 	if err != nil {
 		return err
 	}
