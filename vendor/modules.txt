@@ -61,8 +61,6 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
 github.com/alessio/shellescape
-# github.com/antihax/optional v0.0.0-20180407024304-ca021399b1a6
-github.com/antihax/optional
 # github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 github.com/asaskevich/govalidator
 # github.com/beorn7/perks v1.0.1
@@ -551,7 +549,6 @@ github.com/operator-framework/operator-lifecycle-manager/test/e2e/assets/chart
 github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx
 # github.com/operator-framework/operator-registry v0.0.0-00010101000000-000000000000 => ./staging/operator-registry
 ## explicit
-github.com/operator-framework/operator-registry/cmd/appregistry-server
 github.com/operator-framework/operator-registry/cmd/configmap-server
 github.com/operator-framework/operator-registry/cmd/initializer
 github.com/operator-framework/operator-registry/cmd/opm
@@ -559,13 +556,11 @@ github.com/operator-framework/operator-registry/cmd/opm/alpha
 github.com/operator-framework/operator-registry/cmd/opm/alpha/bundle
 github.com/operator-framework/operator-registry/cmd/opm/index
 github.com/operator-framework/operator-registry/cmd/opm/registry
+github.com/operator-framework/operator-registry/cmd/opm/root
 github.com/operator-framework/operator-registry/cmd/opm/version
 github.com/operator-framework/operator-registry/cmd/registry-server
 github.com/operator-framework/operator-registry/pkg/api
 github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1
-github.com/operator-framework/operator-registry/pkg/apprclient
-github.com/operator-framework/operator-registry/pkg/apprclient/openapi
-github.com/operator-framework/operator-registry/pkg/appregistry
 github.com/operator-framework/operator-registry/pkg/client
 github.com/operator-framework/operator-registry/pkg/configmap
 github.com/operator-framework/operator-registry/pkg/containertools
@@ -573,7 +568,9 @@ github.com/operator-framework/operator-registry/pkg/image
 github.com/operator-framework/operator-registry/pkg/image/containerdregistry
 github.com/operator-framework/operator-registry/pkg/image/execregistry
 github.com/operator-framework/operator-registry/pkg/lib/bundle
+github.com/operator-framework/operator-registry/pkg/lib/certs
 github.com/operator-framework/operator-registry/pkg/lib/dns
+github.com/operator-framework/operator-registry/pkg/lib/graceful
 github.com/operator-framework/operator-registry/pkg/lib/indexer
 github.com/operator-framework/operator-registry/pkg/lib/log
 github.com/operator-framework/operator-registry/pkg/lib/registry
