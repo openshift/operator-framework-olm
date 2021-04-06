@@ -742,9 +742,6 @@ func (o *Operator) syncCatalogSources(obj interface{}) (syncError error) {
 			if syncErr != nil {
 				return
 			}
-	
-			in = out
-		}
 
 			if !cont {
 				return
