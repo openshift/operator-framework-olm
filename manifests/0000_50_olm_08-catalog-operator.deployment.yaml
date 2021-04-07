@@ -17,6 +17,8 @@ spec:
       app: catalog-operator
   template:
     metadata:
+      annotations:
+        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         app: catalog-operator
     spec:

@@ -5,6 +5,7 @@ metadata:
   {{ if and .Values.installType (eq .Values.installType "ocp") }}
   annotations:
     openshift.io/node-selector: ""
+    workload.openshift.io/allowed: "management"
   labels:
     openshift.io/scc: "anyuid"
     openshift.io/cluster-monitoring: "true"
@@ -17,6 +18,7 @@ metadata:
   {{ if and .Values.installType (eq .Values.installType "ocp") }}
   annotations:
     openshift.io/node-selector: ""
+    workload.openshift.io/allowed: "management"
   labels:
     openshift.io/scc: "anyuid"
   {{ end }}

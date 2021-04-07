@@ -16,6 +16,8 @@ spec:
       app: olm-operator
   template:
     metadata:
+      annotations:
+        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         app: olm-operator
     spec:

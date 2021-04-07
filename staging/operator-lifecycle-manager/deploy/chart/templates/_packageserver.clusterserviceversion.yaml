@@ -4,6 +4,14 @@ kind: ClusterServiceVersion
 metadata:
   name: packageserver
   namespace: {{ .Values.namespace }}
+  {{- if and .Values.installType (eq .Values.installType "ocp") }}
+  {{- /*
+  This annotation injection is a workaround for BZ-1950047, since the associate
+  annotation in _packageserver.deployment-spec.yaml is presently ignored.
+  */}}
+  annotations:
+    workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+  {{- end }}
   labels:
     olm.version: {{ .Chart.Version }}
     {{- if .Values.writePackageServerStatusName }}
