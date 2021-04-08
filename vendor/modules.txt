@@ -292,6 +292,17 @@ github.com/grpc-ecosystem/go-grpc-prometheus
 # github.com/grpc-ecosystem/grpc-health-probe v0.3.6
 ## explicit
 github.com/grpc-ecosystem/grpc-health-probe
+# github.com/h2non/filetype v1.1.1
+github.com/h2non/filetype
+github.com/h2non/filetype/matchers
+github.com/h2non/filetype/matchers/isobmff
+github.com/h2non/filetype/types
+# github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c
+github.com/h2non/go-is-svg
+# github.com/hashicorp/errwrap v1.0.0
+github.com/hashicorp/errwrap
+# github.com/hashicorp/go-multierror v1.0.0
+github.com/hashicorp/go-multierror
 # github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
@@ -559,8 +570,12 @@ github.com/operator-framework/operator-registry/cmd/opm/alpha/bundle
 github.com/operator-framework/operator-registry/cmd/opm/index
 github.com/operator-framework/operator-registry/cmd/opm/registry
 github.com/operator-framework/operator-registry/cmd/opm/root
+github.com/operator-framework/operator-registry/cmd/opm/serve
 github.com/operator-framework/operator-registry/cmd/opm/version
 github.com/operator-framework/operator-registry/cmd/registry-server
+github.com/operator-framework/operator-registry/internal/declcfg
+github.com/operator-framework/operator-registry/internal/model
+github.com/operator-framework/operator-registry/internal/property
 github.com/operator-framework/operator-registry/pkg/api
 github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1
 github.com/operator-framework/operator-registry/pkg/client
