@@ -2804,7 +2804,6 @@ var _ = Describe("Install Plan", func() {
 		// Create a namespace
 		ns, err := c.KubernetesInterface().CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		require.NoError(GinkgoT(), err)
 		deleteOpts := &metav1.DeleteOptions{}
 		defer func() {
 			require.NoError(GinkgoT(), c.KubernetesInterface().CoreV1().Namespaces().Delete(context.TODO(), ns.GetName(), *deleteOpts))
@@ -2860,7 +2859,6 @@ var _ = Describe("Install Plan", func() {
 		// Create a namespace
 		ns, err := c.KubernetesInterface().CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		require.NoError(GinkgoT(), err)
 		deleteOpts := &metav1.DeleteOptions{}
 		defer func() {
 			require.NoError(GinkgoT(), c.KubernetesInterface().CoreV1().Namespaces().Delete(context.TODO(), ns.GetName(), *deleteOpts))
@@ -2901,7 +2899,7 @@ var _ = Describe("Install Plan", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		fetchedInstallPlan, err := fetchInstallPlanWithNamespace(GinkgoT(), crc, installPlanName, ns.GetName(), buildInstallPlanPhaseCheckFunc(operatorsv1alpha1.InstallPlanPhaseFailed))
-		require.NoError(GinkgoT(), err)
+		Expect(err).NotTo(HaveOccurred())
 		ctx.Ctx().Logf(fmt.Sprintf("Install plan %s fetched with status %s", fetchedInstallPlan.GetName(), fetchedInstallPlan.Status.Phase))
 		ctx.Ctx().Logf(fmt.Sprintf("Install plan %s fetched with conditions %+v", fetchedInstallPlan.GetName(), fetchedInstallPlan.Status.Conditions))
 	})
@@ -3072,7 +3070,7 @@ var _ = Describe("Install Plan", func() {
 			}
 			ctx.Ctx().Logf("[DEBUG] Operator Group Status: %+v\n", outOG.Status)
 			return outOG.Status.ServiceAccountRef, nil
-		}).Should(BeNil())
+		}).ShouldNot(BeNil())
 
 		crd := apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
@@ -3326,14 +3324,14 @@ var _ = Describe("Install Plan", func() {
 		// Wait for the OperatorGroup to be synced and have a status.ServiceAccountRef
 		// before moving on. Otherwise the catalog operator treats it as an invalid OperatorGroup
 		// and fails the InstallPlan
-		Eventually(func() (bool, error) {
+		Eventually(func() (*corev1.ObjectReference, error) {
 			outOG, err := crc.OperatorsV1().OperatorGroups(ns.GetName()).Get(context.TODO(), og.Name, metav1.GetOptions{})
 			if err != nil {
-				return false, err
+				return nil, err
 			}
-			fmt.Fprintf(GinkgoWriter, "[DEBUG] Operator Group Status: %+v\n", outOG.Status)
-			return outOG.Status.ServiceAccountRef != nil, nil
-		}).Should(BeTrue())
+			ctx.Ctx().Logf("[DEBUG] Operator Group Status: %+v\n", outOG.Status)
+			return outOG.Status.ServiceAccountRef, nil
+		}).ShouldNot(BeNil())
 
 		By("using the OLM client to install CRDs from the installplan and the scoped client for other resources")
 
