@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 set -euo pipefail
 
@@ -7,7 +7,7 @@ cd ${repo_root}
 export  GOFLAGS="-mod=vendor"
 YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
 CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
-ver=$(cat ./OLM_VERSION)
+ver=$(cat ./staging/operator-lifecycle-manager/OLM_VERSION)
 
 tmpdir="$(mktemp -p . -d 2>/dev/null || mktemp -p . -d -t tmpdir)"
 chartdir="${tmpdir}/chart"
