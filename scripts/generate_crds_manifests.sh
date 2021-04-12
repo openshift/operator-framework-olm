@@ -41,7 +41,16 @@ go run helm.sh/helm/v3/cmd/helm template -n olm -f "${tmpdir}/values.yaml" --inc
 cp -R "${chartdir}"/olm/{templates,crds}/. "./manifests"
 
 for f in ./manifests/*.yaml; do
+   if [[ ! "$(basename "${f}")" =~ .*\.deployment\..* ]]; then
+      ${YQ} w -d'*' --inplace --style=double $f 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
+   else
+      g="${f/%.yaml/.ibm-cloud-managed.yaml}"
+      cp "${f}" "${g}"
+      ${YQ} w -d'*' --inplace --style=double $g 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
+      ${YQ} d -d'*' --inplace $g 'spec.template.spec.nodeSelector."node-role.kubernetes.io/master"'
+   fi
    ${YQ} w -d'*' --inplace --style=double $f 'metadata.annotations['include.release.openshift.io/self-managed-high-availability']' true
+   ${YQ} w -d'*' --inplace --style=double $f 'metadata.annotations['include.release.openshift.io/single-node-developer']' true
 done
 
 # requires gnu sed if on mac
