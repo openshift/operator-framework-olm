@@ -108,18 +108,22 @@ e2e/operator-registry: ## Run e2e registry tests
 e2e/olm: ## Run e2e olm tests
 	$(MAKE) e2e WHAT=operator-lifecycle-manager
 
+.PHONY: diff
+diff:
+	git diff --stat HEAD --ignore-submodules --exit-code
+
 .PHONY: vendor
 vendor:
 	go mod tidy
 	go mod vendor
 	go mod verify
 
-.PHONY: sanity
-sanity:
-	$(MAKE) vendor && git diff --stat HEAD --ignore-submodules --exit-code
+manifests: ## Generate manifests
+	$(ROOT_DIR)/scripts/generate_crds_manifests.sh
 
-manifests: vendor ## Generate manifests
-	./scripts/generate_crds_manifests.sh
+verify: vendor manifests
+	@echo Checking for unstaged changes
+	$(MAKE) diff
 
 .PHONY: help
 help: ## Display this help.
