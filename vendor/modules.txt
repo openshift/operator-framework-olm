@@ -506,6 +506,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operator
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/catalog
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/catalog/subscription
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/decorators
+github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/internal/alongside
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/overrides
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/overrides/inject
