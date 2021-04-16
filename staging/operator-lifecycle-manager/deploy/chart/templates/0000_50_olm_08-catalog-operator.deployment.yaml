@@ -14,6 +14,10 @@ spec:
       app: catalog-operator
   template:
     metadata:
+      {{- if and .Values.installType (eq .Values.installType "ocp") }}
+      annotations:
+        workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+      {{- end }}
       labels:
         app: catalog-operator
     spec:
