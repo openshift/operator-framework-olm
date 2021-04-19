@@ -4,7 +4,7 @@ metadata:
   name: packageserver
   namespace: openshift-operator-lifecycle-manager
   annotations:
-    workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+    target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/single-node-developer: "true"
@@ -81,7 +81,7 @@ spec:
             template:
               metadata:
                 annotations:
-                  workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+                  target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
                 labels:
                   app: packageserver
               spec:
