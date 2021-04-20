@@ -114,12 +114,12 @@ vendor:
 	go mod vendor
 	go mod verify
 
-.PHONY: sanity
-sanity:
-	$(MAKE) vendor && git diff --stat HEAD --ignore-submodules --exit-code
-
 manifests: vendor ## Generate manifests
 	./scripts/generate_crds_manifests.sh
+
+verify: vendor
+	git diff --stat HEAD --ignore-submodules --exit-code
+.PHONY: verify
 
 .PHONY: help
 help: ## Display this help.
