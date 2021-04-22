@@ -457,3 +457,7 @@ apiserver.key
 test/e2e-local.image.tar
 
 staging/*/vendor
+
+# Ignore sqlite
+*.db
+*.db-journal
