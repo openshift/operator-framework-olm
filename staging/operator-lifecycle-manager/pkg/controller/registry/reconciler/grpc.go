@@ -192,21 +192,35 @@ func (c *GrpcRegistryReconciler) EnsureRegistryServer(catalogSource *v1alpha1.Ca
 	// recreate the pod if no existing pod is serving the latest image
 	overwritePod := overwrite || len(c.currentPodsWithCorrectImage(source)) == 0
 
-	//TODO: if any of these error out, we should write a status back (possibly set RegistryServiceStatus to nil so they get recreated)
 	sa, err := c.ensureSA(source)
 	if err != nil && !k8serror.IsAlreadyExists(err) {
+		// TODO(anik120): introduce this condition reason in the api repo
+		reason := "SAFailed"
+		source.SetError(v1alpha1.ConditionReason(reason), err)
 		return errors.Wrapf(err, "error ensuring service account: %s", source.GetName())
 	}
 	if err := c.ensurePod(source, sa.GetName(), overwritePod); err != nil {
+		// TODO(anik120): introduce this condition reason in the api repo
+		reason := "RegistryPodCreationFailed"
+		source.SetError(v1alpha1.ConditionReason(reason), err)
 		return errors.Wrapf(err, "error ensuring pod: %s", source.Pod(sa.Name).GetName())
 	}
 	if err := c.ensureUpdatePod(source, sa.Name); err != nil {
+		// TODO(anik120): introduce this condition reason in the api repo
+		reason := "UpdateNotReady"
+		source.SetError(v1alpha1.ConditionReason(reason), err)
 		if _, ok := err.(UpdateNotReadyErr); ok {
 			return err
 		}
+		// TODO(anik120): introduce this condition reason in the api repo
+		reason = "FailedUpdatingRegistryPod"
+		source.SetError(v1alpha1.ConditionReason(reason), err)
 		return errors.Wrapf(err, "error ensuring updated catalog source pod: %s", source.Pod(sa.Name).GetName())
 	}
 	if err := c.ensureService(source, overwrite); err != nil {
+		// TODO(anik120): introduce this condition reason in the api repo
+		reason := "ServiceFailed"
+		source.SetError(v1alpha1.ConditionReason(reason), err)
 		return errors.Wrapf(err, "error ensuring service: %s", source.Service().GetName())
 	}
 
@@ -230,11 +244,7 @@ func (c *GrpcRegistryReconciler) ensurePod(source grpcCatalogSourceDecorator, sa
 		if !overwrite {
 			return nil
 		}
-		for _, p := range currentLivePods {
-			if err := c.OpClient.KubernetesInterface().CoreV1().Pods(source.GetNamespace()).Delete(context.TODO(), p.GetName(), *metav1.NewDeleteOptions(1)); err != nil {
-				return errors.Wrapf(err, "error deleting old pod: %s", p.GetName())
-			}
-		}
+		c.removePods(currentLivePods, source.GetNamespace())
 	}
 	_, err := c.OpClient.KubernetesInterface().CoreV1().Pods(source.GetNamespace()).Create(context.TODO(), source.Pod(saName), metav1.CreateOptions{})
 	if err != nil {
@@ -294,6 +304,7 @@ func (c *GrpcRegistryReconciler) ensureUpdatePod(source grpcCatalogSourceDecorat
 			logrus.WithField("CatalogSource", source.GetName()).Infof("detected imageID change: catalogsource pod updated at %s", time.Now().String())
 			return nil
 		}
+		// looks like once we increase the grace period, this no longer holds true. Are we introducing a regression here by increasing the grace period?
 		// delete update pod right away, since the digest match, to prevent long-lived duplicate catalog pods
 		logrus.WithField("CatalogSource", source.GetName()).Info("catalog polling result: no update")
 		err := c.removePods([]*corev1.Pod{updatePod}, source.GetNamespace())
@@ -408,7 +419,7 @@ func imageID(pod *corev1.Pod) string {
 
 func (c *GrpcRegistryReconciler) removePods(pods []*corev1.Pod, namespace string) error {
 	for _, p := range pods {
-		err := c.OpClient.KubernetesInterface().CoreV1().Pods(namespace).Delete(context.TODO(), p.GetName(), *metav1.NewDeleteOptions(1))
+		err := c.OpClient.KubernetesInterface().CoreV1().Pods(namespace).Delete(context.TODO(), p.GetName(), metav1.DeleteOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "error deleting pod: %s", p.GetName())
 		}
