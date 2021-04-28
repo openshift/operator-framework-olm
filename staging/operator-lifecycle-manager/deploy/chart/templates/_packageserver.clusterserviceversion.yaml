@@ -10,7 +10,7 @@ metadata:
   annotation in _packageserver.deployment-spec.yaml is presently ignored.
   */}}
   annotations:
-    workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+    target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
   {{- end }}
   labels:
     olm.version: {{ .Chart.Version }}
