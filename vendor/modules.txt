@@ -567,11 +567,11 @@ github.com/operator-framework/operator-registry/cmd/initializer
 github.com/operator-framework/operator-registry/cmd/opm
 github.com/operator-framework/operator-registry/cmd/opm/alpha
 github.com/operator-framework/operator-registry/cmd/opm/alpha/bundle
+github.com/operator-framework/operator-registry/cmd/opm/alpha/serve
+github.com/operator-framework/operator-registry/cmd/opm/alpha/validate
 github.com/operator-framework/operator-registry/cmd/opm/index
 github.com/operator-framework/operator-registry/cmd/opm/registry
 github.com/operator-framework/operator-registry/cmd/opm/root
-github.com/operator-framework/operator-registry/cmd/opm/serve
-github.com/operator-framework/operator-registry/cmd/opm/validate
 github.com/operator-framework/operator-registry/cmd/opm/version
 github.com/operator-framework/operator-registry/cmd/registry-server
 github.com/operator-framework/operator-registry/internal/declcfg
