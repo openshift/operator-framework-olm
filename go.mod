@@ -23,7 +23,7 @@ require (
 	google.golang.org/grpc v1.34.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.0.1
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.1.0-rc.1.0.20201215141456-e71d38b414eb
 	k8s.io/api v0.20.6
 	k8s.io/apiextensions-apiserver v0.20.6
@@ -65,6 +65,12 @@ replace (
 	google.golang.org/grpc => google.golang.org/grpc v1.27.0
 	google.golang.org/grpc/examples => google.golang.org/grpc/examples v0.0.0-20200709232328-d8193ee9cc3e
 
+	// pinned for delegated authentication watch request bug fix.
+	k8s.io/apimachinery => k8s.io/apimachinery v0.21.0-beta.1.0.20210308143346-a13af1068ef1
+	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20210409112051-49d90ce0ad13
+	k8s.io/component-base => k8s.io/component-base v0.0.0-20210105235135-9c158118ed58
+
 	// pinned because no tag supports 1.18 yet
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06
+
 )
