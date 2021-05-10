@@ -517,6 +517,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/projection
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver
 github.com/operator-framework/operator-lifecycle-manager/pkg/feature
+github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clients
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/codec
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/comparison
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client
@@ -543,7 +544,6 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/lib/profile
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/proxy
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/scoped
-github.com/operator-framework/operator-lifecycle-manager/pkg/lib/scopedclient
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/signals
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/time
 github.com/operator-framework/operator-lifecycle-manager/pkg/metrics
