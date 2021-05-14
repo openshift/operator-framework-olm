@@ -10,8 +10,8 @@ require (
 	github.com/grpc-ecosystem/grpc-health-probe v0.3.6
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
-	github.com/onsi/ginkgo v1.14.2
-	github.com/onsi/gomega v1.10.3
+	github.com/onsi/ginkgo v1.16.1
+	github.com/onsi/gomega v1.11.0
 	github.com/operator-framework/api v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v0.0.0-00010101000000-000000000000
