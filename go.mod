@@ -34,7 +34,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
 	sigs.k8s.io/controller-runtime v0.8.0
 	sigs.k8s.io/controller-tools v0.4.1
-	sigs.k8s.io/kind v0.10.0
+	sigs.k8s.io/kind v0.11.1
 )
 
 replace (
