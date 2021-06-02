@@ -12,6 +12,9 @@ metadata:
     olm.version: 0.17.0
     olm.clusteroperator.name: operator-lifecycle-manager-packageserver
 spec:
+  cleanup:
+    enabled: false
+  customresourcedefinitions: {}
   displayName: Package Server
   description: Represents an Operator package that is available from a given CatalogSource which will resolve to a ClusterServiceVersion.
   minKubeVersion: 1.11.0
@@ -85,6 +88,7 @@ spec:
               metadata:
                 annotations:
                   target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+                creationTimestamp: null
                 labels:
                   app: packageserver
               spec:
@@ -118,6 +122,7 @@ spec:
                     imagePullPolicy: IfNotPresent
                     ports:
                       - containerPort: 5443
+                        protocol: TCP
                     livenessProbe:
                       httpGet:
                         scheme: HTTPS
