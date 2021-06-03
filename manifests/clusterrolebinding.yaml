@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: packageserver
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: packageserver
+subjects:
+- kind: ServiceAccount
+  name: packageserver
+  # TODO(tflannag): Make this configurable using envsubst
+  namespace: openshift-operator-lifecycle-manager

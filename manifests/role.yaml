@@ -1,0 +1,23 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: packageserver
+rules:
+- apiGroups:
+  - operators.coreos.com
+  resourceNames:
+  - packageserver
+  resources:
+  - operatorconditions
+  verbs:
+  - get
+- apiGroups:
+  - operators.coreos.com
+  resourceNames:
+  - packageserver
+  resources:
+  - operatorconditions/status
+  verbs:
+  - get
+  - update
+  - patch
