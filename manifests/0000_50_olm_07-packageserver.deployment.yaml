@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: packageserver
+  labels:
+    app: packageserver
+  annotations:
+    include.release.openshift.io/single-node-developer: "true"
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  replicas: 2
+  selector:
+    matchLabels:
+      app: packageserver
+  template:
+    metadata:
+      labels:
+        app: packageserver
+    spec:
+      serviceAccountName: packageserver
+      nodeSelector:
+        kubernetes.io/os: linux
+      containers:
+      - name: packageserver
+        command:
+        - /bin/package-server
+        - -v=4
+        - --secure-port
+        - "5443"
+        - --global-namespace
+        - olm
+        image: quay.io/operator-framework/olm@sha256:b706ee6583c4c3cf8059d44234c8a4505804adcc742bcddb3d1e2f6eff3d6519
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5443
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 5443
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 5443
+        terminationMessagePolicy: FallbackToLogsOnError
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmpfs
+        - mountPath: /apiserver.local.config/certificates
+          name: apiservice-cert
+      volumes:
+      - name: tmpfs
+      - name: apiservice-cert
+        secret:
+          defaultMode: 420
+          items:
+          - key: tls.crt
+            path: apiserver.crt
+          - key: tls.key
+            path: apiserver.key
+          secretName: packageserver-serving-cert
