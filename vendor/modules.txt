@@ -401,6 +401,8 @@ github.com/mitchellh/copystructure
 github.com/mitchellh/go-wordwrap
 # github.com/mitchellh/hashstructure v1.0.0
 github.com/mitchellh/hashstructure
+# github.com/mitchellh/hashstructure/v2 v2.0.2
+github.com/mitchellh/hashstructure/v2
 # github.com/mitchellh/mapstructure v1.1.2
 github.com/mitchellh/mapstructure
 # github.com/mitchellh/reflectwalk v1.0.1
@@ -586,6 +588,7 @@ github.com/operator-framework/operator-registry/cmd/initializer
 github.com/operator-framework/operator-registry/cmd/opm
 github.com/operator-framework/operator-registry/cmd/opm/alpha
 github.com/operator-framework/operator-registry/cmd/opm/alpha/bundle
+github.com/operator-framework/operator-registry/cmd/opm/alpha/diff
 github.com/operator-framework/operator-registry/cmd/opm/alpha/generate
 github.com/operator-framework/operator-registry/cmd/opm/alpha/list
 github.com/operator-framework/operator-registry/cmd/opm/index
