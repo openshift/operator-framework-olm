@@ -30,3 +30,11 @@ spec:
             namespace: "{{ $labels.namespace }}"
           annotations:
             message: Failed to install Operator {{ $labels.name }} version {{ $labels.version }}. Phase-{{ $labels.phase }} Reason-{{ $labels.reason }}
+    - name: olm.installplan.rules
+      rules:
+        - alert: InstallPlanStepAppliedWithWarnings
+          expr: sum(sum_over_time(installplan_warnings_total[5m])) > 0
+          labels:
+            severity: warning
+          annotations:
+            message: The API server returned a warning during installation or upgrade of an operator. An Event with reason "AppliedWithWarnings" has been created with complete details, including a reference to the InstallPlan step that generated the warning.
