@@ -473,6 +473,7 @@ github.com/operator-framework/api/pkg/operators/reference
 github.com/operator-framework/api/pkg/operators/v1
 github.com/operator-framework/api/pkg/operators/v1alpha1
 github.com/operator-framework/api/pkg/operators/v1alpha2
+github.com/operator-framework/api/pkg/operators/v2
 github.com/operator-framework/api/pkg/validation
 github.com/operator-framework/api/pkg/validation/errors
 github.com/operator-framework/api/pkg/validation/interfaces
@@ -488,15 +489,18 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientse
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha2
+github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v2
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions/internalinterfaces
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions/operators
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions/operators/v1
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions/operators/v1alpha1
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions/operators/v1alpha2
+github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions/operators/v2
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha2
+github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v2
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/wrappers
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/bundle
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/certs
