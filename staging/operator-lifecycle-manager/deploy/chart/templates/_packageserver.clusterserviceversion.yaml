@@ -27,6 +27,9 @@ spec:
     email: openshift-operators@redhat.com
   provider:
     name: Red Hat
+  cleanup:
+    enabled: false
+  customresourcedefinitions: {}
   links:
   - name: Package Server
     url: https://github.com/operator-framework/operator-lifecycle-manager/tree/master/pkg/package-server
