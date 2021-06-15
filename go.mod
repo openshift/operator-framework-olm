@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-bindata/go-bindata/v3 v3.1.3
+	github.com/go-logr/logr v0.4.0
 	github.com/golang/mock v1.4.4
 	github.com/googleapis/gnostic v0.5.1
 	github.com/grpc-ecosystem/grpc-health-probe v0.3.6
@@ -12,6 +13,7 @@ require (
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo v1.16.1
 	github.com/onsi/gomega v1.11.0
+	github.com/openshift/api v0.0.0-20200331152225-585af27e34fd
 	github.com/operator-framework/api v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v0.0.0-00010101000000-000000000000
@@ -25,13 +27,14 @@ require (
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.1.0-rc.1.0.20201215141456-e71d38b414eb
-	k8s.io/api v0.20.6
-	k8s.io/apiextensions-apiserver v0.20.6
-	k8s.io/apimachinery v0.20.6
-	k8s.io/apiserver v0.20.6
-	k8s.io/client-go v0.20.6
-	k8s.io/code-generator v0.20.6
+	k8s.io/api v0.21.1
+	k8s.io/apiextensions-apiserver v0.21.1
+	k8s.io/apimachinery v0.21.1
+	k8s.io/apiserver v0.21.1
+	k8s.io/client-go v0.21.1
+	k8s.io/code-generator v0.21.1
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
+	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 	sigs.k8s.io/controller-runtime v0.8.0
 	sigs.k8s.io/controller-tools v0.4.1
 	sigs.k8s.io/kind v0.11.1
@@ -52,7 +55,7 @@ replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
 
 	// controller runtime
-	github.com/openshift/api => github.com/openshift/api v0.0.0-20200331152225-585af27e34fd // release-4.5
+	github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
 
 	// use staged repositories
@@ -64,11 +67,18 @@ replace (
 	go.etcd.io/etcd => go.etcd.io/etcd v0.5.0-alpha.5.0.20200520232829-54ba9589114f
 	google.golang.org/grpc => google.golang.org/grpc v1.27.0
 	google.golang.org/grpc/examples => google.golang.org/grpc/examples v0.0.0-20200709232328-d8193ee9cc3e
+	k8s.io/api => k8s.io/api v0.21.1
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.21.1
+	k8s.io/apimachinery => k8s.io/apimachinery v0.21.1
+	k8s.io/apiserver => k8s.io/apiserver v0.21.1
+	k8s.io/client-go => k8s.io/client-go v0.21.1
 
-	// pinned for delegated authentication watch request bug fix.
-	k8s.io/apimachinery => k8s.io/apimachinery v0.21.0-beta.1.0.20210308143346-a13af1068ef1
-	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20210409112051-49d90ce0ad13
-	k8s.io/component-base => k8s.io/component-base v0.0.0-20210105235135-9c158118ed58
+	k8s.io/kubectl => k8s.io/kubectl v0.21.1
+
+	// // pinned for delegated authentication watch request bug fix.
+	// k8s.io/apimachinery => k8s.io/apimachinery v0.21.0-beta.1.0.20210308143346-a13af1068ef1
+	// k8s.io/apiserver => k8s.io/apiserver v0.0.0-20210409112051-49d90ce0ad13
+	// k8s.io/component-base => k8s.io/component-base v0.0.0-20210105235135-9c158118ed58
 
 	// pinned because no tag supports 1.18 yet
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06
