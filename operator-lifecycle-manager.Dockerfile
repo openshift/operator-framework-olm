@@ -12,7 +12,7 @@ COPY .git/refs/heads/. .git/refs/heads
 RUN mkdir -p .git/objects
 
 COPY . .
-RUN make build/olm bin/cpb
+RUN make build/olm build/psm bin/cpb
 
 FROM registry.ci.openshift.org/ocp/4.8:base
 
@@ -23,6 +23,7 @@ LABEL io.openshift.release.operator=true
 COPY --from=builder /build/bin/olm /bin/olm
 COPY --from=builder /build/bin/catalog /bin/catalog
 COPY --from=builder /build/bin/package-server /bin/package-server
+COPY --from=builder /build/bin/psm /bin/psm
 COPY --from=builder /build/bin/cpb /bin/cpb
 
 # This image doesn't need to run as root user.
