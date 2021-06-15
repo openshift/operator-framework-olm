@@ -9,5 +9,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: packageserver
-  # TODO(tflannag): Make this configurable using envsubst
   namespace: openshift-operator-lifecycle-manager
