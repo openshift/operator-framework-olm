@@ -65,6 +65,7 @@ type AddToIndexRequest struct {
 	CaFile            string
 	SkipTLS           bool
 	Overwrite         bool
+	EnableAlpha       bool
 }
 
 // AddToIndex is an aggregate API used to generate a registry index image with additional bundles
@@ -89,6 +90,7 @@ func (i ImageIndexer) AddToIndex(request AddToIndexRequest) error {
 		SkipTLS:       request.SkipTLS,
 		ContainerTool: i.PullTool,
 		Overwrite:     request.Overwrite,
+		EnableAlpha:   request.EnableAlpha,
 	}
 
 	// Add the bundles to the registry
@@ -544,7 +546,7 @@ func (i ImageIndexer) ExportFromIndex(request ExportFromIndexRequest) error {
 				bundleDir.bundleVersion = strconv.Itoa(rand.Intn(10000))
 			}
 			exporter := bundle.NewExporterForBundle(bundleImage, filepath.Join(request.DownloadPath, bundleDir.pkgName, bundleDir.bundleVersion), request.ContainerTool)
-			if err := exporter.Export(); err != nil {
+			if err := exporter.Export(request.SkipTLS); err != nil {
 				err = fmt.Errorf("exporting bundle image:%s failed with %s", bundleImage, err)
 				mu.Lock()
 				errs = append(errs, err)

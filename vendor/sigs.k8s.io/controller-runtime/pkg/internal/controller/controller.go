@@ -25,7 +25,6 @@ import (
 
 	"github.com/go-logr/logr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/internal/controller/metrics"
@@ -61,13 +60,11 @@ type Controller struct {
 	Queue workqueue.RateLimitingInterface
 
 	// SetFields is used to inject dependencies into other objects such as Sources, EventHandlers and Predicates
+	// Deprecated: the caller should handle injected fields itself.
 	SetFields func(i interface{}) error
 
 	// mu is used to synchronize Controller setup
 	mu sync.Mutex
-
-	// JitterPeriod allows tests to reduce the JitterPeriod so they complete faster
-	JitterPeriod time.Duration
 
 	// Started is true if the Controller has been Started
 	Started bool
@@ -149,8 +146,12 @@ func (c *Controller) Start(ctx context.Context) error {
 	c.ctx = ctx
 
 	c.Queue = c.MakeQueue()
-	defer c.Queue.ShutDown() // needs to be outside the iife so that we shutdown after the stop channel is closed
+	go func() {
+		<-ctx.Done()
+		c.Queue.ShutDown()
+	}()
 
+	wg := &sync.WaitGroup{}
 	err := func() error {
 		defer c.mu.Unlock()
 
@@ -163,9 +164,7 @@ func (c *Controller) Start(ctx context.Context) error {
 		for _, watch := range c.startWatches {
 			c.Log.Info("Starting EventSource", "source", watch.src)
 
-			watchStartCtx, cancel := context.WithTimeout(ctx, c.CacheSyncTimeout)
-			defer cancel()
-			if err := watch.src.Start(watchStartCtx, watch.handler, c.Queue, watch.predicates...); err != nil {
+			if err := watch.src.Start(ctx, watch.handler, c.Queue, watch.predicates...); err != nil {
 				return err
 			}
 		}
@@ -179,15 +178,21 @@ func (c *Controller) Start(ctx context.Context) error {
 				continue
 			}
 
-			// use a context with timeout for launching sources and syncing caches.
-			sourceStartCtx, cancel := context.WithTimeout(ctx, c.CacheSyncTimeout)
-			defer cancel()
+			if err := func() error {
+				// use a context with timeout for launching sources and syncing caches.
+				sourceStartCtx, cancel := context.WithTimeout(ctx, c.CacheSyncTimeout)
+				defer cancel()
 
-			// WaitForSync waits for a definitive timeout, and returns if there
-			// is an error or a timeout
-			if err := syncingSource.WaitForSync(sourceStartCtx); err != nil {
-				err := fmt.Errorf("failed to wait for %s caches to sync: %w", c.Name, err)
-				c.Log.Error(err, "Could not wait for Cache to sync")
+				// WaitForSync waits for a definitive timeout, and returns if there
+				// is an error or a timeout
+				if err := syncingSource.WaitForSync(sourceStartCtx); err != nil {
+					err := fmt.Errorf("failed to wait for %s caches to sync: %w", c.Name, err)
+					c.Log.Error(err, "Could not wait for Cache to sync")
+					return err
+				}
+
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
@@ -198,19 +203,17 @@ func (c *Controller) Start(ctx context.Context) error {
 		// which won't be garbage collected if we hold a reference to it.
 		c.startWatches = nil
 
-		if c.JitterPeriod == 0 {
-			c.JitterPeriod = 1 * time.Second
-		}
-
 		// Launch workers to process resources
 		c.Log.Info("Starting workers", "worker count", c.MaxConcurrentReconciles)
+		wg.Add(c.MaxConcurrentReconciles)
 		for i := 0; i < c.MaxConcurrentReconciles; i++ {
-			go wait.UntilWithContext(ctx, func(ctx context.Context) {
+			go func() {
+				defer wg.Done()
 				// Run a worker thread that just dequeues items, processes them, and marks them done.
 				// It enforces that the reconcileHandler is never invoked concurrently with the same object.
 				for c.processNextWorkItem(ctx) {
 				}
-			}, c.JitterPeriod)
+			}()
 		}
 
 		c.Started = true
@@ -221,7 +224,9 @@ func (c *Controller) Start(ctx context.Context) error {
 	}
 
 	<-ctx.Done()
-	c.Log.Info("Stopping workers")
+	c.Log.Info("Shutdown signal received, waiting for all workers to finish")
+	wg.Wait()
+	c.Log.Info("All workers finished")
 	return nil
 }
 
@@ -288,7 +293,7 @@ func (c *Controller) reconcileHandler(ctx context.Context, obj interface{}) {
 	log := c.Log.WithValues("name", req.Name, "namespace", req.Namespace)
 	ctx = logf.IntoContext(ctx, log)
 
-	// RunInformersAndControllers the syncHandler, passing it the namespace/Name string of the
+	// RunInformersAndControllers the syncHandler, passing it the Namespace/Name string of the
 	// resource to be synced.
 	if result, err := c.Do.Reconcile(ctx, req); err != nil {
 		c.Queue.AddRateLimited(req)
