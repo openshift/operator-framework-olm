@@ -2,6 +2,7 @@ apiVersion: apiregistration.k8s.io/v1
 kind: APIService
 metadata:
   name: v1.packages.operators.coreos.com
+  namespace: openshift-operator-lifecycle-manager
   annotations:
     service.beta.openshift.io/inject-cabundle: "true"
 spec:
