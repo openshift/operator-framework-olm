@@ -84,6 +84,7 @@ func run(cmd *cobra.Command, args []string) error {
 		Client:    mgr.GetClient(),
 		Log:       ctrl.Log.WithName("controllers").WithName(name),
 		Scheme:    mgr.GetScheme(),
+		Recorder:  mgr.GetEventRecorderFor(name),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", name)
 		return err

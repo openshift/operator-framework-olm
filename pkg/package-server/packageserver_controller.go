@@ -18,18 +18,18 @@ package controllers
 
 import (
 	"context"
-	_ "embed"
-	"fmt"
+	"sync"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/operator-framework-olm/pkg/manifests"
+
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
 
 	"github.com/go-logr/logr"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,14 +49,13 @@ const (
 // PackageServerReconciler reconciles the PackageServer deployment object
 type PackageServerReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
+	Lock     sync.Mutex
 
-	Name      string
-	Namespace string
-	// TODO(tflannag): Should this be a custom struct instead?
-	// TODO(tflannag): Add a mutex here?
-	// TODO(tflannag): Add an event recorder?
+	Name                string
+	Namespace           string
 	HighlyAvailableMode bool
 }
 
@@ -64,63 +63,59 @@ func (r *PackageServerReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	log := r.Log.WithValues("deployment", req.NamespacedName)
 
 	log.Info("handling current request", "request", req.String())
-	log.Info("currently topology mode", "highly available", r.HighlyAvailableMode)
+	log.Info("currently topology mode", "highly available", r.getHighlyAvailableMode())
 	defer log.Info("finished request reconciliation")
 
 	deployment := &appsv1.Deployment{}
-	err := r.Client.Get(ctx, req.NamespacedName, deployment)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return ctrl.Result{}, err
-	}
-	if apierrors.IsNotFound(err) {
-		deployment, err := r.syncDeployment()
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{}, r.Client.Create(ctx, deployment)
+	if err := r.Client.Get(ctx, req.NamespacedName, deployment); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// TODO(tflannag): Need to handle updating any non-replica high availability fields
-	// e.g. hard anti affinity, maxUnavailable, etc.
-	expectedReplicas := int32(defaultReplicaCount)
-	if !r.HighlyAvailableMode {
-		expectedReplicas = int32(singleReplicaCount)
-	}
-	if *deployment.Spec.Replicas == expectedReplicas {
-		log.Info("deployment does not require any updates")
+	if !r.ensureDeployment(deployment) {
+		log.Info("no updates are required for the deployment")
 		return ctrl.Result{}, nil
 	}
 
-	// TODO(tflannag): May want to avoid using Update and instead migrate towards
-	// using SSA patching. Can also just nuke any spec fields that don't match
-	// what's being defined in the default deployment.yaml.
-	log.Info("updating replica count", "old replicas", *deployment.Spec.Replicas, "new replicas", expectedReplicas)
-	deployment.Spec.Replicas = pointer.Int32Ptr(expectedReplicas)
 	if err := r.Client.Update(ctx, deployment); err != nil {
-		log.Error(err, "failed to update the packageserver deployment")
+		log.Error(err, "failed to update the deployment")
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *PackageServerReconciler) syncDeployment() (*appsv1.Deployment, error) {
-	deployment, err := manifests.NewPackageServerDeployment(r.Namespace)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize deployment manifest into Go structure: %v", err)
+func (r *PackageServerReconciler) ensureDeployment(deployment *appsv1.Deployment) bool {
+	modified := false
+	highlyAvailableMode := r.getHighlyAvailableMode()
+
+	expectedReplicas := int32(defaultReplicaCount)
+	if !highlyAvailableMode {
+		expectedReplicas = int32(singleReplicaCount)
+	}
+	if *deployment.Spec.Replicas != expectedReplicas {
+		r.Log.Info("updating replicas", "old", *deployment.Spec.Replicas, "new", expectedReplicas)
+		deployment.Spec.Replicas = pointer.Int32Ptr(expectedReplicas)
+		modified = true
 	}
 
-	if !r.HighlyAvailableMode {
-		r.Log.Info("packageserver will be deployed in non-HA mode")
-		deployment.Spec.Replicas = pointer.Int32Ptr(1)
+	intStr := intstr.FromInt(1)
+	expectedRolloutConfiguration := &appsv1.RollingUpdateDeployment{
+		MaxUnavailable: &intStr,
+		MaxSurge:       &intStr,
+	}
+	if !highlyAvailableMode {
+		expectedRolloutConfiguration = &appsv1.RollingUpdateDeployment{}
+	}
+	if deployment.Spec.Strategy.RollingUpdate != expectedRolloutConfiguration {
+		r.Log.Info("updating rollout update configuration", "old", deployment.Spec.Strategy.RollingUpdate, "new", expectedRolloutConfiguration)
+		deployment.Spec.Strategy.RollingUpdate = expectedRolloutConfiguration
+		modified = true
 	}
 
-	return deployment, nil
+	return modified
 }
 
 func (r *PackageServerReconciler) infrastructureHandler(obj client.Object) []reconcile.Request {
-	// TODO(tflannag): Is this thread safe? Do I need to instantiate a mutex in the reconciler struct?
-	// TODO(tflannag): Is this an abuse of the mapping handler function? Should we be altering state here?
 	log := r.Log.WithValues("infrastructure", obj.GetName())
 
 	if obj.GetName() != infrastructureName {
@@ -132,13 +127,7 @@ func (r *PackageServerReconciler) infrastructureHandler(obj client.Object) []rec
 		return []reconcile.Request{}
 	}
 
-	// TODO(tflannag): Build up a simple setter if we need a more concrete structure that
-	// holds this information, vs. a single field?
-	r.HighlyAvailableMode = true
-	topologyMode := infra.Status.ControlPlaneTopology
-	if topologyMode == configv1.SingleReplicaTopologyMode {
-		r.HighlyAvailableMode = false
-	}
+	r.setTopologyMode(infra.Status.ControlPlaneTopology)
 	log.Info("requeueing the packageserver deployment after handling infrastructure event")
 
 	return []reconcile.Request{
@@ -149,6 +138,24 @@ func (r *PackageServerReconciler) infrastructureHandler(obj client.Object) []rec
 			},
 		},
 	}
+}
+
+func (r *PackageServerReconciler) setTopologyMode(topologyMode configv1.TopologyMode) {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
+
+	if topologyMode == configv1.SingleReplicaTopologyMode {
+		r.HighlyAvailableMode = false
+		return
+	}
+	r.HighlyAvailableMode = true
+}
+
+func (r *PackageServerReconciler) getHighlyAvailableMode() bool {
+	r.Lock.Lock()
+	defer r.Lock.Unlock()
+
+	return r.HighlyAvailableMode
 }
 
 // SetupWithManager sets up the controller with the Manager.
