@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.16-openshift-4.8 AS builder
+FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.16-openshift-4.9 AS builder
 
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
@@ -11,7 +11,7 @@ RUN make build/registry cross
 # copy and build vendored grpc_health_probe
 RUN CGO_ENABLED=0 go build -mod=vendor -tags netgo -ldflags "-w" ./vendor/github.com/grpc-ecosystem/grpc-health-probe/...
 
-FROM registry.ci.openshift.org/ocp/4.8:base
+FROM registry.ci.openshift.org/ocp/4.9:base
 
 COPY --from=builder /src/bin/* /bin/registry/
 COPY --from=builder /src/grpc-health-probe /bin/grpc_health_probe
