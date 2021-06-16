@@ -2,14 +2,17 @@ package declcfg
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/ghodss/yaml"
+	"github.com/joelanford/ignore"
 	"github.com/operator-framework/api/pkg/operators"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/operator-framework/operator-registry/internal/property"
 )
@@ -21,8 +24,17 @@ func LoadDir(configDir string) (*DeclarativeConfig, error) {
 
 func loadFS(root string, w fsWalker) (*DeclarativeConfig, error) {
 	cfg := &DeclarativeConfig{}
+
+	matcher, err := ignore.NewMatcher(os.DirFS(root), ".indexignore")
+	if err != nil {
+		return nil, err
+	}
+
 	if err := w.WalkFiles(root, func(path string, r io.Reader) error {
-		fileCfg, err := readJSON(r)
+		if matcher.Match(path, false) {
+			return nil
+		}
+		fileCfg, err := readYAMLOrJSON(r)
 		if err != nil {
 			return fmt.Errorf("could not load config file %q: %v", path, err)
 		}
@@ -71,37 +83,39 @@ func extractCSV(objs []string) string {
 	return ""
 }
 
-func readJSON(r io.Reader) (*DeclarativeConfig, error) {
+func readYAMLOrJSON(r io.Reader) (*DeclarativeConfig, error) {
 	cfg := &DeclarativeConfig{}
-	dec := json.NewDecoder(r)
-	for dec.More() {
-		doc := &json.RawMessage{}
-		if err := dec.Decode(doc); err != nil {
-			return cfg, nil
+	dec := yaml.NewYAMLOrJSONDecoder(r, 4096)
+	for {
+		doc := json.RawMessage{}
+		if err := dec.Decode(&doc); err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
 		}
+		doc = []byte(strings.NewReplacer(`\u003c`, "<", `\u003e`, ">", `\u0026`, "&").Replace(string(doc)))
 
 		var in Meta
-		if err := json.Unmarshal(*doc, &in); err != nil {
-			// Ignore JSON blobs if they are not parsable as meta objects.
-			continue
+		if err := json.Unmarshal(doc, &in); err != nil {
+			return nil, err
 		}
 
 		switch in.Schema {
 		case schemaPackage:
 			var p Package
-			if err := json.Unmarshal(*doc, &p); err != nil {
-				return nil, fmt.Errorf("parse package at offset %d: %v", dec.InputOffset(), err)
+			if err := json.Unmarshal(doc, &p); err != nil {
+				return nil, fmt.Errorf("parse package: %v", err)
 			}
 			cfg.Packages = append(cfg.Packages, p)
 		case schemaBundle:
 			var b Bundle
-			if err := json.Unmarshal(*doc, &b); err != nil {
-				return nil, fmt.Errorf("parse bundle at offset %d: %v", dec.InputOffset(), err)
+			if err := json.Unmarshal(doc, &b); err != nil {
+				return nil, fmt.Errorf("parse bundle: %v", err)
 			}
 			cfg.Bundles = append(cfg.Bundles, b)
 		case "":
-			// Ignore meta blobs that don't have a schema.
-			continue
+			return nil, fmt.Errorf("object '%s' is missing root schema field", string(doc))
 		default:
 			cfg.Others = append(cfg.Others, in)
 		}
@@ -127,6 +141,7 @@ func (w dirWalker) WalkFiles(root string, f func(string, io.Reader) error) error
 		if err != nil {
 			return err
 		}
+		defer file.Close()
 		return f(path, file)
 	})
 }
