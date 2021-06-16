@@ -46,8 +46,7 @@ endif
 
 build: $(REGISTRY_CMDS) $(OLM_CMDS) $(OPM) ## build opm and olm binaries
 
-.PHONY: build/psm
-build/psm:
+build/psm: FORCE
 	go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o bin/psm github.com/openshift/operator-framework-olm/cmd/package-server-manager
 
 build/opm:
