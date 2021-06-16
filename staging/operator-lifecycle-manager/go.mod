@@ -12,7 +12,6 @@ require (
 	github.com/go-bindata/go-bindata/v3 v3.1.3
 	github.com/go-logr/logr v0.4.0
 	github.com/go-openapi/spec v0.19.5
-	github.com/go-openapi/validate v0.19.5 // indirect
 	github.com/golang/mock v1.4.1
 	github.com/google/go-cmp v0.5.6
 	github.com/googleapis/gnostic v0.5.5
@@ -80,6 +79,6 @@ replace (
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06
 )
 
-replace github.com/operator-framework/api => ../api
-
 replace github.com/operator-framework/operator-registry => ../operator-registry
+
+replace github.com/operator-framework/api => ../api
