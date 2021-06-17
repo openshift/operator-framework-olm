@@ -21,6 +21,7 @@ spec:
       labels:
         app: olm-operator
     spec:
+      # TODO(tflannag): Also update this manifest to deploy the PSM sidecar container
       serviceAccountName: olm-operator-serviceaccount
       priorityClassName: "system-cluster-critical"
       containers:
@@ -33,7 +34,7 @@ spec:
             - --writeStatusName
             - operator-lifecycle-manager
             - --writePackageServerStatusName
-            - operator-lifecycle-manager-packageserver
+            - ""
             - --tls-cert
             - /var/run/secrets/serving-cert/tls.crt
             - --tls-key
