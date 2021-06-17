@@ -28,8 +28,9 @@ var (
 )
 
 const (
-	defaultName      = "packageserver"
-	defaultNamespace = "openshift-operator-lifecycle-manager"
+	defaultName                 = "packageserver"
+	defaultNamespace            = "openshift-operator-lifecycle-manager"
+	leaderElectionConfigmapName = "packageserver-controller-lock"
 )
 
 func init() {
@@ -57,6 +58,15 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	clusterOperatorName, err := cmd.Flags().GetString("cluster-operator-name")
+	if err != nil {
+		return err
+	}
+
+	var manageClusterOperator bool
+	if clusterOperatorName != "" {
+		manageClusterOperator = true
+	}
 
 	opts := zap.Options{
 		Development: true,
@@ -67,11 +77,13 @@ func run(cmd *cobra.Command, args []string) error {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	setupLog := ctrl.Log.WithName("setup")
-	// TODO(tflannag): Setup leader election?
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), manager.Options{
-		Scheme:             scheme,
-		Namespace:          namespace,
-		MetricsBindAddress: "0",
+		Scheme:                  scheme,
+		Namespace:               namespace,
+		MetricsBindAddress:      "0",
+		LeaderElection:          true,
+		LeaderElectionNamespace: namespace,
+		LeaderElectionID:        leaderElectionConfigmapName,
 	})
 	if err != nil {
 		setupLog.Error(err, "failed to setup manager instance")
@@ -95,6 +107,13 @@ func run(cmd *cobra.Command, args []string) error {
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		return err
+	}
+
+	if manageClusterOperator {
+		// create a status reporter
+		// throw in a separate goroutine?
+		// likely want another context separate from the manager's context?
+		setupLog.Info("warning -- stub not managing the clusteroperator status")
 	}
 
 	return nil

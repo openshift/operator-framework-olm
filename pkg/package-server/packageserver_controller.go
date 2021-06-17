@@ -71,7 +71,7 @@ func (r *PackageServerReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if !r.ensureDeployment(deployment) {
+	if !ensureDeployment(deployment, r.getHighlyAvailableMode()) {
 		log.Info("no updates are required for the deployment")
 		return ctrl.Result{}, nil
 	}
@@ -84,16 +84,14 @@ func (r *PackageServerReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 
-func (r *PackageServerReconciler) ensureDeployment(deployment *appsv1.Deployment) bool {
-	modified := false
-	highlyAvailableMode := r.getHighlyAvailableMode()
+func ensureDeployment(deployment *appsv1.Deployment, highlyAvailableMode bool) bool {
+	var modified bool
 
 	expectedReplicas := int32(defaultReplicaCount)
 	if !highlyAvailableMode {
 		expectedReplicas = int32(singleReplicaCount)
 	}
 	if *deployment.Spec.Replicas != expectedReplicas {
-		r.Log.Info("updating replicas", "old", *deployment.Spec.Replicas, "new", expectedReplicas)
 		deployment.Spec.Replicas = pointer.Int32Ptr(expectedReplicas)
 		modified = true
 	}
@@ -107,7 +105,6 @@ func (r *PackageServerReconciler) ensureDeployment(deployment *appsv1.Deployment
 		expectedRolloutConfiguration = &appsv1.RollingUpdateDeployment{}
 	}
 	if deployment.Spec.Strategy.RollingUpdate != expectedRolloutConfiguration {
-		r.Log.Info("updating rollout update configuration", "old", deployment.Spec.Strategy.RollingUpdate, "new", expectedRolloutConfiguration)
 		deployment.Spec.Strategy.RollingUpdate = expectedRolloutConfiguration
 		modified = true
 	}
