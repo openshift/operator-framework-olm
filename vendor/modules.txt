@@ -556,6 +556,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/lib/profile
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/proxy
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/scoped
+github.com/operator-framework/operator-lifecycle-manager/pkg/lib/server
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/signals
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/time
 github.com/operator-framework/operator-lifecycle-manager/pkg/metrics
