@@ -114,12 +114,31 @@ vendor:
 	go mod vendor
 	go mod verify
 
-manifests: vendor ## Generate manifests
+.PHONY: manifests
+manifests: ## Generate manifests
 	./scripts/generate_crds_manifests.sh
 
-verify: vendor
+.PHONY: diff
+diff:
 	git diff --stat HEAD --ignore-submodules --exit-code
+
+verify-vendor: vendor
+	$(MAKE) diff
+
+verify-manifests: manifests
+	$(MAKE) diff
+
+verify-nested-vendor:
+	./scripts/check-staging-vendor.sh
+
 .PHONY: verify
+verify:
+	echo "Checking for unstaged root vendor changes"
+	$(MAKE) verify-vendor
+	echo "Checking whether the CVO manifests need to be generated"
+	$(MAKE) verify-manifests
+	echo "Checking for unsynced nested [go.mod,go.sum] files"
+	$(MAKE) verify-nested-vendor
 
 .PHONY: help
 help: ## Display this help.
