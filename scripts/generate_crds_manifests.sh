@@ -1,22 +1,25 @@
-#!/bin/bash 
+#! /bin/bash
 
-set -euo pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
 
-repo_root=$(git rev-parse --show-toplevel)
-cd ${repo_root}
+ROOT_DIR=$(dirname "${BASH_SOURCE[0]}")/..
 export  GOFLAGS="-mod=vendor"
+
 YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
 CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
-ver=$(cat ./OLM_VERSION)
+HELM="go run helm.sh/helm/v3/cmd/helm"
 
+ver=$(cat ./OLM_VERSION)
 tmpdir="$(mktemp -p . -d 2>/dev/null || mktemp -p . -d -t tmpdir)"
 chartdir="${tmpdir}/chart"
 crddir="${chartdir}/crds"
 crdsrcdir="${tmpdir}/operators"
 
-cp -R "./staging/operator-lifecycle-manager/deploy/chart/" "${chartdir}"
-cp "./staging/operator-lifecycle-manager/deploy/ocp/values.yaml" ${tmpdir}
-ln -snf $(realpath --relative-to ${tmpdir} ./staging/api/pkg/operators/) ${crdsrcdir}
+cp -R "${ROOT_DIR}/staging/operator-lifecycle-manager/deploy/chart/" "${chartdir}"
+cp "${ROOT_DIR}/staging/operator-lifecycle-manager/deploy/ocp/values.yaml" ${tmpdir}
+ln -snf $(realpath --relative-to ${tmpdir} ${ROOT_DIR}/staging/api/pkg/operators/) ${crdsrcdir}
 rm -rf ./manifests/* ${crddir}/*
 
 trap "rm -rf ${tmpdir}" EXIT
@@ -36,24 +39,39 @@ done
 
 sed -i "s/^[Vv]ersion:.*\$/version: ${ver}/" "${chartdir}/Chart.yaml"
 
-go run helm.sh/helm/v3/cmd/helm template -n olm -f "${tmpdir}/values.yaml" --include-crds --output-dir "${chartdir}" "${chartdir}"
-
+${HELM} template -n olm -f "${tmpdir}/values.yaml" --include-crds --output-dir "${chartdir}" "${chartdir}"
 cp -R "${chartdir}"/olm/{templates,crds}/. "./manifests"
 
-for f in ./manifests/*.yaml; do
-   if [[ ! "$(basename "${f}")" =~ .*\.deployment\..* ]]; then
-      ${YQ} w -d'*' --inplace --style=double $f 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
-   else
-      g="${f/%.yaml/.ibm-cloud-managed.yaml}"
-      cp "${f}" "${g}"
-      ${YQ} w -d'*' --inplace --style=double $g 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
-      ${YQ} d -d'*' --inplace $g 'spec.template.spec.nodeSelector."node-role.kubernetes.io/master"'
-   fi
-   ${YQ} w -d'*' --inplace --style=double $f 'metadata.annotations['include.release.openshift.io/self-managed-high-availability']' true
-   ${YQ} w -d'*' --inplace --style=double $f 'metadata.annotations['include.release.openshift.io/single-node-developer']' true
-done
+add_ibm_managed_cloud_annotations() {
+   local manifests_dir=$1
+
+   for f in "${manifests_dir}"/*.yaml; do
+      if [[ ! "$(basename "${f}")" =~ .*\.deployment\..* ]]; then
+         ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
+      else
+         g="${f/%.yaml/.ibm-cloud-managed.yaml}"
+         cp "${f}" "${g}"
+         ${YQ} w -d'*' --inplace --style=double "$g" 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
+         ${YQ} d -d'*' --inplace "$g" 'spec.template.spec.nodeSelector."node-role.kubernetes.io/master"'
+      fi
+      ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/self-managed-high-availability']' true
+      ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/single-node-developer']' true
+   done
+}
+
+update_csv() {
+   local csv=$1
+
+   ${YQ} w --inplace "${csv}" --tag '!!bool' 'spec.cleanup.enabled' false
+   ${YQ} w --inplace "${csv}" 'spec.customresourcedefinitions' {}
+   ${YQ} w --inplace "${csv}" --style="" 'spec.install.spec.deployments[0].spec.template.spec.containers[0].ports[0].protocol' TCP
+   ${YQ} w --inplace "${csv}" --style="" 'spec.install.spec.deployments[0].spec.template.metadata.creationTimestamp' null
+   sed -i "s/'{}'/{}/g" "${csv}"
+}
+
+add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"
+update_csv "${ROOT_DIR}/manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml"
 
 # requires gnu sed if on mac
-find ./manifests -type f -exec sed -i "/^#/d" {} \;
-find ./manifests -type f -exec sed -i "1{/---/d}" {} \;
-
+find "${ROOT_DIR}/manifests" -type f -exec sed -i "/^#/d" {} \;
+find "${ROOT_DIR}/manifests" -type f -exec sed -i "1{/---/d}" {} \;
