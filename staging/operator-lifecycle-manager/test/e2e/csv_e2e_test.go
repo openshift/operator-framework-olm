@@ -58,7 +58,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		TearDown(testNamespace)
 	})
 
-	When("a CustomResourceDefinition was installed alongside a ClusterServiceVersion", func() {
+	FWhen("a CustomResourceDefinition was installed alongside a ClusterServiceVersion", func() {
 		var (
 			ns  corev1.Namespace
 			crd apiextensionsv1.CustomResourceDefinition
