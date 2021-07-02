@@ -147,6 +147,10 @@ verify-manifests: manifests
 verify-nested-vendor:
 	./scripts/check-staging-vendor.sh
 
+.PHONY: verify-commits
+verify-commits:
+	./scripts/verify_commits.sh $(PULL_BASE_SHA) # see https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
+
 .PHONY: verify
 verify:
 	echo "Checking for unstaged root vendor changes"
@@ -155,6 +159,8 @@ verify:
 	$(MAKE) verify-manifests
 	echo "Checking for unsynced nested [go.mod,go.sum] files"
 	$(MAKE) verify-nested-vendor
+	echo "Checking commit integrity"
+	$(MAKE) verify-commits
 
 .PHONY: help
 help: ## Display this help.
