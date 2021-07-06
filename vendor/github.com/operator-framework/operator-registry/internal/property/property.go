@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
+	"io/fs"
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
-	"strings"
 )
 
 type Property struct {
@@ -29,6 +28,10 @@ func (p Property) Validate() error {
 		return fmt.Errorf("value is not valid json: %v", err)
 	}
 	return nil
+}
+
+func (p Property) String() string {
+	return fmt.Sprintf("type: %q, value: %q", p.Type, p.Value)
 }
 
 type Package struct {
@@ -103,25 +106,18 @@ func (f File) GetRef() string {
 	return f.ref
 }
 
-func (f File) GetData(root, cwd string) ([]byte, error) {
+func (f File) GetData(root fs.FS, cwd string) ([]byte, error) {
 	if !f.IsRef() {
 		return f.data, nil
-	}
-	rootAbs, err := filepath.Abs(root)
-	if err != nil {
-		return nil, err
 	}
 	if filepath.IsAbs(f.ref) {
 		return nil, fmt.Errorf("reference must be a relative path")
 	}
-	refAbs, err := filepath.Abs(filepath.Join(cwd, f.ref))
+	file, err := root.Open(filepath.Join(cwd, f.ref))
 	if err != nil {
 		return nil, err
 	}
-	if !strings.HasPrefix(refAbs, rootAbs) {
-		return nil, fmt.Errorf("reference %q must be within root %q", refAbs, rootAbs)
-	}
-	return ioutil.ReadFile(refAbs)
+	return ioutil.ReadAll(file)
 }
 
 type Properties struct {
@@ -256,7 +252,7 @@ func Build(p interface{}) (*Property, error) {
 
 	return &Property{
 		Type:  typ,
-		Value: bytes.TrimSpace(d),
+		Value: d,
 	}, nil
 }
 
@@ -270,18 +266,17 @@ func MustBuild(p interface{}) Property {
 
 func jsonMarshal(p interface{}) ([]byte, error) {
 	buf := &bytes.Buffer{}
-	enc := newJSONEncoder(buf)
-	if err := enc.Encode(p); err != nil {
+	dec := json.NewEncoder(buf)
+	dec.SetEscapeHTML(false)
+	err := dec.Encode(p)
+	if err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
-}
-
-func newJSONEncoder(w io.Writer) json.Encoder {
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(false)
-	enc.SetIndent("", "")
-	return *enc
+	out := &bytes.Buffer{}
+	if err := json.Compact(out, buf.Bytes()); err != nil {
+		return nil, err
+	}
+	return out.Bytes(), nil
 }
 
 func MustBuildPackage(name, version string) Property {

@@ -28,15 +28,7 @@ export KUBEBUILDER_ASSETS
 GO := GO111MODULE=on GOFLAGS="$(MOD_FLAGS)" go
 GINKGO := $(GO) run github.com/onsi/ginkgo/ginkgo
 BINDATA := $(GO) run github.com/go-bindata/go-bindata/v3/go-bindata
-
-# ART builds are performed in dist-git, with content (but not commits) copied 
-# from the source repo. Thus at build time if your code is inspecting the local
-# git repo it is getting unrelated commits and tags from the dist-git repo, 
-# not the source repo.
-# For ART image builds, SOURCE_GIT_COMMIT, SOURCE_GIT_TAG, SOURCE_DATE_EPOCH 
-# variables are inserted in Dockerfile to enable recovering the original git 
-# metadata at build time.
-GIT_COMMIT := $(if $(SOURCE_GIT_COMMIT),$(SOURCE_GIT_COMMIT),$(shell git rev-parse HEAD))
+GIT_COMMIT := $(shell git rev-parse HEAD)
 
 .PHONY: build test run clean vendor schema-check \
 	vendor-update coverage coverage-html e2e \
@@ -212,9 +204,15 @@ gen-all: codegen mockgen manifests
 diff:
 	git diff --exit-code
 
-verify-codegen: codegen diff
-verify-mockgen: mockgen diff
-verify-manifests: manifests diff
+verify-codegen: codegen
+	$(MAKE) diff
+
+verify-mockgen: mockgen
+	$(MAKE) diff
+
+verify-manifests: manifests
+	$(MAKE) diff
+
 verify: verify-codegen verify-mockgen verify-manifests
 
 # before running release, bump the version in OLM_VERSION and push to master,
@@ -223,15 +221,9 @@ release: ver=$(shell cat OLM_VERSION)
 release: manifests
 	docker pull quay.io/operator-framework/olm:v$(ver)
 	$(MAKE) target=upstream ver=$(ver) quickstart=true package
-	$(MAKE) target=ocp ver=$(ver) package
-	rm -rf manifests
-	mkdir manifests
-	cp -R deploy/ocp/manifests/$(ver)/. manifests
-	# requires gnu sed if on mac
-	find ./manifests -type f -exec sed -i "/^#/d" {} \;
-	find ./manifests -type f -exec sed -i "1{/---/d}" {} \;
 
-verify-release: release diff
+verify-release: release
+	$(MAKE) diff
 
 package: olmref=$(shell docker inspect --format='{{index .RepoDigests 0}}' quay.io/operator-framework/olm:v$(ver))
 package:
@@ -246,9 +238,6 @@ endif
 	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml package.image.ref $(olmref)
 	./scripts/package_release.sh $(ver) deploy/$(target)/manifests/$(ver) deploy/$(target)/values.yaml
 	ln -sfFn ./$(ver) deploy/$(target)/manifests/latest
-ifeq ($(target), ocp)
-	./scripts/add_release_annotation.sh deploy/$(target)/manifests/$(ver) "$(YQ_INTERNAL)"
-endif
 ifeq ($(quickstart), true)
 	./scripts/package_quickstart.sh deploy/$(target)/manifests/$(ver) deploy/$(target)/quickstart/olm.yaml deploy/$(target)/quickstart/crds.yaml deploy/$(target)/quickstart/install.sh
 endif

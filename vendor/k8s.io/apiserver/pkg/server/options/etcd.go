@@ -35,7 +35,6 @@ import (
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 	storagefactory "k8s.io/apiserver/pkg/storage/storagebackend/factory"
-	"k8s.io/apiserver/pkg/storage/value"
 	"k8s.io/klog/v2"
 )
 
@@ -118,8 +117,7 @@ func (s *EtcdOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringSliceVar(&s.EtcdServersOverrides, "etcd-servers-overrides", s.EtcdServersOverrides, ""+
 		"Per-resource etcd servers overrides, comma separated. The individual override "+
-		"format: group/resource#servers, where servers are URLs, semicolon separated. "+
-		"Note that this applies only to resources compiled into this server binary. ")
+		"format: group/resource#servers, where servers are URLs, semicolon separated.")
 
 	fs.StringVar(&s.DefaultStorageMediaType, "storage-media-type", s.DefaultStorageMediaType, ""+
 		"The media type to use to store objects in storage. "+
@@ -197,19 +195,7 @@ func (s *EtcdOptions) ApplyTo(c *server.Config) error {
 	if err := s.addEtcdHealthEndpoint(c); err != nil {
 		return err
 	}
-	transformerOverrides := make(map[schema.GroupResource]value.Transformer)
-	if len(s.EncryptionProviderConfigFilepath) > 0 {
-		var err error
-		transformerOverrides, err = encryptionconfig.GetTransformerOverrides(s.EncryptionProviderConfigFilepath)
-		if err != nil {
-			return err
-		}
-	}
-
-	c.RESTOptionsGetter = &SimpleRestOptionsFactory{
-		Options:              *s,
-		TransformerOverrides: transformerOverrides,
-	}
+	c.RESTOptionsGetter = &SimpleRestOptionsFactory{Options: *s}
 	return nil
 }
 
@@ -242,8 +228,7 @@ func (s *EtcdOptions) addEtcdHealthEndpoint(c *server.Config) error {
 }
 
 type SimpleRestOptionsFactory struct {
-	Options              EtcdOptions
-	TransformerOverrides map[schema.GroupResource]value.Transformer
+	Options EtcdOptions
 }
 
 func (f *SimpleRestOptionsFactory) GetRESTOptions(resource schema.GroupResource) (generic.RESTOptions, error) {
@@ -254,11 +239,6 @@ func (f *SimpleRestOptionsFactory) GetRESTOptions(resource schema.GroupResource)
 		DeleteCollectionWorkers: f.Options.DeleteCollectionWorkers,
 		ResourcePrefix:          resource.Group + "/" + resource.Resource,
 		CountMetricPollPeriod:   f.Options.StorageConfig.CountMetricPollPeriod,
-	}
-	if f.TransformerOverrides != nil {
-		if transformer, ok := f.TransformerOverrides[resource]; ok {
-			ret.StorageConfig.Transformer = transformer
-		}
 	}
 	if f.Options.EnableWatchCache {
 		sizes, err := ParseWatchCacheSizes(f.Options.WatchCacheSizes)

@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/moby/spdystream"
+	"github.com/docker/spdystream"
 	"k8s.io/apimachinery/pkg/util/httpstream"
 	"k8s.io/klog/v2"
 )

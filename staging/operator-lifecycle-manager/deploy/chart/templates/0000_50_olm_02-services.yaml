@@ -1,4 +1,4 @@
-{{ if and .Values.installType (eq .Values.installType "ocp") }}
+{{ if .Values.monitoring.enabled }}
 apiVersion: v1
 kind: Service
 metadata:

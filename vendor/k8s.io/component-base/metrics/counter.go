@@ -17,7 +17,6 @@ limitations under the License.
 package metrics
 
 import (
-	"context"
 	"github.com/blang/semver"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -78,11 +77,6 @@ func (c *Counter) initializeMetric() {
 func (c *Counter) initializeDeprecatedMetric() {
 	c.CounterOpts.markDeprecated()
 	c.initializeMetric()
-}
-
-// WithContext allows the normal Counter metric to pass in context. The context is no-op now.
-func (c *Counter) WithContext(ctx context.Context) CounterMetric {
-	return c.CounterMetric
 }
 
 // CounterVec is the internal representation of our wrapping struct around prometheus
@@ -181,28 +175,4 @@ func (v *CounterVec) Reset() {
 	}
 
 	v.CounterVec.Reset()
-}
-
-// WithContext returns wrapped CounterVec with context
-func (v *CounterVec) WithContext(ctx context.Context) *CounterVecWithContext {
-	return &CounterVecWithContext{
-		ctx:        ctx,
-		CounterVec: *v,
-	}
-}
-
-// CounterVecWithContext is the wrapper of CounterVec with context.
-type CounterVecWithContext struct {
-	CounterVec
-	ctx context.Context
-}
-
-// WithLabelValues is the wrapper of CounterVec.WithLabelValues.
-func (vc *CounterVecWithContext) WithLabelValues(lvs ...string) CounterMetric {
-	return vc.CounterVec.WithLabelValues(lvs...)
-}
-
-// With is the wrapper of CounterVec.With.
-func (vc *CounterVecWithContext) With(labels map[string]string) CounterMetric {
-	return vc.CounterVec.With(labels)
 }

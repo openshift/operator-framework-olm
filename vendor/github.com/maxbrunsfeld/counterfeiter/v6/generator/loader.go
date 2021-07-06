@@ -23,15 +23,14 @@ func (f *Fake) loadPackages(c Cacher, workingDir string) error {
 	}
 	importPath := f.TargetPackage
 	if !filepath.IsAbs(importPath) {
-		ctx := getBuildContext(workingDir)
-		bp, err := ctx.Import(f.TargetPackage, workingDir, build.FindOnly)
+		bp, err := build.Import(f.TargetPackage, workingDir, build.FindOnly)
 		if err != nil {
 			return err
 		}
 		importPath = bp.ImportPath
 	}
 	p, err := packages.Load(&packages.Config{
-		Mode:  packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedDeps | packages.NeedTypes | packages.NeedTypesInfo,
+		Mode:  packages.NeedName | packages.NeedFiles | packages.NeedImports | packages.NeedDeps | packages.NeedTypes,
 		Dir:   workingDir,
 		Tests: true,
 	}, importPath)

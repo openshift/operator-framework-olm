@@ -26,7 +26,7 @@ import (
 
 /*
  * By default, all the following metrics are defined as falling under
- * ALPHA stability level https://github.com/kubernetes/enhancements/blob/master/keps/sig-instrumentation/1209-metrics-stability/20190404-kubernetes-control-plane-metrics-stability.md#stability-classes)
+ * ALPHA stability level https://github.com/kubernetes/enhancements/blob/master/keps/sig-instrumentation/20190404-kubernetes-control-plane-metrics-stability.md#stability-classes)
  *
  * Promoting the stability level of the metric is a responsibility of the component owner, since it
  * involves explicitly acknowledging support for the metric across multiple releases, in accordance with
@@ -43,20 +43,11 @@ var (
 		},
 		[]string{"operation", "type"},
 	)
-	etcdObjectCounts = compbasemetrics.NewGaugeVec(
-		&compbasemetrics.GaugeOpts{
-			Name:              "etcd_object_counts",
-			DeprecatedVersion: "1.22.0",
-			Help:              "Number of stored objects at the time of last check split by kind. This metric is replaced by apiserver_storage_object_counts.",
-			StabilityLevel:    compbasemetrics.ALPHA,
-		},
-		[]string{"resource"},
-	)
 	objectCounts = compbasemetrics.NewGaugeVec(
 		&compbasemetrics.GaugeOpts{
-			Name:           "apiserver_storage_objects",
+			Name:           "etcd_object_counts",
 			Help:           "Number of stored objects at the time of last check split by kind.",
-			StabilityLevel: compbasemetrics.STABLE,
+			StabilityLevel: compbasemetrics.ALPHA,
 		},
 		[]string{"resource"},
 	)
@@ -95,17 +86,15 @@ func Register() {
 	registerMetrics.Do(func() {
 		legacyregistry.MustRegister(etcdRequestLatency)
 		legacyregistry.MustRegister(objectCounts)
-		legacyregistry.MustRegister(etcdObjectCounts)
 		legacyregistry.MustRegister(dbTotalSize)
 		legacyregistry.MustRegister(etcdBookmarkCounts)
 		legacyregistry.MustRegister(etcdLeaseObjectCounts)
 	})
 }
 
-// UpdateObjectCount sets the apiserver_storage_object_counts and etcd_object_counts (deprecated) metric.
+// UpdateObjectCount sets the etcd_object_counts metric.
 func UpdateObjectCount(resourcePrefix string, count int64) {
 	objectCounts.WithLabelValues(resourcePrefix).Set(float64(count))
-	etcdObjectCounts.WithLabelValues(resourcePrefix).Set(float64(count))
 }
 
 // RecordEtcdRequestLatency sets the etcd_request_duration_seconds metrics.

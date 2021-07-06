@@ -29,7 +29,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilnet "k8s.io/apimachinery/pkg/util/net"
-	"k8s.io/apimachinery/pkg/util/sets"
 	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	auditv1alpha1 "k8s.io/apiserver/pkg/apis/audit/v1alpha1"
@@ -248,9 +247,6 @@ func validateGroupVersionString(groupVersion string) error {
 	if !knownGroupVersion(gv) {
 		return fmt.Errorf("invalid group version, allowed versions are %q", knownGroupVersions)
 	}
-	if gv != auditv1.SchemeGroupVersion {
-		klog.Warningf("%q is deprecated and will be removed in a future release, use %q instead", gv, auditv1.SchemeGroupVersion)
-	}
 	return nil
 }
 
@@ -312,8 +308,7 @@ func (o *AuditOptions) ApplyTo(
 			klog.V(2).Info("No audit policy file provided, no events will be recorded for webhook backend")
 		} else {
 			if c.EgressSelector != nil {
-				var egressDialer utilnet.DialFunc
-				egressDialer, err = c.EgressSelector.Lookup(egressselector.ControlPlane.AsNetworkContext())
+				egressDialer, err := c.EgressSelector.Lookup(egressselector.ControlPlane.AsNetworkContext())
 				if err != nil {
 					return err
 				}
@@ -479,7 +474,14 @@ func (o *AuditLogOptions) Validate() []error {
 	}
 
 	// Check log format
-	if !sets.NewString(pluginlog.AllowedFormats...).Has(o.Format) {
+	validFormat := false
+	for _, f := range pluginlog.AllowedFormats {
+		if f == o.Format {
+			validFormat = true
+			break
+		}
+	}
+	if !validFormat {
 		allErrors = append(allErrors, fmt.Errorf("invalid audit log format %s, allowed formats are %q", o.Format, strings.Join(pluginlog.AllowedFormats, ",")))
 	}
 

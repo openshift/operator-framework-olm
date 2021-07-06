@@ -59,27 +59,23 @@ const (
 )
 
 func init() {
-	flagSet := flag.NewFlagSet("", flag.ContinueOnError)
 	log.SetFlags(0)
-	flagSet.StringVar(&flAddr, "addr", "", "(required) tcp host:port to connect")
-	flagSet.StringVar(&flService, "service", "", "service name to check (default: \"\")")
-	flagSet.StringVar(&flUserAgent, "user-agent", "grpc_health_probe", "user-agent header value of health check requests")
+	flag.StringVar(&flAddr, "addr", "", "(required) tcp host:port to connect")
+	flag.StringVar(&flService, "service", "", "service name to check (default: \"\")")
+	flag.StringVar(&flUserAgent, "user-agent", "grpc_health_probe", "user-agent header value of health check requests")
 	// timeouts
-	flagSet.DurationVar(&flConnTimeout, "connect-timeout", time.Second, "timeout for establishing connection")
-	flagSet.DurationVar(&flRPCTimeout, "rpc-timeout", time.Second, "timeout for health check rpc")
+	flag.DurationVar(&flConnTimeout, "connect-timeout", time.Second, "timeout for establishing connection")
+	flag.DurationVar(&flRPCTimeout, "rpc-timeout", time.Second, "timeout for health check rpc")
 	// tls settings
-	flagSet.BoolVar(&flTLS, "tls", false, "use TLS (default: false, INSECURE plaintext transport)")
-	flagSet.BoolVar(&flTLSNoVerify, "tls-no-verify", false, "(with -tls) don't verify the certificate (INSECURE) presented by the server (default: false)")
-	flagSet.StringVar(&flTLSCACert, "tls-ca-cert", "", "(with -tls, optional) file containing trusted certificates for verifying server")
-	flagSet.StringVar(&flTLSClientCert, "tls-client-cert", "", "(with -tls, optional) client certificate for authenticating to the server (requires -tls-client-key)")
-	flagSet.StringVar(&flTLSClientKey, "tls-client-key", "", "(with -tls) client private key for authenticating to the server (requires -tls-client-cert)")
-	flagSet.StringVar(&flTLSServerName, "tls-server-name", "", "(with -tls) override the hostname used to verify the server certificate")
-	flagSet.BoolVar(&flVerbose, "v", false, "verbose logs")
+	flag.BoolVar(&flTLS, "tls", false, "use TLS (default: false, INSECURE plaintext transport)")
+	flag.BoolVar(&flTLSNoVerify, "tls-no-verify", false, "(with -tls) don't verify the certificate (INSECURE) presented by the server (default: false)")
+	flag.StringVar(&flTLSCACert, "tls-ca-cert", "", "(with -tls, optional) file containing trusted certificates for verifying server")
+	flag.StringVar(&flTLSClientCert, "tls-client-cert", "", "(with -tls, optional) client certificate for authenticating to the server (requires -tls-client-key)")
+	flag.StringVar(&flTLSClientKey, "tls-client-key", "", "(with -tls) client private key for authenticating to the server (requires -tls-client-cert)")
+	flag.StringVar(&flTLSServerName, "tls-server-name", "", "(with -tls) override the hostname used to verify the server certificate")
+	flag.BoolVar(&flVerbose, "v", false, "verbose logs")
 
-	err := flagSet.Parse(os.Args[1:])
-	if err != nil {
-		os.Exit(StatusInvalidArguments)
-	}
+	flag.Parse()
 
 	argError := func(s string, v ...interface{}) {
 		log.Printf("error: "+s, v...)
@@ -201,8 +197,8 @@ func main() {
 		log.Print("establishing connection")
 	}
 	connStart := time.Now()
-	dialCtx, dialCancel := context.WithTimeout(ctx, flConnTimeout)
-	defer dialCancel()
+	dialCtx, cancel2 := context.WithTimeout(ctx, flConnTimeout)
+	defer cancel2()
 	conn, err := grpc.DialContext(dialCtx, flAddr, opts...)
 	if err != nil {
 		if err == context.DeadlineExceeded {
@@ -216,15 +212,13 @@ func main() {
 	connDuration := time.Since(connStart)
 	defer conn.Close()
 	if flVerbose {
-		log.Printf("connection established (took %v)", connDuration)
+		log.Printf("connection establisted (took %v)", connDuration)
 	}
 
 	rpcStart := time.Now()
 	rpcCtx, rpcCancel := context.WithTimeout(ctx, flRPCTimeout)
 	defer rpcCancel()
-	resp, err := healthpb.NewHealthClient(conn).Check(rpcCtx,
-		&healthpb.HealthCheckRequest{
-			Service: flService})
+	resp, err := healthpb.NewHealthClient(conn).Check(rpcCtx, &healthpb.HealthCheckRequest{Service: flService})
 	if err != nil {
 		if stat, ok := status.FromError(err); ok && stat.Code() == codes.Unimplemented {
 			log.Printf("error: this server does not implement the grpc health protocol (grpc.health.v1.Health)")

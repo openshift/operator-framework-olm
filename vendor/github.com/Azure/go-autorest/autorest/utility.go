@@ -237,10 +237,3 @@ func DrainResponseBody(resp *http.Response) error {
 	}
 	return nil
 }
-
-func setHeader(r *http.Request, key, value string) {
-	if r.Header == nil {
-		r.Header = make(http.Header)
-	}
-	r.Header.Set(key, value)
-}
