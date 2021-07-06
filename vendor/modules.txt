@@ -580,6 +580,7 @@ github.com/operator-framework/operator-registry/cmd/initializer
 github.com/operator-framework/operator-registry/cmd/opm
 github.com/operator-framework/operator-registry/cmd/opm/alpha
 github.com/operator-framework/operator-registry/cmd/opm/alpha/bundle
+github.com/operator-framework/operator-registry/cmd/opm/alpha/list
 github.com/operator-framework/operator-registry/cmd/opm/index
 github.com/operator-framework/operator-registry/cmd/opm/init
 github.com/operator-framework/operator-registry/cmd/opm/registry
