@@ -1,0 +1,6 @@
+- command: update
+  path: spec.install.spec.deployments[0].spec.template.metadata.annotations."target.workload.openshift.io/management"
+  value: '{"effect": "PreferredDuringScheduling"}'
+- command: update
+  path: spec.install.spec.deployments[0].spec.template.spec.priorityClassName
+  value: system-cluster-critical

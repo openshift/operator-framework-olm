@@ -224,7 +224,7 @@ func newUnstructuredCSV(t *testing.T, name, replaces string) *unstructured.Unstr
 	return &unstructured.Unstructured{Object: out}
 }
 
-func newUnstructuredCSVwithSkips(t *testing.T, name, replaces string, skips ...string) *unstructured.Unstructured {
+func newUnstructuredCSVWithSkips(t *testing.T, name, replaces string, skips ...string) *unstructured.Unstructured {
 	csv := &registry.ClusterServiceVersion{}
 	csv.TypeMeta.Kind = "ClusterServiceVersion"
 	csv.SetName(name)
@@ -252,6 +252,18 @@ func newBundle(t *testing.T, name, pkgName string, channels []string, objs ...*u
 	return bundle
 }
 
+func TestRMBundle(t *testing.T) {
+	db, cleanup := CreateTestDb(t)
+	defer cleanup()
+	store, err := NewSQLLiteLoader(db)
+	require.NoError(t, err)
+	require.NoError(t, store.Migrate(context.Background()))
+	tx, err := db.Begin()
+	require.NoError(t, err)
+	loader := store.(*sqlLoader)
+	require.NoError(t, loader.rmBundle(tx, "non-existent"))
+}
+
 func TestGetTailFromBundle(t *testing.T) {
 	type fields struct {
 		bundles []*registry.Bundle
@@ -271,7 +283,7 @@ func TestGetTailFromBundle(t *testing.T) {
 		expected    expected
 	}{
 		{
-			description: "GetTailFromBundle/RemoveDefaultChannelForbidden",
+			description: "ContainsDefaultChannel",
 			fields: fields{
 				bundles: []*registry.Bundle{
 					newBundle(t, "csv-a", "pkg-0", []string{"alpha"}, newUnstructuredCSV(t, "csv-a", "csv-b")),
@@ -304,7 +316,7 @@ func TestGetTailFromBundle(t *testing.T) {
 			},
 		},
 		{
-			description: "GetTailFromBundle/RemovingNonDefaultChannel",
+			description: "ContainsNoDefaultChannel",
 			fields: fields{
 				bundles: []*registry.Bundle{
 					newBundle(t, "csv-a", "pkg-0", []string{"alpha"}, newUnstructuredCSV(t, "csv-a", "csv-b")),
@@ -329,23 +341,23 @@ func TestGetTailFromBundle(t *testing.T) {
 				},
 			},
 			args: args{
-				bundle: "csv-a",
+				bundle: "csv-b",
 			},
 			expected: expected{
 				err: nil,
 				tail: []string{
-					"csv-b",
 					"csv-c",
 				},
 			},
 		},
 		{
-			description: "GetTailFromBundle/HandlesSkips",
+			description: "ContainsSkips",
 			fields: fields{
 				bundles: []*registry.Bundle{
-					newBundle(t, "csv-a", "pkg-0", []string{"alpha"}, newUnstructuredCSVwithSkips(t, "csv-a", "csv-b", "csv-d", "csv-e", "csv-f")),
-					newBundle(t, "csv-b", "pkg-0", []string{"alpha", "stable"}, newUnstructuredCSV(t, "csv-b", "csv-c")),
-					newBundle(t, "csv-c", "pkg-0", []string{"alpha", "stable"}, newUnstructuredCSV(t, "csv-c", "")),
+					newBundle(t, "csv-a", "pkg-0", []string{"alpha"}, newUnstructuredCSV(t, "csv-a", "csv-b")),
+					newBundle(t, "csv-b", "pkg-0", []string{"alpha"}, newUnstructuredCSVWithSkips(t, "csv-b", "csv-c", "csv-d", "csv-e", "csv-f")),
+					newBundle(t, "csv-c", "pkg-0", []string{"alpha", "stable"}, newUnstructuredCSV(t, "csv-c", "csv-d")),
+					newBundle(t, "csv-d", "pkg-0", []string{"alpha", "stable"}, newUnstructuredCSV(t, "csv-d", "")),
 				},
 				pkgs: []registry.PackageManifest{
 					{
@@ -365,17 +377,50 @@ func TestGetTailFromBundle(t *testing.T) {
 				},
 			},
 			args: args{
-				bundle: "csv-a",
+				bundle: "csv-b",
 			},
 			expected: expected{
 				err: nil,
 				tail: []string{
-					"csv-b",
 					"csv-c",
 					"csv-d",
 					"csv-e",
 					"csv-f",
 				},
+			},
+		},
+		{
+			description: "ContainsDefaultChannelFromSkips",
+			fields: fields{
+				bundles: []*registry.Bundle{
+					newBundle(t, "csv-a", "pkg-0", []string{"alpha"}, newUnstructuredCSV(t, "csv-a", "csv-b")),
+					newBundle(t, "csv-b", "pkg-0", []string{"alpha"}, newUnstructuredCSVWithSkips(t, "csv-b", "csv-d", "csv-c")),
+					newBundle(t, "csv-c", "pkg-0", []string{"alpha", "stable"}, newUnstructuredCSV(t, "csv-c", "csv-d")),
+					newBundle(t, "csv-d", "pkg-0", []string{"alpha", "stable"}, newUnstructuredCSV(t, "csv-d", "")),
+				},
+				pkgs: []registry.PackageManifest{
+					{
+						PackageName: "pkg-0",
+						Channels: []registry.PackageChannel{
+							{
+								Name:           "alpha",
+								CurrentCSVName: "csv-a",
+							},
+							{
+								Name:           "stable",
+								CurrentCSVName: "csv-c",
+							},
+						},
+						DefaultChannelName: "stable",
+					},
+				},
+			},
+			args: args{
+				bundle: "csv-b",
+			},
+			expected: expected{
+				err:  registry.ErrRemovingDefaultChannelDuringDeprecation,
+				tail: nil,
 			},
 		},
 	}
@@ -408,5 +453,127 @@ func TestGetTailFromBundle(t *testing.T) {
 			require.ElementsMatch(t, tt.expected.tail, tail)
 		})
 	}
+}
 
+func TestAddBundlePropertiesFromAnnotations(t *testing.T) {
+	mustMarshal := func(u interface{}) string {
+		v, err := json.Marshal(u)
+		require.NoError(t, err)
+		return string(v)
+	}
+
+	type in struct {
+		annotations map[string]string
+	}
+	type expect struct {
+		err bool
+	}
+	for _, tt := range []struct {
+		description string
+		in          in
+		expect      expect
+	}{
+		{
+			description: "Invalid/Properties",
+			in: in{
+				annotations: map[string]string{
+					registry.PropertyKey: "bad_properties",
+				},
+			},
+			expect: expect{
+				err: true,
+			},
+		},
+		{
+			description: "Invalid/KnownType/Label",
+			in: in{
+				annotations: map[string]string{
+					registry.PropertyKey: fmt.Sprintf(`[{"type": "%s", "value": "bad_value"}]`, registry.LabelType),
+				},
+			},
+			expect: expect{
+				err: true,
+			},
+		},
+		{
+			description: "Invalid/KnownType/Package",
+			in: in{
+				annotations: map[string]string{
+					registry.PropertyKey: fmt.Sprintf(`[{"type": "%s", "value": "bad_value"}]`, registry.PackageType),
+				},
+			},
+			expect: expect{
+				err: true,
+			},
+		},
+		{
+			description: "Invalid/KnownType/GVK",
+			in: in{
+				annotations: map[string]string{
+					registry.PropertyKey: fmt.Sprintf(`[{"type": "%s", "value": "bad_value"}]`, registry.GVKType),
+				},
+			},
+			expect: expect{
+				err: true,
+			},
+		},
+		{
+			description: "Valid/KnownTypes",
+			in: in{
+				annotations: map[string]string{
+					registry.PropertyKey: mustMarshal([]interface{}{
+						registry.LabelProperty{
+							Label: "sulaco",
+						},
+						registry.PackageProperty{
+							PackageName: "lv-426",
+							Version:     "1.0.0",
+						},
+						registry.GVKProperty{
+							Group:   "weyland.io",
+							Kind:    "Dropship",
+							Version: "v1",
+						},
+						registry.DeprecatedProperty{},
+					}),
+				},
+			},
+			expect: expect{
+				err: false,
+			},
+		},
+		{
+			description: "Valid/UnknownType", // Unknown types are handled as opaque blobs
+			in: in{
+				annotations: map[string]string{
+					registry.PropertyKey: fmt.Sprintf(`[{"type": "%s", "value": "anything_value"}]`, "anything"),
+				},
+			},
+			expect: expect{
+				err: false,
+			},
+		},
+	} {
+		t.Run(tt.description, func(t *testing.T) {
+			db, cleanup := CreateTestDb(t)
+			defer cleanup()
+
+			s, err := NewSQLLiteLoader(db)
+			store := s.(*sqlLoader)
+			require.NoError(t, err)
+			require.NoError(t, store.Migrate(context.TODO()))
+
+			tx, err := db.Begin()
+			require.NoError(t, err)
+
+			csv := newUnstructuredCSV(t, "ripley", "")
+			csv.SetAnnotations(tt.in.annotations)
+			err = store.addBundleProperties(tx, newBundle(t, csv.GetName(), "lv-426", nil, csv))
+			if tt.expect.err {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
 }

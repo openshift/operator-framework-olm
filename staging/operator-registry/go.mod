@@ -1,6 +1,6 @@
 module github.com/operator-framework/operator-registry
 
-go 1.15
+go 1.16
 
 require (
 	github.com/Microsoft/hcsshim v0.8.9 // indirect
@@ -28,7 +28,7 @@ require (
 	github.com/grpc-ecosystem/grpc-health-probe v0.3.2
 	github.com/h2non/filetype v1.1.1
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c
-	github.com/hashicorp/go-multierror v1.0.0
+	github.com/joelanford/ignore v0.0.0-20210607151042-0d25dc18b62d
 	github.com/mattn/go-sqlite3 v1.10.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2
 	github.com/onsi/ginkgo v1.14.1
@@ -36,7 +36,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/opencontainers/runc v0.1.1 // indirect
-	github.com/operator-framework/api v0.0.0-00010101000000-000000000000
+	github.com/operator-framework/api v0.7.1
 	github.com/otiai10/copy v1.2.0
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
@@ -48,7 +48,7 @@ require (
 	github.com/yvasiyarov/newrelic_platform_go v0.0.0-20160601141957-9c099fbc30e9 // indirect
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/mod v0.3.0
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
+	golang.org/x/net v0.0.0-20210326060303-6b1517762897
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	google.golang.org/grpc v1.30.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v0.0.0-20200709232328-d8193ee9cc3e
@@ -59,6 +59,9 @@ require (
 	k8s.io/apimachinery v0.20.6
 	k8s.io/client-go v0.20.6
 	k8s.io/kubectl v0.20.6
+	sigs.k8s.io/controller-runtime v0.8.0
+	sigs.k8s.io/kind v0.11.1
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
@@ -71,5 +74,3 @@ replace (
 	// latest tag resolves to a very old version. this is only used for spinning up local test registries
 	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
 )
-
-replace github.com/operator-framework/api => ../api

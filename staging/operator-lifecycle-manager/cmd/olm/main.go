@@ -16,11 +16,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
-
 	"k8s.io/klog"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/openshift"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/feature"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/filemonitor"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
@@ -201,8 +202,6 @@ func main() {
 		logger.WithError(err).Fatal("error configuring custom resource client")
 	}
 
-	cleanup(logger, opClient, crClient)
-
 	// Create a new instance of the operator.
 	op, err := olm.NewOperator(
 		ctx,
@@ -223,7 +222,24 @@ func main() {
 	<-op.Ready()
 
 	if *writeStatusName != "" {
-		operatorstatus.MonitorClusterStatus(*writeStatusName, op.AtLevel(), ctx.Done(), opClient, configClient, crClient)
+		reconciler, err := openshift.NewClusterOperatorReconciler(
+			openshift.WithClient(mgr.GetClient()),
+			openshift.WithScheme(mgr.GetScheme()),
+			openshift.WithLog(ctrl.Log.WithName("controllers").WithName("clusteroperator")),
+			openshift.WithName(*writeStatusName),
+			openshift.WithNamespace(*namespace),
+			openshift.WithSyncChannel(op.AtLevel()),
+			openshift.WithOLMOperator(),
+		)
+		if err != nil {
+			logger.WithError(err).Fatalf("error configuring openshift integration")
+			return
+		}
+
+		if err := reconciler.SetupWithManager(mgr); err != nil {
+			logger.WithError(err).Fatalf("error configuring openshift integration")
+			return
+		}
 	}
 
 	if *writePackageServerStatusName != "" {

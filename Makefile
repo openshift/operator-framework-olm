@@ -85,7 +85,7 @@ bin/kubebuilder:
 	$(ROOT_DIR)/scripts/install_kubebuilder.sh
 
 bin/cpb: FORCE
-	CGO_ENABLED=0 go build $(GO_BUILD_OPTS) -ldflags '-extldflags "-static"' -o $@ ./util/cpb
+	CGO_ENABLED=0 go build $(GO_BUILD_OPTS) -ldflags '-extldflags "-static"' -o $@ github.com/operator-framework/operator-lifecycle-manager/util/cpb
 
 unit/olm: bin/kubebuilder
 	$(MAKE) unit WHAT=operator-lifecycle-manager
