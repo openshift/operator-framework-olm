@@ -1,0 +1,22 @@
+- command: update
+  path: spec.template.metadata.annotations."target.workload.openshift.io/management"
+  value: '{"effect": "PreferredDuringScheduling"}'
+- command: update
+  path: spec.template.spec.priorityClassName
+  value: system-cluster-critical
+- command: update
+  path: spec.template.spec.containers[*].env[+]
+  value:
+    name: RELEASE_VERSION
+    value: "0.0.1-snapshot"
+- command: update
+  path: spec.template.spec.containers[0].volumeMounts[+]
+  value:
+    mountPath: /var/run/secrets/serving-cert
+    name: serving-cert
+- command: update
+  path: spec.template.spec.volumes[+]
+  value:
+    name: serving-cert
+    secret:
+      secretName: catalog-operator-serving-cert
