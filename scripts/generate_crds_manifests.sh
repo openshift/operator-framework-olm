@@ -5,7 +5,7 @@ set -o nounset
 set -o pipefail
 
 ROOT_DIR=$(dirname "${BASH_SOURCE[0]}")/..
-export  GOFLAGS="-mod=vendor"
+export GOFLAGS="-mod=vendor"
 
 YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
 CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
@@ -59,20 +59,11 @@ add_ibm_managed_cloud_annotations() {
    done
 }
 
-update_csv() {
-   local csv=$1
-
-   ${YQ} w --inplace "${csv}" --tag '!!bool' 'spec.cleanup.enabled' false
-   ${YQ} w --inplace "${csv}" 'spec.customresourcedefinitions' {}
-   ${YQ} w --inplace "${csv}" --style="" 'spec.install.spec.deployments[0].spec.template.spec.containers[0].ports[0].protocol' TCP
-   ${YQ} w --inplace "${csv}" --style="" 'spec.install.spec.deployments[0].spec.template.metadata.creationTimestamp' null
-   sed -i "s/'{}'/{}/g" "${csv}"
-}
-
 ${YQ} merge --inplace -d'*' manifests/0000_50_olm_00-namespace.yaml scripts/namespaces.patch.yaml
 ${YQ} write --inplace -s scripts/olm-deployment.patch.yaml manifests/0000_50_olm_07-olm-operator.deployment.yaml
 ${YQ} write --inplace -s scripts/catalog-deployment.patch.yaml manifests/0000_50_olm_08-catalog-operator.deployment.yaml
 ${YQ} write --inplace -s scripts/packageserver-deployment.patch.yaml manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml
+mv manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml pkg/manifests/csv.yaml
 
 cat << EOF > manifests/image-references
 kind: ImageStream
@@ -89,8 +80,89 @@ spec:
       name: quay.io/operator-framework/configmap-operator-registry:latest
 EOF
 
+cat << EOF > manifests/0000_50_olm-06-psm-operator.deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: package-server-manager
+  namespace: openshift-operator-lifecycle-manager
+  labels:
+    app: package-server-manager
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: package-server-manager
+  template:
+    metadata:
+      annotations:
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+      labels:
+        app: package-server-manager
+    spec:
+      serviceAccountName: olm-operator-serviceaccount
+      priorityClassName: "system-cluster-critical"
+      containers:
+        - name: package-server-manager
+          command:
+            - /bin/psm
+            - start
+          args:
+            - --name
+            - \$PACKAGESERVER_NAME
+            - --namespace
+            - \$PACKAGESERVER_NAMESPACE
+          image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PACKAGESERVER_NAME
+              value: packageserver
+            - name: PACKAGESERVER_IMAGE
+              value: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
+            - name: PACKAGESERVER_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: RELEASE_VERSION
+              value: "0.0.1-snapshot"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 50Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              initialDelaySeconds: 30
+          terminationMessagePolicy: FallbackToLogsOnError
+      nodeSelector:
+        kubernetes.io/os: linux
+        node-role.kubernetes.io/master: ""
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 120
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 120
+EOF
+
 add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"
-update_csv "${ROOT_DIR}/manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml"
 
 # requires gnu sed if on mac
 find "${ROOT_DIR}/manifests" -type f -exec sed -i "/^#/d" {} \;
