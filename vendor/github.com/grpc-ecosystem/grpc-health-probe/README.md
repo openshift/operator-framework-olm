@@ -117,6 +117,16 @@ with command-line options:
 | **`-tls-no-verify`** | use TLS, but do not verify the certificate presented by the server (INSECURE) (default: false) |
 | **`-tls-server-name`** | override the hostname used to verify the server certificate |
 
+## Health checking TLS Servers with SPIFFE issued credentials
+
+If your gRPC server requires authentication, you can use the following command line options and set the 
+[SPIFFE_ENDPOINT_SOCKET][spiffe-socket]
+environment variable.
+
+| Option | Description |
+|:------------|-------------|
+| **`-spiffe`** | use [SPIFFE Workload API][spiffe] to retrieve TLS credentials (default: false) |
+
 ## Other Available Flags
 
 | Option | Description |
@@ -126,6 +136,7 @@ with command-line options:
 | **`-rpc-timeout`** | timeout for health check rpc |
 | **`-user-agent`** | user-agent header value of health check requests (default: grpc_health_probe) |
 | **`-service`** | service name to check (default: "") - empty string is convention for server health |
+| **`-gzip`** | use GZIPCompressor for requests and GZIPDecompressor for response (default: false) |
 
 **Example:**
 
@@ -161,6 +172,7 @@ a non-zero exit code.
 | **2** | failure: connection failed or timed out |
 | **3** | failure: rpc failed or timed out |
 | **4** | failure: rpc successful, but the response is not `SERVING` |
+| **20** | failure: could not retrieve TLS credentials using the [SPIFFE Workload API][spiffe] |
 
 ----
 
@@ -170,3 +182,5 @@ This is not an official Google project.
 [k8s]: https://kubernetes.io/blog/2018/10/01/health-checking-grpc-servers-on-kubernetes/
 [execprobe]: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#define-a-liveness-command
 [rel]: https://github.com/grpc-ecosystem/grpc-health-probe/releases
+[spiffe]: https://github.com/spiffe/spiffe/blob/master/standards/SPIFFE_Workload_API.md
+[spiffe-socket]: https://github.com/spiffe/spiffe/blob/0f44285b4caa95244ecbf003dd6729d5295ae743/standards/SPIFFE_Workload_Endpoint.md#4-locating-the-endpoint

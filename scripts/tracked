@@ -1,3 +1,0 @@
-operator-lifecycle-manager git@github.com:operator-framework/operator-lifecycle-manager.git master c480add342c70a38b98f2be7f8259261e4af01ba
-operator-registry git@github.com:operator-framework/operator-registry.git master 88eda1a2c6dab32c5a049a286259f3c0f713587e
-api git@github.com:operator-framework/api.git master 01e8bf8bd934a18aef1d22e9e4c523f293b2a633

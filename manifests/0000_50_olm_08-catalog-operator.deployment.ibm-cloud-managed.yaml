@@ -16,13 +16,12 @@ spec:
       app: catalog-operator
   template:
     metadata:
-      annotations:
-        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         app: catalog-operator
+      annotations:
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
     spec:
       serviceAccountName: olm-operator-serviceaccount
-      priorityClassName: "system-cluster-critical"
       containers:
         - name: catalog-operator
           command:
@@ -55,20 +54,16 @@ spec:
               path: /healthz
               port: 8080
           terminationMessagePolicy: FallbackToLogsOnError
-          env:
-            - name: RELEASE_VERSION
-              value: "0.0.1-snapshot"
           resources:
             requests:
               cpu: 10m
               memory: 80Mi
+          env:
+            - name: RELEASE_VERSION
+              value: "0.0.1-snapshot"
           volumeMounts:
             - mountPath: /var/run/secrets/serving-cert
               name: serving-cert
-      volumes:
-        - name: serving-cert
-          secret:
-            secretName: catalog-operator-serving-cert
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:
@@ -83,3 +78,8 @@ spec:
           key: node.kubernetes.io/not-ready
           operator: Exists
           tolerationSeconds: 120
+      priorityClassName: system-cluster-critical
+      volumes:
+        - name: serving-cert
+          secret:
+            secretName: catalog-operator-serving-cert

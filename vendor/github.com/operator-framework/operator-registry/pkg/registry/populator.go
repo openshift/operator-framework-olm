@@ -4,18 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/blang/semver"
-	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/operator-framework/operator-registry/pkg/image"
+	libsemver "github.com/operator-framework/operator-registry/pkg/lib/semver"
 )
 
 type Dependencies struct {
@@ -170,13 +166,13 @@ func (i *DirectoryPopulator) loadManifests(imagesToAdd []*ImageInput, imagesToRe
 		return i.loadManifestsReplaces(append(imagesToAdd, imagesToReAdd...))
 	case SemVerMode:
 		for _, image := range imagesToAdd {
-			if err := i.loadManifestsSemver(image.Bundle, image.AnnotationsFile, false); err != nil {
+			if err := i.loadManifestsSemver(image.Bundle, false); err != nil {
 				return err
 			}
 		}
 	case SkipPatchMode:
 		for _, image := range imagesToAdd {
-			if err := i.loadManifestsSemver(image.Bundle, image.AnnotationsFile, true); err != nil {
+			if err := i.loadManifestsSemver(image.Bundle, true); err != nil {
 				return err
 			}
 		}
@@ -242,7 +238,7 @@ func (i *DirectoryPopulator) loadManifestsReplaces(images []*ImageInput) error {
 	return utilerrors.NewAggregate(errs)
 }
 
-func (i *DirectoryPopulator) loadManifestsSemver(bundle *Bundle, annotations *AnnotationsFile, skippatch bool) error {
+func (i *DirectoryPopulator) loadManifestsSemver(bundle *Bundle, skippatch bool) error {
 	graph, err := i.graphLoader.Generate(bundle.Package)
 	if err != nil && !errors.Is(err, ErrPackageNotInDatabase) {
 		return err
@@ -250,7 +246,7 @@ func (i *DirectoryPopulator) loadManifestsSemver(bundle *Bundle, annotations *An
 
 	// add to the graph
 	bundleLoader := BundleGraphLoader{}
-	updatedGraph, err := bundleLoader.AddBundleToGraph(bundle, graph, annotations, skippatch)
+	updatedGraph, err := bundleLoader.AddBundleToGraph(bundle, graph, &AnnotationsFile{Annotations: *bundle.Annotations}, skippatch)
 	if err != nil {
 		return err
 	}
@@ -260,93 +256,6 @@ func (i *DirectoryPopulator) loadManifestsSemver(bundle *Bundle, annotations *An
 	}
 
 	return nil
-}
-
-// loadBundle takes the directory that a CSV is in and assumes the rest of the objects in that directory
-// are part of the bundle.
-func loadBundle(csvName string, dir string) (*Bundle, error) {
-	log := logrus.WithFields(logrus.Fields{"dir": dir, "load": "bundle"})
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	bundle := &Bundle{
-		Name: csvName,
-	}
-	for _, f := range files {
-		log = log.WithField("file", f.Name())
-		if f.IsDir() {
-			log.Info("skipping directory")
-			continue
-		}
-
-		if strings.HasPrefix(f.Name(), ".") {
-			log.Info("skipping hidden file")
-			continue
-		}
-
-		log.Info("loading bundle file")
-		var (
-			obj  = &unstructured.Unstructured{}
-			path = filepath.Join(dir, f.Name())
-		)
-		if err = DecodeFile(path, obj); err != nil {
-			log.WithError(err).Debugf("could not decode file contents for %s", path)
-			continue
-		}
-
-		// Don't include other CSVs in the bundle
-		if obj.GetKind() == "ClusterServiceVersion" && obj.GetName() != csvName {
-			continue
-		}
-
-		if obj.Object != nil {
-			bundle.Add(obj)
-		}
-	}
-
-	return bundle, nil
-}
-
-// findCSV looks through the bundle directory to find a csv
-func (i *ImageInput) findCSV(manifests string) (*unstructured.Unstructured, error) {
-	log := logrus.WithFields(logrus.Fields{"dir": i.from, "find": "csv"})
-
-	files, err := ioutil.ReadDir(manifests)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read directory %s: %s", manifests, err)
-	}
-
-	for _, f := range files {
-		log = log.WithField("file", f.Name())
-		if f.IsDir() {
-			log.Info("skipping directory")
-			continue
-		}
-
-		if strings.HasPrefix(f.Name(), ".") {
-			log.Info("skipping hidden file")
-			continue
-		}
-
-		var (
-			obj  = &unstructured.Unstructured{}
-			path = filepath.Join(manifests, f.Name())
-		)
-		if err = DecodeFile(path, obj); err != nil {
-			log.WithError(err).Debugf("could not decode file contents for %s", path)
-			continue
-		}
-
-		if obj.GetKind() != clusterServiceVersionKind {
-			continue
-		}
-
-		return obj, nil
-	}
-
-	return nil, fmt.Errorf("no csv found in bundle")
 }
 
 // loadOperatorBundle adds the package information to the loader's store
@@ -373,48 +282,7 @@ type bundleVersion struct {
 // compare returns a value less than one if the receiver arg is less smaller the given version, greater than one if it is larger, and zero if they are equal.
 // This comparison follows typical semver precedence rules, with one addition: whenever two versions are equal with the exception of their build-ids, the build-ids are compared using prerelease precedence rules. Further, versions with no build-id are always less than versions with build-ids; e.g. 1.0.0 < 1.0.0+1.
 func (b bundleVersion) compare(v bundleVersion) (int, error) {
-	if c := b.version.Compare(v.version); c != 0 {
-		return c, nil
-	}
-
-	bPre, err := buildAsPrerelease(b.version)
-	if err != nil {
-		return 0, fmt.Errorf("failed to convert build-id of %s to prerelease version for comparison: %s", b.version, err)
-	}
-
-	vPre, err := buildAsPrerelease(v.version)
-	if err != nil {
-		return 0, fmt.Errorf("failed to convert build-id of %s to prerelease version for comparison: %s", v.version, err)
-	}
-
-	return bPre.Compare(*vPre), nil
-}
-
-func buildAsPrerelease(v semver.Version) (*semver.Version, error) {
-	var pre []semver.PRVersion
-	for _, b := range v.Build {
-		p, err := semver.NewPRVersion(b)
-		if err != nil {
-			return nil, err
-		}
-		pre = append(pre, p)
-	}
-
-	var major uint64
-	if len(pre) > 0 {
-		// Adjust for the case where we compare a build-id prerelease analog to a version without a build-id.
-		// Without this `0.0.0+1` and `0.0.0` would become `0.0.0-1` and `0.0.0`, where the rules of prerelease comparison would
-		// end up giving us the wrong result; i.e. `0.0.0+1` < `0.0.0`. With this, `0.0.0+1` and `0.0.0` become `1.0.0-1` and `0.0.0`
-		// respectively, which does yield the intended result.
-		major = 1
-	}
-
-	return &semver.Version{
-		Major: major,
-		Minor: 0,
-		Patch: 0,
-		Pre:   pre,
-	}, nil
+	return libsemver.BuildIdCompare(b.version, v.version)
 }
 
 // SemverPackageManifest generates a PackageManifest from a set of bundles, determining channel heads and the default channel using semver.

@@ -11,14 +11,14 @@ YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
 CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
 HELM="go run helm.sh/helm/v3/cmd/helm"
 
-ver=$(cat ./OLM_VERSION)
+ver=$(cat ./staging/operator-lifecycle-manager/OLM_VERSION)
 tmpdir="$(mktemp -p . -d 2>/dev/null || mktemp -p . -d -t tmpdir)"
 chartdir="${tmpdir}/chart"
 crddir="${chartdir}/crds"
 crdsrcdir="${tmpdir}/operators"
 
 cp -R "${ROOT_DIR}/staging/operator-lifecycle-manager/deploy/chart/" "${chartdir}"
-cp "${ROOT_DIR}/staging/operator-lifecycle-manager/deploy/ocp/values.yaml" ${tmpdir}
+cp "${ROOT_DIR}/values.yaml" "${tmpdir}"
 ln -snf $(realpath --relative-to ${tmpdir} ${ROOT_DIR}/staging/api/pkg/operators/) ${crdsrcdir}
 rm -rf ./manifests/* ${crddir}/*
 
@@ -68,6 +68,26 @@ update_csv() {
    ${YQ} w --inplace "${csv}" --style="" 'spec.install.spec.deployments[0].spec.template.metadata.creationTimestamp' null
    sed -i "s/'{}'/{}/g" "${csv}"
 }
+
+${YQ} merge --inplace -d'*' manifests/0000_50_olm_00-namespace.yaml scripts/namespaces.patch.yaml
+${YQ} write --inplace -s scripts/olm-deployment.patch.yaml manifests/0000_50_olm_07-olm-operator.deployment.yaml
+${YQ} write --inplace -s scripts/catalog-deployment.patch.yaml manifests/0000_50_olm_08-catalog-operator.deployment.yaml
+${YQ} write --inplace -s scripts/packageserver-deployment.patch.yaml manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml
+
+cat << EOF > manifests/image-references
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+spec:
+  tags:
+  - name: operator-lifecycle-manager
+    from:
+      kind: DockerImage
+      name: "$(${YQ} read values.yaml olm.image.ref)"
+  - name: operator-registry
+    from:
+      kind: DockerImage
+      name: quay.io/operator-framework/configmap-operator-registry:latest
+EOF
 
 add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"
 update_csv "${ROOT_DIR}/manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml"
