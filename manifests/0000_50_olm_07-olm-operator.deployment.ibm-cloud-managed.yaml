@@ -28,10 +28,7 @@ spec:
             secretName: olm-operator-serving-cert
         - name: profile-collector-cert
           secret:
-            secretName: olm-operator-serving-cert
-        - name: serving-cert
-          secret:
-            secretName: olm-operator-serving-cert
+            secretName: pprof-cert
       containers:
         - name: olm-operator
           volumeMounts:
@@ -41,8 +38,6 @@ spec:
             - name: profile-collector-cert
               mountPath: "/profile-collector-cert"
               readOnly: true
-            - mountPath: /var/run/secrets/serving-cert
-              name: serving-cert
           command:
             - /bin/olm
           args:

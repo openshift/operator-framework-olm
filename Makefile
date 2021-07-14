@@ -22,12 +22,11 @@ OLM_PKG := $(GO_PKG)/operator-lifecycle-manager
 API_PKG := $(GO_PKG)/api
 ROOT_PKG := github.com/openshift/operator-framework-olm
 
-PSM := $(addprefix bin/, psm)
+COLLECT_PROFILES_CMD := $(addprefix bin/, collect-profiles)
 OPM := $(addprefix bin/, opm)
 OLM_CMDS  := $(shell go list -mod=vendor $(OLM_PKG)/cmd/...)
-PSM_CMDS := $(shell go list -mod=vendor github.com/openshift/operator-framework-olm/cmd/...)
+PSM_CMD := $(addprefix bin/, psm)
 REGISTRY_CMDS  := $(addprefix bin/, $(shell ls staging/operator-registry/cmd | grep -v opm))
-
 # Phony prerequisite for targets that rely on the go build cache to determine staleness.
 .PHONY: FORCE
 FORCE:
@@ -56,7 +55,7 @@ build/registry:
 	$(MAKE) $(REGISTRY_CMDS) $(OPM)
 
 build/olm:
-	$(MAKE) $(PSM_CMDS) $(OLM_CMDS)
+	$(MAKE) $(PSM_CMD) $(OLM_CMDS) $(COLLECT_PROFILES_CMD)
 
 $(OPM): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
 $(OPM):
@@ -70,8 +69,11 @@ $(OLM_CMDS): version_flags=-ldflags "-X $(OLM_PKG)/pkg/version.GitCommit=$(GIT_C
 $(OLM_CMDS):
 	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o bin/$(shell basename $@) $@
 
-$(PSM_CMDS): FORCE
-	go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $(PSM) $(ROOT_PKG)/cmd/...
+$(PSM_CMD): FORCE
+	go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $(PSM_CMD) $(ROOT_PKG)/cmd/package-server-manager
+	
+$(COLLECT_PROFILES_CMD): FORCE
+	go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $(COLLECT_PROFILES_CMD) $(ROOT_PKG)/cmd/collect-profiles
 
 .PHONY: cross
 cross: version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
