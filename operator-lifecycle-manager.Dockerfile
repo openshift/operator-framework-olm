@@ -24,6 +24,7 @@ COPY --from=builder /build/bin/olm /bin/olm
 COPY --from=builder /build/bin/catalog /bin/catalog
 COPY --from=builder /build/bin/package-server /bin/package-server
 COPY --from=builder /build/bin/cpb /bin/cpb
+COPY --from=builder /build/bin/psm /bin/psm
 
 # This image doesn't need to run as root user.
 USER 1001
