@@ -14,7 +14,7 @@ require (
 	github.com/openshift/api v0.0.0-20200331152225-585af27e34fd
 	github.com/operator-framework/api v0.10.1
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
-	github.com/operator-framework/operator-registry v1.13.6
+	github.com/operator-framework/operator-registry v1.17.5
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
