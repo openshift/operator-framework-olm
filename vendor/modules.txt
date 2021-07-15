@@ -573,7 +573,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/stor
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/version
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
-# github.com/operator-framework/operator-registry v1.13.6 => ./staging/operator-registry
+# github.com/operator-framework/operator-registry v1.17.5 => ./staging/operator-registry
 ## explicit
 github.com/operator-framework/operator-registry/cmd/configmap-server
 github.com/operator-framework/operator-registry/cmd/initializer
