@@ -9,12 +9,14 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -35,7 +37,7 @@ func main() {
 	cmd := newStartCmd()
 
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "encountered an error while executing the binary: %v", err)
+		fmt.Fprintf(os.Stderr, "encountered an error while executing the binary: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -60,6 +62,8 @@ func run(cmd *cobra.Command, args []string) error {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	setupLog := ctrl.Log.WithName("setup")
+
+	packageserverCSVFields := fields.Set{"metadata.name": name}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), manager.Options{
 		Scheme:                  setupScheme(),
 		Namespace:               namespace,
@@ -68,6 +72,13 @@ func run(cmd *cobra.Command, args []string) error {
 		LeaderElectionNamespace: namespace,
 		LeaderElectionID:        leaderElectionConfigmapName,
 		HealthProbeBindAddress:  healthCheckAddr,
+		NewCache: cache.BuilderWithOptions(cache.Options{
+			SelectorsByObject: cache.SelectorsByObject{
+				&olmv1alpha1.ClusterServiceVersion{}: {
+					Field: packageserverCSVFields.AsSelector(),
+				},
+			},
+		}),
 	})
 	if err != nil {
 		setupLog.Error(err, "failed to setup manager instance")

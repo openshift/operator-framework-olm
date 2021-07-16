@@ -30,11 +30,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
@@ -81,13 +79,14 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		manifests.WithImage(r.Image),
 	)
 	if err != nil {
+		log.Error(err, "failed to serialize a new packageserver csv from the base YAML manifest")
 		return ctrl.Result{}, err
 	}
 	res, err := controllerutil.CreateOrUpdate(ctx, r.Client, required, func() error {
 		return reconcileCSV(r.Log, r.Image, required, highAvailabilityMode)
 	})
 	if err != nil {
-		log.Error(err, "failed to create or update the csv")
+		log.Error(err, "failed to create or update the packageserver csv")
 		return ctrl.Result{}, nil
 	}
 	log.Info("reconciliation result", "res", res)
@@ -112,7 +111,7 @@ func reconcileCSV(log logr.Logger, image string, csv *olmv1alpha1.ClusterService
 		csv.Spec = tmp.Spec
 	}
 	if !ensureCSV(log, image, csv, highAvailabilityMode) {
-		log.V(3).Info("no further updates are necessary to the csv")
+		log.V(3).Info("no further updates are necessary to the packageserver csv")
 	}
 
 	return nil
@@ -138,11 +137,8 @@ func (r *PackageServerCSVReconciler) infrastructureHandler(obj client.Object) []
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PackageServerCSVReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	predicateNameFilter := predicate.NewPredicateFuncs(func(object client.Object) bool {
-		return object.GetName() == r.Name && object.GetNamespace() == r.Namespace
-	})
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&olmv1alpha1.ClusterServiceVersion{}, builder.WithPredicates(predicateNameFilter)).
+		For(&olmv1alpha1.ClusterServiceVersion{}).
 		Watches(&source.Kind{Type: &configv1.Infrastructure{}}, handler.EnqueueRequestsFromMapFunc(r.infrastructureHandler)).
 		Complete(r)
 }

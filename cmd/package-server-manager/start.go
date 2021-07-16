@@ -6,9 +6,10 @@ import (
 
 func newStartCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "start",
-		Short: "Start the PackageServer manager",
-		RunE:  run,
+		Use:          "start",
+		Short:        "Start the PackageServer manager",
+		SilenceUsage: true,
+		RunE:         run,
 	}
 
 	cmd.Flags().String("name", defaultName, "configures the metadata.name for the packageserver csv resource")
