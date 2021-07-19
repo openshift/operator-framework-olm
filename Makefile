@@ -20,9 +20,12 @@ GO_PKG := github.com/operator-framework
 REGISTRY_PKG := $(GO_PKG)/operator-registry
 OLM_PKG := $(GO_PKG)/operator-lifecycle-manager
 API_PKG := $(GO_PKG)/api
+ROOT_PKG := github.com/openshift/operator-framework-olm
 
+PSM := $(addprefix bin/, psm)
 OPM := $(addprefix bin/, opm)
 OLM_CMDS  := $(shell go list -mod=vendor $(OLM_PKG)/cmd/...)
+PSM_CMDS := $(shell go list -mod=vendor github.com/openshift/operator-framework-olm/cmd/...)
 REGISTRY_CMDS  := $(addprefix bin/, $(shell ls staging/operator-registry/cmd | grep -v opm))
 
 # Phony prerequisite for targets that rely on the go build cache to determine staleness.
@@ -53,7 +56,7 @@ build/registry:
 	$(MAKE) $(REGISTRY_CMDS) $(OPM)
 
 build/olm:
-	$(MAKE) $(OLM_CMDS)
+	$(MAKE) $(PSM_CMDS) $(OLM_CMDS)
 
 $(OPM): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
 $(OPM):
@@ -66,6 +69,9 @@ $(REGISTRY_CMDS):
 $(OLM_CMDS): version_flags=-ldflags "-X $(OLM_PKG)/pkg/version.GitCommit=$(GIT_COMMIT) -X $(OLM_PKG)/pkg/version.OLMVersion=`cat staging/operator-lifecycle-manager/OLM_VERSION`"
 $(OLM_CMDS):
 	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o bin/$(shell basename $@) $@
+
+$(PSM_CMDS): FORCE
+	go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $(PSM) $(ROOT_PKG)/cmd/...
 
 .PHONY: cross
 cross: version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
@@ -88,6 +94,11 @@ bin/cpb: FORCE
 	CGO_ENABLED=0 go build $(GO_BUILD_OPTS) -ldflags '-extldflags "-static"' -o $@ github.com/operator-framework/operator-lifecycle-manager/util/cpb
 
 unit/olm: bin/kubebuilder
+	# TODO(tflannag): This is placeholder until we can add a dedicated
+	# prow test for this unit check
+	echo "Running the PSM unit tests"
+	$(MAKE) unit/psm
+	echo "Running the OLM unit tests"
 	$(MAKE) unit WHAT=operator-lifecycle-manager
 
 unit/registry:
@@ -95,6 +106,9 @@ unit/registry:
 
 unit/api:
 	$(MAKE) unit WHAT=api TARGET_NAME=test
+
+unit/psm:
+	go test $(ROOT_DIR)/pkg/package-server-manager/...
 
 unit: ## Run unit tests
 	$(ROOT_DIR)/scripts/unit.sh
