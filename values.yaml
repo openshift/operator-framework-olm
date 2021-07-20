@@ -15,6 +15,7 @@ olm:
   service:
     internalPort: 8443
     externalPort: 8443
+  tlsSecret: olm-operator-serving-cert
   nodeSelector:
     kubernetes.io/os: linux
     node-role.kubernetes.io/master: ""
@@ -44,6 +45,7 @@ catalog:
   service:
     internalPort: 8443
     externalPort: 8443
+  tlsSecret: catalog-operator-serving-cert
   nodeSelector:
     kubernetes.io/os: linux
     node-role.kubernetes.io/master: ""

@@ -22,8 +22,21 @@ spec:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
     spec:
       serviceAccountName: olm-operator-serviceaccount
+      volumes:
+        - name: srv-cert
+          secret:
+            secretName: olm-operator-serving-cert
+        - name: serving-cert
+          secret:
+            secretName: olm-operator-serving-cert
       containers:
         - name: olm-operator
+          volumeMounts:
+            - name: srv-cert
+              mountPath: "/srv-cert"
+              readOnly: true
+            - mountPath: /var/run/secrets/serving-cert
+              name: serving-cert
           command:
             - /bin/olm
           args:
@@ -33,6 +46,10 @@ spec:
             - operator-lifecycle-manager
             - --writePackageServerStatusName
             - operator-lifecycle-manager-packageserver
+            - --tls-cert
+            - /srv-cert/tls.crt
+            - --tls-key
+            - /srv-cert/tls.key
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
           imagePullPolicy: IfNotPresent
           ports:
@@ -41,12 +58,12 @@ spec:
             httpGet:
               path: /healthz
               port: 8443
-              scheme: HTTP
+              scheme: HTTPS
           readinessProbe:
             httpGet:
               path: /healthz
               port: 8443
-              scheme: HTTP
+              scheme: HTTPS
           terminationMessagePolicy: FallbackToLogsOnError
           env:
             - name: OPERATOR_NAMESPACE
@@ -61,9 +78,6 @@ spec:
             requests:
               cpu: 10m
               memory: 160Mi
-          volumeMounts:
-            - mountPath: /var/run/secrets/serving-cert
-              name: serving-cert
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:
@@ -79,7 +93,3 @@ spec:
           operator: Exists
           tolerationSeconds: 120
       priorityClassName: system-cluster-critical
-      volumes:
-        - name: serving-cert
-          secret:
-            secretName: olm-operator-serving-cert
