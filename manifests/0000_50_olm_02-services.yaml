@@ -14,9 +14,9 @@ spec:
   type: ClusterIP
   ports:
     - name: https-metrics
-      port: 8081
+      port: metrics
       protocol: TCP
-      targetPort: metrics
+      targetPort: 8080
   selector:
     app: olm-operator
 ---
@@ -36,8 +36,8 @@ spec:
   type: ClusterIP
   ports:
     - name: https-metrics
-      port: 8081
+      port: metrics
       protocol: TCP
-      targetPort: metrics
+      targetPort: 8080
   selector:
     app: catalog-operator
