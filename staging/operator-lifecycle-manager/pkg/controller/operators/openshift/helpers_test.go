@@ -2,6 +2,7 @@ package openshift
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	semver "github.com/blang/semver/v4"
@@ -340,12 +341,22 @@ func TestIncompatibleOperators(t *testing.T) {
 					namespace:           "default",
 					maxOpenShiftVersion: "1.0.0",
 				},
+				{
+					name:                "chestnut",
+					namespace:           "default",
+					maxOpenShiftVersion: "1.0",
+				},
 			},
 			expect: expect{
 				err: false,
 				incompatible: skews{
 					{
 						name:                "beech",
+						namespace:           "default",
+						maxOpenShiftVersion: "1.0.0",
+					},
+					{
+						name:                "chestnut",
 						namespace:           "default",
 						maxOpenShiftVersion: "1.0.0",
 					},
@@ -462,7 +473,10 @@ func TestIncompatibleOperators(t *testing.T) {
 
 func TestMaxOpenShiftVersion(t *testing.T) {
 	mustParse := func(s string) *semver.Version {
-		version := semver.MustParse(s)
+		version, err := semver.ParseTolerant(s)
+		if err != nil {
+			panic(fmt.Sprintf("bad version given for test case: %s", err))
+		}
 		return &version
 	}
 
@@ -484,7 +498,7 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		},
 		{
 			description: "Nothing",
-			in:          []string{""},
+			in:          []string{`""`},
 			expect: expect{
 				err: false,
 				max: nil,
@@ -493,8 +507,8 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Nothing/Mixed",
 			in: []string{
-				"",
-				"1.0.0",
+				`""`,
+				`"1.0.0"`,
 			},
 			expect: expect{
 				err: false,
@@ -503,7 +517,7 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		},
 		{
 			description: "Garbage",
-			in:          []string{"bad_version"},
+			in:          []string{`"bad_version"`},
 			expect: expect{
 				err: true,
 				max: nil,
@@ -512,8 +526,8 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Garbage/Mixed",
 			in: []string{
-				"bad_version",
-				"1.0.0",
+				`"bad_version"`,
+				`"1.0.0"`,
 			},
 			expect: expect{
 				err: true,
@@ -522,7 +536,7 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		},
 		{
 			description: "Single",
-			in:          []string{"1.0.0"},
+			in:          []string{`"1.0.0"`},
 			expect: expect{
 				err: false,
 				max: mustParse("1.0.0"),
@@ -531,8 +545,8 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Multiple",
 			in: []string{
-				"1.0.0",
-				"2.0.0",
+				`"1.0.0"`,
+				`"2.0.0"`,
 			},
 			expect: expect{
 				err: false,
@@ -542,8 +556,8 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Duplicates",
 			in: []string{
-				"1.0.0",
-				"1.0.0",
+				`"1.0.0"`,
+				`"1.0.0"`,
 			},
 			expect: expect{
 				err: false,
@@ -553,9 +567,9 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Duplicates/NonMax",
 			in: []string{
-				"1.0.0",
-				"1.0.0",
-				"2.0.0",
+				`"1.0.0"`,
+				`"1.0.0"`,
+				`"2.0.0"`,
 			},
 			expect: expect{
 				err: false,
@@ -565,12 +579,21 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Ambiguous",
 			in: []string{
-				"1.0.0",
-				"1.0.0+1",
+				`"1.0.0"`,
+				`"1.0.0+1"`,
 			},
 			expect: expect{
 				err: true,
 				max: nil,
+			},
+		},
+		{
+			// Ensure unquoted short strings are accepted; e.g. X.Y
+			description: "Unquoted/Short",
+			in:          []string{"4.8"},
+			expect: expect{
+				err: false,
+				max: mustParse("4.8"),
 			},
 		},
 	} {
@@ -579,7 +602,7 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 			for _, max := range tt.in {
 				properties = append(properties, &api.Property{
 					Type:  MaxOpenShiftVersionProperty,
-					Value: `"` + max + `"`, // Wrap in quotes so we don't break property marshaling
+					Value: max,
 				})
 			}
 
