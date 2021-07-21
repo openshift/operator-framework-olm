@@ -55,12 +55,12 @@ spec:
             httpGet:
               path: /healthz
               port: 8443
-              scheme: HTTPS
+              scheme: HTTP
           readinessProbe:
             httpGet:
               path: /healthz
               port: 8443
-              scheme: HTTPS
+              scheme: HTTP
           terminationMessagePolicy: FallbackToLogsOnError
           resources:
             requests:
