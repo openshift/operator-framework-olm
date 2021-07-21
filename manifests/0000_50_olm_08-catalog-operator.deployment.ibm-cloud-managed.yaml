@@ -64,6 +64,7 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
+              name: metrics
           livenessProbe:
             httpGet:
               path: /healthz
