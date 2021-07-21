@@ -45,8 +45,6 @@ catalog:
     internalPort: 8443
     externalPort: 8443
   clientCASecret: catalog-operator-serving-cert
-  tlsKeyPath: foo
-  tlsCertPath: bar
   tlsSecret: catalog-operator-serving-cert
   nodeSelector:
     kubernetes.io/os: linux
