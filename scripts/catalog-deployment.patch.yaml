@@ -9,14 +9,3 @@
   value:
     name: RELEASE_VERSION
     value: "0.0.1-snapshot"
-- command: update
-  path: spec.template.spec.containers[0].volumeMounts[+]
-  value:
-    mountPath: /var/run/secrets/serving-cert
-    name: serving-cert
-- command: update
-  path: spec.template.spec.volumes[+]
-  value:
-    name: serving-cert
-    secret:
-      secretName: catalog-operator-serving-cert
