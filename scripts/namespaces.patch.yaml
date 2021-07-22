@@ -4,4 +4,3 @@ metadata:
     workload.openshift.io/allowed: "management"
   labels:
     openshift.io/scc: "anyuid"
-    openshift.io/cluster-monitoring: "true"
