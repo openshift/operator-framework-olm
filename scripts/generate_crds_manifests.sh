@@ -138,12 +138,12 @@ spec:
             httpGet:
               path: /healthz
               port: 8080
-              initialDelaySeconds: 30
+            initialDelaySeconds: 30
           readinessProbe:
             httpGet:
               path: /healthz
               port: 8080
-              initialDelaySeconds: 30
+            initialDelaySeconds: 30
           terminationMessagePolicy: FallbackToLogsOnError
       nodeSelector:
         kubernetes.io/os: linux
@@ -160,6 +160,138 @@ spec:
           key: node.kubernetes.io/not-ready
           operator: Exists
           tolerationSeconds: 120
+EOF
+
+cat << EOF > manifests/0000_50_olm_00-pprof-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    release.openshift.io/create-only: "true"
+  name: collect-profiles-config
+  namespace: openshift-operator-lifecycle-manager
+data:
+  pprof-config.yaml: |
+    disabled: False
+EOF
+
+cat << EOF > manifests/0000_50_olm_00-pprof-rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+  name: collect-profiles
+  namespace: openshift-operator-lifecycle-manager
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "create", "delete"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+  name: collect-profiles
+  namespace: openshift-operator-lifecycle-manager
+subjects:
+- kind: ServiceAccount
+  name: collect-profiles
+  namespace: openshift-operator-lifecycle-manager
+roleRef:
+  kind: Role
+  name: collect-profiles
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+  name: collect-profiles
+  namespace: openshift-operator-lifecycle-manager
+EOF
+
+cat << EOF > manifests/0000_50_olm_00-pprof-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    release.openshift.io/create-only: "true"
+  name: pprof-cert
+  namespace: openshift-operator-lifecycle-manager
+type: kubernetes.io/tls
+data:
+  tls.crt: ""
+  tls.key: ""
+EOF
+
+cat << EOF > manifests/0000_50_olm_07-collect-profiles.cronjob.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+  name: collect-profiles
+  namespace: openshift-operator-lifecycle-manager
+spec:
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: collect-profiles
+          priorityClassName: openshift-user-critical
+          containers:
+          - name: collect-profiles
+            image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
+            imagePullPolicy: IfNotPresent
+            command:
+            - bin/collect-profiles
+            args: 
+            - -n
+            - openshift-operator-lifecycle-manager
+            - --config-mount-path
+            - /etc/config
+            - --cert-mount-path
+            - /var/run/secrets/serving-cert
+            - olm-operator-heap-:https://olm-operator-metrics:8443/debug/pprof/heap
+            - catalog-operator-heap-:https://catalog-operator-metrics:8443/debug/pprof/heap
+            volumeMounts:
+            - mountPath: /etc/config
+              name: config-volume
+            - mountPath: /var/run/secrets/serving-cert
+              name: secret-volume
+            resources:
+              requests:
+                cpu: 10m
+                memory: 80Mi
+          volumes:
+          - name: config-volume
+            configMap:
+              name: collect-profiles-config
+          - name: secret-volume
+            secret:
+              secretName: pprof-cert
+          restartPolicy: Never
 EOF
 
 add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"

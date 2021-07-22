@@ -15,10 +15,12 @@ require (
 	github.com/operator-framework/api v0.10.1
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.17.5
+	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
 	google.golang.org/protobuf v1.27.1
+	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.6.2
 	k8s.io/api v0.22.0-beta.0
 	k8s.io/apimachinery v0.22.0-beta.0

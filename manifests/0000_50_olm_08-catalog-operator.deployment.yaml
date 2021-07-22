@@ -29,10 +29,7 @@ spec:
             secretName: catalog-operator-serving-cert
         - name: profile-collector-cert
           secret:
-            secretName: catalog-operator-serving-cert
-        - name: serving-cert
-          secret:
-            secretName: catalog-operator-serving-cert
+            secretName: pprof-cert
       containers:
         - name: catalog-operator
           volumeMounts:
@@ -42,8 +39,6 @@ spec:
             - name: profile-collector-cert
               mountPath: "/profile-collector-cert"
               readOnly: true
-            - mountPath: /var/run/secrets/serving-cert
-              name: serving-cert
           command:
             - /bin/catalog
           args:

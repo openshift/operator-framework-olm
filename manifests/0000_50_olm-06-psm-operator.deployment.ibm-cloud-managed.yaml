@@ -56,12 +56,12 @@ spec:
             httpGet:
               path: /healthz
               port: 8080
-              initialDelaySeconds: 30
+            initialDelaySeconds: 30
           readinessProbe:
             httpGet:
               path: /healthz
               port: 8080
-              initialDelaySeconds: 30
+            initialDelaySeconds: 30
           terminationMessagePolicy: FallbackToLogsOnError
       nodeSelector:
         kubernetes.io/os: linux
