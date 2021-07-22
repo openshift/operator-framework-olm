@@ -20,12 +20,12 @@ require (
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
 	google.golang.org/protobuf v1.27.1
 	helm.sh/helm/v3 v3.6.2
-	k8s.io/api v0.22.0-beta.0
-	k8s.io/apimachinery v0.22.0-beta.0
-	k8s.io/client-go v0.22.0-beta.0
-	k8s.io/code-generator v0.22.0-beta.0
+	k8s.io/api v0.22.0-rc.0
+	k8s.io/apimachinery v0.22.0-rc.0
+	k8s.io/client-go v0.22.0-rc.0
+	k8s.io/code-generator v0.22.0-rc.0
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d
-	k8s.io/utils v0.0.0-20210527160623-6fdb442a123b
+	k8s.io/utils v0.0.0-20210707171843-4b05e18ac7d9
 	sigs.k8s.io/controller-runtime v0.9.2
 	sigs.k8s.io/controller-tools v0.6.1
 )
