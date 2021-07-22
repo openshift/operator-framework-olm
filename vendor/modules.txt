@@ -469,7 +469,7 @@ github.com/openshift/client-go/config/informers/externalversions/config
 github.com/openshift/client-go/config/informers/externalversions/config/v1
 github.com/openshift/client-go/config/informers/externalversions/internalinterfaces
 github.com/openshift/client-go/config/listers/config/v1
-# github.com/operator-framework/api v0.10.1 => ./staging/api
+# github.com/operator-framework/api v0.10.2 => ./staging/api
 ## explicit
 github.com/operator-framework/api/crds
 github.com/operator-framework/api/pkg/lib/version
@@ -580,6 +580,7 @@ github.com/operator-framework/operator-registry/cmd/initializer
 github.com/operator-framework/operator-registry/cmd/opm
 github.com/operator-framework/operator-registry/cmd/opm/alpha
 github.com/operator-framework/operator-registry/cmd/opm/alpha/bundle
+github.com/operator-framework/operator-registry/cmd/opm/alpha/generate
 github.com/operator-framework/operator-registry/cmd/opm/alpha/list
 github.com/operator-framework/operator-registry/cmd/opm/index
 github.com/operator-framework/operator-registry/cmd/opm/init
