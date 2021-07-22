@@ -24,4 +24,3 @@ metadata:
     include.release.openshift.io/single-node-developer: "true"
   labels:
     openshift.io/scc: "anyuid"
-    openshift.io/cluster-monitoring: "true"
