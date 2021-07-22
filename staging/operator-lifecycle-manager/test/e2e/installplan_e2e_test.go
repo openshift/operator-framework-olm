@@ -16,7 +16,6 @@ import (
 	"github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"github.com/onsi/gomega/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
@@ -53,12 +52,6 @@ import (
 )
 
 var _ = Describe("Install Plan", func() {
-	HavePhase := func(goal operatorsv1alpha1.InstallPlanPhase) types.GomegaMatcher {
-		return WithTransform(func(plan *operatorsv1alpha1.InstallPlan) operatorsv1alpha1.InstallPlanPhase {
-			return plan.Status.Phase
-		}, Equal(goal))
-	}
-
 	AfterEach(func() {
 		TearDown(testNamespace)
 	})
@@ -89,7 +82,7 @@ var _ = Describe("Install Plan", func() {
 
 		BeforeEach(func() {
 			counter = 0
-			for _, metric := range getMetricsFromPod(ctx.Ctx().KubeClient(), getPodWithLabel(ctx.Ctx().KubeClient(), "app=catalog-operator"), "8081") {
+			for _, metric := range getMetricsFromPod(ctx.Ctx().KubeClient(), getPodWithLabel(ctx.Ctx().KubeClient(), "app=catalog-operator")) {
 				if metric.Family == "installplan_warnings_total" {
 					counter = metric.Value
 				}
@@ -189,7 +182,7 @@ var _ = Describe("Install Plan", func() {
 
 		It("increments a metric counting the warning", func() {
 			Eventually(func() []Metric {
-				return getMetricsFromPod(ctx.Ctx().KubeClient(), getPodWithLabel(ctx.Ctx().KubeClient(), "app=catalog-operator"), "8081")
+				return getMetricsFromPod(ctx.Ctx().KubeClient(), getPodWithLabel(ctx.Ctx().KubeClient(), "app=catalog-operator"))
 			}).Should(ContainElement(LikeMetric(
 				WithFamily("installplan_warnings_total"),
 				WithValueGreaterThan(counter),

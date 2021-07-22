@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
 	errorwrap "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/connectivity"
@@ -115,7 +117,7 @@ type Operator struct {
 type CatalogSourceSyncFunc func(logger *logrus.Entry, in *v1alpha1.CatalogSource) (out *v1alpha1.CatalogSource, continueSync bool, syncError error)
 
 // NewOperator creates a new Catalog Operator.
-func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clock, logger *logrus.Logger, resync time.Duration, configmapRegistryImage, utilImage string, operatorNamespace string, scheme *runtime.Scheme, installPlanTimeout time.Duration, bundleUnpackTimeout time.Duration) (*Operator, error) {
+func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clock, logger *logrus.Logger, resync time.Duration, configmapRegistryImage, opmImage, utilImage string, operatorNamespace string, scheme *runtime.Scheme, installPlanTimeout time.Duration, bundleUnpackTimeout time.Duration) (*Operator, error) {
 	resyncPeriod := queueinformer.ResyncWithJitter(resync, 0.2)
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
@@ -351,7 +353,7 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 		bundle.WithPodLister(podInformer.Lister()),
 		bundle.WithRoleLister(roleInformer.Lister()),
 		bundle.WithRoleBindingLister(roleBindingInformer.Lister()),
-		bundle.WithOPMImage(configmapRegistryImage),
+		bundle.WithOPMImage(opmImage),
 		bundle.WithUtilImage(utilImage),
 		bundle.WithNow(op.now),
 		bundle.WithUnpackTimeout(op.bundleUnpackTimeout),
@@ -1774,6 +1776,8 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 	ensurer := newStepEnsurer(kubeclient, crclient, dynamicClient)
 	r := newManifestResolver(plan.GetNamespace(), o.lister.CoreV1().ConfigMapLister(), o.logger)
 
+	discoveryQuerier := newDiscoveryQuerier(o.opClient.KubernetesInterface().Discovery())
+
 	// CRDs should be installed via the default OLM (cluster-admin) client and not the scoped client specified by the AttenuatedServiceAccount
 	// the StepBuilder is currently only implemented for CRD types
 	// TODO give the StepBuilder both OLM and scoped clients when it supports new scoped types
@@ -2173,6 +2177,14 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 			}
 			return nil
 		}(i, step); err != nil {
+			if k8serrors.IsNotFound(err) {
+				// Check for APIVersions present in the installplan steps that are not available on the server.
+				// The check is made via discovery per step in the plan. Transient communication failures to the api-server are handled by the plan retry logic.
+				notFoundErr := discoveryQuerier.WithStepResource(step.Resource).QueryForGVK()
+				if notFoundErr != nil {
+					return notFoundErr
+				}
+			}
 			return err
 		}
 	}

@@ -23,8 +23,27 @@ spec:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
     spec:
       serviceAccountName: olm-operator-serviceaccount
+      volumes:
+        - name: srv-cert
+          secret:
+            secretName: olm-operator-serving-cert
+        - name: profile-collector-cert
+          secret:
+            secretName: olm-operator-serving-cert
+        - name: serving-cert
+          secret:
+            secretName: olm-operator-serving-cert
       containers:
         - name: olm-operator
+          volumeMounts:
+            - name: srv-cert
+              mountPath: "/srv-cert"
+              readOnly: true
+            - name: profile-collector-cert
+              mountPath: "/profile-collector-cert"
+              readOnly: true
+            - mountPath: /var/run/secrets/serving-cert
+              name: serving-cert
           command:
             - /bin/olm
           args:
@@ -35,24 +54,26 @@ spec:
             - --writePackageServerStatusName
             - operator-lifecycle-manager-packageserver
             - --tls-cert
-            - /var/run/secrets/serving-cert/tls.crt
+            - /srv-cert/tls.crt
             - --tls-key
-            - /var/run/secrets/serving-cert/tls.key
+            - /srv-cert/tls.key
+            - --client-ca
+            - /profile-collector-cert/tls.crt
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
-            - containerPort: 8081
+            - containerPort: 8443
               name: metrics
-              protocol: TCP
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 8080
+              port: 8443
+              scheme: HTTPS
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 8080
+              port: 8443
+              scheme: HTTPS
           terminationMessagePolicy: FallbackToLogsOnError
           env:
             - name: OPERATOR_NAMESPACE
@@ -67,9 +88,6 @@ spec:
             requests:
               cpu: 10m
               memory: 160Mi
-          volumeMounts:
-            - mountPath: /var/run/secrets/serving-cert
-              name: serving-cert
       nodeSelector:
         kubernetes.io/os: linux
         node-role.kubernetes.io/master: ""
@@ -86,7 +104,3 @@ spec:
           operator: Exists
           tolerationSeconds: 120
       priorityClassName: system-cluster-critical
-      volumes:
-        - name: serving-cert
-          secret:
-            secretName: olm-operator-serving-cert

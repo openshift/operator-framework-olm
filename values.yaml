@@ -13,7 +13,9 @@ olm:
     ref: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
     pullPolicy: IfNotPresent
   service:
-    internalPort: 8080
+    internalPort: 8443
+    externalPort: 8443
+  clientCASecret: olm-operator-serving-cert
   nodeSelector:
     kubernetes.io/os: linux
     node-role.kubernetes.io/master: ""
@@ -29,19 +31,22 @@ olm:
       operator: Exists
       effect: NoExecute
       tolerationSeconds: 120
-  tlsCertPath: /var/run/secrets/serving-cert/tls.crt
-  tlsKeyPath: /var/run/secrets/serving-cert/tls.key
+  tlsSecret: olm-operator-serving-cert
   resources:
     requests:
       cpu: 10m
       memory: 160Mi
 catalog:
   replicaCount: 1
+  opmImageArgs: -opmImage=quay.io/operator-framework/configmap-operator-registry:latest
   image:
     ref: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
     pullPolicy: IfNotPresent
   service:
-    internalPort: 8080
+    internalPort: 8443
+    externalPort: 8443
+  clientCASecret: catalog-operator-serving-cert
+  tlsSecret: catalog-operator-serving-cert
   nodeSelector:
     kubernetes.io/os: linux
     node-role.kubernetes.io/master: ""

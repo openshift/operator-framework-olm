@@ -25,7 +25,7 @@ require (
 	github.com/openshift/api v0.0.0-20200331152225-585af27e34fd
 	github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0
 	github.com/operator-framework/api v0.10.1
-	github.com/operator-framework/operator-registry v1.13.6
+	github.com/operator-framework/operator-registry v1.17.5
 	github.com/otiai10/copy v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
@@ -60,11 +60,9 @@ replace (
 	// controller runtime
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20200331152225-585af27e34fd // release-4.5
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
-
-	// pinned because latest etcd does not yet work with the latest grpc version (1.30.0)
-	go.etcd.io/etcd => go.etcd.io/etcd v0.5.0-alpha.5.0.20200520232829-54ba9589114f
-	google.golang.org/grpc => google.golang.org/grpc v1.27.0
-	google.golang.org/grpc/examples => google.golang.org/grpc/examples v0.0.0-20200709232328-d8193ee9cc3e
+	// Patch for a race condition involving metadata-only
+	// informers until it can be resolved upstream:
+	sigs.k8s.io/controller-runtime v0.9.2 => github.com/benluddy/controller-runtime v0.9.3-0.20210720171926-9bcb99bd9bd3
 
 	// pinned because no tag supports 1.18 yet
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06

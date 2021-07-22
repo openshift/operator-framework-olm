@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -452,7 +453,7 @@ func (i *installPlanReferencedState) CheckInstallPlanStatus(now *metav1.Time, cl
 		if cond.Reason == "" {
 			cond.Reason = string(phase)
 		}
-
+		cond.Message = extractMessage(status)
 		cond.Type = v1alpha1.SubscriptionInstallPlanPending
 		cond.Status = corev1.ConditionTrue
 		out.Status.SetCondition(cond)
@@ -472,6 +473,7 @@ func (i *installPlanReferencedState) CheckInstallPlanStatus(now *metav1.Time, cl
 		}
 
 		cond.Type = v1alpha1.SubscriptionInstallPlanFailed
+		cond.Message = extractMessage(status)
 		cond.Status = corev1.ConditionTrue
 		out.Status.SetCondition(cond)
 
@@ -506,6 +508,25 @@ func (i *installPlanReferencedState) CheckInstallPlanStatus(now *metav1.Time, cl
 	known.setSubscription(updated)
 
 	return known, nil
+}
+
+func extractMessage(status *v1alpha1.InstallPlanStatus) string {
+	if cond := status.GetCondition(v1alpha1.InstallPlanInstalled); cond.Status != corev1.ConditionUnknown && cond.Message != "" {
+		return cond.Message
+	}
+
+	var b bytes.Buffer
+	for _, lookup := range status.BundleLookups {
+		if cond := lookup.GetCondition(v1alpha1.BundleLookupPending); cond.Status != corev1.ConditionUnknown && cond.Message != "" {
+			if b.Len() != 0 {
+				b.WriteString(" ")
+			}
+			b.WriteString(cond.Message)
+			b.WriteString(".")
+		}
+	}
+
+	return b.String()
 }
 
 type installPlanKnownState struct {

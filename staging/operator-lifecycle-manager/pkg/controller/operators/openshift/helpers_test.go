@@ -2,12 +2,14 @@ package openshift
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	semver "github.com/blang/semver/v4"
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -340,12 +342,22 @@ func TestIncompatibleOperators(t *testing.T) {
 					namespace:           "default",
 					maxOpenShiftVersion: "1.0.0",
 				},
+				{
+					name:                "chestnut",
+					namespace:           "default",
+					maxOpenShiftVersion: "1.0",
+				},
 			},
 			expect: expect{
 				err: false,
 				incompatible: skews{
 					{
 						name:                "beech",
+						namespace:           "default",
+						maxOpenShiftVersion: "1.0.0",
+					},
+					{
+						name:                "chestnut",
 						namespace:           "default",
 						maxOpenShiftVersion: "1.0.0",
 					},
@@ -462,7 +474,10 @@ func TestIncompatibleOperators(t *testing.T) {
 
 func TestMaxOpenShiftVersion(t *testing.T) {
 	mustParse := func(s string) *semver.Version {
-		version := semver.MustParse(s)
+		version, err := semver.ParseTolerant(s)
+		if err != nil {
+			panic(fmt.Sprintf("bad version given for test case: %s", err))
+		}
 		return &version
 	}
 
@@ -484,7 +499,7 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		},
 		{
 			description: "Nothing",
-			in:          []string{""},
+			in:          []string{`""`},
 			expect: expect{
 				err: false,
 				max: nil,
@@ -493,8 +508,8 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Nothing/Mixed",
 			in: []string{
-				"",
-				"1.0.0",
+				`""`,
+				`"1.0.0"`,
 			},
 			expect: expect{
 				err: false,
@@ -503,7 +518,7 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		},
 		{
 			description: "Garbage",
-			in:          []string{"bad_version"},
+			in:          []string{`"bad_version"`},
 			expect: expect{
 				err: true,
 				max: nil,
@@ -512,8 +527,8 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Garbage/Mixed",
 			in: []string{
-				"bad_version",
-				"1.0.0",
+				`"bad_version"`,
+				`"1.0.0"`,
 			},
 			expect: expect{
 				err: true,
@@ -522,7 +537,7 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		},
 		{
 			description: "Single",
-			in:          []string{"1.0.0"},
+			in:          []string{`"1.0.0"`},
 			expect: expect{
 				err: false,
 				max: mustParse("1.0.0"),
@@ -531,8 +546,8 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Multiple",
 			in: []string{
-				"1.0.0",
-				"2.0.0",
+				`"1.0.0"`,
+				`"2.0.0"`,
 			},
 			expect: expect{
 				err: false,
@@ -542,8 +557,8 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Duplicates",
 			in: []string{
-				"1.0.0",
-				"1.0.0",
+				`"1.0.0"`,
+				`"1.0.0"`,
 			},
 			expect: expect{
 				err: false,
@@ -553,9 +568,9 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Duplicates/NonMax",
 			in: []string{
-				"1.0.0",
-				"1.0.0",
-				"2.0.0",
+				`"1.0.0"`,
+				`"1.0.0"`,
+				`"2.0.0"`,
 			},
 			expect: expect{
 				err: false,
@@ -565,12 +580,21 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 		{
 			description: "Ambiguous",
 			in: []string{
-				"1.0.0",
-				"1.0.0+1",
+				`"1.0.0"`,
+				`"1.0.0+1"`,
 			},
 			expect: expect{
 				err: true,
 				max: nil,
+			},
+		},
+		{
+			// Ensure unquoted short strings are accepted; e.g. X.Y
+			description: "Unquoted/Short",
+			in:          []string{"4.8"},
+			expect: expect{
+				err: false,
+				max: mustParse("4.8"),
 			},
 		},
 	} {
@@ -579,7 +603,7 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 			for _, max := range tt.in {
 				properties = append(properties, &api.Property{
 					Type:  MaxOpenShiftVersionProperty,
-					Value: `"` + max + `"`, // Wrap in quotes so we don't break property marshaling
+					Value: max,
 				})
 			}
 
@@ -599,6 +623,28 @@ func TestMaxOpenShiftVersion(t *testing.T) {
 			}
 
 			require.Equal(t, tt.expect.max, max)
+		})
+	}
+}
+
+func TestNotCopiedSelector(t *testing.T) {
+	for _, tc := range []struct {
+		Labels  labels.Set
+		Matches bool
+	}{
+		{
+			Labels:  labels.Set{operatorsv1alpha1.CopiedLabelKey: ""},
+			Matches: false,
+		},
+		{
+			Labels:  labels.Set{},
+			Matches: true,
+		},
+	} {
+		t.Run(tc.Labels.String(), func(t *testing.T) {
+			selector, err := notCopiedSelector()
+			require.NoError(t, err)
+			require.Equal(t, tc.Matches, selector.Matches(tc.Labels))
 		})
 	}
 }

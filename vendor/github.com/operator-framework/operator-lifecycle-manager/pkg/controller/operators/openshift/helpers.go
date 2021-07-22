@@ -2,7 +2,6 @@ package openshift
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -190,12 +189,7 @@ func maxOpenShiftVersion(csv *operatorsv1alpha1.ClusterServiceVersion) (*semver.
 			continue
 		}
 
-		var value string
-		if err := json.Unmarshal([]byte(property.Value), &value); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
+		value := strings.Trim(property.Value, "\"")
 		if value == "" {
 			continue
 		}
@@ -203,6 +197,7 @@ func maxOpenShiftVersion(csv *operatorsv1alpha1.ClusterServiceVersion) (*semver.
 		version, err := semver.ParseTolerant(value)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
 
 		if max == nil {
@@ -241,11 +236,7 @@ func notCopiedSelector() (labels.Selector, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	selector := labels.NewSelector()
-	selector.Add(*requirement)
-
-	return selector, nil
+	return labels.NewSelector().Add(*requirement), nil
 }
 
 func olmOperatorRelatedObjects(ctx context.Context, cli client.Client, namespace string) ([]configv1.ObjectReference, error) {

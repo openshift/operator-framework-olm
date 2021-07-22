@@ -556,6 +556,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/lib/profile
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/proxy
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/scoped
+github.com/operator-framework/operator-lifecycle-manager/pkg/lib/server
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/signals
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/time
 github.com/operator-framework/operator-lifecycle-manager/pkg/metrics
@@ -572,20 +573,21 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/stor
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/version
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
-# github.com/operator-framework/operator-registry v1.13.6 => ./staging/operator-registry
+# github.com/operator-framework/operator-registry v1.17.5 => ./staging/operator-registry
 ## explicit
 github.com/operator-framework/operator-registry/cmd/configmap-server
 github.com/operator-framework/operator-registry/cmd/initializer
 github.com/operator-framework/operator-registry/cmd/opm
 github.com/operator-framework/operator-registry/cmd/opm/alpha
 github.com/operator-framework/operator-registry/cmd/opm/alpha/bundle
-github.com/operator-framework/operator-registry/cmd/opm/alpha/init
-github.com/operator-framework/operator-registry/cmd/opm/alpha/render
-github.com/operator-framework/operator-registry/cmd/opm/alpha/serve
-github.com/operator-framework/operator-registry/cmd/opm/alpha/validate
+github.com/operator-framework/operator-registry/cmd/opm/alpha/list
 github.com/operator-framework/operator-registry/cmd/opm/index
+github.com/operator-framework/operator-registry/cmd/opm/init
 github.com/operator-framework/operator-registry/cmd/opm/registry
+github.com/operator-framework/operator-registry/cmd/opm/render
 github.com/operator-framework/operator-registry/cmd/opm/root
+github.com/operator-framework/operator-registry/cmd/opm/serve
+github.com/operator-framework/operator-registry/cmd/opm/validate
 github.com/operator-framework/operator-registry/cmd/opm/version
 github.com/operator-framework/operator-registry/cmd/registry-server
 github.com/operator-framework/operator-registry/internal/action

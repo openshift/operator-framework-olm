@@ -23,37 +23,59 @@ spec:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
     spec:
       serviceAccountName: olm-operator-serviceaccount
+      volumes:
+        - name: srv-cert
+          secret:
+            secretName: catalog-operator-serving-cert
+        - name: profile-collector-cert
+          secret:
+            secretName: catalog-operator-serving-cert
+        - name: serving-cert
+          secret:
+            secretName: catalog-operator-serving-cert
       containers:
         - name: catalog-operator
+          volumeMounts:
+            - name: srv-cert
+              mountPath: "/srv-cert"
+              readOnly: true
+            - name: profile-collector-cert
+              mountPath: "/profile-collector-cert"
+              readOnly: true
+            - mountPath: /var/run/secrets/serving-cert
+              name: serving-cert
           command:
             - /bin/catalog
           args:
             - '-namespace'
             - openshift-marketplace
             - -configmapServerImage=quay.io/operator-framework/configmap-operator-registry:latest
+            - -opmImage=quay.io/operator-framework/configmap-operator-registry:latest
             - -util-image
             - quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
             - -writeStatusName
             - operator-lifecycle-manager-catalog
-            - -tls-cert
-            - /var/run/secrets/serving-cert/tls.crt
-            - -tls-key
-            - /var/run/secrets/serving-cert/tls.key
+            - --tls-cert
+            - /srv-cert/tls.crt
+            - --tls-key
+            - /srv-cert/tls.key
+            - --client-ca
+            - /profile-collector-cert/tls.crt
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
-            - containerPort: 8081
+            - containerPort: 8443
               name: metrics
-              protocol: TCP
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 8080
+              port: 8443
+              scheme: HTTPS
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 8080
+              port: 8443
+              scheme: HTTPS
           terminationMessagePolicy: FallbackToLogsOnError
           resources:
             requests:
@@ -62,9 +84,6 @@ spec:
           env:
             - name: RELEASE_VERSION
               value: "0.0.1-snapshot"
-          volumeMounts:
-            - mountPath: /var/run/secrets/serving-cert
-              name: serving-cert
       nodeSelector:
         kubernetes.io/os: linux
         node-role.kubernetes.io/master: ""
@@ -81,7 +100,3 @@ spec:
           operator: Exists
           tolerationSeconds: 120
       priorityClassName: system-cluster-critical
-      volumes:
-        - name: serving-cert
-          secret:
-            secretName: catalog-operator-serving-cert
