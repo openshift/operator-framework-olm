@@ -103,3 +103,31 @@ spec:
   selector:
     matchLabels:
       app: catalog-operator
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: catalogs
+  namespace: openshift-marketplace
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+spec:
+  endpoints:
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      interval: 30s
+      metricRelabelings:
+        - action: drop
+          regex: etcd_(debugging|disk|request|server).*
+          sourceLabels:
+            - __name__
+      port: metrics
+      scheme: http
+  jobLabel: component
+  namespaceSelector:
+    matchNames:
+      - openshift-marketplace
+  selector:
+    matchExpressions:
+      - { key: olm.catalogSource, operator: Exists }

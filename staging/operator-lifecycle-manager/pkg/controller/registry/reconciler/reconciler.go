@@ -122,6 +122,10 @@ func Pod(source *v1alpha1.CatalogSource, name string, image string, saName strin
 							Name:          "grpc",
 							ContainerPort: 50051,
 						},
+						{
+							Name:          "metrics",
+							ContainerPort: 9090,
+						},
 					},
 					ReadinessProbe: &v1.Probe{
 						Handler: v1.Handler{
