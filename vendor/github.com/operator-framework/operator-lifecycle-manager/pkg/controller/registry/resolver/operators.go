@@ -303,7 +303,7 @@ func NewOperatorFromBundle(bundle *api.Bundle, startingCSV string, sourceKey reg
 		return op, nil
 	}
 
-	return &Operator{
+	o := &Operator{
 		name:         bundle.CsvName,
 		replaces:     bundle.Replaces,
 		version:      version,
@@ -313,7 +313,18 @@ func NewOperatorFromBundle(bundle *api.Bundle, startingCSV string, sourceKey reg
 		sourceInfo:   sourceInfo,
 		properties:   properties,
 		skips:        bundle.Skips,
-	}, nil
+	}
+
+	if !o.Inline() {
+		// TODO: Extract any necessary information from the Bundle
+		// up-front and remove the bundle field altogether. For now,
+		// take the easy opportunity to save heap space by discarding
+		// two of the worst offenders.
+		bundle.CsvJson = ""
+		bundle.Object = nil
+	}
+
+	return o, nil
 }
 
 func NewOperatorFromV1Alpha1CSV(csv *v1alpha1.ClusterServiceVersion) (*Operator, error) {
@@ -359,6 +370,10 @@ func NewOperatorFromV1Alpha1CSV(csv *v1alpha1.ClusterServiceVersion) (*Operator,
 		sourceInfo:   &ExistingOperator,
 		properties:   properties,
 	}, nil
+}
+
+func (o *Operator) Name() string {
+	return o.name
 }
 
 func (o *Operator) ProvidedAPIs() APISet {
@@ -409,6 +424,10 @@ func (o *Operator) Bundle() *api.Bundle {
 
 func (o *Operator) Version() *semver.Version {
 	return o.version
+}
+
+func (o *Operator) SemverRange() (semver.Range, error) {
+	return semver.ParseRange(o.Bundle().SkipRange)
 }
 
 func (o *Operator) Inline() bool {
