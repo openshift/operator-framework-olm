@@ -7,6 +7,8 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 )
@@ -27,6 +29,26 @@ func getRolloutStrategy(ha bool) *appsv1.RollingUpdateDeployment {
 	return &appsv1.RollingUpdateDeployment{
 		MaxUnavailable: &intStr,
 		MaxSurge:       &intStr,
+	}
+}
+
+func getAntiAffinityConfig(ha bool) *corev1.Affinity {
+	if !ha {
+		return &corev1.Affinity{}
+	}
+	return &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+				{
+					TopologyKey: "kubernetes.io/hostname",
+					LabelSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "packageserver",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -67,6 +89,13 @@ func ensureCSV(log logr.Logger, image string, csv *olmv1alpha1.ClusterServiceVer
 		modified = true
 	}
 
+	expectedAffinityConfiguration := getAntiAffinityConfig(highlyAvailableMode)
+	if !reflect.DeepEqual(deployment.Template.Spec.Affinity, expectedAffinityConfiguration) {
+		log.Info("updating the pod anti-affinity configuration")
+		deployment.Template.Spec.Affinity = expectedAffinityConfiguration
+		modified = true
+	}
+
 	if modified {
 		log.V(3).Info("csv has been modified")
 		csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec = *deployment
@@ -84,7 +113,7 @@ func validateCSV(log logr.Logger, csv *olmv1alpha1.ClusterServiceVersion) bool {
 
 	deployment := &deploymentSpecs[0].Spec
 	if len(deployment.Template.Spec.Containers) != 1 {
-		log.Info("csv contains more than one containers")
+		log.Info("csv contains more than one container")
 		return false
 	}
 

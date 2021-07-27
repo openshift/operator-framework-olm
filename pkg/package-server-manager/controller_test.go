@@ -8,6 +8,8 @@ import (
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -70,7 +72,11 @@ func intOrStr(val int) *intstr.IntOrString {
 	return &tmp
 }
 
-func newTestCSV(replicas *int32, strategy *appsv1.RollingUpdateDeployment) *olmv1alpha1.ClusterServiceVersion {
+func newTestCSV(
+	replicas *int32,
+	strategy *appsv1.RollingUpdateDeployment,
+	affinity *corev1.Affinity,
+) *olmv1alpha1.ClusterServiceVersion {
 	csv, err := manifests.NewPackageServerCSV(
 		manifests.WithName(name),
 		manifests.WithNamespace(namespace),
@@ -79,11 +85,18 @@ func newTestCSV(replicas *int32, strategy *appsv1.RollingUpdateDeployment) *olmv
 		return nil
 	}
 	deployment := csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec
+	deployment.Template.Spec.Affinity = affinity
 	deployment.Replicas = replicas
 	deployment.Strategy.RollingUpdate = strategy
 	csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec = deployment
 
 	return csv
+}
+
+func newPodAffinity(antiAffinity *corev1.PodAntiAffinity) *corev1.Affinity {
+	return &corev1.Affinity{
+		PodAntiAffinity: antiAffinity,
+	}
 }
 
 func getImageFromManifest() string {
@@ -98,6 +111,18 @@ func getImageFromManifest() string {
 }
 
 func TestEnsureCSV(t *testing.T) {
+	defaultAffinity := newPodAffinity(&corev1.PodAntiAffinity{
+		RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+			{
+				TopologyKey: "kubernetes.io/hostname",
+				LabelSelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "packageserver",
+					},
+				},
+			},
+		},
+	})
 	defaultRollout := &appsv1.RollingUpdateDeployment{
 		MaxUnavailable: intOrStr(defaultRolloutCount),
 		MaxSurge:       intOrStr(defaultRolloutCount),
@@ -119,43 +144,63 @@ func TestEnsureCSV(t *testing.T) {
 			name:            "Modified/HighlyAvailable/CorrectReplicasIncorrectRolling",
 			want:            true,
 			highlyAvailable: true,
-			inputCSV:        newTestCSV(defaultReplicas, emptyRollout),
-			expectedCSV:     newTestCSV(defaultReplicas, defaultRollout),
+			inputCSV:        newTestCSV(defaultReplicas, emptyRollout, defaultAffinity),
+			expectedCSV:     newTestCSV(defaultReplicas, defaultRollout, defaultAffinity),
 		},
 		{
 			name:            "Modified/HighlyAvailable/IncorrectReplicasCorrectRolling",
 			want:            true,
 			highlyAvailable: true,
-			inputCSV:        newTestCSV(singleReplicas, defaultRollout),
-			expectedCSV:     newTestCSV(defaultReplicas, defaultRollout),
+			inputCSV:        newTestCSV(singleReplicas, defaultRollout, defaultAffinity),
+			expectedCSV:     newTestCSV(defaultReplicas, defaultRollout, defaultAffinity),
+		},
+		{
+			name:            "Modified/HighlyAvailable/IncorrectPodAntiAffinity",
+			want:            true,
+			highlyAvailable: true,
+			inputCSV: newTestCSV(singleReplicas, defaultRollout, newPodAffinity(&corev1.PodAntiAffinity{
+				PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
+					{
+						Weight: 1,
+					},
+				},
+			})),
+			expectedCSV: newTestCSV(defaultReplicas, defaultRollout, defaultAffinity),
 		},
 		{
 			name:            "NotModified/HighlyAvailable",
 			want:            false,
 			highlyAvailable: true,
-			inputCSV:        newTestCSV(defaultReplicas, defaultRollout),
-			expectedCSV:     newTestCSV(defaultReplicas, defaultRollout),
+			inputCSV:        newTestCSV(defaultReplicas, defaultRollout, defaultAffinity),
+			expectedCSV:     newTestCSV(defaultReplicas, defaultRollout, defaultAffinity),
 		},
 		{
 			name:            "Modified/SingleReplica/CorrectReplicasIncorrectRolling",
 			want:            true,
 			highlyAvailable: false,
-			inputCSV:        newTestCSV(singleReplicas, defaultRollout),
-			expectedCSV:     newTestCSV(singleReplicas, emptyRollout),
+			inputCSV:        newTestCSV(singleReplicas, defaultRollout, &corev1.Affinity{}),
+			expectedCSV:     newTestCSV(singleReplicas, emptyRollout, &corev1.Affinity{}),
 		},
 		{
 			name:            "Modified/SingleReplica/IncorrectReplicasCorrectRolling",
 			want:            true,
 			highlyAvailable: false,
-			inputCSV:        newTestCSV(defaultReplicas, emptyRollout),
-			expectedCSV:     newTestCSV(singleReplicas, emptyRollout),
+			inputCSV:        newTestCSV(defaultReplicas, emptyRollout, &corev1.Affinity{}),
+			expectedCSV:     newTestCSV(singleReplicas, emptyRollout, &corev1.Affinity{}),
+		},
+		{
+			name:            "Modified/SingleReplica/IncorrectPodAntiAffinity",
+			want:            true,
+			highlyAvailable: false,
+			inputCSV:        newTestCSV(singleReplicas, emptyRollout, defaultAffinity),
+			expectedCSV:     newTestCSV(singleReplicas, emptyRollout, &corev1.Affinity{}),
 		},
 		{
 			name:            "NotModified/SingleReplica",
 			want:            false,
 			highlyAvailable: false,
-			inputCSV:        newTestCSV(singleReplicas, emptyRollout),
-			expectedCSV:     newTestCSV(singleReplicas, emptyRollout),
+			inputCSV:        newTestCSV(singleReplicas, emptyRollout, &corev1.Affinity{}),
+			expectedCSV:     newTestCSV(singleReplicas, emptyRollout, &corev1.Affinity{}),
 		},
 	}
 
