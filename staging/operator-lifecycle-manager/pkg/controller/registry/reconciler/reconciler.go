@@ -2,14 +2,19 @@
 package reconciler
 
 import (
+	"fmt"
+	"hash/fnv"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	controllerclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
+	hashutil "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/util/hash"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
 )
@@ -19,6 +24,13 @@ type nowFunc func() metav1.Time
 const (
 	// CatalogSourceLabelKey is the key for a label containing a CatalogSource name.
 	CatalogSourceLabelKey string = "olm.catalogSource"
+	// RedHatCatalogAnnotationKey is the key of an annotation in default catalogsources
+	RedHatCatalogAnnotationKey string = "operatorframework.io/managed-by"
+	// RedHatCatalogAnnotationValue is the value of an annotation in default catalogsources
+	RedHatCatalogAnnotationValue string = "marketplace-operator"
+	// RedHatCatalogPriorityClass is the value of selected priority class for default catalogsources
+	RedHatCatalogPriorityClass string = "system-cluster-critical"
+	PodHashLabelKey                   = "olm.pod-spec-hash"
 )
 
 // RegistryEnsurer describes methods for ensuring a registry exists.
@@ -160,5 +172,22 @@ func Pod(source *v1alpha1.CatalogSource, name string, image string, saName strin
 			ServiceAccountName: saName,
 		},
 	}
+
+	// Check if this catalogsource is a default one via annotation
+	if annotations[RedHatCatalogAnnotationKey] == RedHatCatalogAnnotationValue {
+		pod.Spec.PriorityClassName = RedHatCatalogPriorityClass
+	}
+
+	// Add PodSpec hash
+	// This hash info will be used to detect PodSpec changes
+	labels[PodHashLabelKey] = HashPodSpec(pod.Spec)
+	pod.SetLabels(labels)
 	return pod
+}
+
+// HashPodSpec calculates a hash given a copy of the pod spec
+func HashPodSpec(spec corev1.PodSpec) string {
+	hasher := fnv.New32a()
+	hashutil.DeepHashObject(hasher, &spec)
+	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))
 }

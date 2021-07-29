@@ -186,17 +186,34 @@ func (c *GrpcRegistryReconciler) currentPodsWithCorrectImage(source grpcCatalogS
 	return found
 }
 
+func (c *GrpcRegistryReconciler) currentPodsWithCorrectHash(source grpcCatalogSourceDecorator, saName string) []*corev1.Pod {
+	pods, err := c.Lister.CoreV1().PodLister().Pods(source.GetNamespace()).List(labels.SelectorFromValidatedSet(source.Labels()))
+	if err != nil {
+		logrus.WithError(err).Warn("couldn't find pod in cache")
+		return nil
+	}
+	found := []*corev1.Pod{}
+	newPod := source.Pod(saName)
+	for _, p := range pods {
+		if PodHashMatch(p, newPod) {
+			found = append(found, p)
+		}
+	}
+	return found
+}
+
 // EnsureRegistryServer ensures that all components of registry server are up to date.
 func (c *GrpcRegistryReconciler) EnsureRegistryServer(catalogSource *v1alpha1.CatalogSource) error {
 	source := grpcCatalogSourceDecorator{catalogSource}
 
 	// if service status is nil, we force create every object to ensure they're created the first time
 	overwrite := source.Status.RegistryServiceStatus == nil
-	// recreate the pod if no existing pod is serving the latest image
-	overwritePod := overwrite || len(c.currentPodsWithCorrectImage(source)) == 0
 
 	//TODO: if any of these error out, we should write a status back (possibly set RegistryServiceStatus to nil so they get recreated)
 	sa, err := c.ensureSA(source)
+	// recreate the pod if no existing pod is serving the latest image or correct hash
+	overwritePod := overwrite || len(c.currentPodsWithCorrectImage(source)) == 0 || len(c.currentPodsWithCorrectHash(source, sa.GetName())) == 0
+
 	if err != nil && !k8serror.IsAlreadyExists(err) {
 		return errors.Wrapf(err, "error ensuring service account: %s", source.GetName())
 	}
@@ -477,4 +494,30 @@ func (c *GrpcRegistryReconciler) podFailed(pod *corev1.Pod) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+// PodHashMatch will check the hash info in existing pod to ensure its
+// hash info matches the desired Service's hash.
+func PodHashMatch(existing, new *corev1.Pod) bool {
+	labels := existing.GetLabels()
+	newLabels := new.GetLabels()
+	if len(labels) == 0 || len(newLabels) == 0 {
+		return false
+	}
+
+	existingPodSpecHash, ok := labels[PodHashLabelKey]
+	if !ok {
+		return false
+	}
+
+	newPodSpecHash, ok := newLabels[PodHashLabelKey]
+	if !ok {
+		return false
+	}
+
+	if existingPodSpecHash != newPodSpecHash {
+		return false
+	}
+
+	return true
 }
