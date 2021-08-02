@@ -37,6 +37,7 @@ require (
 	sigs.k8s.io/kind v0.11.1
 )
 
+
 replace (
 	// From staging/operator-registry
 	// Currently on a fork for two issues:
