@@ -71,16 +71,16 @@ $(OLM_CMDS):
 
 $(PSM_CMD): FORCE
 	go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $(PSM_CMD) $(ROOT_PKG)/cmd/package-server-manager
-	
+
 $(COLLECT_PROFILES_CMD): FORCE
 	go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $(COLLECT_PROFILES_CMD) $(ROOT_PKG)/cmd/collect-profiles
 
 .PHONY: cross
-cross: version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
+cross: version_flags=-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'
 cross:
 ifeq ($(shell go env GOARCH),amd64)
-	GOOS=darwin CC=o64-clang CXX=o64-clang++ CGO_ENABLED=1 go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o "bin/darwin-amd64-opm" --ldflags "-extld=o64-clang" $(REGISTRY_PKG)/cmd/opm
-	GOOS=windows CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ CGO_ENABLED=1 go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o "bin/windows-amd64-opm" --ldflags "-extld=x86_64-w64-mingw32-gcc" -buildmode=exe $(REGISTRY_PKG)/cmd/opm
+	GOOS=darwin CC=o64-clang CXX=o64-clang++ CGO_ENABLED=1 go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o "bin/darwin-amd64-opm" --ldflags "-extld=o64-clang $(version_flags)" $(REGISTRY_PKG)/cmd/opm
+	GOOS=windows CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ CGO_ENABLED=1 go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o "bin/windows-amd64-opm" --ldflags "-extld=x86_64-w64-mingw32-gcc $(version_flags)" -buildmode=exe $(REGISTRY_PKG)/cmd/opm
 endif
 
 build/olm-container:
