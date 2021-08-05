@@ -81,7 +81,7 @@ spec:
       name: quay.io/operator-framework/configmap-operator-registry:latest
 EOF
 
-cat << EOF > manifests/0000_50_olm-06-psm-operator.deployment.yaml
+cat << EOF > manifests/0000_50_olm_06-psm-operator.deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -267,7 +267,7 @@ spec:
             imagePullPolicy: IfNotPresent
             command:
             - bin/collect-profiles
-            args: 
+            args:
             - -n
             - openshift-operator-lifecycle-manager
             - --config-mount-path
