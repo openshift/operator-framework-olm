@@ -65,6 +65,7 @@ ${YQ} write --inplace -s scripts/olm-deployment.patch.yaml manifests/0000_50_olm
 ${YQ} write --inplace -s scripts/catalog-deployment.patch.yaml manifests/0000_50_olm_08-catalog-operator.deployment.yaml
 ${YQ} write --inplace -s scripts/packageserver-deployment.patch.yaml manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml
 mv manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml pkg/manifests/csv.yaml
+cp scripts/packageserver-pdb.yaml manifests/0000_50_olm_00-packageserver.pdb.yaml
 
 cat << EOF > manifests/image-references
 kind: ImageStream
