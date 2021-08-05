@@ -536,6 +536,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/grpc
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/reconciler
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver
+github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/cache
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/projection
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver
 github.com/operator-framework/operator-lifecycle-manager/pkg/feature
