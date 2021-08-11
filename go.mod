@@ -22,10 +22,10 @@ require (
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.6.2
-	k8s.io/api v0.22.0-rc.0
-	k8s.io/apimachinery v0.22.0-rc.0
-	k8s.io/client-go v0.22.0-rc.0
-	k8s.io/code-generator v0.22.0-rc.0
+	k8s.io/api v0.22.0
+	k8s.io/apimachinery v0.22.0
+	k8s.io/client-go v0.22.0
+	k8s.io/code-generator v0.22.0
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d
 	k8s.io/utils v0.0.0-20210707171843-4b05e18ac7d9
 	sigs.k8s.io/controller-runtime v0.9.2
