@@ -2426,6 +2426,9 @@ const (
 	PriorityClassKind         = "PriorityClass"
 	VerticalPodAutoscalerKind = "VerticalPodAutoscaler"
 	ConsoleYAMLSampleKind     = "ConsoleYAMLSample"
+	ConsoleQuickStartKind     = "ConsoleQuickStart"
+	ConsoleCLIDownloadKind    = "ConsoleCLIDownload"
+	ConsoleLinkKind           = "ConsoleLink"
 )
 
 var supportedKinds = map[string]struct{}{
@@ -2435,6 +2438,9 @@ var supportedKinds = map[string]struct{}{
 	PriorityClassKind:         {},
 	VerticalPodAutoscalerKind: {},
 	ConsoleYAMLSampleKind:     {},
+	ConsoleQuickStartKind:     {},
+	ConsoleCLIDownloadKind:    {},
+	ConsoleLinkKind:           {},
 }
 
 // isSupported returns true if OLM supports this type of CustomResource.
