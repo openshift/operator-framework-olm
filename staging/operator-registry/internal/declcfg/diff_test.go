@@ -20,6 +20,7 @@ func init() {
 func TestDiffLatest(t *testing.T) {
 	type spec struct {
 		name      string
+		g         *DiffGenerator
 		oldCfg    DeclarativeConfig
 		newCfg    DeclarativeConfig
 		expCfg    DeclarativeConfig
@@ -31,6 +32,7 @@ func TestDiffLatest(t *testing.T) {
 			name:   "NoDiff/Empty",
 			oldCfg: DeclarativeConfig{},
 			newCfg: DeclarativeConfig{},
+			g:      &DiffGenerator{},
 			expCfg: DeclarativeConfig{},
 		},
 		{
@@ -77,6 +79,7 @@ func TestDiffLatest(t *testing.T) {
 					},
 				},
 			},
+			g:      &DiffGenerator{},
 			expCfg: DeclarativeConfig{},
 		},
 		{
@@ -123,6 +126,7 @@ func TestDiffLatest(t *testing.T) {
 					},
 				},
 			},
+			g:      &DiffGenerator{},
 			expCfg: DeclarativeConfig{},
 		},
 		{
@@ -170,6 +174,7 @@ func TestDiffLatest(t *testing.T) {
 					},
 				},
 			},
+			g: &DiffGenerator{},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
@@ -304,6 +309,7 @@ func TestDiffLatest(t *testing.T) {
 					},
 				},
 			},
+			g: &DiffGenerator{},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
@@ -420,6 +426,7 @@ func TestDiffLatest(t *testing.T) {
 					},
 				},
 			},
+			g: &DiffGenerator{},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
@@ -501,6 +508,7 @@ func TestDiffLatest(t *testing.T) {
 					},
 				},
 			},
+			g: &DiffGenerator{},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
@@ -607,6 +615,7 @@ func TestDiffLatest(t *testing.T) {
 					},
 				},
 			},
+			g: &DiffGenerator{},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
@@ -725,6 +734,7 @@ func TestDiffLatest(t *testing.T) {
 					},
 				},
 			},
+			g: &DiffGenerator{},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
@@ -826,6 +836,7 @@ func TestDiffLatest(t *testing.T) {
 					},
 				},
 			},
+			g: &DiffGenerator{},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
@@ -942,6 +953,7 @@ func TestDiffLatest(t *testing.T) {
 					},
 				},
 			},
+			g: &DiffGenerator{},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
@@ -993,7 +1005,7 @@ func TestDiffLatest(t *testing.T) {
 			newModel, err := ConvertToModel(s.newCfg)
 			require.NoError(t, err)
 
-			outputModel, err := Diff(oldModel, newModel)
+			outputModel, err := s.g.Run(oldModel, newModel)
 			s.assertion(t, err)
 
 			outputCfg := ConvertFromModel(outputModel)
@@ -1005,6 +1017,7 @@ func TestDiffLatest(t *testing.T) {
 func TestDiffHeadsOnly(t *testing.T) {
 	type spec struct {
 		name      string
+		g         *DiffGenerator
 		newCfg    DeclarativeConfig
 		expCfg    DeclarativeConfig
 		assertion require.ErrorAssertionFunc
@@ -1014,6 +1027,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 		{
 			name:   "NoDiff/Empty",
 			newCfg: DeclarativeConfig{},
+			g:      &DiffGenerator{},
 			expCfg: DeclarativeConfig{},
 		},
 		{
@@ -1039,6 +1053,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 					},
 				},
 			},
+			g: &DiffGenerator{},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
@@ -1152,6 +1167,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 					},
 				},
 			},
+			g: &DiffGenerator{},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
@@ -1202,6 +1218,97 @@ func TestDiffHeadsOnly(t *testing.T) {
 				},
 			},
 		},
+		{
+			// Testing SkipDependencies only really makes sense in heads-only mode,
+			// since new dependencies are always added.
+			name: "HasDiff/SkipDependencies",
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v0.9.1"},
+						{Name: "etcd.v0.9.2", Replaces: "etcd.v0.9.1"},
+					}},
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackageRequired("etcd", "<=0.9.1"),
+							property.MustBuildPackage("foo", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.1",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildGVK("etcd.database.coreos.com", "v1beta2", "EtcdBackup"),
+							property.MustBuildPackage("etcd", "0.9.1"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.2",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildGVK("etcd.database.coreos.com", "v1beta2", "EtcdBackup"),
+							property.MustBuildPackage("etcd", "0.9.2"),
+						},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				SkipDependencies: true,
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v0.9.2", Replaces: "etcd.v0.9.1"},
+					}},
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.2",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildGVK("etcd.database.coreos.com", "v1beta2", "EtcdBackup"),
+							property.MustBuildPackage("etcd", "0.9.2"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.1.0"),
+							property.MustBuildPackageRequired("etcd", "<=0.9.1"),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, s := range specs {
@@ -1213,7 +1320,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 			newModel, err := ConvertToModel(s.newCfg)
 			require.NoError(t, err)
 
-			outputModel, err := Diff(model.Model{}, newModel)
+			outputModel, err := s.g.Run(model.Model{}, newModel)
 			s.assertion(t, err)
 
 			outputCfg := ConvertFromModel(outputModel)
