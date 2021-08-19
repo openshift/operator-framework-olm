@@ -587,6 +587,10 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
 # github.com/operator-framework/operator-registry v1.17.5 => ./staging/operator-registry
 ## explicit
+github.com/operator-framework/operator-registry/alpha/action
+github.com/operator-framework/operator-registry/alpha/declcfg
+github.com/operator-framework/operator-registry/alpha/model
+github.com/operator-framework/operator-registry/alpha/property
 github.com/operator-framework/operator-registry/cmd/configmap-server
 github.com/operator-framework/operator-registry/cmd/initializer
 github.com/operator-framework/operator-registry/cmd/opm
@@ -604,10 +608,6 @@ github.com/operator-framework/operator-registry/cmd/opm/serve
 github.com/operator-framework/operator-registry/cmd/opm/validate
 github.com/operator-framework/operator-registry/cmd/opm/version
 github.com/operator-framework/operator-registry/cmd/registry-server
-github.com/operator-framework/operator-registry/internal/action
-github.com/operator-framework/operator-registry/internal/declcfg
-github.com/operator-framework/operator-registry/internal/model
-github.com/operator-framework/operator-registry/internal/property
 github.com/operator-framework/operator-registry/pkg/api
 github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1
 github.com/operator-framework/operator-registry/pkg/client
