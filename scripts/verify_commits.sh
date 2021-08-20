@@ -18,7 +18,7 @@ function verify_staging_sync() {
     local staging_dir="staging/${remote}"
 
     local outside_staging
-    outside_staging="$(git show --name-only "${downstream_commit}" -- ":!${staging_dir}" ':!vendor' ':!manifests')"
+    outside_staging="$(git show --name-only "${downstream_commit}" -- ":!${staging_dir}" ':!vendor' ':!manifests' ':!go.sum' ':!go.mod')"
     if [[ -n "${outside_staging}" ]]; then
         err "downstream staging commit ${downstream_commit} changes files outside of ${staging_dir}, vendor, and manifests directories"
         err "${outside_staging}"
@@ -36,7 +36,6 @@ function verify_downstream_only() {
         err "downstream non-staging commit ${downstream_commit} changes staging"
         err "${inside_staging}"
         err "only staging commits (i.e. from an upstream cherry-pick) may change staging"
-
         return 1
     fi
 }
@@ -58,7 +57,7 @@ function upstream_ref() {
         return 0
     fi
 
-    
+
     local invalid
     invalid=false
     if (( ${#upstream_repos[@]} != 1 )); then
