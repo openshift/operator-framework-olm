@@ -18,7 +18,7 @@ function verify_staging_sync() {
     local staging_dir="staging/${remote}"
 
     local outside_staging
-    outside_staging="$(git show --name-only "${downstream_commit}" -- ":!${staging_dir}" ':!vendor :!manifests')"
+    outside_staging="$(git show --name-only "${downstream_commit}" -- ":!${staging_dir}" ':!vendor' ':!manifests')"
     if [[ -n "${outside_staging}" ]]; then
         err "downstream staging commit ${downstream_commit} changes files outside of ${staging_dir}, vendor, and manifests directories"
         err "${outside_staging}"
@@ -60,16 +60,15 @@ function upstream_ref() {
 
     
     local invalid
+    invalid=false
     if (( ${#upstream_repos[@]} != 1 )); then
-        err "downstream staging commit ${downstream_commit} references an invalid number of repos:"
-        err "${upstream_repos[@]}"
+        err "downstream staging commit ${downstream_commit} references an invalid number of repos: ${#upstream_repos[@]}"
         err "staging commits must reference a single upstream repo"
         invalid=true
     fi
 
     if (( ${#upstream_commits[@]} != 1 )); then
-        err "downstream staging commit ${downstream_commit} references an invalid number of upstream commits:"
-        err "${upstream_commits[@]}"
+        err "downstream staging commit ${downstream_commit} references an invalid number of upstream commits: ${#upstream_commits[@]}"
         err "staging commits must reference a single upstream commit"
         invalid=true
     fi
@@ -121,7 +120,7 @@ function main() {
         info "verifying ${short}..."
         info "$(git log -n 1 "${commit}")"
 
-        mapfile -t sr < <(upstream_ref "${commit}" || exit 1)
+        sr=( $(upstream_ref "${commit}")  ) || exit 1
         if (( ${#sr[@]} < 2 )); then # the ref contains a tuple if the values were properly parsed from the commit message
             # couldn't find upstream cherry-pick reference in the commit message
             # assume it's downstream-only commit
