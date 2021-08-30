@@ -65,6 +65,7 @@ ${YQ} write --inplace -s scripts/olm-deployment.patch.yaml manifests/0000_50_olm
 ${YQ} write --inplace -s scripts/catalog-deployment.patch.yaml manifests/0000_50_olm_08-catalog-operator.deployment.yaml
 ${YQ} write --inplace -s scripts/packageserver-deployment.patch.yaml manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml
 mv manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml pkg/manifests/csv.yaml
+cp scripts/packageserver-pdb.yaml manifests/0000_50_olm_00-packageserver.pdb.yaml
 
 cat << EOF > manifests/image-references
 kind: ImageStream
@@ -81,7 +82,7 @@ spec:
       name: quay.io/operator-framework/configmap-operator-registry:latest
 EOF
 
-cat << EOF > manifests/0000_50_olm-06-psm-operator.deployment.yaml
+cat << EOF > manifests/0000_50_olm_06-psm-operator.deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -267,7 +268,7 @@ spec:
             imagePullPolicy: IfNotPresent
             command:
             - bin/collect-profiles
-            args: 
+            args:
             - -n
             - openshift-operator-lifecycle-manager
             - --config-mount-path

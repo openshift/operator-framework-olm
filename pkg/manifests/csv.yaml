@@ -141,6 +141,16 @@ spec:
                   - name: tmpfs
                     emptyDir: {}
                 priorityClassName: system-cluster-critical
+                affinity:
+                  podAntiAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                      - labelSelector:
+                          matchExpressions:
+                            - key: app
+                              operator: In
+                              values:
+                                - packageserver
+                        topologyKey: "kubernetes.io/hostname"
   maturity: alpha
   version: 0.18.3
   apiservicedefinitions:
