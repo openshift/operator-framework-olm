@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/operator-framework/operator-registry/pkg/client"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/http/httpproxy"
 	"golang.org/x/net/proxy"
@@ -17,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
+	"github.com/operator-framework/operator-registry/pkg/client"
 )
 
 type SourceMeta struct {
