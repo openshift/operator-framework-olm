@@ -124,6 +124,9 @@ e2e/operator-registry: ## Run e2e registry tests
 e2e/olm: ## Run e2e olm tests
 	$(MAKE) e2e WHAT=operator-lifecycle-manager
 
+e2e/ocp:
+	go test -v -mod=vendor -timeout 70m ./test/...
+
 .PHONY: vendor
 vendor:
 	go mod tidy
