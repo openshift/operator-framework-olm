@@ -576,6 +576,10 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apiserver
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apiserver/generic
+github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client
+github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned
+github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned/scheme
+github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned/typed/operators/v1
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/listers/operators/internalversion
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/openapi
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/provider
@@ -639,6 +643,7 @@ github.com/pbnjay/strptime
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 github.com/peterbourgon/diskv
 # github.com/pkg/errors v0.9.1
+## explicit
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
