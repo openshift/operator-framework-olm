@@ -517,6 +517,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha2
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v2
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/wrappers
+github.com/operator-framework/operator-lifecycle-manager/pkg/cmd/catalog
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/bundle
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/certs
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/errors
