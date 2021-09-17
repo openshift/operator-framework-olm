@@ -24,7 +24,7 @@ ROOT_PKG := github.com/openshift/operator-framework-olm
 
 COLLECT_PROFILES_CMD := $(addprefix bin/, collect-profiles)
 OPM := $(addprefix bin/, opm)
-OLM_CMDS  := $(shell go list -mod=vendor $(OLM_PKG)/cmd/...)
+OLM_CMDS := $(shell go list -mod=vendor $(OLM_PKG)/cmd/... | grep -v catalog) $(ROOT_PKG)/cmd/catalog
 PSM_CMD := $(addprefix bin/, psm)
 REGISTRY_CMDS  := $(addprefix bin/, $(shell ls staging/operator-registry/cmd | grep -v opm))
 # Phony prerequisite for targets that rely on the go build cache to determine staleness.
