@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -56,7 +57,7 @@ func NewOperatorStepResolver(lister operatorlister.OperatorLister, client versio
 		client:                 client,
 		kubeclient:             kubeclient,
 		globalCatalogNamespace: globalCatalogNamespace,
-		satResolver:            NewDefaultSatResolver(NewDefaultRegistryClientProvider(log, provider), lister.OperatorsV1alpha1().CatalogSourceLister(), log),
+		satResolver:            NewDefaultSatResolver(NewDefaultRegistryClientProvider(log, provider), lister.OperatorsV1alpha1().CatalogSourceLister(), log).withOpenShift(&cluster{cli: configv1client.New(kubeclient.Discovery().RESTClient())}),
 		log:                    log,
 	}
 }

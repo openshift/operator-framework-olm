@@ -14,33 +14,21 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver"
 )
 
-var openshiftCluster cluster
+func (r *SatResolver) withOpenShift(c *cluster) *SatResolver {
+	r.openshift = c
+	return r
+}
 
-func downstreamConstraints(entry *Operator) ([]solver.Constraint, error) {
-	clusterVersion, err := openshiftCluster.version()
-	if err != nil {
-		// We failed to lazy-load
-		return nil, err
+func (r *SatResolver) NewBundleInstallableFromOperator(o *Operator) (BundleInstallable, error) {
+	installable, err := NewBundleInstallableFromOperator(o)
+	if err != nil || r.openshift == nil {
+		return installable, err
 	}
 
-	max, err := maxOpenShiftVersion(entry)
-	if err != nil {
-		// All parsing errors should prohibit the entry from being installed
-		return []solver.Constraint{PrettyConstraint(
-			solver.Prohibited(),
-			fmt.Sprintf("invalid %q property: %s", openshift.MaxOpenShiftVersionProperty, err),
-		)}, nil // Don't bubble up err -- this allows resolution to continue
-	}
+	clusterConstraints, err := r.openshift.constraints(o)
+	installable.constraints = append(installable.constraints, clusterConstraints...)
 
-	if max == nil || max.GTE(clusterVersion) {
-		// No max version declared, don't prohibit
-		return nil, nil
-	}
-
-	return []solver.Constraint{PrettyConstraint(
-		solver.Prohibited(),
-		fmt.Sprintf("bundle incompatible with openshift cluster, %q < cluster version: (%d.%d < %d.%d)", openshift.MaxOpenShiftVersionProperty, max.Major, max.Minor, clusterVersion.Major, clusterVersion.Minor),
-	)}, nil
+	return installable, err
 }
 
 func maxOpenShiftVersion(entry *Operator) (*semver.Version, error) {
@@ -82,6 +70,10 @@ func maxOpenShiftVersion(entry *Operator) (*semver.Version, error) {
 }
 
 func desiredVersion(ctx context.Context, cli configv1client.ClusterVersionsGetter) (*semver.Version, error) {
+	if cli == nil {
+		return nil, fmt.Errorf("nil client")
+	}
+
 	var desired semver.Version
 	cv, err := cli.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
 	if err != nil { // "version" is the name of OpenShift's ClusterVersion singleton
@@ -136,4 +128,31 @@ func (c *cluster) version() (semver.Version, error) {
 	}
 
 	return ver, err
+}
+
+func (c *cluster) constraints(entry *Operator) ([]solver.Constraint, error) {
+	clusterVersion, err := c.version()
+	if err != nil {
+		// We failed to lazy-load
+		return nil, err
+	}
+
+	max, err := maxOpenShiftVersion(entry)
+	if err != nil {
+		// All parsing errors should prohibit the entry from being installed
+		return []solver.Constraint{PrettyConstraint(
+			solver.Prohibited(),
+			fmt.Sprintf("invalid %q property: %s", openshift.MaxOpenShiftVersionProperty, err),
+		)}, nil // Don't bubble up err -- this allows resolution to continue
+	}
+
+	if max == nil || max.GTE(clusterVersion) {
+		// No max version declared, don't prohibit
+		return nil, nil
+	}
+
+	return []solver.Constraint{PrettyConstraint(
+		solver.Prohibited(),
+		fmt.Sprintf("bundle incompatible with openshift cluster, %q < cluster version: (%d.%d < %d.%d)", openshift.MaxOpenShiftVersionProperty, max.Major, max.Minor, clusterVersion.Major, clusterVersion.Minor),
+	)}, nil
 }

@@ -80,11 +80,10 @@ func NewBundleInstallableFromOperator(o *Operator) (BundleInstallable, error) {
 			break
 		}
 	}
-	dc, err := downstreamConstraints(o)
 	return BundleInstallable{
 		identifier:  id,
-		constraints: append(constraints, dc...),
-	}, err
+		constraints: constraints,
+	}, nil
 }
 
 type GenericInstallable struct {

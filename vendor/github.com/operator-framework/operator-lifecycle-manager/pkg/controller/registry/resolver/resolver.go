@@ -25,8 +25,9 @@ type OperatorResolver interface {
 }
 
 type SatResolver struct {
-	cache OperatorCacheProvider
-	log   logrus.FieldLogger
+	cache     OperatorCacheProvider
+	log       logrus.FieldLogger
+	openshift *cluster
 }
 
 func NewDefaultSatResolver(rcp RegistryClientProvider, catsrcLister v1alpha1listers.CatalogSourceLister, log logrus.FieldLogger) *SatResolver {
@@ -321,7 +322,7 @@ func (r *SatResolver) getBundleInstallables(catalog registry.CatalogKey, bundleS
 			continue
 		}
 
-		bundleInstallable, err := NewBundleInstallableFromOperator(bundle)
+		bundleInstallable, err := r.NewBundleInstallableFromOperator(bundle)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -375,7 +376,7 @@ func (r *SatResolver) getBundleInstallables(catalog registry.CatalogKey, bundleS
 			// (after sorting) to remove all bundles that
 			// don't satisfy the dependency.
 			for _, b := range Filter(sortedBundles, d) {
-				i, err := NewBundleInstallableFromOperator(b)
+				i, err := r.NewBundleInstallableFromOperator(b)
 				if err != nil {
 					errs = append(errs, err)
 					continue
