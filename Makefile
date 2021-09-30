@@ -122,7 +122,7 @@ e2e/operator-registry: ## Run e2e registry tests
 	$(MAKE) e2e WHAT=operator-registry
 
 e2e/olm: ## Run e2e olm tests
-	$(MAKE) e2e WHAT=operator-lifecycle-manager
+	$(MAKE) e2e WHAT=operator-lifecycle-manager "GINKGO_OPTS := -flakeAttempts 3 -randomizeAllSpecs -v --timeout 120m"
 
 .PHONY: vendor
 vendor:
