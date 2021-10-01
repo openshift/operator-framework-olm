@@ -122,7 +122,7 @@ e2e/operator-registry: ## Run e2e registry tests
 	$(MAKE) e2e WHAT=operator-registry
 
 e2e/olm: ## Run e2e olm tests
-	$(MAKE) e2e WHAT=operator-lifecycle-manager "GINKGO_OPTS := -flakeAttempts 3 -randomizeAllSpecs -v --timeout 120m"
+	$(MAKE) e2e WHAT=operator-lifecycle-manager "GINKGO_OPTS := -randomizeAllSpecs -v --timeout 120m"
 
 .PHONY: vendor
 vendor:
@@ -165,4 +165,3 @@ verify:
 .PHONY: help
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
-
