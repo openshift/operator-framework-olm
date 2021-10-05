@@ -74,7 +74,7 @@ github.com/blang/semver/v4
 github.com/cespare/xxhash/v2
 # github.com/containerd/cgroups v0.0.0-20200531161412-0dbf7f05ba59
 github.com/containerd/cgroups/stats/v1
-# github.com/containerd/containerd v1.4.8 => github.com/ecordell/containerd v1.3.1-0.20200629153125-0ff1a1be2fa5
+# github.com/containerd/containerd v1.4.11 => github.com/ecordell/containerd v1.3.1-0.20200629153125-0ff1a1be2fa5
 github.com/containerd/containerd/archive
 github.com/containerd/containerd/archive/compression
 github.com/containerd/containerd/containers
