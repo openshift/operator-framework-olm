@@ -1,4 +1,5 @@
-// +build appengine
+//go:build !linux
+// +build !linux
 
 /*
  *
@@ -18,13 +19,9 @@
  *
  */
 
-package credentials
+package channelz
 
-import (
-	"net"
-)
-
-// WrapSyscallConn returns newConn on appengine.
-func WrapSyscallConn(rawConn, newConn net.Conn) net.Conn {
-	return newConn
+// GetSocketOption gets the socket option info of the conn.
+func GetSocketOption(c interface{}) *SocketOptionData {
+	return nil
 }

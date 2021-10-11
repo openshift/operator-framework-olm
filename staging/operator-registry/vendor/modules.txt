@@ -559,7 +559,12 @@ google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
 # google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a
 google.golang.org/genproto/googleapis/rpc/status
+<<<<<<< HEAD
 # google.golang.org/grpc v1.30.0
+=======
+google.golang.org/genproto/protobuf/field_mask
+# google.golang.org/grpc v1.41.0
+>>>>>>> 24e05d164 (bump grpc dependency to latest (#810))
 ## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -594,6 +599,11 @@ google.golang.org/grpc/internal/serviceconfig
 google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
+<<<<<<< HEAD
+=======
+google.golang.org/grpc/internal/transport/networktype
+google.golang.org/grpc/internal/xds/env
+>>>>>>> 24e05d164 (bump grpc dependency to latest (#810))
 google.golang.org/grpc/keepalive
 google.golang.org/grpc/metadata
 google.golang.org/grpc/peer
