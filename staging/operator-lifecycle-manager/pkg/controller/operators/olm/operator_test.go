@@ -54,8 +54,7 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/certs"
 	olmerrors "github.com/operator-framework/operator-lifecycle-manager/pkg/controller/errors"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/fakes"
+	resolvercache "github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/cache"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clientfake"
 	csvutility "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/csv"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/labeler"
@@ -199,7 +198,7 @@ func withStrategyResolver(strategyResolver install.StrategyResolverInterface) fa
 	}
 }
 
-func withAPIReconciler(apiReconciler resolver.APIIntersectionReconciler) fakeOperatorOption {
+func withAPIReconciler(apiReconciler APIIntersectionReconciler) fakeOperatorOption {
 	return func(config *fakeOperatorConfig) {
 		if apiReconciler != nil {
 			config.apiReconciler = apiReconciler
@@ -268,8 +267,8 @@ func NewFakeOperator(ctx context.Context, options ...fakeOperatorOption) (*Opera
 			clock:             &utilclock.RealClock{},
 			logger:            logrus.New(),
 			strategyResolver:  &install.StrategyResolver{},
-			apiReconciler:     resolver.APIIntersectionReconcileFunc(resolver.ReconcileAPIIntersection),
-			apiLabeler:        labeler.Func(resolver.LabelSetsFor),
+			apiReconciler:     APIIntersectionReconcileFunc(ReconcileAPIIntersection),
+			apiLabeler:        labeler.Func(LabelSetsFor),
 			restConfig:        &rest.Config{},
 		},
 		recorder: &record.FakeRecorder{},
@@ -327,10 +326,18 @@ func NewFakeOperator(ctx context.Context, options ...fakeOperatorOption) (*Opera
 	return op, nil
 }
 
-func buildFakeAPIIntersectionReconcilerThatReturns(result resolver.APIReconciliationResult) *fakes.FakeAPIIntersectionReconciler {
-	reconciler := &fakes.FakeAPIIntersectionReconciler{}
-	reconciler.ReconcileReturns(result)
-	return reconciler
+type fakeAPIIntersectionReconciler struct {
+	Result APIReconciliationResult
+}
+
+func (f fakeAPIIntersectionReconciler) Reconcile(resolvercache.APISet, OperatorGroupSurface, ...OperatorGroupSurface) APIReconciliationResult {
+	return f.Result
+}
+
+func buildFakeAPIIntersectionReconcilerThatReturns(result APIReconciliationResult) APIIntersectionReconciler {
+	return fakeAPIIntersectionReconciler{
+		Result: result,
+	}
 }
 
 func deployment(deploymentName, namespace, serviceAccountName string, templateAnnotations map[string]string) *appsv1.Deployment {
@@ -872,7 +879,7 @@ func TestTransitionCSV(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 	namespace := "ns"
 
-	apiHash, err := resolver.APIKeyToGVKHash(opregistry.APIKey{Group: "g1", Version: "v1", Kind: "c1"})
+	apiHash, err := resolvercache.APIKeyToGVKHash(opregistry.APIKey{Group: "g1", Version: "v1", Kind: "c1"})
 	require.NoError(t, err)
 
 	defaultOperatorGroup := &v1.OperatorGroup{
@@ -915,7 +922,7 @@ func TestTransitionCSV(t *testing.T) {
 		reason v1alpha1.ConditionReason
 	}
 	type operatorConfig struct {
-		apiReconciler resolver.APIIntersectionReconciler
+		apiReconciler APIIntersectionReconciler
 		apiLabeler    labeler.Labeler
 	}
 	type initial struct {
@@ -2572,7 +2579,7 @@ func TestTransitionCSV(t *testing.T) {
 						[]*apiextensionsv1.CustomResourceDefinition{},
 						v1alpha1.CSVPhaseSucceeded,
 					), defaultTemplateAnnotations), labels.Set{
-						resolver.APILabelKeyPrefix + apiHash: "provided",
+						APILabelKeyPrefix + apiHash: "provided",
 					}),
 					csvWithLabels(csvWithAnnotations(csv("csv1",
 						namespace,
@@ -2583,7 +2590,7 @@ func TestTransitionCSV(t *testing.T) {
 						[]*apiextensionsv1.CustomResourceDefinition{},
 						v1alpha1.CSVPhaseReplacing,
 					), defaultTemplateAnnotations), labels.Set{
-						resolver.APILabelKeyPrefix + apiHash: "provided",
+						APILabelKeyPrefix + apiHash: "provided",
 					}),
 					csvWithLabels(csvWithAnnotations(csv("csv2",
 						namespace,
@@ -2594,7 +2601,7 @@ func TestTransitionCSV(t *testing.T) {
 						[]*apiextensionsv1.CustomResourceDefinition{},
 						v1alpha1.CSVPhaseReplacing,
 					), defaultTemplateAnnotations), labels.Set{
-						resolver.APILabelKeyPrefix + apiHash: "provided",
+						APILabelKeyPrefix + apiHash: "provided",
 					}),
 				},
 				clientObjs: []runtime.Object{defaultOperatorGroup},
@@ -2776,7 +2783,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVNoneToFailed/InterOperatorGroupOwnerConflict",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.APIConflict)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(APIConflict)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csv("csv1",
@@ -2799,7 +2806,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVNoneToNone/AddAPIs",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.AddAPIs)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(AddAPIs)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csv("csv1",
@@ -2822,7 +2829,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVNoneToNone/RemoveAPIs",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.RemoveAPIs)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(RemoveAPIs)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csv("csv1",
@@ -2845,7 +2852,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVNoneToFailed/StaticOperatorGroup/AddAPIs",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.AddAPIs)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(AddAPIs)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csv("csv1",
@@ -2875,7 +2882,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVNoneToFailed/StaticOperatorGroup/RemoveAPIs",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.RemoveAPIs)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(RemoveAPIs)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csv("csv1",
@@ -2905,7 +2912,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVNoneToPending/StaticOperatorGroup/NoAPIConflict",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.NoAPIConflict)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(NoAPIConflict)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csv("csv1",
@@ -2935,7 +2942,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVFailedToPending/InterOperatorGroupOwnerConflict/NoAPIConflict",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.NoAPIConflict)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(NoAPIConflict)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csvWithStatusReason(csv("csv1",
@@ -2958,7 +2965,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVFailedToPending/StaticOperatorGroup/CannotModifyStaticOperatorGroupProvidedAPIs/NoAPIConflict",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.NoAPIConflict)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(NoAPIConflict)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csvWithStatusReason(csv("csv1",
@@ -2988,7 +2995,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVFailedToFailed/InterOperatorGroupOwnerConflict/APIConflict",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.APIConflict)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(APIConflict)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csvWithStatusReason(csv("csv1",
@@ -3011,7 +3018,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVFailedToFailed/StaticOperatorGroup/CannotModifyStaticOperatorGroupProvidedAPIs/AddAPIs",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.AddAPIs)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(AddAPIs)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csvWithStatusReason(csv("csv1",
@@ -3041,7 +3048,7 @@ func TestTransitionCSV(t *testing.T) {
 		},
 		{
 			name:   "SingleCSVFailedToFailed/StaticOperatorGroup/CannotModifyStaticOperatorGroupProvidedAPIs/RemoveAPIs",
-			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(resolver.RemoveAPIs)},
+			config: operatorConfig{apiReconciler: buildFakeAPIIntersectionReconcilerThatReturns(RemoveAPIs)},
 			initial: initial{
 				csvs: []runtime.Object{
 					csvWithAnnotations(csvWithStatusReason(csv("csv1",
@@ -3691,9 +3698,9 @@ func TestSyncOperatorGroups(t *testing.T) {
 		[]*apiextensionsv1.CustomResourceDefinition{crd},
 		[]*apiextensionsv1.CustomResourceDefinition{},
 		v1alpha1.CSVPhaseNone,
-	), labels.Set{resolver.APILabelKeyPrefix + "9f4c46c37bdff8d0": "provided"})
+	), labels.Set{APILabelKeyPrefix + "9f4c46c37bdff8d0": "provided"})
 
-	operatorCSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{corev1.EnvVar{
+	operatorCSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Env = []corev1.EnvVar{{
 		Name:  "OPERATOR_CONDITION_NAME",
 		Value: operatorCSV.GetName(),
 	}}
@@ -4631,7 +4638,7 @@ func TestOperatorGroupConditions(t *testing.T) {
 			},
 			expectError: true,
 			expectedConditions: []metav1.Condition{
-				metav1.Condition{
+				{
 					Type:    v1.OperatorGroupServiceAccountCondition,
 					Status:  metav1.ConditionTrue,
 					Reason:  v1.OperatorGroupServiceAccountReason,
@@ -4674,7 +4681,7 @@ func TestOperatorGroupConditions(t *testing.T) {
 			},
 			expectError: true,
 			expectedConditions: []metav1.Condition{
-				metav1.Condition{
+				{
 					Type:    v1.MutlipleOperatorGroupCondition,
 					Status:  metav1.ConditionTrue,
 					Reason:  v1.MultipleOperatorGroupsReason,

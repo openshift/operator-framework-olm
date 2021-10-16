@@ -2,10 +2,10 @@ GO := GOFLAGS="-mod=vendor" go
 CMDS := $(addprefix bin/, $(shell ls ./cmd | grep -v opm))
 OPM := $(addprefix bin/, opm)
 SPECIFIC_UNIT_TEST := $(if $(TEST),-run $(TEST),)
-PKG := github.com/operator-framework/operator-registry
-GIT_COMMIT := $(or $(SOURCE_GIT_COMMIT),$(shell git rev-parse --short HEAD))
-OPM_VERSION := $(or $(SOURCE_GIT_TAG),$(shell git describe --always --tags HEAD))
-BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+export PKG := github.com/operator-framework/operator-registry
+export GIT_COMMIT := $(or $(SOURCE_GIT_COMMIT),$(shell git rev-parse --short HEAD))
+export OPM_VERSION := $(or $(SOURCE_GIT_TAG),$(shell git describe --always --tags HEAD))
+export BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 
 # define characters
 null  :=
@@ -14,7 +14,7 @@ comma := ,
 # default to json1 for sqlite3
 TAGS := -tags=json1
 
-# Cluster to use for e2e testing 
+# Cluster to use for e2e testing
 CLUSTER ?= ""
 ifeq ($(CLUSTER), kind)
 # add kind to the list of tags
@@ -57,7 +57,7 @@ static: build
 
 .PHONY: unit
 unit:
-	$(GO) test -coverprofile=coverage.out $(SPECIFIC_UNIT_TEST) $(TAGS) $(TEST_RACE) -count=1 -v ./pkg/... ./internal/...
+	$(GO) test -coverprofile=coverage.out $(SPECIFIC_UNIT_TEST) $(TAGS) $(TEST_RACE) -count=1 -v ./pkg/... ./alpha/...
 
 .PHONY: sanity-check
 sanity-check:
@@ -113,4 +113,38 @@ clean:
 
 .PHONY: e2e
 e2e:
-	$(GO) run github.com/onsi/ginkgo/ginkgo --v --randomizeAllSpecs --randomizeSuites --race $(if $(TEST),-focus '$(TEST)') $(TAGS) ./test/e2e -- $(if $(SKIPTLS),-skip-tls true) 
+	$(GO) run github.com/onsi/ginkgo/ginkgo --v --randomizeAllSpecs --randomizeSuites --race $(if $(TEST),-focus '$(TEST)') $(TAGS) ./test/e2e -- $(if $(SKIPTLS),-skip-tls true)
+
+
+.PHONY: release
+export OPM_IMAGE_REPO ?= quay.io/operator-framework/opm
+export IMAGE_TAG ?= $(OPM_VERSION)
+export MAJ_MIN_IMAGE_OR_EMPTY ?= $(call tagged-or-empty,$(shell echo $(OPM_VERSION) | grep -Eo 'v[0-9]+\.[0-9]+'))
+export MAJ_IMAGE_OR_EMPTY ?= $(call tagged-or-empty,$(shell echo $(OPM_VERSION) | grep -Eo 'v[0-9]+'))
+# LATEST_TAG is the latest semver tag in HEAD. Used to deduce whether
+# OPM_VERSION is the new latest tag, or a prior minor/patch tag, below.
+# NOTE: this can only be relied upon if full git history is present.
+# An actions/checkout step must use "fetch-depth: 0", for example.
+LATEST_TAG := $(shell git tag -l | tr - \~ | sort -V | tr \~ - | tail -n1)
+# LATEST_IMAGE_OR_EMPTY is set to OPM_IMAGE_REPO:latest when OPM_VERSION
+# is not a prerelase tag and == LATEST_TAG, otherwise the empty string.
+# An empty string causes goreleaser to skip building the manifest image for latest,
+# which we do not want when cutting a non-latest release (old minor/patch tag).
+export LATEST_IMAGE_OR_EMPTY ?= $(shell \
+	echo $(OPM_VERSION) | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$$' \
+	&& [ "$(shell echo -e "$(OPM_VERSION)\n$(LATEST_TAG)" | sort -rV | head -n1)" == "$(OPM_VERSION)" ] \
+	&& echo "$(OPM_IMAGE_REPO):latest" || echo "")
+release: RELEASE_ARGS ?= release --rm-dist --snapshot
+release:
+	./scripts/fetch goreleaser 0.173.2 && ./bin/goreleaser $(RELEASE_ARGS)
+
+# tagged-or-empty returns $(OPM_IMAGE_REPO):$(1) when HEAD is assigned a non-prerelease semver tag,
+# otherwise the empty string. An empty string causes goreleaser to skip building
+# the manifest image for a trunk commit when it is not a release commit.
+# In other words, this function will return "" if the tag is not in vX.Y.Z format.
+define tagged-or-empty
+$(shell \
+	echo $(OPM_VERSION) | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$$' \
+	&& git describe --exact-match HEAD >/dev/null 2>&1 \
+	&& echo "$(OPM_IMAGE_REPO):$(1)" || echo "" )
+endef

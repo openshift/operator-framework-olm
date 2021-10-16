@@ -1,10 +1,7 @@
 package resolver
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/operator-framework/operator-registry/pkg/api"
@@ -18,8 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/fakes"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/cache"
 )
 
 // RequireStepsEqual is similar to require.ElementsMatch, but produces better error messages
@@ -32,7 +28,7 @@ func RequireStepsEqual(t *testing.T, expectedSteps, steps []*v1alpha1.Step) {
 	}
 }
 
-func csv(name, replaces string, ownedCRDs, requiredCRDs, ownedAPIServices, requiredAPIServices APISet, permissions, clusterPermissions []v1alpha1.StrategyDeploymentPermissions) *v1alpha1.ClusterServiceVersion {
+func csv(name, replaces string, ownedCRDs, requiredCRDs, ownedAPIServices, requiredAPIServices cache.APISet, permissions, clusterPermissions []v1alpha1.StrategyDeploymentPermissions) *v1alpha1.ClusterServiceVersion {
 	var singleInstance = int32(1)
 	strategy := v1alpha1.StrategyDetailsDeployment{
 		Permissions:        permissions,
@@ -155,7 +151,7 @@ func u(object runtime.Object) *unstructured.Unstructured {
 	return &unstructured.Unstructured{Object: unst}
 }
 
-func apiSetToGVK(crds, apis APISet) (out []*api.GroupVersionKind) {
+func apiSetToGVK(crds, apis cache.APISet) (out []*api.GroupVersionKind) {
 	out = make([]*api.GroupVersionKind, 0)
 	for a := range crds {
 		out = append(out, &api.GroupVersionKind{
@@ -172,91 +168,6 @@ func apiSetToGVK(crds, apis APISet) (out []*api.GroupVersionKind) {
 			Kind:    a.Kind,
 			Plural:  a.Plural,
 		})
-	}
-	return
-}
-
-func apiSetToDependencies(crds, apis APISet) (out []*api.Dependency) {
-	if len(crds)+len(apis) == 0 {
-		return nil
-	}
-	out = make([]*api.Dependency, 0)
-	for a := range crds {
-		val, err := json.Marshal(opregistry.GVKDependency{
-			Group:   a.Group,
-			Kind:    a.Kind,
-			Version: a.Version,
-		})
-		if err != nil {
-			panic(err)
-		}
-		out = append(out, &api.Dependency{
-			Type:  opregistry.GVKType,
-			Value: string(val),
-		})
-	}
-	for a := range apis {
-		val, err := json.Marshal(opregistry.GVKDependency{
-			Group:   a.Group,
-			Kind:    a.Kind,
-			Version: a.Version,
-		})
-		if err != nil {
-			panic(err)
-		}
-		out = append(out, &api.Dependency{
-			Type:  opregistry.GVKType,
-			Value: string(val),
-		})
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return
-}
-
-func apiSetToProperties(crds, apis APISet, deprecated bool) (out []*api.Property) {
-	out = make([]*api.Property, 0)
-	for a := range crds {
-		val, err := json.Marshal(opregistry.GVKProperty{
-			Group:   a.Group,
-			Kind:    a.Kind,
-			Version: a.Version,
-		})
-		if err != nil {
-			panic(err)
-		}
-		out = append(out, &api.Property{
-			Type:  opregistry.GVKType,
-			Value: string(val),
-		})
-	}
-	for a := range apis {
-		val, err := json.Marshal(opregistry.GVKProperty{
-			Group:   a.Group,
-			Kind:    a.Kind,
-			Version: a.Version,
-		})
-		if err != nil {
-			panic(err)
-		}
-		out = append(out, &api.Property{
-			Type:  opregistry.GVKType,
-			Value: string(val),
-		})
-	}
-	if deprecated {
-		val, err := json.Marshal(opregistry.DeprecatedProperty{})
-		if err != nil {
-			panic(err)
-		}
-		out = append(out, &api.Property{
-			Type:  opregistry.DeprecatedType,
-			Value: string(val),
-		})
-	}
-	if len(out) == 0 {
-		return nil
 	}
 	return
 }
@@ -303,7 +214,7 @@ func withVersion(version string) bundleOpt {
 	}
 }
 
-func bundle(name, pkg, channel, replaces string, providedCRDs, requiredCRDs, providedAPIServices, requiredAPIServices APISet, opts ...bundleOpt) *api.Bundle {
+func bundle(name, pkg, channel, replaces string, providedCRDs, requiredCRDs, providedAPIServices, requiredAPIServices cache.APISet, opts ...bundleOpt) *api.Bundle {
 	csvJson, err := json.Marshal(csv(name, replaces, providedCRDs, requiredCRDs, providedAPIServices, requiredAPIServices, nil, nil))
 	if err != nil {
 		panic(err)
@@ -328,8 +239,8 @@ func bundle(name, pkg, channel, replaces string, providedCRDs, requiredCRDs, pro
 		ProvidedApis: apiSetToGVK(providedCRDs, providedAPIServices),
 		RequiredApis: apiSetToGVK(requiredCRDs, requiredAPIServices),
 		Replaces:     replaces,
-		Dependencies: apiSetToDependencies(requiredCRDs, requiredAPIServices),
-		Properties: append(apiSetToProperties(providedCRDs, providedAPIServices, false),
+		Dependencies: cache.APISetToDependencies(requiredCRDs, requiredAPIServices),
+		Properties: append(cache.APISetToProperties(providedCRDs, providedAPIServices, false),
 			packageNameToProperty(pkg, "0.0.0"),
 		),
 	}
@@ -359,7 +270,7 @@ func withBundlePath(bundle *api.Bundle, path string) *api.Bundle {
 	return bundle
 }
 
-func bundleWithPermissions(name, pkg, channel, replaces string, providedCRDs, requiredCRDs, providedAPIServices, requiredAPIServices APISet, permissions, clusterPermissions []v1alpha1.StrategyDeploymentPermissions) *api.Bundle {
+func bundleWithPermissions(name, pkg, channel, replaces string, providedCRDs, requiredCRDs, providedAPIServices, requiredAPIServices cache.APISet, permissions, clusterPermissions []v1alpha1.StrategyDeploymentPermissions) *api.Bundle {
 	csvJson, err := json.Marshal(csv(name, replaces, providedCRDs, requiredCRDs, providedAPIServices, requiredAPIServices, permissions, clusterPermissions))
 	if err != nil {
 		panic(err)
@@ -385,146 +296,7 @@ func bundleWithPermissions(name, pkg, channel, replaces string, providedCRDs, re
 	}
 }
 
-func withReplaces(operator *Operator, replaces string) *Operator {
-	operator.replaces = replaces
+func withReplaces(operator *cache.Operator, replaces string) *cache.Operator {
+	operator.Replaces = replaces
 	return operator
-}
-
-// NewFakeSourceQuerier builds a querier that talks to fake registry stubs for testing
-func NewFakeSourceQuerier(bundlesByCatalog map[registry.CatalogKey][]*api.Bundle) *NamespaceSourceQuerier {
-	sources := map[registry.CatalogKey]registry.ClientInterface{}
-	for catKey, bundles := range bundlesByCatalog {
-		source := &fakes.FakeClientInterface{}
-		source.GetBundleThatProvidesStub = func(ctx context.Context, groupOrName, version, kind string) (*api.Bundle, error) {
-			for _, b := range bundles {
-				apis := b.GetProvidedApis()
-				for _, api := range apis {
-					if api.Version == version && api.Kind == kind && strings.Contains(groupOrName, api.Group) && strings.Contains(groupOrName, api.Plural) {
-						return b, nil
-					}
-				}
-			}
-			return nil, fmt.Errorf("no bundle found")
-		}
-		// note: this only allows for one bundle per package/channel, which may be enough for tests
-		source.GetBundleInPackageChannelStub = func(ctx context.Context, packageName, channelName string) (*api.Bundle, error) {
-			for _, b := range bundles {
-				if b.ChannelName == channelName && b.PackageName == packageName {
-					return b, nil
-				}
-			}
-			return nil, fmt.Errorf("no bundle found")
-		}
-
-		source.GetBundleStub = func(ctx context.Context, packageName, channelName, csvName string) (*api.Bundle, error) {
-			for _, b := range bundles {
-				if b.ChannelName == channelName && b.PackageName == packageName && b.CsvName == csvName {
-					return b, nil
-				}
-			}
-			return nil, fmt.Errorf("no bundle found")
-		}
-
-		source.GetReplacementBundleInPackageChannelStub = func(ctx context.Context, bundleName, packageName, channelName string) (*api.Bundle, error) {
-			for _, b := range bundles {
-				if b.Replaces == bundleName && b.ChannelName == channelName && b.PackageName == packageName {
-					return b, nil
-				}
-			}
-
-			return nil, fmt.Errorf("no bundle found")
-		}
-
-		source.FindBundleThatProvidesStub = func(ctx context.Context, groupOrName, version, kind string, excludedPkgs map[string]struct{}) (*api.Bundle, error) {
-			bundles, ok := bundlesByCatalog[catKey]
-			if !ok {
-				return nil, fmt.Errorf("API (%s/%s/%s) not provided by a package in %s CatalogSource", groupOrName, version, kind, catKey)
-			}
-			sortedBundles := SortBundleInPackageChannel(bundles)
-			for k, v := range sortedBundles {
-				pkgname := getPkgName(k)
-				if _, ok := excludedPkgs[pkgname]; ok {
-					continue
-				}
-
-				for i := len(v) - 1; i >= 0; i-- {
-					b := v[i]
-					apis := b.GetProvidedApis()
-					for _, api := range apis {
-						if api.Version == version && api.Kind == kind && strings.Contains(groupOrName, api.Group) && strings.Contains(groupOrName, api.Plural) {
-							return b, nil
-						}
-					}
-				}
-			}
-			return nil, fmt.Errorf("no bundle found")
-		}
-
-		sources[catKey] = source
-	}
-	return NewNamespaceSourceQuerier(sources)
-}
-
-// SortBundleInPackageChannel will sort into map of package-channel key and list
-// sorted (oldest to latest version) of bundles as value
-func SortBundleInPackageChannel(bundles []*api.Bundle) map[string][]*api.Bundle {
-	sorted := map[string][]*api.Bundle{}
-	var initialReplaces string
-	for _, v := range bundles {
-		pkgChanKey := v.PackageName + "/" + v.ChannelName
-		sorted[pkgChanKey] = append(sorted[pkgChanKey], v)
-	}
-
-	for k, v := range sorted {
-		resorted := []*api.Bundle{}
-		bundleMap := map[string]*api.Bundle{}
-		// Find the first (oldest) bundle in upgrade graph
-		for _, bundle := range v {
-			csv, err := V1alpha1CSVFromBundle(bundle)
-			if err != nil {
-				initialReplaces = bundle.CsvName
-				resorted = append(resorted, bundle)
-				continue
-			}
-
-			if replaces := csv.Spec.Replaces; replaces == "" {
-				initialReplaces = bundle.CsvName
-				resorted = append(resorted, bundle)
-			} else {
-				bundleMap[replaces] = bundle
-			}
-		}
-		resorted = sortBundleInChannel(initialReplaces, bundleMap, resorted)
-		sorted[k] = resorted
-	}
-	return sorted
-}
-
-// sortBundleInChannel recursively sorts a list of bundles to form a update graph
-// of a specific channel. The first item in the returned list is the start
-// (oldest version) of the upgrade graph and the last item is the head
-// (latest version) of a channel
-func sortBundleInChannel(replaces string, replacedBundle map[string]*api.Bundle, updated []*api.Bundle) []*api.Bundle {
-	bundle, ok := replacedBundle[replaces]
-	if ok {
-		updated = append(updated, bundle)
-		return sortBundleInChannel(bundle.CsvName, replacedBundle, updated)
-	}
-	return updated
-}
-
-// getPkgName splits the package/channel string and return package name
-func getPkgName(pkgChan string) string {
-	s := strings.Split(pkgChan, "/")
-	return s[0]
-}
-
-type OperatorPredicateTestFunc func(*Operator) bool
-
-func (opf OperatorPredicateTestFunc) Test(o *Operator) bool {
-	return opf(o)
-}
-
-func (opf OperatorPredicateTestFunc) String() string {
-	return ""
 }

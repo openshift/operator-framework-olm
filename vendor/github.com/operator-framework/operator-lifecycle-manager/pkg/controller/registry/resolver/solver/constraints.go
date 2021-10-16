@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/irifrance/gini/logic"
-	"github.com/irifrance/gini/z"
+	"github.com/go-air/gini/logic"
+	"github.com/go-air/gini/z"
 )
 
 // Constraint implementations limit the circumstances under which a

@@ -21,7 +21,7 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/decorators"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/cache"
 	hashutil "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/util/hash"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
@@ -46,7 +46,7 @@ var (
 )
 
 func aggregationLabelFromAPIKey(k opregistry.APIKey, suffix string) (string, error) {
-	hash, err := resolver.APIKeyToGVKHash(k)
+	hash, err := cache.APIKeyToGVKHash(k)
 	if err != nil {
 		return "", err
 	}
@@ -185,10 +185,10 @@ func (a *Operator) syncOperatorGroups(obj interface{}) error {
 	// Requeue all CSVs that provide the same APIs (including those removed). This notifies conflicting CSVs in
 	// intersecting groups that their conflict has possibly been resolved, either through resizing or through
 	// deletion of the conflicting CSV.
-	groupSurface := resolver.NewOperatorGroup(op)
+	groupSurface := NewOperatorGroup(op)
 	groupProvidedAPIs := groupSurface.ProvidedAPIs()
 	providedAPIsForCSVs := a.providedAPIsFromCSVs(op, logger)
-	providedAPIsForGroup := make(resolver.APISet)
+	providedAPIsForGroup := make(cache.APISet)
 	for api := range providedAPIsForCSVs {
 		providedAPIsForGroup[api] = struct{}{}
 	}
@@ -254,7 +254,7 @@ func (a *Operator) operatorGroupDeleted(obj interface{}) {
 
 func (a *Operator) annotateCSVs(group *v1.OperatorGroup, targetNamespaces []string, logger *logrus.Entry) error {
 	updateErrs := []error{}
-	targetNamespaceSet := resolver.NewNamespaceSet(targetNamespaces)
+	targetNamespaceSet := NewNamespaceSet(targetNamespaces)
 
 	for _, csv := range a.csvSet(group.GetNamespace(), v1alpha1.CSVPhaseAny) {
 		if csv.IsCopied() {
@@ -263,7 +263,7 @@ func (a *Operator) annotateCSVs(group *v1.OperatorGroup, targetNamespaces []stri
 		logger := logger.WithField("csv", csv.GetName())
 
 		originalNamespacesAnnotation, _ := a.copyOperatorGroupAnnotations(&csv.ObjectMeta)[v1.OperatorGroupTargetsAnnotationKey]
-		originalNamespaceSet := resolver.NewNamespaceSetFromString(originalNamespacesAnnotation)
+		originalNamespaceSet := NewNamespaceSetFromString(originalNamespacesAnnotation)
 
 		if a.operatorGroupAnnotationsDiffer(&csv.ObjectMeta, group) {
 			a.setOperatorGroupAnnotations(&csv.ObjectMeta, group, true)
@@ -309,26 +309,26 @@ func (a *Operator) providedAPIsFromCSVs(group *v1.OperatorGroup, logger *logrus.
 		// TODO: Throw out CSVs that aren't members of the group due to group related failures?
 
 		// Union the providedAPIsFromCSVs from existing members of the group
-		operatorSurface, err := resolver.NewOperatorFromV1Alpha1CSV(csv)
+		operatorSurface, err := cache.NewOperatorFromV1Alpha1CSV(csv)
 		if err != nil {
 			logger.WithError(err).Warn("could not create OperatorSurface from csv")
 			continue
 		}
-		for providedAPI := range operatorSurface.ProvidedAPIs().StripPlural() {
+		for providedAPI := range operatorSurface.GetProvidedAPIs().StripPlural() {
 			providedAPIsFromCSVs[providedAPI] = csv
 		}
 	}
 	return providedAPIsFromCSVs
 }
 
-func (a *Operator) pruneProvidedAPIs(group *v1.OperatorGroup, groupProvidedAPIs resolver.APISet, providedAPIsFromCSVs map[opregistry.APIKey]*v1alpha1.ClusterServiceVersion, logger *logrus.Entry) {
+func (a *Operator) pruneProvidedAPIs(group *v1.OperatorGroup, groupProvidedAPIs cache.APISet, providedAPIsFromCSVs map[opregistry.APIKey]*v1alpha1.ClusterServiceVersion, logger *logrus.Entry) {
 	// Don't prune providedAPIsFromCSVs if static
 	if group.Spec.StaticProvidedAPIs {
 		a.logger.Debug("group has static provided apis. skipping provided api pruning")
 		return
 	}
 
-	intersection := make(resolver.APISet)
+	intersection := make(cache.APISet)
 	for api := range providedAPIsFromCSVs {
 		if _, ok := groupProvidedAPIs[api]; ok {
 			intersection[api] = struct{}{}
@@ -530,8 +530,14 @@ func (a *Operator) ensureSingletonRBAC(operatorNamespace string, csv *v1alpha1.C
 					Resources: []string{"namespaces"},
 				}),
 			}
-			if _, err := a.opClient.CreateClusterRole(clusterRole); err != nil {
-				return err
+			// TODO: this should do something smarter if the cluster role already exists
+			if cr, err := a.opClient.CreateClusterRole(clusterRole); err != nil {
+				// if the CR already exists, but the label is correct, the cache is just behind
+				if k8serrors.IsAlreadyExists(err) && ownerutil.IsOwnedByLabel(cr, csv) {
+					continue
+				} else {
+					return err
+				}
 			}
 			a.logger.Debug("created cluster role")
 		}
@@ -564,8 +570,14 @@ func (a *Operator) ensureSingletonRBAC(operatorNamespace string, csv *v1alpha1.C
 					Name:     r.RoleRef.Name,
 				},
 			}
-			if _, err := a.opClient.CreateClusterRoleBinding(clusterRoleBinding); err != nil {
-				return err
+			// TODO: this should do something smarter if the cluster role binding already exists
+			if crb, err := a.opClient.CreateClusterRoleBinding(clusterRoleBinding); err != nil {
+				// if the CR already exists, but the label is correct, the cache is just behind
+				if k8serrors.IsAlreadyExists(err) && ownerutil.IsOwnedByLabel(crb, csv) {
+					continue
+				} else {
+					return err
+				}
 			}
 		}
 	}
@@ -676,7 +688,7 @@ func (a *Operator) ensureTenantRBAC(operatorNamespace, targetNamespace string, c
 	return nil
 }
 
-func (a *Operator) ensureCSVsInNamespaces(csv *v1alpha1.ClusterServiceVersion, operatorGroup *v1.OperatorGroup, targets resolver.NamespaceSet) error {
+func (a *Operator) ensureCSVsInNamespaces(csv *v1alpha1.ClusterServiceVersion, operatorGroup *v1.OperatorGroup, targets NamespaceSet) error {
 	namespaces, err := a.lister.CoreV1().NamespaceLister().List(labels.Everything())
 	if err != nil {
 		return err
@@ -966,7 +978,7 @@ func (a *Operator) updateNamespaceList(op *v1.OperatorGroup) ([]string, error) {
 	return namespaceList, nil
 }
 
-func (a *Operator) ensureOpGroupClusterRole(op *v1.OperatorGroup, suffix string, apis resolver.APISet) error {
+func (a *Operator) ensureOpGroupClusterRole(op *v1.OperatorGroup, suffix string, apis cache.APISet) error {
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: strings.Join([]string{op.GetName(), suffix}, "-"),
@@ -1017,7 +1029,7 @@ func (a *Operator) ensureOpGroupClusterRole(op *v1.OperatorGroup, suffix string,
 	return nil
 }
 
-func (a *Operator) ensureOpGroupClusterRoles(op *v1.OperatorGroup, apis resolver.APISet) error {
+func (a *Operator) ensureOpGroupClusterRoles(op *v1.OperatorGroup, apis cache.APISet) error {
 	for _, suffix := range Suffices {
 		if err := a.ensureOpGroupClusterRole(op, suffix, apis); err != nil {
 			return err
@@ -1026,7 +1038,7 @@ func (a *Operator) ensureOpGroupClusterRoles(op *v1.OperatorGroup, apis resolver
 	return nil
 }
 
-func (a *Operator) findCSVsThatProvideAnyOf(provide resolver.APISet) ([]*v1alpha1.ClusterServiceVersion, error) {
+func (a *Operator) findCSVsThatProvideAnyOf(provide cache.APISet) ([]*v1alpha1.ClusterServiceVersion, error) {
 	csvs, err := a.lister.OperatorsV1alpha1().ClusterServiceVersionLister().ClusterServiceVersions(metav1.NamespaceAll).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -1039,12 +1051,12 @@ func (a *Operator) findCSVsThatProvideAnyOf(provide resolver.APISet) ([]*v1alpha
 			continue
 		}
 
-		operatorSurface, err := resolver.NewOperatorFromV1Alpha1CSV(csv)
+		operatorSurface, err := cache.NewOperatorFromV1Alpha1CSV(csv)
 		if err != nil {
 			continue
 		}
 
-		if len(operatorSurface.ProvidedAPIs().StripPlural().Intersection(provide)) > 0 {
+		if len(operatorSurface.GetProvidedAPIs().StripPlural().Intersection(provide)) > 0 {
 			providers = append(providers, csv)
 		}
 	}
