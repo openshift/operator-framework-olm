@@ -16,20 +16,20 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.17.5
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/cobra v1.1.3
+	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.6.2
-	k8s.io/api v0.22.0
-	k8s.io/apimachinery v0.22.0
-	k8s.io/client-go v0.22.0
-	k8s.io/code-generator v0.22.0
+	k8s.io/api v0.22.1
+	k8s.io/apimachinery v0.22.1
+	k8s.io/client-go v0.22.1
+	k8s.io/code-generator v0.22.1
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d
-	k8s.io/utils v0.0.0-20210707171843-4b05e18ac7d9
-	sigs.k8s.io/controller-runtime v0.9.2
-	sigs.k8s.io/controller-tools v0.6.1
+	k8s.io/utils v0.0.0-20210802155522-efc7438f0176
+	sigs.k8s.io/controller-runtime v0.10.0
+	sigs.k8s.io/controller-tools v0.6.2
 )
 
 replace (

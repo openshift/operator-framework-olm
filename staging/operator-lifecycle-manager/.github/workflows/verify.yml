@@ -1,12 +1,11 @@
-name: verify
+name: ci
 on:
   push:
     branches:
       - master
   pull_request:
-    paths:
-      - '**'
-      - '!doc/**'
+    paths-ignore:
+    - '**/*.md'
 jobs:
   verify:
     runs-on: ubuntu-latest
