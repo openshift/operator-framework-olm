@@ -31,7 +31,6 @@ import (
 
 const (
 	profileConfigMapLabelKey = "olm.openshift.io/pprof"
-	olmNamespace             = "openshift-operator-lifecycle-manager"
 	pprofSecretName          = "pprof-cert"
 )
 
@@ -318,7 +317,7 @@ func requestURLBody(httpClient *http.Client, u *url.URL) ([]byte, error) {
 
 func populateServingCert(ctx context.Context, client client.Client) error {
 	secret := &corev1.Secret{}
-	err := client.Get(ctx, types.NamespacedName{Namespace: olmNamespace, Name: pprofSecretName}, secret)
+	err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pprofSecretName}, secret)
 	if err != nil {
 		return err
 	}
