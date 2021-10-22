@@ -57,9 +57,10 @@ build/registry:
 build/olm:
 	$(MAKE) $(PSM_CMD) $(OLM_CMDS) $(COLLECT_PROFILES_CMD)
 
+# TODO: complete build command
 $(OPM): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
 $(OPM):
-	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $@ $(REGISTRY_PKG)/cmd/$(notdir $@)
+	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $@ $(ROOT_PKG)/cmd/$(notdir $@)
 
 $(REGISTRY_CMDS): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
 $(REGISTRY_CMDS):
@@ -79,8 +80,8 @@ $(COLLECT_PROFILES_CMD): FORCE
 cross: version_flags=-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'
 cross:
 ifeq ($(shell go env GOARCH),amd64)
-	GOOS=darwin CC=o64-clang CXX=o64-clang++ CGO_ENABLED=1 go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o "bin/darwin-amd64-opm" --ldflags "-extld=o64-clang $(version_flags)" $(REGISTRY_PKG)/cmd/opm
-	GOOS=windows CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ CGO_ENABLED=1 go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o "bin/windows-amd64-opm" --ldflags "-extld=x86_64-w64-mingw32-gcc $(version_flags)" -buildmode=exe $(REGISTRY_PKG)/cmd/opm
+	GOOS=darwin CC=o64-clang CXX=o64-clang++ CGO_ENABLED=1 go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o "bin/darwin-amd64-opm" --ldflags "-extld=o64-clang $(version_flags)" $(ROOT_PKG)/cmd/opm
+	GOOS=windows CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ CGO_ENABLED=1 go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o "bin/windows-amd64-opm" --ldflags "-extld=x86_64-w64-mingw32-gcc $(version_flags)" -buildmode=exe $(ROOT_PKG)/cmd/opm
 endif
 
 build/olm-container:
@@ -105,6 +106,7 @@ unit/olm: bin/kubebuilder
 
 unit/registry:
 	$(MAKE) unit WHAT=operator-registry
+	go test $(ROOT_DIR)/pkg/validate/...
 
 unit/api:
 	$(MAKE) unit WHAT=api TARGET_NAME=test
