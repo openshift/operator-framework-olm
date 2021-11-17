@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 
 	"github.com/operator-framework/operator-registry/alpha/declcfg"

@@ -1,6 +1,13 @@
 package declcfg
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/blang/semver/v4"
+	"github.com/sirupsen/logrus"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+
 	"github.com/operator-framework/operator-registry/alpha/model"
 )
 

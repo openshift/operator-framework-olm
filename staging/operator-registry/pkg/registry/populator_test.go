@@ -12,11 +12,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/util/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
+	"github.com/operator-framework/api/pkg/lib/version"
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/pkg/api"
 	"github.com/operator-framework/operator-registry/pkg/image"
 	"github.com/operator-framework/operator-registry/pkg/registry"
@@ -2618,6 +2621,145 @@ func TestEnableAlpha(t *testing.T) {
 					make(map[string]map[image.Reference]string, 0), false).Populate(registry.ReplacesMode)
 			}
 			require.Equal(t, tt.expected.err, populate(tt.args.bundles))
+		})
+	}
+}
+
+func newUnpackedTestBundle(root, dir, name string, csvSpec json.RawMessage, annotations registry.Annotations) (string, func(), error) {
+	bundleDir := filepath.Join(root, dir)
+	cleanup := func() {
+		os.RemoveAll(bundleDir)
+	}
+	if err := os.Mkdir(bundleDir, 0755); err != nil {
+		return bundleDir, cleanup, err
+	}
+	if err := os.Mkdir(filepath.Join(bundleDir, bundle.ManifestsDir), 0755); err != nil {
+		return bundleDir, cleanup, err
+	}
+	if err := os.Mkdir(filepath.Join(bundleDir, bundle.MetadataDir), 0755); err != nil {
+		return bundleDir, cleanup, err
+	}
+	if len(csvSpec) == 0 {
+		csvSpec = json.RawMessage(`{}`)
+	}
+
+	rawCSV, err := json.Marshal(registry.ClusterServiceVersion{
+		TypeMeta: v1.TypeMeta{
+			Kind: sqlite.ClusterServiceVersionKind,
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name: name,
+		},
+		Spec: csvSpec,
+	})
+	if err != nil {
+		return bundleDir, cleanup, err
+	}
+
+	rawObj := unstructured.Unstructured{}
+	if err := json.Unmarshal(rawCSV, &rawObj); err != nil {
+		return bundleDir, cleanup, err
+	}
+	rawObj.SetCreationTimestamp(v1.Time{})
+
+	jsonout, err := rawObj.MarshalJSON()
+	out, err := yaml.JSONToYAML(jsonout)
+	if err != nil {
+		return bundleDir, cleanup, err
+	}
+	if err := ioutil.WriteFile(filepath.Join(bundleDir, bundle.ManifestsDir, "csv.yaml"), out, 0666); err != nil {
+		return bundleDir, cleanup, err
+	}
+
+	out, err = yaml.Marshal(registry.AnnotationsFile{Annotations: annotations})
+	if err != nil {
+		return bundleDir, cleanup, err
+	}
+	if err := ioutil.WriteFile(filepath.Join(bundleDir, bundle.MetadataDir, "annotations.yaml"), out, 0666); err != nil {
+		return bundleDir, cleanup, err
+	}
+	return bundleDir, cleanup, nil
+}
+
+func TestValidateEdgeBundlePackage(t *testing.T) {
+	newInput := func(name, versionString, pkg, defaultChannel, channels, replaces string, skips []string) *registry.ImageInput {
+		v, err := semver.Parse(versionString)
+		require.NoError(t, err)
+
+		spec := v1alpha1.ClusterServiceVersionSpec{
+			Replaces: replaces,
+			Skips:    skips,
+			Version:  version.OperatorVersion{v},
+		}
+		specJson, err := json.Marshal(&spec)
+		require.NoError(t, err)
+
+		rawCSV, err := json.Marshal(registry.ClusterServiceVersion{
+			TypeMeta: v1.TypeMeta{
+				Kind: sqlite.ClusterServiceVersionKind,
+			},
+			ObjectMeta: v1.ObjectMeta{
+				Name: name,
+			},
+			Spec: specJson,
+		})
+
+		rawObj := unstructured.Unstructured{}
+		require.NoError(t, json.Unmarshal(rawCSV, &rawObj))
+		rawObj.SetCreationTimestamp(v1.Time{})
+
+		jsonout, err := rawObj.MarshalJSON()
+		require.NoError(t, err)
+
+		b, err := registry.NewBundleFromStrings(name, versionString, pkg, defaultChannel, channels, string(jsonout))
+		require.NoError(t, err)
+		return &registry.ImageInput{Bundle: b}
+	}
+
+	logrus.SetLevel(logrus.DebugLevel)
+	db, cleanup := CreateTestDb(t)
+	defer cleanup()
+
+	store, err := createAndPopulateDB(db)
+	require.NoError(t, err)
+
+	r := registry.NewDirectoryPopulator(nil, nil, store, nil, nil)
+
+	tests := []struct {
+		name    string
+		args    []*registry.ImageInput
+		wantErr error
+	}{
+		{
+			name: "conflictInAdded",
+			args: []*registry.ImageInput{
+				newInput("b1", "0.0.1", "p1", "a", "a", "", []string{}),
+				newInput("b2", "0.0.2", "p2", "a", "a", "", []string{"b1"}),
+			},
+			wantErr: fmt.Errorf("bundle b1 must belong to exactly one package, found on: [p1 p2]"),
+		},
+		{
+			name: "conflictWithExisting",
+			args: []*registry.ImageInput{
+				newInput("b1", "0.0.1", "p1", "a", "a", "", []string{"etcdoperator.v0.9.0"}),
+			},
+			wantErr: fmt.Errorf("bundle etcdoperator.v0.9.0 belongs to package etcd on index, cannot be added as an edge for package p1"),
+		},
+		{
+			name: "passForNonConflicting",
+			args: []*registry.ImageInput{
+				newInput("b1", "0.0.1", "etcd", "a", "a", "", []string{"etcdoperator.v0.9.0"}),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := r.ValidateEdgeBundlePackage(tt.args)
+			if tt.wantErr == nil {
+				require.NoError(t, err)
+				return
+			}
+			require.EqualError(t, err, tt.wantErr.Error())
 		})
 	}
 }
