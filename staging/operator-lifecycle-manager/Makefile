@@ -30,9 +30,13 @@ GINKGO := $(GO) run github.com/onsi/ginkgo/ginkgo
 BINDATA := $(GO) run github.com/go-bindata/go-bindata/v3/go-bindata
 GIT_COMMIT := $(shell git rev-parse HEAD)
 
+# Phony prerequisite for targets that rely on the go build cache to determine staleness.
 .PHONY: build test run clean vendor schema-check \
 	vendor-update coverage coverage-html e2e \
 	kubebuilder .FORCE
+
+.PHONY: FORCE
+FORCE:
 
 all: test build
 
@@ -119,20 +123,23 @@ setup-bare: clean e2e.namespace
 	. ./scripts/package_release.sh 1.0.0 test/e2e/resources test/e2e/e2e-bare-values.yaml
 	. ./scripts/install_bare.sh $(shell cat ./e2e.namespace) test/e2e/resources
 
-# e2e test exculding the rh-operators directory which tests rh-operators and their metric cardinality.
+E2E_NODES ?= 1
+E2E_FLAKE_ATTEMPTS ?= 1
+E2E_TIMEOUT ?= 90m
+E2E_OPTS ?= $(if $(E2E_SEED),-seed '$(E2E_SEED)') $(if $(TEST),-focus '$(TEST)') -flakeAttempts $(E2E_FLAKE_ATTEMPTS) -nodes $(E2E_NODES) -timeout $(E2E_TIMEOUT) -v -randomizeSuites -race -trace -progress
+E2E_INSTALL_NS ?= operator-lifecycle-manager
+E2E_TEST_NS ?= operators
+
 e2e:
-	go test -v $(MOD_FLAGS)  -failfast -timeout 150m ./test/e2e/... -namespace=openshift-operators -kubeconfig=${KUBECONFIG} -olmNamespace=openshift-operator-lifecycle-manager -dummyImage=bitnami/nginx:latest -ginkgo.flakeAttempts=3
+	$(GINKGO) $(E2E_OPTS) $(or $(run), ./test/e2e) $< -- -namespace=$(E2E_TEST_NS) -olmNamespace=$(E2E_INSTALL_NS) -dummyImage=bitnami/nginx:latest $(or $(extra_args), -kubeconfig=${KUBECONFIG})
 
-### Start: End To End Tests ###
 
-# Phony prerequisite for targets that rely on the go build cache to determine staleness.
-.PHONY: FORCE
-FORCE:
-
-# main entry point for running end to end tests. used by .github/workflows/e2e-tests.yml See test/e2e/README.md for details
+# See workflows/e2e-tests.yml See test/e2e/README.md for details.
 .PHONY: e2e-local
+e2e-local: extra_args=-kind.images=../test/e2e-local.image.tar
+e2e-local: run=bin/e2e-local.test
 e2e-local: bin/e2e-local.test test/e2e-local.image.tar
-	$(GINKGO) -nodes $(or $(NODES),1) -flakeAttempts 3 -randomizeAllSpecs $(if $(TEST),-focus '$(TEST)') -v -timeout 90m $< -- -namespace=operators -olmNamespace=operator-lifecycle-manager -dummyImage=bitnami/nginx:latest -kind.images=../test/e2e-local.image.tar
+e2e-local: e2e
 
 # this target updates the zz_chart.go file with files found in deploy/chart
 # this will always fire since it has been marked as phony
@@ -152,17 +159,12 @@ test/e2e-local.image.tar: e2e.Dockerfile bin/wait bin/cpb $(CMDS)
 	docker build -t quay.io/operator-framework/olm:local -f $< bin
 	docker save -o $@ quay.io/operator-framework/olm:local
 
-### Finish: End To End Tests ###
-
 e2e-bare: setup-bare
 	. ./scripts/run_e2e_bare.sh $(TEST)
 
 e2e-local-docker:
 	. ./scripts/build_local.sh
 	. ./scripts/run_e2e_docker.sh $(TEST)
-
-e2e-operator-metrics:
-	go test -v $(MOD_FLAGS) -timeout 70m ./test/rh-operators/...
 
 vendor:
 	go mod tidy
@@ -184,6 +186,9 @@ clean:
 	@rm -rf test/e2e/log
 	@rm -rf e2e.namespace
 
+lint:
+	find . -name '*.go' -not -path "./vendor/*" -not -path "./pkg/lib/operatorclient/operatorclientmocks/*" | xargs gofmt -w
+	find . -name '*.go' -not -path "./vendor/*" -not -path "./pkg/lib/operatorclient/operatorclientmocks/*" | xargs goimports -w
 
 # Copy CRD manifests
 manifests: vendor
@@ -217,15 +222,16 @@ verify: verify-codegen verify-mockgen verify-manifests
 
 # before running release, bump the version in OLM_VERSION and push to master,
 # then tag those builds in quay with the version in OLM_VERSION
-release: ver=$(shell cat OLM_VERSION)
+release: ver=v$(shell cat OLM_VERSION)
 release: manifests
-	docker pull quay.io/operator-framework/olm:v$(ver)
+	@echo "Generating the $(ver) release"
+	docker pull $(IMAGE_REPO):$(ver)
 	$(MAKE) target=upstream ver=$(ver) quickstart=true package
 
 verify-release: release
 	$(MAKE) diff
 
-package: olmref=$(shell docker inspect --format='{{index .RepoDigests 0}}' quay.io/operator-framework/olm:v$(ver))
+package: olmref=$(shell docker inspect --format='{{index .RepoDigests 0}}' $(IMAGE_REPO):$(ver))
 package:
 ifndef target
 	$(error target is undefined)

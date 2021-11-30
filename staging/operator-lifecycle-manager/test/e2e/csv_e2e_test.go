@@ -16,10 +16,12 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -69,7 +71,9 @@ var _ = Describe("ClusterServiceVersion", func() {
 					Name: "test-namespace-1",
 				},
 			}
-			Expect(ctx.Ctx().Client().Create(context.Background(), &ns)).To(Succeed())
+			Eventually(func() error {
+				return ctx.Ctx().Client().Create(context.Background(), &ns)
+			}).Should(Succeed())
 
 			og := v1.OperatorGroup{
 				ObjectMeta: metav1.ObjectMeta{
@@ -80,7 +84,9 @@ var _ = Describe("ClusterServiceVersion", func() {
 					TargetNamespaces: []string{ns.GetName()},
 				},
 			}
-			Expect(ctx.Ctx().Client().Create(context.TODO(), &og)).To(Succeed())
+			Eventually(func() error {
+				return ctx.Ctx().Client().Create(context.Background(), &og)
+			}).Should(Succeed())
 
 			crd = apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
@@ -110,7 +116,9 @@ var _ = Describe("ClusterServiceVersion", func() {
 					}},
 				},
 			}
-			Expect(ctx.Ctx().Client().Create(context.Background(), &crd)).To(Succeed())
+			Eventually(func() error {
+				return ctx.Ctx().Client().Create(context.Background(), &crd)
+			}).Should(Succeed())
 		})
 
 		AfterEach(func() {
@@ -1545,7 +1553,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err := fetchCSV(crc, csv.Name, testNamespace, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
-		compareResources(GinkgoT(), fetchedCSV, sameCSV)
+		Expect(equality.Semantic.DeepEqual(fetchedCSV, sameCSV)).Should(BeTrue(), diff.ObjectDiff(fetchedCSV, sameCSV))
 	})
 	It("create with owned API service", func() {
 
@@ -2541,7 +2549,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
-		compareResources(GinkgoT(), fetchedCSV, sameCSV)
+		Expect(equality.Semantic.DeepEqual(fetchedCSV, sameCSV)).Should(BeTrue(), diff.ObjectDiff(fetchedCSV, sameCSV))
 	})
 	It("update different deployment name", func() {
 
@@ -2719,7 +2727,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
-		compareResources(GinkgoT(), fetchedCSV, sameCSV)
+		Expect(equality.Semantic.DeepEqual(fetchedCSV, sameCSV)).Should(BeTrue(), diff.ObjectDiff(fetchedCSV, sameCSV))
 
 		// Should have created new deployment and deleted old
 		depNew, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
@@ -2909,7 +2917,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
-		compareResources(GinkgoT(), fetchedCSV, sameCSV)
+		Expect(equality.Semantic.DeepEqual(fetchedCSV, sameCSV)).Should(BeTrue(), diff.ObjectDiff(fetchedCSV, sameCSV))
 
 		// Should have created new deployment and deleted old
 		depNew, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
@@ -3279,7 +3287,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err := fetchCSV(crc, csvNew.Name, testNamespace, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
-		compareResources(GinkgoT(), fetchedCSV, sameCSV)
+		Expect(equality.Semantic.DeepEqual(fetchedCSV, sameCSV)).Should(BeTrue(), diff.ObjectDiff(fetchedCSV, sameCSV))
 
 		// Should have created new deployment and deleted old one
 		depNew, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
@@ -3358,7 +3366,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 		// Fetch cluster service version again to check for unnecessary control loops
 		sameCSV, err = fetchCSV(crc, csvNew2.Name, testNamespace, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
-		compareResources(GinkgoT(), fetchedCSV, sameCSV)
+		Expect(equality.Semantic.DeepEqual(fetchedCSV, sameCSV)).Should(BeTrue(), diff.ObjectDiff(fetchedCSV, sameCSV))
 
 		// Should have created new deployment and deleted old one
 		depNew, err = c.GetDeployment(testNamespace, strategyNew2.DeploymentSpecs[0].Name)
@@ -3739,27 +3747,20 @@ var _ = Describe("ClusterServiceVersion", func() {
 		Expect(err).ToNot(HaveOccurred())
 		defer cleanupCSV()
 
-		csv, err = fetchCSV(crc, csv.GetName(), csv.GetNamespace(), csvPendingChecker)
-		Expect(err).ToNot(HaveOccurred())
-
 		By("emitting when requirements are not met")
 		nextReason := func() string {
-			e := <-w.ResultChan()
-			if e.Object == nil {
-				return ""
+			if e := <-w.ResultChan(); e.Object != nil {
+				return e.Object.(*corev1.Event).Reason
 			}
-
-			return e.Object.(*corev1.Event).Reason
+			return ""
 		}
 		Eventually(nextReason).Should(Equal("RequirementsNotMet"))
 
-		// Update the CSV to require an API that we know exists
-		csv.Spec.APIServiceDefinitions.Required[0].Group = "packages.operators.coreos.com"
-		updateOpts := metav1.UpdateOptions{}
-		Eventually(func() error {
-			_, err := crc.OperatorsV1alpha1().ClusterServiceVersions(csv.GetNamespace()).Update(clientCtx, csv, updateOpts)
-			return err
-		}).Should(Succeed())
+		// Patch the CSV to require an API that we know exists
+		Eventually(ctx.Ctx().SSAClient().Apply(clientCtx, csv, func(c *v1alpha1.ClusterServiceVersion) error {
+			c.Spec.APIServiceDefinitions.Required[0].Group = "packages.operators.coreos.com"
+			return nil
+		})).Should(Succeed())
 
 		By("emitting when requirements are met")
 		Eventually(nextReason).Should(Equal("AllRequirementsMet"))

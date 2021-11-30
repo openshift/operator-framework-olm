@@ -28,7 +28,7 @@ import (
 const (
 	catalogNamespaceEnvVarName  = "GLOBAL_CATALOG_NAMESPACE"
 	defaultWakeupInterval       = 15 * time.Minute
-	defaultCatalogNamespace     = "openshift-operator-lifecycle-manager"
+	defaultCatalogNamespace     = "olm"
 	defaultConfigMapServerImage = "quay.io/operator-framework/configmap-operator-registry:latest"
 	defaultOPMImage             = "quay.io/operator-framework/upstream-opm-builder:latest"
 	defaultUtilImage            = "quay.io/operator-framework/olm:latest"
@@ -109,7 +109,7 @@ func main() {
 		*catalogNamespace = catalogNamespaceEnvVarValue
 	}
 
-	listenAndServe, err := server.GetListenAndServeFunc(logger, tlsCertPath, tlsKeyPath, clientCAPath)
+	listenAndServe, err := server.GetListenAndServeFunc(server.WithLogger(logger), server.WithTLS(tlsCertPath, tlsKeyPath, clientCAPath), server.WithDebug(*debug))
 	if err != nil {
 		logger.Fatal("Error setting up health/metric/pprof service: %v", err)
 	}
