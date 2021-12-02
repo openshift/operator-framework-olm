@@ -77,7 +77,7 @@ func TestConvertToModel(t *testing.T) {
 		},
 		{
 			name:      "Error/BundleInvalidVersion",
-			assertion: hasError(`error parsing bundle version: Invalid character(s) found in patch number "0.1"`),
+			assertion: hasError(`error parsing bundle "foo.v0.1.0" version "0.1.0.1": Invalid character(s) found in patch number "0.1"`),
 			cfg: DeclarativeConfig{
 				Packages: []Package{newTestPackage("foo", "alpha", svgSmallCircle)},
 				Bundles: []Bundle{newTestBundle("foo", "0.1.0", func(b *Bundle) {
@@ -85,6 +85,14 @@ func TestConvertToModel(t *testing.T) {
 						property.MustBuildPackage("foo", "0.1.0.1"),
 					}
 				})},
+			},
+		},
+		{
+			name:      "Error/BundleMissingVersion",
+			assertion: hasError(`error parsing bundle "foo.v" version "": Version string empty`),
+			cfg: DeclarativeConfig{
+				Packages: []Package{newTestPackage("foo", "alpha", svgSmallCircle)},
+				Bundles:  []Bundle{newTestBundle("foo", "", func(b *Bundle) {})},
 			},
 		},
 		{
@@ -196,6 +204,42 @@ func TestConvertToModel(t *testing.T) {
 			},
 		},
 		{
+			name:      "Error/DuplicatePackage",
+			assertion: hasError(`duplicate package "foo"`),
+			cfg: DeclarativeConfig{
+				Packages: []Package{
+					newTestPackage("foo", "alpha", svgSmallCircle),
+					newTestPackage("foo", "alpha", svgSmallCircle),
+				},
+				Channels: []Channel{newTestChannel("foo", "alpha", ChannelEntry{Name: "foo.v0.1.0"})},
+				Bundles:  []Bundle{newTestBundle("foo", "0.1.0")},
+			},
+		},
+		{
+			name:      "Error/DuplicateChannel",
+			assertion: hasError(`package "foo" has duplicate channel "alpha"`),
+			cfg: DeclarativeConfig{
+				Packages: []Package{newTestPackage("foo", "alpha", svgSmallCircle)},
+				Channels: []Channel{
+					newTestChannel("foo", "alpha", ChannelEntry{Name: "foo.v0.1.0"}),
+					newTestChannel("foo", "alpha", ChannelEntry{Name: "foo.v0.1.0"}),
+				},
+				Bundles: []Bundle{newTestBundle("foo", "0.1.0")},
+			},
+		},
+		{
+			name:      "Error/DuplicateBundle",
+			assertion: hasError(`package "foo" has duplicate bundle "foo.v0.1.0"`),
+			cfg: DeclarativeConfig{
+				Packages: []Package{newTestPackage("foo", "alpha", svgSmallCircle)},
+				Channels: []Channel{newTestChannel("foo", "alpha", ChannelEntry{Name: "foo.v0.1.0"})},
+				Bundles: []Bundle{
+					newTestBundle("foo", "0.1.0"),
+					newTestBundle("foo", "0.1.0"),
+				},
+			},
+		},
+		{
 			name:      "Success/ValidModel",
 			assertion: require.NoError,
 			cfg: DeclarativeConfig{
@@ -234,7 +278,7 @@ func hasError(expectedError string) require.ErrorAssertionFunc {
 		if stdt, ok := t.(*testing.T); ok {
 			stdt.Helper()
 		}
-		if actualError.Error() == expectedError {
+		if actualError != nil && actualError.Error() == expectedError {
 			return
 		}
 		t.Errorf("expected error to be `%s`, got `%s`", expectedError, actualError)

@@ -42,6 +42,10 @@ func TestRender(t *testing.T) {
 	require.NoError(t, err)
 	foov2crd, err := bundleImageV2.ReadFile("testdata/foo-bundle-v0.2.0/manifests/foos.test.foo.crd.yaml")
 	require.NoError(t, err)
+	foov2csvNoRelatedImages, err := bundleImageV2NoCSVRelatedImages.ReadFile("testdata/foo-bundle-v0.2.0-no-csv-related-images/manifests/foo.v0.2.0.csv.yaml")
+	require.NoError(t, err)
+	foov2crdNoRelatedImages, err := bundleImageV2NoCSVRelatedImages.ReadFile("testdata/foo-bundle-v0.2.0-no-csv-related-images/manifests/foos.test.foo.crd.yaml")
+	require.NoError(t, err)
 
 	foov1csv, err = yaml.ToJSON(foov1csv)
 	require.NoError(t, err)
@@ -50,6 +54,10 @@ func TestRender(t *testing.T) {
 	foov2csv, err = yaml.ToJSON(foov2csv)
 	require.NoError(t, err)
 	foov2crd, err = yaml.ToJSON(foov2crd)
+	require.NoError(t, err)
+	foov2csvNoRelatedImages, err = yaml.ToJSON(foov2csvNoRelatedImages)
+	require.NoError(t, err)
+	foov2crdNoRelatedImages, err = yaml.ToJSON(foov2crdNoRelatedImages)
 	require.NoError(t, err)
 
 	dir := t.TempDir()
@@ -445,7 +453,11 @@ func TestRender(t *testing.T) {
 							property.MustBuildGVKRequired("test.bar", "v1alpha1", "Bar"),
 							property.MustBuildPackage("foo", "0.2.0"),
 							property.MustBuildPackageRequired("bar", "<0.1.0"),
+							property.MustBuildBundleObjectData(foov2csv),
+							property.MustBuildBundleObjectData(foov2crd),
 						},
+						Objects: []string{string(foov2csv), string(foov2crd)},
+						CsvJSON: string(foov2csv),
 						RelatedImages: []declcfg.RelatedImage{
 							{
 								Image: "test.registry/foo-operator/foo-2:v0.2.0",
@@ -465,6 +477,51 @@ func TestRender(t *testing.T) {
 							},
 							{
 								Name:  "operator",
+								Image: "test.registry/foo-operator/foo:v0.2.0",
+							},
+						},
+					},
+				},
+			},
+			assertion: require.NoError,
+		},
+		{
+			name: "Success/BundleImageWithNoCSVRelatedImages",
+			render: action.Render{
+				Refs:     []string{"test.registry/foo-operator/foo-bundle-no-csv-related-images:v0.2.0"},
+				Registry: reg,
+			},
+			expectCfg: &declcfg.DeclarativeConfig{
+				Bundles: []declcfg.Bundle{
+					{
+						Schema:  "olm.bundle",
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "test.registry/foo-operator/foo-bundle-no-csv-related-images:v0.2.0",
+						Properties: []property.Property{
+							property.MustBuildGVK("test.foo", "v1", "Foo"),
+							property.MustBuildGVKRequired("test.bar", "v1alpha1", "Bar"),
+							property.MustBuildPackage("foo", "0.2.0"),
+							property.MustBuildPackageRequired("bar", "<0.1.0"),
+							property.MustBuildBundleObjectData(foov2csvNoRelatedImages),
+							property.MustBuildBundleObjectData(foov2crdNoRelatedImages),
+						},
+						Objects: []string{string(foov2csvNoRelatedImages), string(foov2crdNoRelatedImages)},
+						CsvJSON: string(foov2csvNoRelatedImages),
+						RelatedImages: []declcfg.RelatedImage{
+							{
+								Image: "test.registry/foo-operator/foo-2:v0.2.0",
+							},
+							{
+								Image: "test.registry/foo-operator/foo-bundle-no-csv-related-images:v0.2.0",
+							},
+							{
+								Image: "test.registry/foo-operator/foo-init-2:v0.2.0",
+							},
+							{
+								Image: "test.registry/foo-operator/foo-init:v0.2.0",
+							},
+							{
 								Image: "test.registry/foo-operator/foo:v0.2.0",
 							},
 						},
@@ -687,6 +744,10 @@ var bundleImageV1 embed.FS
 //go:embed testdata/foo-bundle-v0.2.0/metadata/*
 var bundleImageV2 embed.FS
 
+//go:embed testdata/foo-bundle-v0.2.0-no-csv-related-images/manifests/*
+//go:embed testdata/foo-bundle-v0.2.0-no-csv-related-images/metadata/*
+var bundleImageV2NoCSVRelatedImages embed.FS
+
 //go:embed testdata/foo-index-v0.2.0-declcfg/foo/*
 var declcfgImage embed.FS
 
@@ -704,11 +765,15 @@ func newRegistry() (image.Registry, error) {
 	if err != nil {
 		return nil, err
 	}
-	subBundleImageV1, err := fs.Sub(bundleImageV2, "testdata/foo-bundle-v0.1.0")
+	subBundleImageV1, err := fs.Sub(bundleImageV1, "testdata/foo-bundle-v0.1.0")
 	if err != nil {
 		return nil, err
 	}
 	subBundleImageV2, err := fs.Sub(bundleImageV2, "testdata/foo-bundle-v0.2.0")
+	if err != nil {
+		return nil, err
+	}
+	subBundleImageV2NoCSVRelatedImages, err := fs.Sub(bundleImageV2NoCSVRelatedImages, "testdata/foo-bundle-v0.2.0-no-csv-related-images")
 	if err != nil {
 		return nil, err
 	}
@@ -737,6 +802,12 @@ func newRegistry() (image.Registry, error) {
 					bundle.PackageLabel: "foo",
 				},
 				FS: subBundleImageV2,
+			},
+			image.SimpleReference("test.registry/foo-operator/foo-bundle-no-csv-related-images:v0.2.0"): {
+				Labels: map[string]string{
+					bundle.PackageLabel: "foo",
+				},
+				FS: subBundleImageV2NoCSVRelatedImages,
 			},
 		},
 	}, nil
@@ -792,7 +863,7 @@ func generateSqliteFile(path string, imageMap map[image.Reference]string) error 
 		return err
 	}
 
-	populator := registry.NewDirectoryPopulator(loader, graphLoader, dbQuerier, imageMap, nil, false)
+	populator := registry.NewDirectoryPopulator(loader, graphLoader, dbQuerier, imageMap, nil)
 	if err := populator.Populate(registry.ReplacesMode); err != nil {
 		return err
 	}

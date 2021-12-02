@@ -4,10 +4,10 @@ go 1.16
 
 require (
 	github.com/Microsoft/hcsshim v0.8.9 // indirect
-	github.com/blang/semver v3.5.1+incompatible
+	github.com/blang/semver/v4 v4.0.0
 	github.com/bugsnag/bugsnag-go v1.5.3 // indirect
 	github.com/bugsnag/panicwrap v1.2.0 // indirect
-	github.com/containerd/containerd v1.4.8
+	github.com/containerd/containerd v1.4.11
 	github.com/containerd/continuity v0.0.0-20200413184840-d3ef23f19fbb // indirect
 	github.com/containerd/ttrpc v1.0.1 // indirect
 	github.com/docker/cli v0.0.0-20200130152716-5d0cf8839492

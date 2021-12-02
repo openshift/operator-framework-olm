@@ -1,7 +1,9 @@
+SHELL = /bin/bash
 GO := GOFLAGS="-mod=vendor" go
 CMDS := $(addprefix bin/, $(shell ls ./cmd | grep -v opm))
 OPM := $(addprefix bin/, opm)
 SPECIFIC_UNIT_TEST := $(if $(TEST),-run $(TEST),)
+extra_env := $(GOENV)
 export PKG := github.com/operator-framework/operator-registry
 export GIT_COMMIT := $(or $(SOURCE_GIT_COMMIT),$(shell git rev-parse --short HEAD))
 export OPM_VERSION := $(or $(SOURCE_GIT_TAG),$(shell git describe --always --tags HEAD))
@@ -34,11 +36,12 @@ endif
 all: clean test build
 
 $(CMDS):
-	$(GO) build $(extra_flags) $(TAGS) -o $@ ./cmd/$(notdir $@)
+	$(extra_env) $(GO) build $(extra_flags) $(TAGS) -o $@ ./cmd/$(notdir $@)
 
+.PHONY: $(OPM)
 $(OPM): opm_version_flags=-ldflags "-X '$(PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
 $(OPM):
-	$(GO) build $(opm_version_flags) $(extra_flags) $(TAGS) -o $@ ./cmd/$(notdir $@)
+	$(extra_env) $(GO) build $(opm_version_flags) $(extra_flags) $(TAGS) -o $@ ./cmd/$(notdir $@)
 
 .PHONY: build
 build: clean $(CMDS) $(OPM)
@@ -57,7 +60,7 @@ static: build
 
 .PHONY: unit
 unit:
-	$(GO) test -coverprofile=coverage.out $(SPECIFIC_UNIT_TEST) $(TAGS) $(TEST_RACE) -count=1 -v ./pkg/... ./alpha/...
+	$(GO) test -coverprofile=coverage.out $(SPECIFIC_UNIT_TEST) $(TAGS) $(TEST_RACE) -count=1 ./pkg/... ./alpha/...
 
 .PHONY: sanity-check
 sanity-check:
@@ -145,6 +148,6 @@ release:
 define tagged-or-empty
 $(shell \
 	echo $(OPM_VERSION) | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$$' \
-	&& git describe --exact-match HEAD >/dev/null 2>&1 \
+	&& git describe --tags --exact-match HEAD >/dev/null 2>&1 \
 	&& echo "$(OPM_IMAGE_REPO):$(1)" || echo "" )
 endef

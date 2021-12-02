@@ -3,7 +3,7 @@ package declcfg
 import (
 	"fmt"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/operator-framework/operator-registry/alpha/model"
@@ -16,6 +16,10 @@ func ConvertToModel(cfg DeclarativeConfig) (model.Model, error) {
 	for _, p := range cfg.Packages {
 		if p.Name == "" {
 			return nil, fmt.Errorf("config contains package with no name")
+		}
+
+		if _, ok := mpkgs[p.Name]; ok {
+			return nil, fmt.Errorf("duplicate package %q", p.Name)
 		}
 
 		mpkg := &model.Package{
@@ -42,6 +46,10 @@ func ConvertToModel(cfg DeclarativeConfig) (model.Model, error) {
 
 		if c.Name == "" {
 			return nil, fmt.Errorf("package %q contains channel with no name", c.Package)
+		}
+
+		if _, ok := mpkg.Channels[c.Name]; ok {
+			return nil, fmt.Errorf("package %q has duplicate channel %q", c.Package, c.Name)
 		}
 
 		mch := &model.Channel{
@@ -75,6 +83,10 @@ func ConvertToModel(cfg DeclarativeConfig) (model.Model, error) {
 		}
 	}
 
+	// packageBundles tracks the set of bundle names for each package
+	// and is used to detect duplicate bundles.
+	packageBundles := map[string]sets.String{}
+
 	for _, b := range cfg.Bundles {
 		if b.Package == "" {
 			return nil, fmt.Errorf("package name must be set for bundle %q", b.Name)
@@ -83,6 +95,16 @@ func ConvertToModel(cfg DeclarativeConfig) (model.Model, error) {
 		if !ok {
 			return nil, fmt.Errorf("unknown package %q for bundle %q", b.Package, b.Name)
 		}
+
+		bundles, ok := packageBundles[b.Package]
+		if !ok {
+			bundles = sets.NewString()
+		}
+		if bundles.Has(b.Name) {
+			return nil, fmt.Errorf("package %q has duplicate bundle %q", b.Package, b.Name)
+		}
+		bundles.Insert(b.Name)
+		packageBundles[b.Package] = bundles
 
 		props, err := property.Parse(b.Properties)
 		if err != nil {
@@ -98,9 +120,10 @@ func ConvertToModel(cfg DeclarativeConfig) (model.Model, error) {
 		}
 
 		// Parse version from the package property.
-		ver, err := semver.Parse(props.Packages[0].Version)
+		rawVersion := props.Packages[0].Version
+		ver, err := semver.Parse(rawVersion)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing bundle version: %v", err)
+			return nil, fmt.Errorf("error parsing bundle %q version %q: %v", b.Name, rawVersion, err)
 		}
 
 		channelDefinedEntries[b.Package] = channelDefinedEntries[b.Package].Delete(b.Name)

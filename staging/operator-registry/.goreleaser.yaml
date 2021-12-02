@@ -8,15 +8,17 @@ builds:
       - amd64
     env:
       - CC=gcc
+      - CGO_ENABLED=1
     mod_timestamp: "{{ .CommitTimestamp }}"
     flags: &build-flags
-      - -tags=json1
+      - -tags=json1,netgo,osusergo
     asmflags: &build-asmflags
       - all=-trimpath={{ .Env.PWD }}
     gcflags: &build-gcflags
       - all=-trimpath={{ .Env.PWD }}
     ldflags: &build-ldflags
       - -s -w
+      - -extldflags=-static
       - -X {{ .Env.PKG }}/cmd/opm/version.gitCommit={{ .Env.GIT_COMMIT }}
       - -X {{ .Env.PKG }}/cmd/opm/version.opmVersion={{ .Env.OPM_VERSION }}
       - -X {{ .Env.PKG }}/cmd/opm/version.buildDate={{ .Env.BUILD_DATE }}
@@ -29,6 +31,7 @@ builds:
       - arm64
     env:
       - CC=aarch64-linux-gnu-gcc
+      - CGO_ENABLED=1
     mod_timestamp: "{{ .CommitTimestamp }}"
     flags: *build-flags
     asmflags: *build-asmflags
@@ -43,6 +46,7 @@ builds:
       - ppc64le
     env:
       - CC=powerpc64le-linux-gnu-gcc
+      - CGO_ENABLED=1
     mod_timestamp: "{{ .CommitTimestamp }}"
     flags: *build-flags
     asmflags: *build-asmflags
@@ -57,6 +61,7 @@ builds:
       - s390x
     env:
       - CC=s390x-linux-gnu-gcc
+      - CGO_ENABLED=1
     mod_timestamp: "{{ .CommitTimestamp }}"
     flags: *build-flags
     asmflags: *build-asmflags
@@ -71,6 +76,7 @@ builds:
       - amd64
     env:
       - CC=x86_64-w64-mingw32-gcc-posix
+      - CGO_ENABLED=1
     mod_timestamp: "{{ .CommitTimestamp }}"
     flags: *build-flags
     asmflags: *build-asmflags

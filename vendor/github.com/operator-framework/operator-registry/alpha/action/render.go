@@ -52,6 +52,8 @@ type Render struct {
 	Refs           []string
 	Registry       image.Registry
 	AllowedRefMask RefType
+
+	skipSqliteDeprecationLog bool
 }
 
 func nullLogger() *logrus.Entry {
@@ -61,6 +63,10 @@ func nullLogger() *logrus.Entry {
 }
 
 func (r Render) Run(ctx context.Context) (*declcfg.DeclarativeConfig, error) {
+	if r.skipSqliteDeprecationLog {
+		// exhaust once with a no-op function.
+		logDeprecationMessage.Do(func() {})
+	}
 	if r.Registry == nil {
 		reg, err := r.createRegistry()
 		if err != nil {
@@ -290,7 +296,7 @@ func populateDBRelatedImages(ctx context.Context, cfg *declcfg.DeclarativeConfig
 }
 
 func bundleToDeclcfg(bundle *registry.Bundle) (*declcfg.DeclarativeConfig, error) {
-	bundleProperties, err := registry.PropertiesFromBundle(bundle)
+	objs, props, err := registry.ObjectsAndPropertiesFromBundle(bundle)
 	if err != nil {
 		return nil, fmt.Errorf("get properties for bundle %q: %v", bundle.Name, err)
 	}
@@ -298,14 +304,25 @@ func bundleToDeclcfg(bundle *registry.Bundle) (*declcfg.DeclarativeConfig, error
 	if err != nil {
 		return nil, fmt.Errorf("get related images for bundle %q: %v", bundle.Name, err)
 	}
+	var csvJson []byte
+	for _, obj := range bundle.Objects {
+		if obj.GetKind() == "ClusterServiceVersion" {
+			csvJson, err = json.Marshal(obj)
+			if err != nil {
+				return nil, fmt.Errorf("marshal CSV JSON for bundle %q: %v", bundle.Name, err)
+			}
+		}
+	}
 
 	dBundle := declcfg.Bundle{
 		Schema:        "olm.bundle",
 		Name:          bundle.Name,
 		Package:       bundle.Package,
 		Image:         bundle.BundleImage,
-		Properties:    bundleProperties,
+		Properties:    props,
 		RelatedImages: relatedImages,
+		Objects:       objs,
+		CsvJSON:       string(csvJson),
 	}
 
 	return &declcfg.DeclarativeConfig{Bundles: []declcfg.Bundle{dBundle}}, nil
@@ -322,14 +339,12 @@ func getRelatedImages(b *registry.Bundle) ([]declcfg.RelatedImage, error) {
 		return nil, err
 	}
 
-	rawValue, ok := objmap["relatedImages"]
-	if !ok || rawValue == nil {
-		return nil, err
-	}
-
 	var relatedImages []declcfg.RelatedImage
-	if err = json.Unmarshal(*rawValue, &relatedImages); err != nil {
-		return nil, err
+	rawValue, ok := objmap["relatedImages"]
+	if ok && rawValue != nil {
+		if err = json.Unmarshal(*rawValue, &relatedImages); err != nil {
+			return nil, err
+		}
 	}
 
 	// Keep track of the images we've already found, so that we don't add
