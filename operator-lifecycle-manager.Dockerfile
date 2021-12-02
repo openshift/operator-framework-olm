@@ -27,6 +27,9 @@ COPY --from=builder /build/bin/package-server /bin/package-server
 COPY --from=builder /build/bin/cpb /bin/cpb
 COPY --from=builder /build/bin/psm /bin/psm
 
+# Add runtime constraints
+COPY --from=builder /build/runtime_constraints/runtime_constraints.json /opt/olm/runtime_constraints.json
+
 # This image doesn't need to run as root user.
 USER 1001
 
