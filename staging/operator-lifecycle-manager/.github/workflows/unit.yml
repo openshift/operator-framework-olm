@@ -1,11 +1,9 @@
-name: ci
+name: unit
 on:
   push:
     branches:
       - master
   pull_request:
-    paths-ignore:
-    - '**/*.md'
 jobs:
   unit:
     runs-on: ubuntu-latest
