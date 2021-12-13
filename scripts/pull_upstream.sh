@@ -103,8 +103,9 @@ sh -c "cd ${remote_dir} && \
 	go mod tidy -e && \
 	git add go.mod go.sum"
 
-# remove nested OWNERS file for openshift CI
+# remove nested OWNERS and MAINTAINERS file for openshift CI
 git rm "${remote_dir}/OWNERS"
+git rm "${remote_dir}/MAINTAINERS.md"
 
 # find commit for tracked target to write to repo_list
 git fetch --tags "${remote_name}" +"${remote_ref}":refs/remotetags/"${remote_name}"/"${remote_ref}"
