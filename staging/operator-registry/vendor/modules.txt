@@ -37,6 +37,8 @@ github.com/PuerkitoBio/urlesc
 github.com/Shopify/logrus-bugsnag
 # github.com/alessio/shellescape v1.4.1
 github.com/alessio/shellescape
+# github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210826220005-b48c857c3a0e
+github.com/antlr/antlr4/runtime/Go/antlr
 # github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 github.com/asaskevich/govalidator
 # github.com/beorn7/perks v1.0.1
@@ -250,6 +252,25 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
+github.com/golang/protobuf/ptypes/wrappers
+# github.com/google/cel-go v0.9.0
+github.com/google/cel-go/cel
+github.com/google/cel-go/checker
+github.com/google/cel-go/checker/decls
+github.com/google/cel-go/common
+github.com/google/cel-go/common/containers
+github.com/google/cel-go/common/debug
+github.com/google/cel-go/common/operators
+github.com/google/cel-go/common/overloads
+github.com/google/cel-go/common/runes
+github.com/google/cel-go/common/types
+github.com/google/cel-go/common/types/pb
+github.com/google/cel-go/common/types/ref
+github.com/google/cel-go/common/types/traits
+github.com/google/cel-go/interpreter
+github.com/google/cel-go/interpreter/functions
+github.com/google/cel-go/parser
+github.com/google/cel-go/parser/gen
 # github.com/google/go-cmp v0.5.6
 ## explicit
 github.com/google/go-cmp/cmp
@@ -394,12 +415,9 @@ github.com/opencontainers/go-digest
 ## explicit
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
-<<<<<<< HEAD
-# github.com/operator-framework/api v0.10.5
-=======
 # github.com/operator-framework/api v0.11.0
->>>>>>> acaac87c5 ((vendor) bump api to v0.11.0 (#887))
 ## explicit
+github.com/operator-framework/api/pkg/constraints
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/manifests
 github.com/operator-framework/api/pkg/operators
@@ -449,6 +467,8 @@ github.com/sirupsen/logrus
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
+# github.com/stoewer/go-strcase v1.2.0
+github.com/stoewer/go-strcase
 # github.com/stretchr/testify v1.7.0
 ## explicit
 github.com/stretchr/testify/assert
@@ -561,14 +581,12 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a
+# google.golang.org/genproto v0.0.0-20210831024726-fe130286e0e2
+google.golang.org/genproto/googleapis/api/expr/v1alpha1
+google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/rpc/status
-<<<<<<< HEAD
-# google.golang.org/grpc v1.30.0
-=======
 google.golang.org/genproto/protobuf/field_mask
 # google.golang.org/grpc v1.41.0
->>>>>>> 24e05d164 (bump grpc dependency to latest (#810))
 ## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -603,11 +621,8 @@ google.golang.org/grpc/internal/serviceconfig
 google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
-<<<<<<< HEAD
-=======
 google.golang.org/grpc/internal/transport/networktype
 google.golang.org/grpc/internal/xds/env
->>>>>>> 24e05d164 (bump grpc dependency to latest (#810))
 google.golang.org/grpc/keepalive
 google.golang.org/grpc/metadata
 google.golang.org/grpc/peer
@@ -653,8 +668,12 @@ google.golang.org/protobuf/reflect/protoregistry
 google.golang.org/protobuf/runtime/protoiface
 google.golang.org/protobuf/runtime/protoimpl
 google.golang.org/protobuf/types/descriptorpb
+google.golang.org/protobuf/types/dynamicpb
 google.golang.org/protobuf/types/known/anypb
-google.golang.org/protobuf/types/known/durationpb
+google.golang.org/protobuf/types/known/durationpb\
+google.golang.org/protobuf/types/known/emptypb
+google.golang.org/protobuf/types/known/fieldmaskpb
+google.golang.org/protobuf/types/known/structpb
 google.golang.org/protobuf/types/known/timestamppb
 google.golang.org/protobuf/types/pluginpb
 # gopkg.in/inf.v0 v0.9.1
