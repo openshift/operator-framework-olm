@@ -12,7 +12,7 @@ require (
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo v1.16.4
 	github.com/openshift/api v0.0.0-20200331152225-585af27e34fd
-	github.com/operator-framework/api v0.10.3
+	github.com/operator-framework/api v0.10.8-0.20211210002341-1eb6c0266cce
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.17.5
 	github.com/sirupsen/logrus v1.8.1
