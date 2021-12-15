@@ -2,11 +2,16 @@ package v1alpha1
 
 import (
 	"fmt"
+<<<<<<< HEAD
 	"time"
 
+=======
+>>>>>>> acaac87c5 ((vendor) bump api to v0.11.0 (#887))
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"time"
 )
 
 const (
@@ -86,6 +91,27 @@ type CatalogSourceSpec struct {
 	Icon        Icon   `json:"icon,omitempty"`
 }
 
+<<<<<<< HEAD
+=======
+// GrpcPodConfig contains configuration specified for a catalog source
+type GrpcPodConfig struct {
+	// NodeSelector is a selector which must be true for the pod to fit on a node.
+	// Selector which must match a node's labels for the pod to be scheduled on that node.
+	// +optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// Tolerations are the catalog source's pod's tolerations.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// If specified, indicates the pod's priority.
+	// If not specified, the pod priority will be default or zero if there is no
+	// default.
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
+}
+
+>>>>>>> acaac87c5 ((vendor) bump api to v0.11.0 (#887))
 // UpdateStrategy holds all the different types of catalog source update strategies
 // Currently only registry polling strategy is implemented
 type UpdateStrategy struct {

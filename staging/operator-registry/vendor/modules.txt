@@ -394,7 +394,11 @@ github.com/opencontainers/go-digest
 ## explicit
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
+<<<<<<< HEAD
 # github.com/operator-framework/api v0.10.5
+=======
+# github.com/operator-framework/api v0.11.0
+>>>>>>> acaac87c5 ((vendor) bump api to v0.11.0 (#887))
 ## explicit
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/manifests
