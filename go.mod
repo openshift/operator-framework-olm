@@ -12,7 +12,7 @@ require (
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo v1.16.4
 	github.com/openshift/api v0.0.0-20200331152225-585af27e34fd
-	github.com/operator-framework/api v0.10.8-0.20211210002341-1eb6c0266cce
+	github.com/operator-framework/api v0.10.8-0.20211210205029-40cb9fd4036a
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.17.5
 	github.com/sirupsen/logrus v1.8.1
@@ -22,12 +22,12 @@ require (
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.6.2
-	k8s.io/api v0.22.1
-	k8s.io/apimachinery v0.22.1
-	k8s.io/client-go v0.22.1
-	k8s.io/code-generator v0.22.1
+	k8s.io/api v0.22.2
+	k8s.io/apimachinery v0.22.2
+	k8s.io/client-go v0.22.2
+	k8s.io/code-generator v0.22.2
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d
-	k8s.io/utils v0.0.0-20210802155522-efc7438f0176
+	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
 	sigs.k8s.io/controller-runtime v0.10.0
 	sigs.k8s.io/controller-tools v0.6.2
 )
