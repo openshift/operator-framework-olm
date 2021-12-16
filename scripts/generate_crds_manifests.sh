@@ -64,6 +64,7 @@ ${YQ} merge --inplace -d'0' manifests/0000_50_olm_00-namespace.yaml scripts/moni
 ${YQ} write --inplace -s scripts/olm-deployment.patch.yaml manifests/0000_50_olm_07-olm-operator.deployment.yaml
 ${YQ} write --inplace -s scripts/catalog-deployment.patch.yaml manifests/0000_50_olm_08-catalog-operator.deployment.yaml
 ${YQ} write --inplace -s scripts/packageserver-deployment.patch.yaml manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml
+${YQ} merge --inplace manifests/0000_50_olm_02-olmconfig.yaml scripts/cluster-olmconfig.patch.yaml
 mv manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml pkg/manifests/csv.yaml
 cp scripts/packageserver-pdb.yaml manifests/0000_50_olm_00-packageserver.pdb.yaml
 
