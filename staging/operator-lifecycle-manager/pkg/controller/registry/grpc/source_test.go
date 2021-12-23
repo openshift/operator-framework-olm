@@ -3,7 +3,6 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"sync"
 	"testing"
@@ -23,7 +22,7 @@ import (
 )
 
 func server(store opregistry.Query) (func(), string, func()) {
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:"))
+	lis, err := net.Listen("tcp", "localhost:")
 	if err != nil {
 		logrus.Fatalf("failed to listen: %v", err)
 	}
@@ -59,7 +58,7 @@ func (f *FakeSourceSyncer) sync(state SourceState) {
 		f.History[state.Key] = []connectivity.State{}
 	}
 	f.History[state.Key] = append(f.History[state.Key], state.State)
-	f.expectedEvents -= 1
+	f.expectedEvents--
 	if f.expectedEvents == 0 {
 		f.done <- struct{}{}
 	}
@@ -124,7 +123,7 @@ func TestConnectionEvents(t *testing.T) {
 		{
 			name: "Basic",
 			expectedHistory: map[registry.CatalogKey][]connectivity.State{
-				registry.CatalogKey{Name: "test", Namespace: "test"}: {
+				{Name: "test", Namespace: "test"}: {
 					connectivity.Connecting,
 					connectivity.Ready,
 				},
@@ -133,11 +132,11 @@ func TestConnectionEvents(t *testing.T) {
 		{
 			name: "Multiple",
 			expectedHistory: map[registry.CatalogKey][]connectivity.State{
-				registry.CatalogKey{Name: "test", Namespace: "test"}: {
+				{Name: "test", Namespace: "test"}: {
 					connectivity.Connecting,
 					connectivity.Ready,
 				},
-				registry.CatalogKey{Name: "test2", Namespace: "test2"}: {
+				{Name: "test2", Namespace: "test2"}: {
 					connectivity.Connecting,
 					connectivity.Ready,
 				},
@@ -149,3 +148,247 @@ func TestConnectionEvents(t *testing.T) {
 		t.Run(tt.name, test(tt))
 	}
 }
+<<<<<<< HEAD
+=======
+
+func TestGetEnvAny(t *testing.T) {
+	type envVar struct {
+		key   string
+		value string
+	}
+
+	type testcase struct {
+		name          string
+		envVars       []envVar
+		expectedValue string
+	}
+
+	test := func(tt testcase) func(t *testing.T) {
+		return func(t *testing.T) {
+			for _, envVar := range tt.envVars {
+				os.Setenv(envVar.key, envVar.value)
+			}
+
+			defer func() {
+				for _, envVar := range tt.envVars {
+					os.Setenv(envVar.key, "")
+				}
+			}()
+
+			require.Equal(t, getEnvAny("NO_PROXY", "no_proxy"), tt.expectedValue)
+		}
+	}
+
+	cases := []testcase{
+		{
+			name:          "NotFound",
+			expectedValue: "",
+		},
+		{
+			name: "LowerCaseFound",
+			envVars: []envVar{
+				{
+					key:   "no_proxy",
+					value: "foo",
+				},
+			},
+			expectedValue: "foo",
+		},
+		{
+			name: "UpperCaseFound",
+			envVars: []envVar{
+				{
+					key:   "NO_PROXY",
+					value: "bar",
+				},
+			},
+			expectedValue: "bar",
+		},
+		{
+			name: "OrderPreference",
+			envVars: []envVar{
+				{
+					key:   "no_proxy",
+					value: "foo",
+				},
+				{
+					key:   "NO_PROXY",
+					value: "bar",
+				},
+			},
+			expectedValue: "bar",
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, test(tt))
+	}
+}
+
+func TestGetGRPCProxyEnv(t *testing.T) {
+	type envVar struct {
+		key   string
+		value string
+	}
+
+	type testcase struct {
+		name          string
+		envVars       []envVar
+		expectedValue string
+	}
+
+	test := func(tt testcase) func(t *testing.T) {
+		return func(t *testing.T) {
+			for _, envVar := range tt.envVars {
+				os.Setenv(envVar.key, envVar.value)
+			}
+
+			defer func() {
+				for _, envVar := range tt.envVars {
+					os.Setenv(envVar.key, "")
+				}
+			}()
+
+			require.Equal(t, getGRPCProxyEnv(), tt.expectedValue)
+		}
+	}
+
+	cases := []testcase{
+		{
+			name:          "NotFound",
+			expectedValue: "",
+		},
+		{
+			name: "LowerCaseFound",
+			envVars: []envVar{
+				{
+					key:   "grpc_proxy",
+					value: "foo",
+				},
+			},
+			expectedValue: "foo",
+		},
+		{
+			name: "UpperCaseFound",
+			envVars: []envVar{
+				{
+					key:   "GRPC_PROXY",
+					value: "bar",
+				},
+			},
+			expectedValue: "bar",
+		},
+		{
+			name: "UpperCasePreference",
+			envVars: []envVar{
+				{
+					key:   "grpc_proxy",
+					value: "foo",
+				},
+				{
+					key:   "GRPC_PROXY",
+					value: "bar",
+				},
+			},
+			expectedValue: "bar",
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, test(tt))
+	}
+}
+
+func TestGRPCProxyURL(t *testing.T) {
+	type envVar struct {
+		key   string
+		value string
+	}
+
+	type testcase struct {
+		name          string
+		address       string
+		envVars       []envVar
+		expectedProxy string
+		expectedError error
+	}
+
+	test := func(tt testcase) func(t *testing.T) {
+		return func(t *testing.T) {
+			for _, envVar := range tt.envVars {
+				os.Setenv(envVar.key, envVar.value)
+			}
+
+			defer func() {
+				for _, envVar := range tt.envVars {
+					os.Setenv(envVar.key, "")
+				}
+			}()
+
+			var expectedProxyURL *url.URL
+			var err error
+			if tt.expectedProxy != "" {
+				expectedProxyURL, err = url.Parse(tt.expectedProxy)
+				require.NoError(t, err)
+			}
+
+			proxyURL, err := grpcProxyURL(tt.address)
+			require.Equal(t, expectedProxyURL, proxyURL)
+			require.Equal(t, tt.expectedError, err)
+		}
+	}
+
+	cases := []testcase{
+		{
+			name:          "NoGRPCProxySet",
+			address:       "foo.com:8080",
+			expectedProxy: "",
+			expectedError: nil,
+		},
+		{
+			name:    "GRPCProxyFoundForAddress",
+			address: "foo.com:8080",
+			envVars: []envVar{
+				{
+					key:   "GRPC_PROXY",
+					value: "http://my-proxy:8080",
+				},
+			},
+			expectedProxy: "http://my-proxy:8080",
+			expectedError: nil,
+		},
+		{
+			name:    "GRPCNoProxyIncludesAddress",
+			address: "foo.com:8080",
+			envVars: []envVar{
+				{
+					key:   "GRPC_PROXY",
+					value: "http://my-proxy:8080",
+				},
+				{
+					key:   "NO_PROXY",
+					value: "foo.com:8080",
+				},
+			},
+			expectedProxy: "",
+			expectedError: nil,
+		},
+		{
+			name:          "MissingPort",
+			address:       "foo.com",
+			expectedProxy: "",
+			expectedError: error(&net.AddrError{Err: "missing port in address", Addr: "foo.com"}),
+		},
+		{
+			name:          "TooManyColons",
+			address:       "http://bar.com:8080",
+			expectedProxy: "",
+			expectedError: error(&net.AddrError{Err: "too many colons in address", Addr: "http://bar.com:8080"}),
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, test(tt))
+	}
+}
+>>>>>>> b3cded1d8 (Integrate golangci-lint to run aggregate linting checks for CI (#2536))
