@@ -11,6 +11,7 @@ approvers:
   - ankitathomas
   - joelanford
   - timflannagan
+  - perdasilva
 reviewers:
   - njhale
   - dinhxuanvu
@@ -24,4 +25,5 @@ reviewers:
   - ankitathomas
   - joelanford
   - timflannagan
+  - perdasilva
 component: "OLM"
