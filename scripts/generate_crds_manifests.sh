@@ -55,7 +55,6 @@ add_ibm_managed_cloud_annotations() {
          ${YQ} d -d'*' --inplace "$g" 'spec.template.spec.nodeSelector."node-role.kubernetes.io/master"'
       fi
       ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/self-managed-high-availability']' true
-      ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/single-node-developer']' true
    done
 }
 
@@ -92,8 +91,6 @@ metadata:
   labels:
     app: package-server-manager
   annotations:
-    include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
 spec:
   strategy:
     type: RollingUpdate
@@ -172,7 +169,6 @@ metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
     release.openshift.io/create-only: "true"
   name: collect-profiles-config
   namespace: openshift-operator-lifecycle-manager
@@ -188,7 +184,6 @@ metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
 rules:
@@ -205,7 +200,6 @@ metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
 subjects:
@@ -223,7 +217,6 @@ metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
 EOF
@@ -235,7 +228,6 @@ metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
     release.openshift.io/create-only: "true"
   name: pprof-cert
   namespace: openshift-operator-lifecycle-manager
@@ -252,7 +244,6 @@ metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
 spec:

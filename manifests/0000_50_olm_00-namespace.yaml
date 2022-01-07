@@ -7,7 +7,6 @@ metadata:
     workload.openshift.io/allowed: "management"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
   labels:
     openshift.io/scc: "anyuid"
     openshift.io/cluster-monitoring: "true"
@@ -21,6 +20,5 @@ metadata:
     workload.openshift.io/allowed: "management"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
   labels:
     openshift.io/scc: "anyuid"
