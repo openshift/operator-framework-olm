@@ -1246,7 +1246,7 @@ func (a *Operator) allNamespaceOperatorGroups() ([]*v1.OperatorGroup, error) {
 }
 
 func (a *Operator) syncOLMConfig(obj interface{}) (syncError error) {
-	a.logger.Info("Processing olmConfig")
+	a.logger.Debug("Processing olmConfig")
 	olmConfig, ok := obj.(*v1.OLMConfig)
 	if !ok {
 		return fmt.Errorf("casting OLMConfig failed")
