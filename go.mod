@@ -4,13 +4,13 @@ go 1.16
 
 require (
 	github.com/go-bindata/go-bindata/v3 v3.1.3
-	github.com/go-logr/logr v0.4.0
+	github.com/go-logr/logr v1.2.0
 	github.com/golang/mock v1.6.0
 	github.com/googleapis/gnostic v0.5.5
 	github.com/grpc-ecosystem/grpc-health-probe v0.4.4
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
-	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20200331152225-585af27e34fd
 	github.com/operator-framework/api v0.12.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
@@ -22,14 +22,14 @@ require (
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.6.2
-	k8s.io/api v0.22.2
-	k8s.io/apimachinery v0.22.2
-	k8s.io/client-go v0.22.2
-	k8s.io/code-generator v0.22.2
-	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d
-	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
-	sigs.k8s.io/controller-runtime v0.10.0
-	sigs.k8s.io/controller-tools v0.6.2
+	k8s.io/api v0.23.0
+	k8s.io/apimachinery v0.23.0
+	k8s.io/client-go v0.23.0
+	k8s.io/code-generator v0.23.0
+	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65
+	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
+	sigs.k8s.io/controller-runtime v0.11.0
+	sigs.k8s.io/controller-tools v0.8.0
 )
 
 replace (
