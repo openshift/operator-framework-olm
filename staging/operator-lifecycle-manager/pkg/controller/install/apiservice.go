@@ -41,6 +41,7 @@ func (i *StrategyDeploymentInstaller) createOrUpdateAPIService(caPEM []byte, des
 		}
 		apiService.SetName(apiServiceName)
 	} else {
+		apiService = apiService.DeepCopy()
 		csv, ok := i.owner.(*v1alpha1.ClusterServiceVersion)
 		if !ok {
 			return fmt.Errorf("APIServices require a CSV Owner.")
