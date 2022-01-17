@@ -807,6 +807,7 @@ func (a *Operator) syncObject(obj interface{}) (syncError error) {
 	if related {
 		csvList := a.csvSet(metaObj.GetNamespace(), v1alpha1.CSVPhaseFailed)
 		for _, csv := range csvList {
+			csv = csv.DeepCopy()
 			if csv.Status.Reason != v1alpha1.CSVReasonComponentFailedNoRetry {
 				continue
 			}
@@ -1293,7 +1294,7 @@ func (a *Operator) operatorGroupFromAnnotations(logger *logrus.Entry, csv *v1alp
 		return nil
 	}
 
-	return operatorGroup
+	return operatorGroup.DeepCopy()
 }
 
 func (a *Operator) operatorGroupForCSV(csv *v1alpha1.ClusterServiceVersion, logger *logrus.Entry) (*v1.OperatorGroup, error) {
@@ -1334,7 +1335,7 @@ func (a *Operator) operatorGroupForCSV(csv *v1alpha1.ClusterServiceVersion, logg
 			return nil, nil
 		}
 		logger.Debug("csv in operatorgroup")
-		return operatorGroup, nil
+		return operatorGroup.DeepCopy(), nil
 	default:
 		err = fmt.Errorf("csv created in namespace with multiple operatorgroups, can't pick one automatically")
 		logger.WithError(err).Warn("csv failed to become an operatorgroup member")
