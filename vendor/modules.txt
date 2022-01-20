@@ -632,6 +632,7 @@ github.com/operator-framework/operator-registry/cmd/opm/alpha/list
 github.com/operator-framework/operator-registry/cmd/opm/generate
 github.com/operator-framework/operator-registry/cmd/opm/index
 github.com/operator-framework/operator-registry/cmd/opm/init
+github.com/operator-framework/operator-registry/cmd/opm/internal/util
 github.com/operator-framework/operator-registry/cmd/opm/migrate
 github.com/operator-framework/operator-registry/cmd/opm/registry
 github.com/operator-framework/operator-registry/cmd/opm/render
