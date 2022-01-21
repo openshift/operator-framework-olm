@@ -104,8 +104,8 @@ func (c *InstallStrategyDeploymentClientForNamespace) CreateDeployment(deploymen
 func (c *InstallStrategyDeploymentClientForNamespace) DeleteDeployment(name string) error {
 	foregroundDelete := metav1.DeletePropagationForeground // cascading delete
 	// Note(tflannag): See https://bugzilla.redhat.com/show_bug.cgi?id=1939294.
-	immediate := int64(1)
-	immediateForegroundDelete := &metav1.DeleteOptions{GracePeriodSeconds: &immediate, PropagationPolicy: &foregroundDelete}
+	// immediate := int64(1)
+	immediateForegroundDelete := &metav1.DeleteOptions{GracePeriodSeconds: nil, PropagationPolicy: &foregroundDelete}
 	return c.opClient.DeleteDeployment(c.Namespace, name, immediateForegroundDelete)
 }
 
