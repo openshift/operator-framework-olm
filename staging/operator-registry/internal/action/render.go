@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -76,6 +77,13 @@ func (r Render) Run(ctx context.Context) (*declcfg.DeclarativeConfig, error) {
 			return nil, fmt.Errorf("render reference %q: %w", ref, err)
 		}
 		renderBundleObjects(cfg)
+
+		for _, b := range cfg.Bundles {
+			sort.Slice(b.RelatedImages, func(i, j int) bool {
+				return b.RelatedImages[i].Image < b.RelatedImages[j].Image
+			})
+		}
+
 		cfgs = append(cfgs, *cfg)
 	}
 
@@ -233,6 +241,7 @@ func sqliteToDeclcfg(ctx context.Context, dbFile string) (*declcfg.DeclarativeCo
 	if err := populateDBRelatedImages(ctx, &cfg, db); err != nil {
 		return nil, err
 	}
+
 	return &cfg, nil
 }
 
@@ -313,15 +322,40 @@ func getRelatedImages(b *registry.Bundle) ([]declcfg.RelatedImage, error) {
 		return nil, err
 	}
 
+	var relatedImages []declcfg.RelatedImage
 	rawValue, ok := objmap["relatedImages"]
-	if !ok || rawValue == nil {
-		return nil, err
+	if ok && rawValue != nil {
+		if err = json.Unmarshal(*rawValue, &relatedImages); err != nil {
+			return nil, err
+		}
 	}
 
-	var relatedImages []declcfg.RelatedImage
-	if err = json.Unmarshal(*rawValue, &relatedImages); err != nil {
+	// Keep track of the images we've already found, so that we don't add
+	// them multiple times.
+	allImages := sets.NewString()
+	for _, ri := range relatedImages {
+		allImages = allImages.Insert(ri.Image)
+	}
+
+	if !allImages.Has(b.BundleImage) {
+		relatedImages = append(relatedImages, declcfg.RelatedImage{
+			Image: b.BundleImage,
+		})
+	}
+
+	opImages, err := csv.GetOperatorImages()
+	if err != nil {
 		return nil, err
 	}
+	for img := range opImages {
+		if !allImages.Has(img) {
+			relatedImages = append(relatedImages, declcfg.RelatedImage{
+				Image: img,
+			})
+		}
+		allImages = allImages.Insert(img)
+	}
+
 	return relatedImages, nil
 }
 
