@@ -67,6 +67,7 @@ builds:
     asmflags: *build-asmflags
     gcflags: *build-gcflags
     ldflags: *build-ldflags
+<<<<<<< HEAD:staging/operator-registry/.goreleaser.yaml
   - id: windows-amd64
     main: ./cmd/opm
     binary: opm
@@ -110,6 +111,8 @@ builds:
     asmflags: *build-asmflags
     gcflags: *build-gcflags
     ldflags: *build-ldflags
+=======
+>>>>>>> 0b008deff (consolidate binary builds and release uploads into goreleaser build configs (#914)):staging/operator-registry/release/goreleaser.linux.yaml
 archives:
   - id: opm
     builds:
@@ -117,11 +120,15 @@ archives:
       - linux-arm64
       - linux-ppc64le
       - linux-s390x
+<<<<<<< HEAD:staging/operator-registry/.goreleaser.yaml
       - windows-amd64
       - darwin-amd64
       - darwin-arm64
     name_template: "{{ .Binary }}_{{ .Env.OPM_VERSION }}_{{ .Os }}_{{ .Arch }}"
+=======
+>>>>>>> 0b008deff (consolidate binary builds and release uploads into goreleaser build configs (#914)):staging/operator-registry/release/goreleaser.linux.yaml
     format: binary
+    name_template: "{{ .Os }}-{{ .Arch }}-{{ .Binary }}"
 dockers:
   - image_templates:
       - "{{ .Env.OPM_IMAGE_REPO }}:{{ .Env.IMAGE_TAG }}-amd64"
@@ -197,5 +204,9 @@ checksum:
 snapshot:
   name_template: "{{ .Env.OPM_VERSION }}"
 release:
+<<<<<<< HEAD:staging/operator-registry/.goreleaser.yaml
   name_template: "{{ .Env.OPM_VERSION }}"
   draft: true
+=======
+  disable: true
+>>>>>>> 0b008deff (consolidate binary builds and release uploads into goreleaser build configs (#914)):staging/operator-registry/release/goreleaser.linux.yaml
