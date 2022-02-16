@@ -834,7 +834,7 @@ var _ = Describe("Install Plan", func() {
 			}()
 
 			// Create the catalog source
-			mainCatalogSourceName := genName("mock-ocs-main-" + strings.ToLower(CurrentGinkgoTestDescription().TestText) + "-")
+			mainCatalogSourceName := genName("mock-ocs-main-" + strings.ToLower(K8sSafeCurrentTestDescription()) + "-")
 			_, cleanupCatalogSource := createInternalCatalogSource(c, crc, mainCatalogSourceName, testNamespace, mainManifests, []apiextensions.CustomResourceDefinition{dependentCRD, mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{dependentBetaCSV, dependentStableCSV, mainStableCSV, mainBetaCSV})
 			defer cleanupCatalogSource()
 
@@ -3006,7 +3006,8 @@ var _ = Describe("Install Plan", func() {
 
 	// This It spec verifies that, in cases where there are multiple options to fulfil a dependency
 	// across multiple catalogs, we only generate one installplan with one set of resolved resources.
-	It("consistent generation", func() {
+	//issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2633
+	It("[FLAKE] consistent generation", func() {
 
 		// Configure catalogs:
 		//  - one catalog with a package that has a dependency
@@ -3190,7 +3191,8 @@ var _ = Describe("Install Plan", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should clear clear up the condition in the InstallPlan status that contains an error message when a valid OperatorGroup is created", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2636
+		It("[FLAKE] should clear up the condition in the InstallPlan status that contains an error message when a valid OperatorGroup is created", func() {
 
 			// first check that a condition with a message exists
 			fetchedInstallPlan, err := fetchInstallPlanWithNamespace(GinkgoT(), crc, installPlanName, ns.GetName(), buildInstallPlanPhaseCheckFunc(operatorsv1alpha1.InstallPlanPhaseInstalling))
@@ -3198,8 +3200,17 @@ var _ = Describe("Install Plan", func() {
 			Expect(fetchedInstallPlan).NotTo(BeNil())
 			cond := operatorsv1alpha1.InstallPlanCondition{Type: operatorsv1alpha1.InstallPlanInstalled, Status: corev1.ConditionFalse, Reason: operatorsv1alpha1.InstallPlanReasonInstallCheckFailed,
 				Message: "no operator group found that is managing this namespace"}
-			Expect(fetchedInstallPlan.Status.Phase).To(Equal(operatorsv1alpha1.InstallPlanPhaseInstalling))
-			Expect(hasCondition(fetchedInstallPlan, cond)).To(BeTrue())
+
+			Eventually(func() bool {
+				fetchedInstallPlan, err := fetchInstallPlanWithNamespace(GinkgoT(), crc, installPlanName, ns.GetName(), buildInstallPlanPhaseCheckFunc(operatorsv1alpha1.InstallPlanPhaseInstalling))
+				if err != nil || fetchedInstallPlan == nil {
+					return false
+				}
+				if fetchedInstallPlan.Status.Phase != operatorsv1alpha1.InstallPlanPhaseInstalling {
+					return false
+				}
+				return hasCondition(fetchedInstallPlan, cond)
+			}, 5*time.Minute, interval).Should(BeTrue())
 
 			// Create an operatorgroup for the same namespace
 			og := &operatorsv1.OperatorGroup{

@@ -133,7 +133,8 @@ var _ = Describe("ClusterServiceVersion", func() {
 			}).Should(WithTransform(k8serrors.IsNotFound, BeTrue()))
 		})
 
-		It("can satisfy an associated ClusterServiceVersion's ownership requirement", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2646
+		It("[FLAKE] can satisfy an associated ClusterServiceVersion's ownership requirement", func() {
 			associated := operatorsv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "associated-csv",
@@ -242,7 +243,8 @@ var _ = Describe("ClusterServiceVersion", func() {
 			}).Should(WithTransform(k8serrors.IsNotFound, BeTrue()))
 		})
 
-		It("can satisfy an unassociated ClusterServiceVersion's non-ownership requirement", func() {
+		// issue:https://github.com/operator-framework/operator-lifecycle-manager/issues/2639
+		It("[FLAKE] can satisfy an unassociated ClusterServiceVersion's non-ownership requirement", func() {
 			unassociated := operatorsv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "unassociated-csv",
@@ -4176,7 +4178,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 var _ = Describe("Disabling copied CSVs", func() {
 	var (
-		ns corev1.Namespace
+		ns  corev1.Namespace
 		csv operatorsv1alpha1.ClusterServiceVersion
 	)
 
@@ -4221,7 +4223,8 @@ var _ = Describe("Disabling copied CSVs", func() {
 	})
 
 	When("an operator is installed in AllNamespace mode", func() {
-		It("should have Copied CSVs in all other namespaces", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2643
+		It("[FLAKE] should have Copied CSVs in all other namespaces", func() {
 			Eventually(func() error {
 				requirement, err := k8slabels.NewRequirement(operatorsv1alpha1.CopiedLabelKey, selection.Equals, []string{csv.GetNamespace()})
 				if err != nil {
@@ -4301,7 +4304,8 @@ var _ = Describe("Disabling copied CSVs", func() {
 			}).Should(Succeed())
 		})
 
-		It("should be reflected in the olmConfig.Status.Condition array that the expected number of copied CSVs exist", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2634
+		It("[FLAKE] should be reflected in the olmConfig.Status.Condition array that the expected number of copied CSVs exist", func() {
 			Eventually(func() error {
 				var olmConfig operatorsv1.OLMConfig
 				if err := ctx.Ctx().Client().Get(context.TODO(), apitypes.NamespacedName{Name: "cluster"}, &olmConfig); err != nil {
@@ -4357,7 +4361,8 @@ var _ = Describe("Disabling copied CSVs", func() {
 			}).Should(Succeed())
 		})
 
-		It("should have copied CSVs in all other Namespaces", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2634
+		It("[FLAKE] should have copied CSVs in all other Namespaces", func() {
 			Eventually(func() error {
 				// find copied csvs...
 				requirement, err := k8slabels.NewRequirement(operatorsv1alpha1.CopiedLabelKey, selection.Equals, []string{csv.GetNamespace()})
@@ -4393,7 +4398,8 @@ var _ = Describe("Disabling copied CSVs", func() {
 			}).Should(Succeed())
 		})
 
-		It("should be reflected in the olmConfig.Status.Condition array that the expected number of copied CSVs exist", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2641
+		It("[FLAKE] should be reflected in the olmConfig.Status.Condition array that the expected number of copied CSVs exist", func() {
 			Eventually(func() error {
 				var olmConfig operatorsv1.OLMConfig
 				if err := ctx.Ctx().Client().Get(context.TODO(), apitypes.NamespacedName{Name: "cluster"}, &olmConfig); err != nil {
