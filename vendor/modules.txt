@@ -74,7 +74,7 @@ github.com/blang/semver/v4
 github.com/cespare/xxhash/v2
 # github.com/containerd/cgroups v0.0.0-20200531161412-0dbf7f05ba59
 github.com/containerd/cgroups/stats/v1
-# github.com/containerd/containerd v1.4.11 => github.com/ecordell/containerd v1.3.1-0.20200629153125-0ff1a1be2fa5
+# github.com/containerd/containerd v1.4.11
 github.com/containerd/containerd/archive
 github.com/containerd/containerd/archive/compression
 github.com/containerd/containerd/containers
@@ -463,7 +463,6 @@ github.com/opencontainers/go-digest
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v0.1.1
-github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/user
 # github.com/openshift/api v0.0.0-20200331152225-585af27e34fd => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
 ## explicit
@@ -1867,7 +1866,6 @@ sigs.k8s.io/structured-merge-diff/v4/typed
 sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
-# github.com/containerd/containerd => github.com/ecordell/containerd v1.3.1-0.20200629153125-0ff1a1be2fa5
 # github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0

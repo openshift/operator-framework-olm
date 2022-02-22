@@ -33,13 +33,6 @@ require (
 )
 
 replace (
-	// From staging/operator-registry
-	// Currently on a fork for two issues:
-	// 1. stage registry proxy didn't like requests with no scopes, see https://github.com/containerd/containerd/pull/4223
-	// 2. prod registry proxy returns a 403 on post, see https://github.com/containerd/containerd/pull/3913
-	// The fork can be removed when both issues are resolved in a release, which should be 1.4.0
-	github.com/containerd/containerd => github.com/ecordell/containerd v1.3.1-0.20200629153125-0ff1a1be2fa5
-
 	// latest tag resolves to a very old version. this is only used for spinning up local test registries
 	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
 
