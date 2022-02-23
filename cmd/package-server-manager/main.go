@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/openshift/operator-framework-olm/pkg/leaderelection"
 	controllers "github.com/openshift/operator-framework-olm/pkg/package-server-manager"
 	//+kubebuilder:scaffold:imports
 )
@@ -59,17 +60,20 @@ func run(cmd *cobra.Command, args []string) error {
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	setupLog := ctrl.Log.WithName("setup")
 
+	restConfig := ctrl.GetConfigOrDie()
+	le := leaderelection.GetLeaderElectionConfig(setupLog, restConfig, !disableLeaderElection)
+
 	packageserverCSVFields := fields.Set{"metadata.name": name}
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), manager.Options{
+	mgr, err := ctrl.NewManager(restConfig, manager.Options{
 		Scheme:                  setupScheme(),
 		Namespace:               namespace,
 		MetricsBindAddress:      defaultMetricsPort,
 		LeaderElection:          !disableLeaderElection,
 		LeaderElectionNamespace: namespace,
 		LeaderElectionID:        leaderElectionConfigmapName,
-		RetryPeriod:             timeDurationPtr(defaultRetryPeriod),
-		RenewDeadline:           timeDurationPtr(defaultRenewDeadline),
-		LeaseDuration:           timeDurationPtr(defaultLeaseDuration),
+		LeaseDuration:           &le.LeaseDuration.Duration,
+		RenewDeadline:           &le.RenewDeadline.Duration,
+		RetryPeriod:             &le.RetryPeriod.Duration,
 		HealthProbeBindAddress:  healthCheckAddr,
 		NewCache: cache.BuilderWithOptions(cache.Options{
 			SelectorsByObject: cache.SelectorsByObject{
