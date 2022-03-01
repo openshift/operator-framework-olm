@@ -352,6 +352,7 @@ var (
 	procVirtualQuery                                         = modkernel32.NewProc("VirtualQuery")
 	procVirtualQueryEx                                       = modkernel32.NewProc("VirtualQueryEx")
 	procVirtualUnlock                                        = modkernel32.NewProc("VirtualUnlock")
+	procWTSGetActiveConsoleSessionId                         = modkernel32.NewProc("WTSGetActiveConsoleSessionId")
 	procWaitForMultipleObjects                               = modkernel32.NewProc("WaitForMultipleObjects")
 	procWaitForSingleObject                                  = modkernel32.NewProc("WaitForSingleObject")
 	procWriteConsoleW                                        = modkernel32.NewProc("WriteConsoleW")
@@ -3050,6 +3051,12 @@ func VirtualUnlock(addr uintptr, length uintptr) (err error) {
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
+	return
+}
+
+func WTSGetActiveConsoleSessionId() (sessionID uint32) {
+	r0, _, _ := syscall.Syscall(procWTSGetActiveConsoleSessionId.Addr(), 0, 0, 0, 0)
+	sessionID = uint32(r0)
 	return
 }
 

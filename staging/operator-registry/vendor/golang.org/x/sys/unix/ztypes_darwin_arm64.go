@@ -626,8 +626,6 @@ type CtlInfo struct {
 	Id   uint32
 	Name [96]byte
 }
-<<<<<<< HEAD
-=======
 
 const SizeofKinfoProc = 0x288
 
@@ -768,4 +766,3 @@ const (
 	SHM_RDONLY = 0x1000
 	SHM_RND    = 0x2000
 )
->>>>>>> c056ac1f0 (feat(registry): add podman auth.json as an alternate location (#897))
