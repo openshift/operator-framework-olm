@@ -14,6 +14,8 @@ KUBEBUILDER_DOWNLOAD_URL="https://github.com/kubernetes-sigs/kubebuilder/release
 # See: https://github.com/kubernetes-sigs/kubebuilder/releases
 # KUBEBUILDER_DOWNLOAD_URL="https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${KUBEBUILDER_RELEASE}/kubebuilder_${OS}_${ARCH}"
 
+env
+
 if [[ -d ${KUBEBUILDER_BIN} ]]; then
     echo "Not installing kubebuilder as the binary already exists in \$PATH"
     exit 0
