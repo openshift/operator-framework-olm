@@ -173,7 +173,7 @@ func main() {
 
 	// Emit CSV metric
 	if err = op.EnsureCSVMetric(); err != nil {
-		logger.WithError(err).Fatalf("error emitting metrics for existing CSV")
+		logger.WithError(err).Fatal("error emitting metrics for existing CSV")
 	}
 
 	if *writeStatusName != "" {
