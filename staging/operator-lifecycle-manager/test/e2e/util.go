@@ -311,7 +311,7 @@ func registryPodHealthy(address string) bool {
 func catalogSourceRegistryPodSynced(catalog *operatorsv1alpha1.CatalogSource) bool {
 	registry := catalog.Status.RegistryServiceStatus
 	connState := catalog.Status.GRPCConnectionState
-	if registry != nil && connState != nil && !connState.LastConnectTime.IsZero() && connState.LastObservedState == "READY" {
+	if registry != nil && connState != nil && !connState.LastConnectTime.IsZero() && (connState.LastObservedState == "READY" || connState.LastObservedState == "IDLE") {
 		fmt.Printf("catalog %s pod with address %s\n", catalog.GetName(), registry.Address())
 		return registryPodHealthy(registry.Address())
 	}
