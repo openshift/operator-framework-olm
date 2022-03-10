@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
@@ -27,7 +26,11 @@ var _ = Describe("MagicCatalog", func() {
 		const catalogName = "test"
 		namespace := generatedNamespace.GetName()
 		kubeClient := ctx.Ctx().Client()
-		provider, err := NewFileBasedFiledBasedCatalogProvider("../test/e2e/testdata/fbc_catalog.json")
+
+		// The following path to fbc_catalog.json works on the downstream only
+		// This has been changed as a downstream only patch for now, but an upstream tracking issue has also been
+		// created: https://github.com/operator-framework/operator-lifecycle-manager/issues/2687
+		provider, err := NewFileBasedFiledBasedCatalogProvider("testdata/fbc_catalog.json")
 		Expect(err).To(BeNil())
 
 		// create and deploy and undeploy the magic catalog
