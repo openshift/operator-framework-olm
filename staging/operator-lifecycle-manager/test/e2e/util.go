@@ -959,6 +959,12 @@ func HavePhase(goal operatorsv1alpha1.InstallPlanPhase) gtypes.GomegaMatcher {
 	}, Equal(goal))
 }
 
+func CSVHasPhase(goal operatorsv1alpha1.ClusterServiceVersionPhase) gtypes.GomegaMatcher {
+	return WithTransform(func(csv *operatorsv1alpha1.ClusterServiceVersion) operatorsv1alpha1.ClusterServiceVersionPhase {
+		return csv.Status.Phase
+	}, Equal(goal))
+}
+
 func HaveMessage(goal string) gtypes.GomegaMatcher {
 	return WithTransform(func(plan *operatorsv1alpha1.InstallPlan) string {
 		return plan.Status.Message
