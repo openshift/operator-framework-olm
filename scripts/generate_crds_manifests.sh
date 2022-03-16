@@ -18,7 +18,7 @@ crddir="${chartdir}/crds"
 crdsrcdir="${tmpdir}/operators"
 
 cp -R "${ROOT_DIR}/staging/operator-lifecycle-manager/deploy/chart/" "${chartdir}"
-cp "${ROOT_DIR}/values.yaml" "${tmpdir}"
+cp "${ROOT_DIR}"/values*.yaml "${tmpdir}"
 ln -snf $(realpath --relative-to ${tmpdir} ${ROOT_DIR}/staging/api/pkg/operators/) ${crdsrcdir}
 rm -rf ./manifests/* ${crddir}/*
 
@@ -39,7 +39,15 @@ done
 
 sed -i "s/^[Vv]ersion:.*\$/version: ${ver}/" "${chartdir}/Chart.yaml"
 
-${HELM} template -n olm -f "${tmpdir}/values.yaml" --include-crds --output-dir "${chartdir}" "${chartdir}"
+# apply local crc testing patches if necessary
+# CRC_E2E_VALUES contains the path to the values file used for running olm on crc locally
+# this file is generated in scripts/crc-deploy.sh
+CRC_E2E_VALUES=${CRC_E2E_VALUES-""}
+if ! [ "${CRC_E2E_VALUES}" = "" ]; then
+  CRC_E2E=(-f "${tmpdir}/${CRC_E2E_VALUES}")
+fi
+
+${HELM} template -n olm -f "${tmpdir}/values.yaml" "${CRC_E2E[@]}" --include-crds --output-dir "${chartdir}" "${chartdir}"
 cp -R "${chartdir}"/olm/{templates,crds}/. "./manifests"
 
 add_ibm_managed_cloud_annotations() {
