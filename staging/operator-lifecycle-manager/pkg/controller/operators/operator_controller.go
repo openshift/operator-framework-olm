@@ -28,6 +28,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsv2 "github.com/operator-framework/api/pkg/operators/v2"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/decorators"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/metrics"
 )
 
 var (
@@ -118,6 +119,7 @@ func (r *OperatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	// Set up a convenient log object so we don't have to type request over and over again
 	log := r.log.WithValues("request", req)
 	log.V(1).Info("reconciling operator")
+	metrics.EmitOperatorReconcile(req.Namespace, req.Name)
 
 	// Get the Operator
 	create := false
@@ -159,7 +161,6 @@ func (r *OperatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if err = r.updateComponents(ctx, operator); err != nil {
 		log.Error(err, "Could not update components")
 		return reconcile.Result{Requeue: true}, nil
-
 	}
 
 	if create {
@@ -205,7 +206,7 @@ func (r *OperatorReconciler) listComponents(ctx context.Context, selector labels
 	for _, list := range componentLists {
 		cList, ok := list.(client.ObjectList)
 		if !ok {
-			return nil, fmt.Errorf("Unable to typecast runtime.Object to client.ObjectList")
+			return nil, fmt.Errorf("unable to typecast runtime.Object to client.ObjectList")
 		}
 		if err := r.List(ctx, cList, opt); err != nil {
 			return nil, err
@@ -233,7 +234,7 @@ func (r *OperatorReconciler) hasExistingComponents(ctx context.Context, name str
 	for _, list := range components {
 		items, err := meta.ExtractList(list)
 		if err != nil {
-			return false, fmt.Errorf("Unable to extract list from runtime.Object")
+			return false, fmt.Errorf("unable to extract list from runtime.Object")
 		}
 		if len(items) > 0 {
 			return true, nil

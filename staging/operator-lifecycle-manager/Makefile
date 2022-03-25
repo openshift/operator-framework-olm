@@ -12,6 +12,7 @@ SHELL := /bin/bash
 ORG := github.com/operator-framework
 PKG   := $(ORG)/operator-lifecycle-manager
 MOD_FLAGS := $(shell (go version | grep -q -E "1\.1[1-9]") && echo -mod=vendor)
+BUILD_TAGS := "json1"
 CMDS  := $(shell go list $(MOD_FLAGS) ./cmd/...)
 TCMDS := $(shell go list $(MOD_FLAGS) ./test/e2e/...)
 MOCKGEN := ./scripts/update_mockgen.sh
@@ -21,7 +22,6 @@ IMAGE_TAG ?= "dev"
 SPECIFIC_UNIT_TEST := $(if $(TEST),-run $(TEST),)
 LOCAL_NAMESPACE := "olm"
 export GO111MODULE=on
-CONTROLLER_GEN := go run $(MOD_FLAGS) ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
 YQ_INTERNAL := go run $(MOD_FLAGS) ./vendor/github.com/mikefarah/yq/v3/
 KUBEBUILDER_ASSETS := $(or $(or $(KUBEBUILDER_ASSETS),$(dir $(shell command -v kubebuilder))),/usr/local/kubebuilder/bin)
 export KUBEBUILDER_ASSETS
@@ -31,9 +31,9 @@ BINDATA := $(GO) run github.com/go-bindata/go-bindata/v3/go-bindata
 GIT_COMMIT := $(shell git rev-parse HEAD)
 
 # Phony prerequisite for targets that rely on the go build cache to determine staleness.
-.PHONY: build test run clean vendor schema-check \
-	vendor-update coverage coverage-html e2e \
-	kubebuilder .FORCE
+.PHONY: build test clean vendor \
+	coverage coverage-html e2e \
+	kubebuilder
 
 .PHONY: FORCE
 FORCE:
@@ -43,13 +43,14 @@ all: test build
 test: clean cover.out
 
 unit: kubebuilder
-	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test $(MOD_FLAGS) $(SPECIFIC_UNIT_TEST) -tags "json1" -race -count=1 ./pkg/...
+	KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) go test $(MOD_FLAGS) $(SPECIFIC_UNIT_TEST) -tags "json1" -race -count=1 ./pkg/... ./test/e2e/split/...
 
-# Ensure kubebuilder is installed before continuing
-KUBEBUILDER_ASSETS_ERR := not detected in $(KUBEBUILDER_ASSETS), to override the assets path set the KUBEBUILDER_ASSETS environment variable, for install instructions see https://book.kubebuilder.io/quick-start.html
+# Ensure kubectl installed before continuing
+KUBEBUILDER_ASSETS_ERR := not detected in $(KUBEBUILDER_ASSETS), to override the assets path set the KUBEBUILDER_ASSETS environment variable, for install instructions see https://pkg.go.dev/sigs.k8s.io/controller-runtime/tools/setup-envtest
+KUBECTL_ASSETS_ERR := kubectl not detected.
 kubebuilder:
-ifeq (, $(wildcard $(KUBEBUILDER_ASSETS)/kubebuilder))
-	$(error kubebuilder $(KUBEBUILDER_ASSETS_ERR))
+ifeq (, $(shell which kubectl))
+	$(error $(KUBECTL_ASSETS_ERR))
 endif
 ifeq (, $(wildcard $(KUBEBUILDER_ASSETS)/etcd))
 	$(error etcd $(KUBEBUILDER_ASSETS_ERR))
@@ -58,9 +59,7 @@ ifeq (, $(wildcard $(KUBEBUILDER_ASSETS)/kube-apiserver))
 	$(error kube-apiserver $(KUBEBUILDER_ASSETS_ERR))
 endif
 
-schema-check:
-
-cover.out: schema-check
+cover.out:
 	go test $(MOD_FLAGS) -tags "json1" -v -race -coverprofile=cover.out -covermode=atomic \
 		-coverpkg ./pkg/controller/... ./pkg/...
 
@@ -101,7 +100,7 @@ bin/cpb: FORCE
 
 $(CMDS): version_flags=-ldflags "-X $(PKG)/pkg/version.GitCommit=$(GIT_COMMIT) -X $(PKG)/pkg/version.OLMVersion=`cat OLM_VERSION`"
 $(CMDS):
-	$(arch_flags) go $(build_cmd) $(MOD_FLAGS) $(version_flags) -tags "json1" -o bin/$(shell basename $@) $@
+	$(arch_flags) go $(build_cmd) $(MOD_FLAGS) $(version_flags) -tags $(BUILD_TAGS) -o bin/$(shell basename $@) $@
 
 build: clean $(CMDS)
 
@@ -126,7 +125,14 @@ setup-bare: clean e2e.namespace
 E2E_NODES ?= 1
 E2E_FLAKE_ATTEMPTS ?= 1
 E2E_TIMEOUT ?= 90m
-E2E_OPTS ?= $(if $(E2E_SEED),-seed '$(E2E_SEED)') $(if $(TEST),-focus '$(TEST)') -flakeAttempts $(E2E_FLAKE_ATTEMPTS) -nodes $(E2E_NODES) -timeout $(E2E_TIMEOUT) -v -randomizeSuites -race -trace -progress
+# Optionally run an individual chunk of e2e test specs.
+# Do not use this from the CLI; this is intended to be used by CI only.
+E2E_TEST_CHUNK ?= all
+E2E_TEST_NUM_CHUNKS ?= 4
+ifneq (all,$(E2E_TEST_CHUNK))
+TEST := $(shell go run ./test/e2e/split/... -chunks $(E2E_TEST_NUM_CHUNKS) -print-chunk $(E2E_TEST_CHUNK) ./test/e2e)
+endif
+E2E_OPTS ?= $(if $(E2E_SEED),-seed '$(E2E_SEED)') $(if $(SKIP), -skip '$(SKIP)') $(if $(TEST),-focus '$(TEST)') -flakeAttempts $(E2E_FLAKE_ATTEMPTS) -nodes $(E2E_NODES) -timeout $(E2E_TIMEOUT) -v -randomizeSuites -race -trace -progress
 E2E_INSTALL_NS ?= operator-lifecycle-manager
 E2E_TEST_NS ?= operators
 
@@ -136,7 +142,8 @@ e2e:
 
 # See workflows/e2e-tests.yml See test/e2e/README.md for details.
 .PHONY: e2e-local
-e2e-local: extra_args=-kind.images=../test/e2e-local.image.tar
+e2e-local: BUILD_TAGS="json1 experimental_metrics"
+e2e-local: extra_args=-kind.images=../test/e2e-local.image.tar -test-data-dir=../test/e2e/testdata
 e2e-local: run=bin/e2e-local.test
 e2e-local: bin/e2e-local.test test/e2e-local.image.tar
 e2e-local: e2e
@@ -185,10 +192,6 @@ clean:
 	@rm -rf test/e2e/test-resources
 	@rm -rf test/e2e/log
 	@rm -rf e2e.namespace
-
-lint:
-	find . -name '*.go' -not -path "./vendor/*" -not -path "./pkg/lib/operatorclient/operatorclientmocks/*" | xargs gofmt -w
-	find . -name '*.go' -not -path "./vendor/*" -not -path "./pkg/lib/operatorclient/operatorclientmocks/*" | xargs goimports -w
 
 # Copy CRD manifests
 manifests: vendor

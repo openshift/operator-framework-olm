@@ -1,14 +1,15 @@
 package internal
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
 
+	"github.com/ghodss/yaml"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/api/pkg/validation/errors"
-
-	"github.com/ghodss/yaml"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestValidateCSV(t *testing.T) {
@@ -71,7 +72,43 @@ func TestValidateCSV(t *testing.T) {
 			},
 			filepath.Join("testdata", "badName.csv.yaml"),
 		},
+		{
+			validatorFuncTest{
+				description: "should fail when alm-examples is pretty format and is invalid",
+				wantErr:     true,
+				errors: []errors.Error{
+					errors.ErrInvalidParse("invalid example", "invalid character at 176\n [{\"apiVersion\":\"local.storage.openshift.io/v1\",\"kind\":\"LocalVolume\",\"metadata\":{\"name\":\"example\"},\"spec\":{\"storageClassDevices\":[{\"devicePaths\":[\"/dev/disk/by-id/ata-crucial\",]<--(see the invalid character)"),
+				},
+			},
+			filepath.Join("testdata", "invalid.alm-examples.csv.yaml"),
+		},
+		{
+			validatorFuncTest{
+				description: "should not fail when alm-examples is not informed",
+				wantWarn:    true,
+				errors: []errors.Error{
+					errors.WarnInvalidOperation("provided API should have an example annotation", schema.GroupVersionKind{Group: "etcd.database.coreos.com", Version: "v1beta2", Kind: "EtcdCluster"}),
+				},
+			},
+			filepath.Join("testdata", "correct.csv.empty.example.yaml"),
+		},
+		{
+			validatorFuncTest{
+				description: "should warn when olm.properties are defined in the annotations",
+				wantWarn:    true,
+				errors: []errors.Error{
+					errors.WarnPropertiesAnnotationUsed(
+						fmt.Sprintf(
+							"found %s annotation, please define these properties in metadata/properties.yaml instead",
+							olmpropertiesAnnotation,
+						),
+					),
+				},
+			},
+			filepath.Join("testdata", "correct.csv.olm.properties.annotation.yaml"),
+		},
 	}
+
 	for _, c := range cases {
 		b, err := ioutil.ReadFile(c.csvPath)
 		if err != nil {

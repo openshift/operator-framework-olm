@@ -4,14 +4,15 @@ on:
     branches:
       - master
   pull_request:
+  workflow_dispatch:
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v1
       - uses: actions/setup-go@v2
         with:
-          go-version: '~1.16'
+          go-version: '~1.17'
 
         # Note(tflannag): We need to explicitly setup the GOPATH as the generate-internal-groups.sh
         # codegen script still relies on $GOPATH being set and will return an error otherwise.

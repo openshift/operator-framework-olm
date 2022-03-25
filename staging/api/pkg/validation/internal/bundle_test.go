@@ -1,13 +1,15 @@
 package internal
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/operator-framework/api/pkg/manifests"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/stretchr/testify/require"
+	"github.com/operator-framework/api/pkg/validation/errors"
 )
 
 func TestValidateBundle(t *testing.T) {
@@ -156,6 +158,146 @@ func TestValidateServiceAccount(t *testing.T) {
 				require.Contains(t, results[0].Errors[0].Error(), tt.errString)
 			} else {
 				require.False(t, results[0].HasError(), "found error when an error was not expected")
+			}
+		})
+	}
+}
+
+func TestBundleSize(t *testing.T) {
+	type args struct {
+		sizeCompressed int64
+		size           int64
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantError   bool
+		wantWarning bool
+		errStrings  []string
+		warnStrings []string
+	}{
+		{
+			name: "should pass when the size is not bigger or closer of the limit",
+			args: args{
+				sizeCompressed: max_bundle_size / 2,
+				size:           max_bundle_size / 2,
+			},
+		},
+		{
+			name: "should warn when the size is closer of the limit",
+			args: args{
+				sizeCompressed: max_bundle_size - 100000,
+				size:           (max_bundle_size - 100000) * 10,
+			},
+			wantWarning: true,
+			warnStrings: []string{
+				"Warning: Value : nearing maximum bundle compressed size with gzip: size=~948.6 kB , max=1.0 MB. Bundle uncompressed size is 9.5 MB",
+			},
+		},
+		{
+			name: "should warn when is not possible to check the size compressed",
+			args: args{
+				size: max_bundle_size * 1024,
+			},
+			wantWarning: true,
+			warnStrings: []string{"Warning: Value : unable to check the bundle compressed size"},
+		},
+		{
+			name: "should warn when is not possible to check the size",
+			args: args{
+				sizeCompressed: max_bundle_size / 2,
+			},
+			wantWarning: true,
+			warnStrings: []string{"Warning: Value : unable to check the bundle size"},
+		},
+		{
+			name: "should raise an error when the size is bigger than the limit",
+			args: args{
+				sizeCompressed: 2 * max_bundle_size,
+				size:           (2 * max_bundle_size) * 10,
+			},
+			wantError: true,
+			errStrings: []string{
+				"Error: Value : maximum bundle compressed size with gzip size exceeded: size=~2.1 MB , max=1.0 MB. Bundle uncompressed size is 21.0 MB",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bundle := &manifests.Bundle{
+				CompressedSize: tt.args.sizeCompressed,
+				Size:           tt.args.size,
+			}
+			result := validateBundleSize(bundle)
+
+			var warns, errs []errors.Error
+			for _, r := range result {
+				if r.Level == errors.LevelWarn {
+					warns = append(warns, r)
+				} else if r.Level == errors.LevelError {
+					errs = append(errs, r)
+				}
+			}
+			require.Equal(t, tt.wantWarning, len(warns) > 0)
+			if tt.wantWarning {
+				require.Equal(t, len(tt.warnStrings), len(warns))
+				for _, w := range warns {
+					wString := w.Error()
+					require.Contains(t, tt.warnStrings, wString)
+				}
+			}
+
+			require.Equal(t, tt.wantError, len(errs) > 0)
+			if tt.wantError {
+				require.Equal(t, len(tt.errStrings), len(errs))
+				for _, err := range errs {
+					errString := err.Error()
+					require.Contains(t, tt.errStrings, errString)
+				}
+			}
+		})
+	}
+}
+
+func Test_EnsureGetBundleSizeValue(t *testing.T) {
+	type args struct {
+		annotations    map[string]string
+		bundleDir      string
+		imageIndexPath string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantWarning bool
+		warnStrings []string
+	}{
+		{
+			name: "should calculate the bundle size and not raise warnings when a valid bundle is informed",
+			args: args{
+				bundleDir: "./testdata/valid_bundle",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Validate the bundle object
+			bundle, err := manifests.GetBundleFromDir(tt.args.bundleDir)
+			require.NoError(t, err)
+
+			// Should have the values calculated
+			require.Greater(t, bundle.Size, int64(0), fmt.Sprintf("the bundle size is %d when should be > 0", bundle.Size))
+			require.Greater(t, bundle.CompressedSize, int64(0), fmt.Sprintf("the bundle compressed size is %d when should be > 0", bundle.CompressedSize))
+
+			results := validateBundle(bundle)
+			require.Equal(t, tt.wantWarning, len(results.Warnings) > 0)
+			if tt.wantWarning {
+				require.Equal(t, len(tt.warnStrings), len(results.Warnings))
+				for _, w := range results.Warnings {
+					wString := w.Error()
+					require.Contains(t, tt.warnStrings, wString)
+				}
 			}
 		})
 	}

@@ -116,6 +116,8 @@ type Operator struct {
 	installPlanTimeout       time.Duration
 	bundleUnpackTimeout      time.Duration
 	clientFactory            clients.Factory
+	muInstallPlan            sync.Mutex
+	resolverSourceProvider   *resolver.RegistrySourceProvider
 }
 
 type CatalogSourceSyncFunc func(logger *logrus.Entry, in *v1alpha1.CatalogSource) (out *v1alpha1.CatalogSource, continueSync bool, syncError error)
@@ -187,8 +189,9 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 		clientFactory:            clients.NewFactory(config),
 	}
 	op.sources = grpc.NewSourceStore(logger, 10*time.Second, 10*time.Minute, op.syncSourceState)
+	op.resolverSourceProvider = resolver.SourceProviderFromRegistryClientProvider(op.sources, logger)
 	op.reconciler = reconciler.NewRegistryReconcilerFactory(lister, opClient, configmapRegistryImage, op.now, ssaClient)
-	res := resolver.NewOperatorStepResolver(lister, crClient, opClient.KubernetesInterface(), operatorNamespace, op.sources, logger)
+	res := resolver.NewOperatorStepResolver(lister, crClient, operatorNamespace, op.resolverSourceProvider, logger)
 	op.resolver = resolver.NewInstrumentedResolver(res, metrics.RegisterDependencyResolutionSuccess, metrics.RegisterDependencyResolutionFailure)
 
 	// Wire OLM CR sharedIndexInformers
@@ -459,12 +462,12 @@ func (o *Operator) now() metav1.Time {
 func (o *Operator) syncSourceState(state grpc.SourceState) {
 	o.sourcesLastUpdate.Set(o.now().Time)
 
-	o.logger.Infof("state.Key.Namespace=%s state.Key.Name=%s state.State=%s", state.Key.Namespace, state.Key.Name, state.State.String())
+	o.logger.Debugf("state.Key.Namespace=%s state.Key.Name=%s state.State=%s", state.Key.Namespace, state.Key.Name, state.State.String())
 	metrics.RegisterCatalogSourceState(state.Key.Name, state.Key.Namespace, state.State)
 
 	switch state.State {
 	case connectivity.Ready:
-		o.resolver.Expire(resolvercache.SourceKey(state.Key))
+		o.resolverSourceProvider.Invalidate(resolvercache.SourceKey(state.Key))
 		if o.namespace == state.Key.Namespace {
 			namespaces, err := index.CatalogSubscriberNamespaces(o.catalogSubscriberIndexer,
 				state.Key.Name, state.Key.Namespace)
@@ -552,8 +555,6 @@ func (o *Operator) handleDeletion(obj interface{}) {
 	}).Debug("handling object deletion")
 
 	o.requeueOwners(metaObj)
-
-	return
 }
 
 func (o *Operator) handleCatSrcDeletion(obj interface{}) {
@@ -562,13 +563,13 @@ func (o *Operator) handleCatSrcDeletion(obj interface{}) {
 		if !ok {
 			tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 			if !ok {
-				utilruntime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v", obj))
+				utilruntime.HandleError(fmt.Errorf("couldn't get object from tombstone %#v", obj))
 				return
 			}
 
 			catsrc, ok = tombstone.Obj.(metav1.Object)
 			if !ok {
-				utilruntime.HandleError(fmt.Errorf("Tombstone contained object that is not a Namespace %#v", obj))
+				utilruntime.HandleError(fmt.Errorf("tombstone contained object that is not a Namespace %#v", obj))
 				return
 			}
 		}
@@ -716,11 +717,10 @@ func (o *Operator) syncRegistryServer(logger *logrus.Entry, in *v1alpha1.Catalog
 			logger.Debug("requeueing registry server for catalog update check: update pod not yet ready")
 			o.catsrcQueueSet.RequeueAfter(out.GetNamespace(), out.GetName(), reconciler.CatalogPollingRequeuePeriod)
 			return
-		} else {
-			syncError = fmt.Errorf("couldn't ensure registry server - %v", err)
-			out.SetError(v1alpha1.CatalogSourceRegistryServerError, syncError)
-			return
 		}
+		syncError = fmt.Errorf("couldn't ensure registry server - %v", err)
+		out.SetError(v1alpha1.CatalogSourceRegistryServerError, syncError)
+		return
 	}
 
 	logger.Debug("ensured registry server")
@@ -785,8 +785,6 @@ func (o *Operator) syncConnection(logger *logrus.Entry, in *v1alpha1.CatalogSour
 		return
 	}
 
-	logger = logger.WithField("address", address).WithField("currentSource", sourceKey)
-
 	if source.Address != address {
 		source, syncError = connectFunc()
 		if syncError != nil {
@@ -798,8 +796,13 @@ func (o *Operator) syncConnection(logger *logrus.Entry, in *v1alpha1.CatalogSour
 		updateConnectionStateFunc(out, source)
 	}
 
+	// GRPCConnectionState update must fail before
+	if out.Status.GRPCConnectionState == nil {
+		updateConnectionStateFunc(out, source)
+	}
+
 	// connection is already good, but we need to update the sync time
-	if out.Status.GRPCConnectionState != nil && o.sourcesLastUpdate.After(out.Status.GRPCConnectionState.LastConnectTime.Time) {
+	if o.sourcesLastUpdate.After(out.Status.GRPCConnectionState.LastConnectTime.Time) {
 		// Set connection status and return.
 		out.Status.GRPCConnectionState.LastConnectTime = now
 		out.Status.GRPCConnectionState.LastObservedState = source.ConnectionState.String()
@@ -892,8 +895,6 @@ func (o *Operator) syncResolvingNamespace(obj interface{}) error {
 	// get the set of sources that should be used for resolution and best-effort get their connections working
 	logger.Debug("resolving sources")
 
-	querier := NewNamespaceSourceQuerier(o.sources.AsClients(o.namespace, namespace))
-
 	logger.Debug("checking if subscriptions need update")
 
 	subs, err := o.listSubscriptions(namespace)
@@ -926,7 +927,7 @@ func (o *Operator) syncResolvingNamespace(obj interface{}) error {
 		subscriptionUpdated = subscriptionUpdated || changedIP
 
 		// record the current state of the desired corresponding CSV in the status. no-op if we don't know the csv yet.
-		sub, changedCSV, err := o.ensureSubscriptionCSVState(logger, sub, querier)
+		sub, changedCSV, err := o.ensureSubscriptionCSVState(logger, sub)
 		if err != nil {
 			logger.Debugf("error recording current state of CSV in status: %v", err)
 			return err
@@ -1110,7 +1111,7 @@ func (o *Operator) ensureSubscriptionInstallPlanState(logger *logrus.Entry, sub 
 	return out, true, nil
 }
 
-func (o *Operator) ensureSubscriptionCSVState(logger *logrus.Entry, sub *v1alpha1.Subscription, querier SourceQuerier) (*v1alpha1.Subscription, bool, error) {
+func (o *Operator) ensureSubscriptionCSVState(logger *logrus.Entry, sub *v1alpha1.Subscription) (*v1alpha1.Subscription, bool, error) {
 	if sub.Status.CurrentCSV == "" {
 		return sub, false, nil
 	}
@@ -1121,10 +1122,6 @@ func (o *Operator) ensureSubscriptionCSVState(logger *logrus.Entry, sub *v1alpha
 		logger.WithError(err).WithField("currentCSV", sub.Status.CurrentCSV).Debug("error fetching csv listed in subscription status")
 		out.Status.State = v1alpha1.SubscriptionStateUpgradePending
 	} else {
-		// Check if an update is available for the current csv
-		if err := querier.Queryable(); err != nil {
-			return nil, false, err
-		}
 		out.Status.State = v1alpha1.SubscriptionStateAtLatest
 		out.Status.InstalledCSV = sub.Status.CurrentCSV
 	}
@@ -1172,6 +1169,26 @@ func (o *Operator) ensureInstallPlan(logger *logrus.Entry, namespace string, gen
 	if err != nil {
 		return nil, err
 	}
+
+	// There are multiple(2) worker threads process the namespaceQueue.
+	// Both worker can work at the same time when 2 separate updates are made for the namespace.
+	// The following sequence causes 2 installplans are created for a subscription
+	// 1. worker 1 doesn't find the installplan
+	// 2. worker 2 doesn't find the installplan
+	// 3. both worker 1 and 2 create the installplan
+	//
+	// This lock prevents the step 2 in the sequence so that only one installplan is created for a subscription.
+	// The sequence is like the following with this lock
+	// 1. worker 1 locks
+	// 2. worker 1 doesn't find the installplan
+	// 3. worker 2 wait for unlock       <--- difference
+	// 4. worker 1 creates the installplan
+	// 5. worker 1 unlocks
+	// 6. worker 2 locks
+	// 7. worker 2 finds the installplan <--- difference
+	// 8. worker 2 unlocks
+	o.muInstallPlan.Lock()
+	defer o.muInstallPlan.Unlock()
 
 	for _, installPlan := range installPlans {
 		if installPlan.Spec.Generation == gen {
@@ -1531,22 +1548,21 @@ func (o *Operator) syncInstallPlans(obj interface{}) (syncError error) {
 		}
 		syncError = ipFailError
 		return
-	} else {
-		// reset condition/message if it had been set in previous sync. This condition is being reset since any delay in the next steps
-		// (bundle unpacking/plan step errors being retried for a duration) could lead to this condition sticking around, even after
-		// the serviceAccountQuerier returns no error since the error has been resolved (by creating the required resources), which would
-		// be confusing to the user
+	}
+	// reset condition/message if it had been set in previous sync. This condition is being reset since any delay in the next steps
+	// (bundle unpacking/plan step errors being retried for a duration) could lead to this condition sticking around, even after
+	// the serviceAccountQuerier returns no error since the error has been resolved (by creating the required resources), which would
+	// be confusing to the user
 
-		// NOTE: this makes the assumption that the InstallPlanInstalledCheckFailed reason is only set in the previous if clause, which is
-		// true in the current iteration of the catalog operator. Any future implementation change that aims at setting the reason as
-		// InstallPlanInstalledCheckFailed must make sure that either this assumption is not breached, or the condition being set elsewhere
-		// is not being unset here unintentionally.
-		if cond := out.Status.GetCondition(v1alpha1.InstallPlanInstalled); cond.Reason == v1alpha1.InstallPlanReasonInstallCheckFailed {
-			plan, err = o.setInstallPlanInstalledCond(out, v1alpha1.InstallPlanConditionReason(corev1.ConditionUnknown), "", logger)
-			if err != nil {
-				syncError = err
-				return
-			}
+	// NOTE: this makes the assumption that the InstallPlanInstalledCheckFailed reason is only set in the previous if clause, which is
+	// true in the current iteration of the catalog operator. Any future implementation change that aims at setting the reason as
+	// InstallPlanInstalledCheckFailed must make sure that either this assumption is not breached, or the condition being set elsewhere
+	// is not being unset here unintentionally.
+	if cond := out.Status.GetCondition(v1alpha1.InstallPlanInstalled); cond.Reason == v1alpha1.InstallPlanReasonInstallCheckFailed {
+		plan, err = o.setInstallPlanInstalledCond(out, v1alpha1.InstallPlanConditionReason(corev1.ConditionUnknown), "", logger)
+		if err != nil {
+			syncError = err
+			return
 		}
 	}
 
@@ -1588,7 +1604,7 @@ func (o *Operator) syncInstallPlans(obj interface{}) (syncError error) {
 		// which means bundle lookup has failed and the InstallPlan should be failed as well
 		isFailed, cond := hasBundleLookupFailureCondition(plan)
 		if isFailed {
-			err := fmt.Errorf("Bundle unpacking failed. Reason: %v, and Message: %v", cond.Reason, cond.Message)
+			err := fmt.Errorf("bundle unpacking failed. Reason: %v, and Message: %v", cond.Reason, cond.Message)
 			// Mark the InstallPlan as failed for a fatal bundle unpack error
 			logger.Infof("%v", err)
 
@@ -1672,7 +1688,7 @@ func (o *Operator) transitionInstallPlanToFailed(plan *v1alpha1.InstallPlan, log
 	logger.Errorf("error transitioning InstallPlan to failed")
 
 	// retry sync with error to update InstallPlan status
-	return fmt.Errorf("InstallPlan failed: %s and error updating InstallPlan status as failed: %s", message, updateErr)
+	return fmt.Errorf("installplan failed: %s and error updating InstallPlan status as failed: %s", message, updateErr)
 }
 
 func (o *Operator) requeueSubscriptionForInstallPlan(plan *v1alpha1.InstallPlan, logger *logrus.Entry) {
@@ -1869,7 +1885,7 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 	// Get the set of initial installplan csv names
 	initialCSVNames := getCSVNameSet(plan)
 	// Get pre-existing CRD owners to make decisions about applying resolved CSVs
-	existingCRDOwners, err := o.getExistingApiOwners(plan.GetNamespace())
+	existingCRDOwners, err := o.getExistingAPIOwners(plan.GetNamespace())
 	if err != nil {
 		return err
 	}
@@ -2330,8 +2346,8 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 	return nil
 }
 
-// getExistingApiOwners creates a map of CRD names to existing owner CSVs in the given namespace
-func (o *Operator) getExistingApiOwners(namespace string) (map[string][]string, error) {
+// getExistingAPIOwners creates a map of CRD names to existing owner CSVs in the given namespace
+func (o *Operator) getExistingAPIOwners(namespace string) (map[string][]string, error) {
 	// Get a list of CSVs in the namespace
 	csvList, err := o.client.OperatorsV1alpha1().ClusterServiceVersions(namespace).List(context.TODO(), metav1.ListOptions{})
 
@@ -2445,7 +2461,7 @@ func (o *Operator) apiresourceFromGVK(gvk schema.GroupVersionKind) (metav1.APIRe
 		}
 	}
 	logger.Info("couldn't find GVK in api discovery")
-	return metav1.APIResource{}, olmerrors.GroupVersionKindNotFoundError{gvk.Group, gvk.Version, gvk.Kind}
+	return metav1.APIResource{}, olmerrors.GroupVersionKindNotFoundError{Group: gvk.Group, Version: gvk.Version, Kind: gvk.Kind}
 }
 
 const (

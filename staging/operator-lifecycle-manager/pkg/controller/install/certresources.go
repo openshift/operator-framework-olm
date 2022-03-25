@@ -246,7 +246,7 @@ func (i *StrategyDeploymentInstaller) installCertRequirementsForDeployment(deplo
 
 		// Delete the Service to replace
 		deleteErr := i.strategyClient.GetOpClient().DeleteService(service.GetNamespace(), service.GetName(), &metav1.DeleteOptions{})
-		if err != nil && !k8serrors.IsNotFound(deleteErr) {
+		if deleteErr != nil && !k8serrors.IsNotFound(deleteErr) {
 			return nil, nil, fmt.Errorf("could not delete existing service %s", service.GetName())
 		}
 	}
@@ -315,7 +315,6 @@ func (i *StrategyDeploymentInstaller) installCertRequirementsForDeployment(deplo
 			logger.Warnf("could not update secret %s", secret.GetName())
 			return nil, nil, err
 		}
-
 	} else if k8serrors.IsNotFound(err) {
 		// Create the secret
 		ownerutil.AddNonBlockingOwner(secret, i.owner)

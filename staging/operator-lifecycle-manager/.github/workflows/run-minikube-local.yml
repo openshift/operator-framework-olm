@@ -3,14 +3,15 @@ on:
   pull_request:
   schedule:
   - cron: '0 0 * * *' # daily to pick up releases
+  workflow_dispatch:
 jobs:
   e2e-minikube:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v1
     - uses: actions/setup-go@v2
       with:
-        go-version: '~1.16'
+        go-version: '~1.17'
     - name: Install minikube
       run: |
         sudo apt-get install conntrack

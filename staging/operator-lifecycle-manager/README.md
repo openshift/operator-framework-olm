@@ -1,4 +1,5 @@
-<img src="/logo.svg" height="125px" alt="Operator Lifecycle Manager"></img>
+<img src="/logo.svg#gh-light-mode-only" height="125px" alt="Operator Lifecycle Manager"></img>
+<img src="/logo-dark-mode.svg#gh-dark-mode-only" height="125px" alt="Operator Lifecycle Manager"></img>
 
 [![Container Repository on Quay.io](https://quay.io/repository/operator-framework/olm/status "Container Repository on Quay.io")](https://quay.io/repository/operator-framework/olm)
 [![License](http://img.shields.io/:license-apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
@@ -44,7 +45,7 @@ Operators can behave like managed service providers. Their user interface on the
 - [kubectl][kubectl_tool] version v1.11.3+.
 - Access to a Kubernetes v1.11.3+ cluster.
 
-## Getting Started 
+## Getting Started
 
 Check the [Getting Started][olm-getting-started] section.
 
@@ -61,7 +62,7 @@ Use the admin console to interact with and visualize the resources managed by OL
 Ensure `kubectl` is pointing at a cluster and run:
 
 ```shell
-$ make run-console-local
+make run-console-local
 ```
 
 Then visit `http://localhost:9000` to view the console.
@@ -73,9 +74,6 @@ Have an awesome Operator you want to share? Checkout the [publishing docs](https
 ## Subscribe to a Package and Channel
 
 Cloud Services can be installed from the catalog by subscribing to a channel in the corresponding package.
-
-**Subscription detail view:**
-![screenshot_20180628_165240](https://user-images.githubusercontent.com/11700385/42060125-c3cde42c-7af3-11e8-87ec-e5910a554902.png)
 
 ## Kubernetes-native Applications
 
@@ -96,7 +94,7 @@ Learn more about the components used by OLM by reading about the [architecture] 
 
 ## CustomResourceDefinitions
 
-OLM standardizes interactions with operators by requiring that the interface to an operator be via the Kubernetes API. Because we expect users to define the interfaces to their applications, OLM currently uses CRDs to define the Kubernetes API interactions.  
+OLM standardizes interactions with operators by requiring that the interface to an operator be via the Kubernetes API. Because we expect users to define the interfaces to their applications, OLM currently uses CRDs to define the Kubernetes API interactions.
 
 Examples: [EtcdCluster CRD](https://github.com/operator-framework/community-operators/blob/master/community-operators/etcd/0.9.4/etcdclusters.etcd.database.coreos.com.crd.yaml), [EtcdBackup CRD](https://github.com/operator-framework/community-operators/blob/master/community-operators/etcd/0.9.4/etcdbackups.etcd.database.coreos.com.crd.yaml)
 
@@ -112,9 +110,9 @@ To minimize the effort required to run an application on kubernetes, OLM handles
 
 This is achieved through additional metadata on the application definition. Each operator must define:
 
- - The CRDs that it is responsible for managing. 
+ - The CRDs that it is responsible for managing.
    - e.g., the etcd operator manages `EtcdCluster`.
- - The CRDs that it depends on. 
+ - The CRDs that it depends on.
    - e.g., the vault operator depends on `EtcdCluster`, because Vault is backed by etcd.
 
 Basic dependency resolution is then possible by finding, for each “required” CRD, the corresponding operator that manages it and installing it as well. Dependency resolution can be further constrained by the way a user interacts with catalogs.
@@ -126,7 +124,8 @@ Dependency resolution is driven through the `(Group, Version, Kind)` of CRDs. Th
 There is no way to express a dependency on a particular version of an operator (e.g. `etcd-operator v0.9.0`) or application instance (e.g. `etcd v3.2.1`). This encourages application authors to depend on the interface and not the implementation.
 
 ## Discovery, Catalogs, and Automated Upgrades
-OLM has the concept of catalogs, which are repositories of application definitions and CRDs. 	
+
+OLM has the concept of catalogs, which are repositories of application definitions and CRDs.
 
 Catalogs contain a set of Packages, which map “channels” to a particular application definition. Channels allow package authors to write different upgrade paths for different users (e.g. alpha vs. stable).
 
@@ -155,7 +154,7 @@ Catalogs are served internally over a grpc interface to OLM from [operator-regis
 
 ## Samples
 
-To explore any operator samples using the OLM, see the [https://operatorhub.io/](https://operatorhub.io/) and its resources in [Community Operators](https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators). 
+To explore any operator samples using the OLM, see the [https://operatorhub.io/](https://operatorhub.io/) and its resources in [Community Operators](https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators).
 
 ## Community and how to get involved
 
@@ -171,6 +170,10 @@ Check out the [contributor documentation][contributor-documentation]. Also, see 
 
 See [reporting bugs][bug_guide] for details about reporting any issues.
 
+## Reporting flaky tests
+
+See [reporting flaky tests][flaky_test_guide] for details about reporting flaky tests.
+
 ## License
 
 Operator Lifecycle Manager is under Apache 2.0 license. See the [LICENSE][license_file] file for details.
@@ -180,6 +183,7 @@ Operator Lifecycle Manager is under Apache 2.0 license. See the [LICENSE][licens
 [proposals_docs]: ./doc/contributors/design-proposals
 [license_file]:./LICENSE
 [bug_guide]:./doc/dev/reporting_bugs.md
+[flaky_test_guide]:./doc/dev/reporting_flakes.md
 [git_tool]:https://git-scm.com/downloads
 [go_tool]:https://golang.org/dl/
 [docker_tool]:https://docs.docker.com/install/

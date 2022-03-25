@@ -5,9 +5,10 @@ approvers:
   - dinhxuanvu
   - kevinrizza
   - benluddy
+  - awgreene
   - joelanford
-  - estroz
   - jmrodri
+  - perdasilva
 # review == this code is good /lgtm
 reviewers:
   - ecordell
@@ -22,5 +23,5 @@ reviewers:
   - joelanford
   - benluddy
   - ankitathomas
-  - estroz
   - jmrodri
+  - perdasilva

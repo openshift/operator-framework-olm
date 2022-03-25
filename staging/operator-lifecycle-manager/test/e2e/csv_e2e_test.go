@@ -20,6 +20,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
@@ -63,23 +64,27 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 	When("a CustomResourceDefinition was installed alongside a ClusterServiceVersion", func() {
 		var (
-			ns  corev1.Namespace
-			crd apiextensionsv1.CustomResourceDefinition
+			ns          corev1.Namespace
+			crd         apiextensionsv1.CustomResourceDefinition
+			og          operatorsv1.OperatorGroup
+			apiname     string
+			apifullname string
 		)
 
 		BeforeEach(func() {
 			ns = corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-namespace-1",
+					Name: genName("test-namespace-"),
 				},
 			}
+
 			Eventually(func() error {
 				return ctx.Ctx().Client().Create(context.Background(), &ns)
 			}).Should(Succeed())
 
-			og := operatorsv1.OperatorGroup{
+			og = operatorsv1.OperatorGroup{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-operatorgroup", ns.GetName()),
+					Name:      genName(fmt.Sprintf("%s-operatorgroup-", ns.GetName())),
 					Namespace: ns.GetName(),
 				},
 				Spec: operatorsv1.OperatorGroupSpec{
@@ -90,9 +95,11 @@ var _ = Describe("ClusterServiceVersion", func() {
 				return ctx.Ctx().Client().Create(context.Background(), &og)
 			}).Should(Succeed())
 
+			apiname = genName("api")
+			apifullname = apiname + "s.example.com"
 			crd = apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "tests.example.com",
+					Name: apifullname,
 					Annotations: map[string]string{
 						"operatorframework.io/installed-alongside-0": fmt.Sprintf("%s/associated-csv", ns.GetName()),
 					},
@@ -101,10 +108,10 @@ var _ = Describe("ClusterServiceVersion", func() {
 					Group: "example.com",
 					Scope: apiextensionsv1.ClusterScoped,
 					Names: apiextensionsv1.CustomResourceDefinitionNames{
-						Plural:   "tests",
-						Singular: "test",
-						Kind:     "Test",
-						ListKind: "TestList",
+						Plural:   apiname + "s",
+						Singular: apiname,
+						Kind:     strings.Title(apiname),
+						ListKind: strings.Title(apiname) + "List",
 					},
 					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{{
 						Name:    "v1",
@@ -125,15 +132,20 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 		AfterEach(func() {
 			Eventually(func() error {
-				return ctx.Ctx().Client().Delete(context.Background(), &ns)
+				return ctx.Ctx().Client().Delete(context.Background(), &crd)
 			}).Should(WithTransform(k8serrors.IsNotFound, BeTrue()))
 
 			Eventually(func() error {
-				return ctx.Ctx().Client().Delete(context.Background(), &crd)
+				return ctx.Ctx().Client().Delete(context.Background(), &og)
+			}).Should(WithTransform(k8serrors.IsNotFound, BeTrue()))
+
+			Eventually(func() error {
+				return ctx.Ctx().Client().Delete(context.Background(), &ns)
 			}).Should(WithTransform(k8serrors.IsNotFound, BeTrue()))
 		})
 
-		It("can satisfy an associated ClusterServiceVersion's ownership requirement", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2646
+		It("[FLAKE] can satisfy an associated ClusterServiceVersion's ownership requirement", func() {
 			associated := operatorsv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "associated-csv",
@@ -142,7 +154,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
 					CustomResourceDefinitions: operatorsv1alpha1.CustomResourceDefinitions{
 						Owned: []operatorsv1alpha1.CRDDescription{{
-							Name:    "tests.example.com",
+							Name:    apifullname,
 							Version: "v1",
 							Kind:    "Test",
 						}},
@@ -182,6 +194,10 @@ var _ = Describe("ClusterServiceVersion", func() {
 					Status:  operatorsv1alpha1.RequirementStatusReasonPresent,
 				},
 			))
+
+			Eventually(func() error {
+				return ctx.Ctx().Client().Delete(context.Background(), &associated)
+			}).Should(Succeed())
 		})
 
 		// Without this exception, upgrades can become blocked
@@ -196,7 +212,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
 					CustomResourceDefinitions: operatorsv1alpha1.CustomResourceDefinitions{
 						Owned: []operatorsv1alpha1.CRDDescription{{
-							Name:    "tests.example.com",
+							Name:    apifullname,
 							Version: "v1",
 							Kind:    "Test",
 						}},
@@ -220,7 +236,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
 					CustomResourceDefinitions: operatorsv1alpha1.CustomResourceDefinitions{
 						Owned: []operatorsv1alpha1.CRDDescription{{
-							Name:    "tests.example.com",
+							Name:    apifullname,
 							Version: "v1",
 							Kind:    "Test",
 						}},
@@ -240,9 +256,14 @@ var _ = Describe("ClusterServiceVersion", func() {
 			Eventually(func() error {
 				return ctx.Ctx().Client().Get(context.Background(), client.ObjectKeyFromObject(&unassociated), &unassociated)
 			}).Should(WithTransform(k8serrors.IsNotFound, BeTrue()))
+
+			Eventually(func() error {
+				return ctx.Ctx().Client().Delete(context.Background(), &associated)
+			}).Should(Succeed())
 		})
 
-		It("can satisfy an unassociated ClusterServiceVersion's non-ownership requirement", func() {
+		// issue:https://github.com/operator-framework/operator-lifecycle-manager/issues/2639
+		It("[FLAKE] can satisfy an unassociated ClusterServiceVersion's non-ownership requirement", func() {
 			unassociated := operatorsv1alpha1.ClusterServiceVersion{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "unassociated-csv",
@@ -251,7 +272,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
 					CustomResourceDefinitions: operatorsv1alpha1.CustomResourceDefinitions{
 						Required: []operatorsv1alpha1.CRDDescription{{
-							Name:    "tests.example.com",
+							Name:    apifullname,
 							Version: "v1",
 							Kind:    "Test",
 						}},
@@ -291,6 +312,9 @@ var _ = Describe("ClusterServiceVersion", func() {
 					Status:  operatorsv1alpha1.RequirementStatusReasonPresent,
 				},
 			))
+			Eventually(func() error {
+				return ctx.Ctx().Client().Delete(context.Background(), &unassociated)
+			}).Should(Succeed())
 		})
 
 		When("an unassociated ClusterServiceVersion in different namespace owns the same CRD", func() {
@@ -301,12 +325,12 @@ var _ = Describe("ClusterServiceVersion", func() {
 			BeforeEach(func() {
 				ns = corev1.Namespace{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-namespace-2",
+						Name: genName("test-namespace-2-"),
 					},
 				}
 				Expect(ctx.Ctx().Client().Create(context.Background(), &ns)).To(Succeed())
 
-				og := operatorsv1.OperatorGroup{
+				og = operatorsv1.OperatorGroup{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      fmt.Sprintf("%s-operatorgroup", ns.GetName()),
 						Namespace: ns.GetName(),
@@ -333,7 +357,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 					Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
 						CustomResourceDefinitions: operatorsv1alpha1.CustomResourceDefinitions{
 							Owned: []operatorsv1alpha1.CRDDescription{{
-								Name:    "tests.example.com",
+								Name:    apifullname,
 								Version: "v1",
 								Kind:    "Test",
 							}},
@@ -357,7 +381,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 					Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
 						CustomResourceDefinitions: operatorsv1alpha1.CustomResourceDefinitions{
 							Owned: []operatorsv1alpha1.CRDDescription{{
-								Name:    "tests.example.com",
+								Name:    apifullname,
 								Version: "v1",
 								Kind:    "Test",
 							}},
@@ -502,6 +526,14 @@ var _ = Describe("ClusterServiceVersion", func() {
 		})
 
 		It("remains in phase Succeeded when only one pod is available", func() {
+			Eventually(func() int32 {
+				dep, err := c.GetDeployment(testNamespace, "deployment")
+				if err != nil || dep == nil {
+					return 0
+				}
+				return dep.Status.ReadyReplicas
+			}).Should(Equal(int32(2)))
+
 			var ps corev1.PodList
 			Expect(ctx.Ctx().Client().List(context.Background(), &ps, client.MatchingLabels{"app": "foobar"})).To(Succeed())
 			Expect(ps.Items).To(Not(BeEmpty()))
@@ -4175,59 +4207,58 @@ var _ = Describe("ClusterServiceVersion", func() {
 })
 
 var _ = Describe("Disabling copied CSVs", func() {
-	// Define namespace, operatorGroup, and csv upfront
-	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: genName("csv-toggle-test-"),
-		},
-	}
+	var (
+		ns  corev1.Namespace
+		csv operatorsv1alpha1.ClusterServiceVersion
+	)
 
-	operatorGroup := operatorsv1.OperatorGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      genName("csv-toggle-test-"),
-			Namespace: ns.GetName(),
-		},
-	}
+	BeforeEach(func() {
+		nsname := genName("csv-toggle-test-")
+		og := operatorsv1.OperatorGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-operatorgroup", nsname),
+				Namespace: nsname,
+			},
+		}
+		ns = SetupGeneratedTestNamespaceWithOperatorGroup(nsname, og)
 
-	csv := operatorsv1alpha1.ClusterServiceVersion{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      genName("csv-toggle-test-"),
-			Namespace: ns.GetName(),
-		},
-		Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
-			InstallStrategy: newNginxInstallStrategy(genName("csv-toggle-test-"), nil, nil),
-			InstallModes: []operatorsv1alpha1.InstallMode{
-				{
-					Type:      operatorsv1alpha1.InstallModeTypeAllNamespaces,
-					Supported: true,
+		csv = operatorsv1alpha1.ClusterServiceVersion{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      genName("csv-toggle-test-"),
+				Namespace: nsname,
+			},
+			Spec: operatorsv1alpha1.ClusterServiceVersionSpec{
+				InstallStrategy: newNginxInstallStrategy(genName("csv-toggle-test-"), nil, nil),
+				InstallModes: []operatorsv1alpha1.InstallMode{
+					{
+						Type:      operatorsv1alpha1.InstallModeTypeAllNamespaces,
+						Supported: true,
+					},
 				},
 			},
-		},
-	}
+		}
+		err := ctx.Ctx().Client().Create(context.Background(), &csv)
+		Expect(err).ShouldNot(HaveOccurred())
+	})
+	AfterEach(func() {
+		Eventually(func() error {
+			err := ctx.Ctx().Client().Delete(context.Background(), &csv)
+			if err != nil && k8serrors.IsNotFound(err) {
+				return err
+			}
+
+			return nil
+		}).Should(Succeed())
+		TeardownNamespace(ns.GetName())
+		Eventually(func() error {
+			var namespace corev1.Namespace
+			return ctx.Ctx().Client().Get(context.Background(), client.ObjectKeyFromObject(&ns), &namespace)
+		}).Should(WithTransform(k8serrors.IsNotFound, BeTrue()))
+	})
 
 	When("an operator is installed in AllNamespace mode", func() {
-		BeforeEach(func() {
-			Eventually(func() error {
-				if err := ctx.Ctx().Client().Create(context.TODO(), ns); err != nil && !k8serrors.IsAlreadyExists(err) {
-					ctx.Ctx().Logf("Unable to create ns: %v", err)
-					return err
-				}
-
-				if err := ctx.Ctx().Client().Create(context.TODO(), &operatorGroup); err != nil && !k8serrors.IsAlreadyExists(err) {
-					ctx.Ctx().Logf("Unable to create og: %v", err)
-					return err
-				}
-
-				if err := ctx.Ctx().Client().Create(context.TODO(), &csv); err != nil && !k8serrors.IsAlreadyExists(err) {
-					ctx.Ctx().Logf("Unable to create csv: %v", err)
-					return err
-				}
-
-				return nil
-			}).Should(Succeed())
-		})
-
-		It("should have Copied CSVs in all other namespaces", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2643
+		It("[FLAKE] should have Copied CSVs in all other namespaces", func() {
 			Eventually(func() error {
 				requirement, err := k8slabels.NewRequirement(operatorsv1alpha1.CopiedLabelKey, selection.Equals, []string{csv.GetNamespace()})
 				if err != nil {
@@ -4307,7 +4338,8 @@ var _ = Describe("Disabling copied CSVs", func() {
 			}).Should(Succeed())
 		})
 
-		It("should be reflected in the olmConfig.Status.Condition array that the expected number of copied CSVs exist", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2634
+		It("[FLAKE] should be reflected in the olmConfig.Status.Condition array that the expected number of copied CSVs exist", func() {
 			Eventually(func() error {
 				var olmConfig operatorsv1.OLMConfig
 				if err := ctx.Ctx().Client().Get(context.TODO(), apitypes.NamespacedName{Name: "cluster"}, &olmConfig); err != nil {
@@ -4363,7 +4395,8 @@ var _ = Describe("Disabling copied CSVs", func() {
 			}).Should(Succeed())
 		})
 
-		It("should have copied CSVs in all other Namespaces", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2634
+		It("[FLAKE] should have copied CSVs in all other Namespaces", func() {
 			Eventually(func() error {
 				// find copied csvs...
 				requirement, err := k8slabels.NewRequirement(operatorsv1alpha1.CopiedLabelKey, selection.Equals, []string{csv.GetNamespace()})
@@ -4380,19 +4413,27 @@ var _ = Describe("Disabling copied CSVs", func() {
 				}
 
 				var namespaces corev1.NamespaceList
-				if err := ctx.Ctx().Client().List(context.TODO(), &namespaces, &client.ListOptions{}); err != nil {
+				if err := ctx.Ctx().Client().List(context.TODO(), &namespaces, &client.ListOptions{FieldSelector: fields.SelectorFromSet(map[string]string{"status.phase": "Active"})}); err != nil {
 					return err
 				}
 
-				if len(namespaces.Items)-1 != len(copiedCSVs.Items) {
-					return fmt.Errorf("%d copied CSVs found, expected %d", len(copiedCSVs.Items), len(namespaces.Items)-1)
+				targetNamespaces := len(namespaces.Items) - 1
+				for _, ns := range namespaces.Items {
+					// filter out any namespaces that are currently reporting a Terminating phase
+					// as the API server will reject any resource events in terminating namespaces.
+					if ns.Status.Phase == "Terminating" {
+						targetNamespaces--
+					}
 				}
-
+				if targetNamespaces != len(copiedCSVs.Items) {
+					return fmt.Errorf("%d copied CSVs found, expected %d", len(copiedCSVs.Items), targetNamespaces)
+				}
 				return nil
 			}).Should(Succeed())
 		})
 
-		It("should be reflected in the olmConfig.Status.Condition array that the expected number of copied CSVs exist", func() {
+		// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2641
+		It("[FLAKE] should be reflected in the olmConfig.Status.Condition array that the expected number of copied CSVs exist", func() {
 			Eventually(func() error {
 				var olmConfig operatorsv1.OLMConfig
 				if err := ctx.Ctx().Client().Get(context.TODO(), apitypes.NamespacedName{Name: "cluster"}, &olmConfig); err != nil {
@@ -4405,7 +4446,7 @@ var _ = Describe("Disabling copied CSVs", func() {
 
 				expectedCondition := metav1.Condition{
 					Reason:  "CopiedCSVsEnabled",
-					Message: "Copied CSVs are enabled and present accross the cluster",
+					Message: "Copied CSVs are enabled and present across the cluster",
 					Status:  metav1.ConditionFalse,
 				}
 
@@ -4422,8 +4463,6 @@ var _ = Describe("Disabling copied CSVs", func() {
 })
 
 var singleInstance = int32(1)
-
-type cleanupFunc func()
 
 var immediateDeleteGracePeriod int64 = 0
 
@@ -4465,7 +4504,6 @@ func buildCSVCleanupFunc(c operatorclient.ClientInterface, crc versioned.Interfa
 			return err
 		})
 		Expect(err).ShouldNot(HaveOccurred())
-
 	}
 }
 
@@ -4482,7 +4520,6 @@ func createCSV(c operatorclient.ClientInterface, crc versioned.Interface, csv op
 	}).Should(Succeed())
 
 	return buildCSVCleanupFunc(c, crc, csv, namespace, cleanupCRDs, cleanupAPIServices), nil
-
 }
 
 func buildCRDCleanupFunc(c operatorclient.ClientInterface, crdName string) cleanupFunc {
@@ -4593,7 +4630,6 @@ type mockGroupVersionKind struct {
 }
 
 func newMockExtServerDeployment(labelName string, mGVKs []mockGroupVersionKind) appsv1.DeploymentSpec {
-
 	// Create the list of containers
 	containers := []corev1.Container{}
 	for _, mGVK := range mGVKs {
@@ -4742,7 +4778,6 @@ func waitForDeploymentToDelete(c operatorclient.ClientInterface, name string) er
 }
 
 func csvExists(c versioned.Interface, name string) bool {
-
 	fetched, err := c.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if k8serrors.IsNotFound(err) {
 		return false

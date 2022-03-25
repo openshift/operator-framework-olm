@@ -12,7 +12,6 @@ import (
 	"github.com/operator-framework/api/crds"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -33,7 +32,6 @@ func TestControllers(t *testing.T) {
 
 var (
 	testEnv   *envtest.Environment
-	cfg       *rest.Config
 	k8sClient client.Client
 	ctx       context.Context
 	fixedNow  NowFunc
@@ -55,8 +53,8 @@ var _ = BeforeSuite(func() {
 	base := filepath.Join("..", "..", "..", "..", "vendor", "github.com", "openshift", "api", "config", "v1")
 	testEnv = &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
-		CRDs: []apiextensionsv1.CustomResourceDefinition{
-			*crds.ClusterServiceVersion(),
+		CRDs: []*apiextensionsv1.CustomResourceDefinition{
+			crds.ClusterServiceVersion(),
 		},
 		CRDDirectoryPaths: []string{
 			filepath.Join(base, "0000_00_cluster-version-operator_01_clusteroperator.crd.yaml"),

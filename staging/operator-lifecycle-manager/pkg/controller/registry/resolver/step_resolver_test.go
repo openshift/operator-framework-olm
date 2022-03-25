@@ -13,7 +13,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	k8sfake "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/pkg/api"
@@ -46,6 +45,32 @@ var (
 	Provides4 = APISet4
 	Requires4 = APISet4
 )
+
+func TestInitHooks(t *testing.T) {
+	clientFake := fake.NewSimpleClientset()
+	lister := operatorlister.NewLister()
+	log := logrus.New()
+
+	// no init hooks
+	resolver := NewOperatorStepResolver(lister, clientFake, "", nil, log)
+	require.NotNil(t, resolver.resolver)
+
+	// with init hook
+	var testHook stepResolverInitHook = func(resolver *OperatorStepResolver) error {
+		resolver.resolver = nil
+		return nil
+	}
+
+	// defined in step_resolver.go
+	initHooks = append(initHooks, testHook)
+	defer func() {
+		// reset initHooks
+		initHooks = nil
+	}()
+
+	resolver = NewOperatorStepResolver(lister, clientFake, "", nil, log)
+	require.Nil(t, resolver.resolver)
+}
 
 func TestResolver(t *testing.T) {
 	const namespace = "catsrc-namespace"
@@ -98,12 +123,12 @@ func TestResolver(t *testing.T) {
 			out: resolverTestOut{
 				solverError: solver.NotSatisfiable{
 					{
-						Installable: NewSubscriptionInstallable("a", nil),
-						Constraint:  PrettyConstraint(solver.Mandatory(), "subscription a-alpha exists"),
+						Variable:   NewSubscriptionVariable("a", nil),
+						Constraint: PrettyConstraint(solver.Mandatory(), "subscription a-alpha exists"),
 					},
 					{
-						Installable: NewSubscriptionInstallable("a", nil),
-						Constraint:  PrettyConstraint(solver.Dependency(), "no operators found from catalog catsrc in namespace catsrc-namespace referenced by subscription a-alpha"),
+						Variable:   NewSubscriptionVariable("a", nil),
+						Constraint: PrettyConstraint(solver.Dependency(), "no operators found from catalog catsrc in namespace catsrc-namespace referenced by subscription a-alpha"),
 					},
 				},
 			},
@@ -121,12 +146,12 @@ func TestResolver(t *testing.T) {
 			out: resolverTestOut{
 				solverError: solver.NotSatisfiable{
 					{
-						Installable: NewSubscriptionInstallable("a", nil),
-						Constraint:  PrettyConstraint(solver.Mandatory(), "subscription a-alpha exists"),
+						Variable:   NewSubscriptionVariable("a", nil),
+						Constraint: PrettyConstraint(solver.Mandatory(), "subscription a-alpha exists"),
 					},
 					{
-						Installable: NewSubscriptionInstallable("a", nil),
-						Constraint:  PrettyConstraint(solver.Dependency(), "no operators found in package a in the catalog referenced by subscription a-alpha"),
+						Variable:   NewSubscriptionVariable("a", nil),
+						Constraint: PrettyConstraint(solver.Dependency(), "no operators found in package a in the catalog referenced by subscription a-alpha"),
 					},
 				},
 			},
@@ -144,12 +169,12 @@ func TestResolver(t *testing.T) {
 			out: resolverTestOut{
 				solverError: solver.NotSatisfiable{
 					{
-						Installable: NewSubscriptionInstallable("a", nil),
-						Constraint:  PrettyConstraint(solver.Mandatory(), "subscription a-alpha exists"),
+						Variable:   NewSubscriptionVariable("a", nil),
+						Constraint: PrettyConstraint(solver.Mandatory(), "subscription a-alpha exists"),
 					},
 					{
-						Installable: NewSubscriptionInstallable("a", nil),
-						Constraint:  PrettyConstraint(solver.Dependency(), "no operators found in channel alpha of package a in the catalog referenced by subscription a-alpha"),
+						Variable:   NewSubscriptionVariable("a", nil),
+						Constraint: PrettyConstraint(solver.Dependency(), "no operators found in channel alpha of package a in the catalog referenced by subscription a-alpha"),
 					},
 				},
 			},
@@ -167,12 +192,12 @@ func TestResolver(t *testing.T) {
 			out: resolverTestOut{
 				solverError: solver.NotSatisfiable{
 					{
-						Installable: NewSubscriptionInstallable("a", nil),
-						Constraint:  PrettyConstraint(solver.Mandatory(), "subscription a-alpha exists"),
+						Variable:   NewSubscriptionVariable("a", nil),
+						Constraint: PrettyConstraint(solver.Mandatory(), "subscription a-alpha exists"),
 					},
 					{
-						Installable: NewSubscriptionInstallable("a", nil),
-						Constraint:  PrettyConstraint(solver.Dependency(), "no operators found with name notfound in channel alpha of package a in the catalog referenced by subscription a-alpha"),
+						Variable:   NewSubscriptionVariable("a", nil),
+						Constraint: PrettyConstraint(solver.Dependency(), "no operators found with name notfound in channel alpha of package a in the catalog referenced by subscription a-alpha"),
 					},
 				},
 			},
@@ -324,19 +349,19 @@ func TestResolver(t *testing.T) {
 				subs:    []*v1alpha1.Subscription{},
 				solverError: solver.NotSatisfiable([]solver.AppliedConstraint{
 					{
-						Installable: NewSubscriptionInstallable("a", []solver.Identifier{"catsrc/catsrc-namespace/alpha/a.v1"}),
-						Constraint:  PrettyConstraint(solver.Dependency("catsrc/catsrc-namespace/alpha/a.v1"), "subscription a-alpha requires catsrc/catsrc-namespace/alpha/a.v1"),
+						Variable:   NewSubscriptionVariable("a", []solver.Identifier{"catsrc/catsrc-namespace/alpha/a.v1"}),
+						Constraint: PrettyConstraint(solver.Dependency("catsrc/catsrc-namespace/alpha/a.v1"), "subscription a-alpha requires catsrc/catsrc-namespace/alpha/a.v1"),
 					},
 					{
-						Installable: &BundleInstallable{
+						Variable: &BundleVariable{
 							identifier:  "catsrc/catsrc-namespace/alpha/a.v1",
 							constraints: []solver.Constraint{solver.Dependency()},
 						},
 						Constraint: PrettyConstraint(solver.Dependency(), "bundle a.v1 requires an operator providing an API with group: g, version: v, kind: k"),
 					},
 					{
-						Installable: NewSubscriptionInstallable("a", []solver.Identifier{"catsrc/catsrc-namespace/alpha/a.v1"}),
-						Constraint:  PrettyConstraint(solver.Mandatory(), "subscription a-alpha exists"),
+						Variable:   NewSubscriptionVariable("a", []solver.Identifier{"catsrc/catsrc-namespace/alpha/a.v1"}),
+						Constraint: PrettyConstraint(solver.Mandatory(), "subscription a-alpha exists"),
 					},
 				}),
 			},
@@ -823,7 +848,6 @@ func TestResolver(t *testing.T) {
 			lister := operatorlister.NewLister()
 			lister.OperatorsV1alpha1().RegisterSubscriptionLister(namespace, informerFactory.Operators().V1alpha1().Subscriptions().Lister())
 			lister.OperatorsV1alpha1().RegisterClusterServiceVersionLister(namespace, informerFactory.Operators().V1alpha1().ClusterServiceVersions().Lister())
-			kClientFake := k8sfake.NewSimpleClientset()
 
 			ssp := make(resolvercache.StaticSourceProvider)
 			for catalog, bundles := range tt.bundlesByCatalog {
@@ -838,12 +862,18 @@ func TestResolver(t *testing.T) {
 				ssp[catalog] = snapshot
 			}
 			log := logrus.New()
-			satresolver := &SatResolver{
+			ssp[resolvercache.NewVirtualSourceKey(namespace)] = &csvSource{
+				key:       resolvercache.NewVirtualSourceKey(namespace),
+				csvLister: lister.OperatorsV1alpha1().ClusterServiceVersionLister().ClusterServiceVersions(namespace),
+				subLister: lister.OperatorsV1alpha1().SubscriptionLister().Subscriptions(namespace),
+				logger:    log,
+			}
+			satresolver := &Resolver{
 				cache: resolvercache.New(ssp),
 				log:   log,
 			}
-			resolver := NewOperatorStepResolver(lister, clientFake, kClientFake, "", nil, log)
-			resolver.satResolver = satresolver
+			resolver := NewOperatorStepResolver(lister, clientFake, "", nil, log)
+			resolver.resolver = satresolver
 
 			steps, lookups, subs, err := resolver.ResolveSteps(namespace)
 			if tt.out.solverError == nil {
@@ -865,23 +895,11 @@ func TestResolver(t *testing.T) {
 				}
 				require.ElementsMatch(t, expectedStrings, actualStrings)
 			}
-			RequireStepsEqual(t, expectedSteps, steps)
+			requireStepsEqual(t, expectedSteps, steps)
 			require.ElementsMatch(t, tt.out.lookups, lookups)
 			require.ElementsMatch(t, tt.out.subs, subs)
 		})
 	}
-}
-
-type stubOperatorCacheProvider struct {
-	noc *resolvercache.NamespacedOperatorCache
-}
-
-func (stub *stubOperatorCacheProvider) Namespaced(namespaces ...string) resolvercache.MultiCatalogOperatorFinder {
-	return stub.noc
-}
-
-func (stub *stubOperatorCacheProvider) Expire(key resolvercache.SourceKey) {
-	return
 }
 
 func TestNamespaceResolverRBAC(t *testing.T) {
@@ -966,7 +984,6 @@ func TestNamespaceResolverRBAC(t *testing.T) {
 			for _, steps := range tt.out.steps {
 				expectedSteps = append(expectedSteps, steps...)
 			}
-			kClientFake := k8sfake.NewSimpleClientset()
 			clientFake, informerFactory, _ := StartResolverInformers(namespace, stopc, tt.clusterState...)
 			lister := operatorlister.NewLister()
 			lister.OperatorsV1alpha1().RegisterSubscriptionLister(namespace, informerFactory.Operators().V1alpha1().Subscriptions().Lister())
@@ -980,16 +997,16 @@ func TestNamespaceResolverRBAC(t *testing.T) {
 				}
 				stubSnapshot.Entries = append(stubSnapshot.Entries, op)
 			}
-			satresolver := &SatResolver{
+			satresolver := &Resolver{
 				cache: resolvercache.New(resolvercache.StaticSourceProvider{
 					catalog: stubSnapshot,
 				}),
 			}
-			resolver := NewOperatorStepResolver(lister, clientFake, kClientFake, "", nil, logrus.New())
-			resolver.satResolver = satresolver
+			resolver := NewOperatorStepResolver(lister, clientFake, "", nil, logrus.New())
+			resolver.resolver = satresolver
 			steps, _, subs, err := resolver.ResolveSteps(namespace)
 			require.Equal(t, tt.out.err, err)
-			RequireStepsEqual(t, expectedSteps, steps)
+			requireStepsEqual(t, expectedSteps, steps)
 			require.ElementsMatch(t, tt.out.subs, subs)
 		})
 	}
@@ -1155,4 +1172,14 @@ func subSteps(namespace, operatorName, pkgName, channelName string, catalog reso
 		Resource:  stepresource,
 		Status:    v1alpha1.StepStatusUnknown,
 	}}
+}
+
+// requireStepsEqual is similar to require.ElementsMatch, but produces better error messages
+func requireStepsEqual(t *testing.T, expectedSteps, steps []*v1alpha1.Step) {
+	for _, s := range expectedSteps {
+		require.Contains(t, steps, s, "step in expected not found in steps")
+	}
+	for _, s := range steps {
+		require.Contains(t, expectedSteps, s, "step in steps not found in expected")
+	}
 }

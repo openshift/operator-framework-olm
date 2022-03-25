@@ -51,12 +51,12 @@ func (c *ReconcilerConfig) apply(opts []ReconcilerOption) {
 
 func (c *ReconcilerConfig) complete() error {
 	if c.Client == nil {
-		return fmt.Errorf("No client specified")
+		return fmt.Errorf("no client specified")
 	}
 	if c.Name == "" {
-		return fmt.Errorf("No ClusterOperator name specified")
+		return fmt.Errorf("no ClusterOperator name specified")
 	}
-	if c.Log == nil {
+	if c.Log.GetSink() == nil {
 		c.Log = ctrl.Log.WithName(c.Name)
 	}
 	if c.Now == nil {
