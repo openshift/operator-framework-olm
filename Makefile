@@ -96,10 +96,6 @@ bin/cpb: FORCE
 	CGO_ENABLED=0 go build $(GO_BUILD_OPTS) -ldflags '-extldflags "-static"' -o $@ github.com/operator-framework/operator-lifecycle-manager/util/cpb
 
 unit/olm: bin/kubebuilder
-	# TODO(tflannag): This is placeholder until we can add a dedicated
-	# prow test for this unit check
-	echo "Running the PSM unit tests"
-	$(MAKE) unit/psm
 	echo "Running the OLM unit tests"
 	$(MAKE) unit WHAT=operator-lifecycle-manager
 
