@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "github.com/onsi/ginkgo"
+	g "github.com/onsi/ginkgo"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
@@ -57,7 +58,7 @@ func (ctx TestContext) Logf(f string, v ...interface{}) {
 	if !strings.HasSuffix(f, "\n") {
 		f += "\n"
 	}
-	fmt.Fprintf(GinkgoWriter, f, v...)
+	fmt.Fprintf(g.GinkgoWriter, f, v...)
 }
 
 func (ctx TestContext) Scheme() *runtime.Scheme {
@@ -162,12 +163,12 @@ func setDerivedFields(ctx *TestContext) error {
 
 	ctx.scheme = runtime.NewScheme()
 	localSchemeBuilder := runtime.NewSchemeBuilder(
-		apiextensionsv1.AddToScheme,
 		kscheme.AddToScheme,
 		operatorsv1alpha1.AddToScheme,
 		operatorsv1.AddToScheme,
 		operatorsv2.AddToScheme,
 		apiextensionsv1.AddToScheme,
+		apiextensions.AddToScheme,
 	)
 	if err := localSchemeBuilder.AddToScheme(ctx.scheme); err != nil {
 		return err
