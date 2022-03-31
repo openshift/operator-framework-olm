@@ -510,6 +510,22 @@ func buildCatalogSourceCleanupFunc(crc versioned.Interface, namespace string, ca
 		ctx.Ctx().Logf("Deleting catalog source %s...", catalogSource.GetName())
 		err := crc.OperatorsV1alpha1().CatalogSources(namespace).Delete(context.Background(), catalogSource.GetName(), metav1.DeleteOptions{})
 		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(func() (bool, error) {
+			listOpts := metav1.ListOptions{
+				LabelSelector: "olm.catalogSource=" + catalogSource.GetName(),
+				FieldSelector: "status.phase=Running",
+			}
+			fetched, err := newKubeClient().KubernetesInterface().CoreV1().Pods(catalogSource.GetNamespace()).List(context.Background(), listOpts)
+			if err != nil {
+				return false, err
+			}
+			if len(fetched.Items) == 0 {
+				return true, nil
+			}
+			ctx.Ctx().Logf("waiting for the catalog source %s pod to be deleted...", fetched.Items[0].GetName())
+			return false, nil
+		}).Should(BeTrue())
 	}
 }
 
@@ -911,6 +927,12 @@ func Apply(obj controllerclient.Object, changeFunc interface{}) func() error {
 func HavePhase(goal operatorsv1alpha1.InstallPlanPhase) gtypes.GomegaMatcher {
 	return WithTransform(func(plan *operatorsv1alpha1.InstallPlan) operatorsv1alpha1.InstallPlanPhase {
 		return plan.Status.Phase
+	}, Equal(goal))
+}
+
+func CSVHasPhase(goal operatorsv1alpha1.ClusterServiceVersionPhase) gtypes.GomegaMatcher {
+	return WithTransform(func(csv *operatorsv1alpha1.ClusterServiceVersion) operatorsv1alpha1.ClusterServiceVersionPhase {
+		return csv.Status.Phase
 	}, Equal(goal))
 }
 
