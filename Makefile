@@ -27,6 +27,10 @@ OPM := $(addprefix bin/, opm)
 OLM_CMDS  := $(shell go list -mod=vendor $(OLM_PKG)/cmd/...)
 PSM_CMD := $(addprefix bin/, psm)
 REGISTRY_CMDS  := $(addprefix bin/, $(shell ls staging/operator-registry/cmd | grep -v opm))
+
+# Default image tag for build/olm-container and build/registry-container
+IMG ?= test:test
+
 # Phony prerequisite for targets that rely on the go build cache to determine staleness.
 .PHONY: FORCE
 FORCE:
@@ -83,11 +87,11 @@ ifeq ($(shell go env GOARCH),amd64)
 	GOOS=windows CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ CGO_ENABLED=1 go build $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o "bin/windows-amd64-opm" --ldflags "-extld=x86_64-w64-mingw32-gcc $(version_flags)" -buildmode=exe $(REGISTRY_PKG)/cmd/opm
 endif
 
-build/olm-container:
-	$(CONTAINER_ENGINE) build -f operator-lifecycle-manager.Dockerfile -t test:test .
+build/olm-container: clean
+	$(CONTAINER_ENGINE) build -f operator-lifecycle-manager.Dockerfile -t ${IMG} .
 
-build/registry-container:
-	$(CONTAINER_ENGINE) build -f operator-registry.Dockerfile -t test:test .
+build/registry-container: clean
+	$(CONTAINER_ENGINE) build -f operator-registry.Dockerfile -t ${IMG} .
 
 bin/kubebuilder:
 	$(ROOT_DIR)/scripts/install_kubebuilder.sh
@@ -157,6 +161,30 @@ verify:
 	$(MAKE) verify-nested-vendor
 	echo "Checking commit integrity"
 	$(MAKE) verify-commits
+
+.PHONY: crc-start
+crc-start:
+	echo "Starting CRC"
+	./scripts/crc-start.sh
+
+.PHONY: crc-build
+crc-build:
+	echo "Building olm image"
+	IMG="olm:test" $(MAKE) build/olm-container
+	echo "Building opm image"
+	IMG="opm:test" $(MAKE) build/registry-container
+
+.PHONY: crc-deploy
+crc-deploy:
+	echo "Deploying OLM"
+	./scripts/crc-deploy.sh
+
+.PHONY: crc
+crc: crc-start crc-build crc-deploy
+
+.PHONY: clean
+clean:
+	rm -rf bin
 
 .PHONY: help
 help: ## Display this help.

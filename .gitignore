@@ -461,3 +461,8 @@ staging/*/vendor
 # Ignore sqlite
 *.db
 *.db-journal
+
+# e2e on crc values file and patches
+values-crc-e2e.yaml
+scripts/**/*.crc.e2e.patch.yaml
+
