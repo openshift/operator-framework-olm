@@ -8,6 +8,7 @@ metadata:
   namespace: openshift-operator-lifecycle-manager
 spec:
   schedule: "*/15 * * * *"
+  concurrencyPolicy: "Replace"
   jobTemplate:
     spec:
       template:
