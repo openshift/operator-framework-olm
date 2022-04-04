@@ -45,6 +45,33 @@ type OperatorGroupSpec struct {
 	// Static tells OLM not to update the OperatorGroup's providedAPIs annotation
 	// +optional
 	StaticProvidedAPIs bool `json:"staticProvidedAPIs,omitempty"`
+
+	// +optional
+	UpgradeStrategy UpgradeStrategy `json:"upgradeStrategy,omitempty"`
+}
+
+// UpgradeStrategy defines the upgrade strategy for operators in the namespace.
+// There are currently two supported upgrade strategies:
+//
+// Default: OLM will only allow clusterServiceVersions to move to the replacing
+// phase from the succeeded phase. This effectively means that OLM will not
+// allow operators to move to the next version if an installation or upgrade
+// has failed.
+//
+// UnsafeFailForward: OLM will allow clusterServiceVersions to move to the
+// replacing phase from the succeeded phase or from the failed phase.
+// Additionally, OLM will generate new installPlans when a subscription references
+// a failed installPlan and the catalog has been updated with a new upgrade for
+// the existing set of operators.
+//
+// WARNING: The UnsafeFailForward upgrade strategy is unsafe and may result
+// in unexpected behavior or unrecoverable data loss unless you have deep
+// understanding of the set of operators being managed in the namespace.
+type UpgradeStrategy struct {
+	// +kubebuilder:validation:Enum=Default;UnsafeFailForward
+	// +kubebuilder:default=Default
+	// +optional
+	Name upgradeStrategyName `json:"name"`
 }
 
 // OperatorGroupStatus is the status for an OperatorGroupResource.
@@ -88,6 +115,24 @@ type OperatorGroupList struct {
 	metav1.ListMeta `json:"metadata"`
 	// +listType=set
 	Items []OperatorGroup `json:"items"`
+}
+
+type upgradeStrategyName string
+
+const (
+	DefaultUpgradeStrategy           upgradeStrategyName = "Default"
+	UnsafeFailForwardUpgradeStrategy upgradeStrategyName = "UnsafeFailForward"
+)
+
+// IsServiceAccountSpecified returns true if the spec has a service account name specified.
+func (o *OperatorGroup) UpgradeStrategy() upgradeStrategyName {
+	strategyName := o.Spec.UpgradeStrategy.Name
+	switch {
+	case strategyName == UnsafeFailForwardUpgradeStrategy:
+		return strategyName
+	default:
+		return DefaultUpgradeStrategy
+	}
 }
 
 // BuildTargetNamespaces returns the set of target namespaces as a sorted, comma-delimited string
