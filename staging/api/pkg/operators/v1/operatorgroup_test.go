@@ -10,7 +10,7 @@ func TestUpgradeStrategy(t *testing.T) {
 	tests := []struct {
 		description string
 		og          *OperatorGroup
-		expected    upgradeStrategyName
+		expected    string
 	}{
 		{
 			description: "NoSpec",
@@ -24,12 +24,11 @@ func TestUpgradeStrategy(t *testing.T) {
 			},
 			expected: DefaultUpgradeStrategy,
 		},
-
 		{
 			description: "NoUpgradeStrategyName",
 			og: &OperatorGroup{
 				Spec: OperatorGroupSpec{
-					UpgradeStrategy: UpgradeStrategy{},
+					UpgradeStrategy: "",
 				},
 			},
 			expected: DefaultUpgradeStrategy,
@@ -38,9 +37,7 @@ func TestUpgradeStrategy(t *testing.T) {
 			description: "NonSupportedUpgradeStrategyName",
 			og: &OperatorGroup{
 				Spec: OperatorGroupSpec{
-					UpgradeStrategy: UpgradeStrategy{
-						Name: "",
-					},
+					UpgradeStrategy: "foo",
 				},
 			},
 			expected: DefaultUpgradeStrategy,
@@ -49,9 +46,7 @@ func TestUpgradeStrategy(t *testing.T) {
 			description: "UnsafeFailForwardUpgradeStrategyName",
 			og: &OperatorGroup{
 				Spec: OperatorGroupSpec{
-					UpgradeStrategy: UpgradeStrategy{
-						Name: "UnsafeFailForward",
-					},
+					UpgradeStrategy: "UnsafeFailForward",
 				},
 			},
 			expected: UnsafeFailForwardUpgradeStrategy,
