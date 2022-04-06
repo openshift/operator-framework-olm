@@ -1,14 +1,18 @@
 package internal
 
 import (
+	"testing"
+
 	"github.com/operator-framework/api/pkg/manifests"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func Test_ValidateGoodPractices(t *testing.T) {
 	bundleWithDeploymentSpecEmpty, _ := manifests.GetBundleFromDir("./testdata/valid_bundle")
 	bundleWithDeploymentSpecEmpty.CSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs = nil
+
+	bundleWithMissingCrdDescription, _ := manifests.GetBundleFromDir("./testdata/valid_bundle")
+	bundleWithMissingCrdDescription.CSV.Spec.CustomResourceDefinitions.Owned[0].Description = ""
 
 	type args struct {
 		bundleDir string
@@ -62,6 +66,22 @@ func Test_ValidateGoodPractices(t *testing.T) {
 			},
 			errStrings: []string{"Error: Value etcdoperator.v0.9.4: unable to find a deployment to install in the CSV"},
 		},
+		{
+			name:        "should raise an warn when the channel does not follows the convention",
+			wantWarning: true,
+			args: args{
+				bundleDir: "./testdata/bundle_with_metadata",
+			},
+			warnStrings: []string{"Warning: Value memcached-operator.v0.0.1: channel(s) [\"alpha\"] are not following the recommended naming convention: https://olm.operatorframework.io/docs/best-practices/channel-naming"},
+		},
+		{
+			name:        "should raise a warn when a CRD does not have a description",
+			wantWarning: true,
+			args: args{
+				bundle: bundleWithMissingCrdDescription,
+			},
+			warnStrings: []string{"Warning: Value etcdoperator.v0.9.4: owned CRD \"etcdclusters.etcd.database.coreos.com\" has an empty description"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -88,6 +108,53 @@ func Test_ValidateGoodPractices(t *testing.T) {
 					errString := err.Error()
 					require.Contains(t, tt.errStrings, errString)
 				}
+			}
+		})
+	}
+}
+
+func TestValidateHubChannels(t *testing.T) {
+	type args struct {
+		channels []string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantWarn    bool
+		warnStrings []string
+	}{
+		{
+			name: "should not return warning when the channel names following the convention",
+			args: args{
+				channels: []string{"fast", "candidate"},
+			},
+			wantWarn: false,
+		},
+		{
+			name: "should return warning when the channel names are NOT following the convention",
+			args: args{
+				channels: []string{"mychannel-4.5"},
+			},
+			wantWarn:    true,
+			warnStrings: []string{"channel(s) [\"mychannel-4.5\"] are not following the recommended naming convention: https://olm.operatorframework.io/docs/best-practices/channel-naming"},
+		},
+		{
+			name: "should return warning when has 1 channel NOT following the convention along the others which follows up",
+			args: args{
+				channels: []string{"alpha", "fast-v2.1", "candidate-v2.2"},
+			},
+			wantWarn:    true,
+			warnStrings: []string{"channel(s) [\"alpha\"] are not following the recommended naming convention: https://olm.operatorframework.io/docs/best-practices/channel-naming"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateHubChannels(tt.args.channels)
+			if (err != nil) != tt.wantWarn {
+				t.Errorf("validateHubChannels() error = %v, wantWarn %v", err, tt.wantWarn)
+			}
+			if len(tt.warnStrings) > 0 {
+				require.Contains(t, tt.warnStrings, err.Error())
 			}
 		})
 	}
