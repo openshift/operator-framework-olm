@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 set -o errexit
 set -o nounset
@@ -43,11 +43,12 @@ sed -i "s/^[Vv]ersion:.*\$/version: ${ver}/" "${chartdir}/Chart.yaml"
 # CRC_E2E_VALUES contains the path to the values file used for running olm on crc locally
 # this file is generated in scripts/crc-deploy.sh
 CRC_E2E_VALUES=${CRC_E2E_VALUES-""}
+CRC_E2E=("")
 if ! [ "${CRC_E2E_VALUES}" = "" ]; then
   CRC_E2E=(-f "${tmpdir}/${CRC_E2E_VALUES}")
 fi
 
-${HELM} template -n olm -f "${tmpdir}/values.yaml" "${CRC_E2E[@]}" --include-crds --output-dir "${chartdir}" "${chartdir}"
+${HELM} template -n olm -f "${tmpdir}/values.yaml" ${CRC_E2E[@]} --include-crds --output-dir "${chartdir}" "${chartdir}"
 cp -R "${chartdir}"/olm/{templates,crds}/. "./manifests"
 
 add_ibm_managed_cloud_annotations() {
