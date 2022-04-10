@@ -42,6 +42,12 @@ var (
 		"dummy image to treat as an operator in tests",
 	)
 
+	collectArtifactsScriptPath = flag.String(
+		"gather-artifacts-script-path",
+		"./collect-ci-artifacts.sh",
+		"configures the relative/absolute path to the script resposible for collecting CI artifacts",
+	)
+
 	testdataPath = flag.String(
 		"test-data-dir",
 		"./testdata",
@@ -62,8 +68,8 @@ func TestEndToEnd(t *testing.T) {
 	SetDefaultConsistentlyDuration(30 * time.Second)
 	SetDefaultConsistentlyPollingInterval(1 * time.Second)
 
-	// always configure a junit report when ARTIFACTS_DIR has been set
-	if artifactsDir := os.Getenv("ARTIFACTS_DIR"); artifactsDir != "" {
+	// always configure a junit report when ARTIFACT_DIR has been set
+	if artifactsDir := os.Getenv("ARTIFACT_DIR"); artifactsDir != "" {
 		junitReporter := reporters.NewJUnitReporter(path.Join(artifactsDir, junitDir, fmt.Sprintf("junit_e2e_%02d.xml", config.GinkgoConfig.ParallelNode)))
 		RunSpecsWithDefaultAndCustomReporters(t, "End-to-end", []Reporter{junitReporter})
 	} else if junitDir := os.Getenv("JUNIT_DIRECTORY"); junitDir != "" { // Downstream-only legacy requirement
@@ -81,6 +87,9 @@ var _ = BeforeSuite(func() {
 	if kubeConfigPath != nil && *kubeConfigPath != "" {
 		// This flag can be deprecated in favor of the kubeconfig provisioner:
 		os.Setenv("KUBECONFIG", *kubeConfigPath)
+	}
+	if collectArtifactsScriptPath != nil && *collectArtifactsScriptPath != "" {
+		os.Setenv("E2E_ARTIFACT_SCRIPT", *collectArtifactsScriptPath)
 	}
 
 	testNamespace = *namespace

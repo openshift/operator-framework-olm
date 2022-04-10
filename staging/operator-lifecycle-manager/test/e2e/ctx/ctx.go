@@ -7,8 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	g "github.com/onsi/ginkgo"
+	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/util"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+
+	g "github.com/onsi/ginkgo"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
@@ -35,10 +39,12 @@ type TestContext struct {
 	operatorClient versioned.Interface
 	dynamicClient  dynamic.Interface
 	packageClient  pversioned.Interface
+	e2eClient      *util.E2EKubeClient
 	ssaClient      *controllerclient.ServerSideApplier
 
-	kubeconfigPath string
-	artifactsDir   string
+	kubeconfigPath      string
+	artifactsDir        string
+	artifactsScriptPath string
 
 	scheme *runtime.Scheme
 
@@ -93,9 +99,20 @@ func (ctx TestContext) SSAClient() *controllerclient.ServerSideApplier {
 	return ctx.ssaClient
 }
 
+func (ctx TestContext) E2EClient() *util.E2EKubeClient {
+	return ctx.e2eClient
+}
+
+func (ctx TestContext) NewE2EClientSession() {
+	if ctx.e2eClient != nil {
+		_ = ctx.e2eClient.Reset()
+	}
+	ctx.e2eClient = util.NewK8sResourceManager(ctx.Client())
+}
+
 func (ctx TestContext) DumpNamespaceArtifacts(namespace string) error {
 	if ctx.artifactsDir == "" {
-		ctx.Logf("$ARTIFACTS_DIR is unset -- not collecting failed test case logs")
+		ctx.Logf("$ARTIFACT_DIR is unset -- not collecting failed test case logs")
 		return nil
 	}
 	ctx.Logf("collecting logs in the %s artifacts directory", ctx.artifactsDir)
@@ -116,8 +133,7 @@ func (ctx TestContext) DumpNamespaceArtifacts(namespace string) error {
 		"KUBECONFIG=" + kubeconfigPath,
 	}
 
-	// compiled test binary running e2e tests is run from the root ./bin directory
-	cmd := exec.Command("../test/e2e/collect-ci-artifacts.sh")
+	cmd := exec.Command(ctx.artifactsScriptPath)
 	cmd.Env = append(cmd.Env, envvars...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -135,6 +151,17 @@ func setDerivedFields(ctx *TestContext) error {
 
 	if ctx.restConfig == nil {
 		return fmt.Errorf("nil RESTClient")
+	}
+
+	if ctx.artifactsDir == "" {
+		if artifactsDir := os.Getenv("ARTIFACT_DIR"); artifactsDir != "" {
+			ctx.artifactsDir = artifactsDir
+		}
+	}
+	if ctx.artifactsScriptPath == "" {
+		if scriptPath := os.Getenv("E2E_ARTIFACT_SCRIPT"); scriptPath != "" {
+			ctx.artifactsScriptPath = scriptPath
+		}
 	}
 
 	kubeClient, err := operatorclient.NewClientFromRestConfig(ctx.restConfig)
@@ -163,12 +190,14 @@ func setDerivedFields(ctx *TestContext) error {
 
 	ctx.scheme = runtime.NewScheme()
 	localSchemeBuilder := runtime.NewSchemeBuilder(
+		apiextensions.AddToScheme,
 		kscheme.AddToScheme,
 		operatorsv1alpha1.AddToScheme,
 		operatorsv1.AddToScheme,
 		operatorsv2.AddToScheme,
 		apiextensionsv1.AddToScheme,
-		apiextensions.AddToScheme,
+		appsv1.AddToScheme,
+		apiregistrationv1.AddToScheme,
 	)
 	if err := localSchemeBuilder.AddToScheme(ctx.scheme); err != nil {
 		return err
@@ -181,6 +210,7 @@ func setDerivedFields(ctx *TestContext) error {
 		return err
 	}
 	ctx.client = client
+	ctx.e2eClient = util.NewK8sResourceManager(client)
 
 	ctx.ssaClient, err = controllerclient.NewForConfig(ctx.restConfig, ctx.scheme, "test.olm.registry")
 	if err != nil {

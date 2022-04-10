@@ -466,3 +466,5 @@ staging/*/vendor
 values-crc-e2e.yaml
 scripts/**/*.crc.e2e.patch.yaml
 
+# downstream sync sha files
+*.cherrypick

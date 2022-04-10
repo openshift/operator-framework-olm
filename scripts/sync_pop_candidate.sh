@@ -1,6 +1,4 @@
-
-#!/bin/bash
-
+#!/usr/bin/env bash
 
 cph=$(git rev-list -n 1 CHERRY_PICK_HEAD 2> /dev/null)
 
