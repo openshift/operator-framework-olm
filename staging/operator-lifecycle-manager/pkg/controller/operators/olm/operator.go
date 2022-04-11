@@ -1209,6 +1209,8 @@ func (a *Operator) syncClusterServiceVersion(obj interface{}) (syncError error) 
 		return
 	}
 
+	a.logger.Infof("FailForwardStrategy == %v", operatorsv1.UnsafeFailForwardUpgradeStrategy)
+
 	if len(operatorGroup.Status.Namespaces) == 1 && operatorGroup.Status.Namespaces[0] == operatorGroup.GetNamespace() {
 		logger.Debug("skipping copy for OwnNamespace operatorgroup")
 		return

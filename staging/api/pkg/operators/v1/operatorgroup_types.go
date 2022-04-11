@@ -65,7 +65,7 @@ type OperatorGroupSpec struct {
 	// understanding of the set of operators being managed in the namespace.
 	// OperatorGroupStatus is the status for an OperatorGroupResource.
 	//
-	// +kubebuilder:validation:Enum=Default;UnsafeFailForward
+	// +kubebuilder:validation:Enum=Default;TechPreviewUnsafeFailForward
 	// +kubebuilder:default=Default
 	// +optional
 	UpgradeStrategy string `json:"upgradeStrategy,omitempty"`

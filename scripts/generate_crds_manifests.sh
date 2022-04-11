@@ -24,6 +24,11 @@ rm -rf ./manifests/* ${crddir}/*
 
 trap "rm -rf ${tmpdir}" EXIT
 
+
+# SED Commands
+sed -i 's/+kubebuilder:validation:Enum=Default;UnsafeFailForward/+kubebuilder:validation:Enum=Default;TechPreviewUnsafeFailForward/g' staging/api/pkg/operators/v1/operatorgroup_types.go
+
+
 ${CONTROLLER_GEN} crd:crdVersions=v1 output:crd:dir=${crddir} paths=${crdsrcdir}/...
 ${CONTROLLER_GEN} schemapatch:manifests=${crddir} output:dir=${crddir} paths=${crdsrcdir}/...
 
