@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	extensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8scontrollerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -104,6 +104,6 @@ func (m *E2EKubeClient) annotateTestResource(obj k8scontrollerclient.Object) {
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}
-	annotations[E2ETestNameTag] = ginkgo.CurrentGinkgoTestDescription().FullTestText
+	annotations[E2ETestNameTag] = ginkgo.CurrentSpecReport().FullText()
 	obj.SetAnnotations(annotations)
 }
