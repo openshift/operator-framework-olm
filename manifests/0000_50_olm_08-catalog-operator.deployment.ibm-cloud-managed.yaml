@@ -78,6 +78,10 @@ spec:
           env:
             - name: RELEASE_VERSION
               value: "0.0.1-snapshot"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:
@@ -93,3 +97,8 @@ spec:
           operator: Exists
           tolerationSeconds: 120
       priorityClassName: system-cluster-critical
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
