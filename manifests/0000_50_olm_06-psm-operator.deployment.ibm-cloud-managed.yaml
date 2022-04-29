@@ -21,10 +21,19 @@ spec:
       labels:
         app: package-server-manager
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: olm-operator-serviceaccount
       priorityClassName: "system-cluster-critical"
       containers:
         - name: package-server-manager
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           command:
             - /bin/psm
             - start
