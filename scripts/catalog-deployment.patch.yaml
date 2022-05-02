@@ -9,3 +9,16 @@
   value:
     name: RELEASE_VERSION
     value: "0.0.1-snapshot"
+- command: update
+  path: spec.template.spec.containers[*].securityContext
+  value:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+- command: update
+  path: spec.template.spec.securityContext
+  value:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
