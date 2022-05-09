@@ -33,3 +33,16 @@
             values:
             - packageserver
         topologyKey: "kubernetes.io/hostname"
+- command: update
+  path: spec.install.spec.deployments[0].spec.template.spec.containers[*].securityContext
+  value:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+- command: update
+  path: spec.install.spec.deployments[0].spec.template.spec.securityContext
+  value:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
