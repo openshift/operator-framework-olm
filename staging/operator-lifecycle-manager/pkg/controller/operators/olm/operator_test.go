@@ -97,6 +97,14 @@ func (i *TestInstaller) CheckInstalled(s install.Strategy) (bool, error) {
 	return true, nil
 }
 
+func (i *TestInstaller) CertsRotateAt() time.Time {
+	return time.Time{}
+}
+
+func (i *TestInstaller) CertsRotated() bool {
+	return false
+}
+
 func ownerLabelFromCSV(name, namespace string) map[string]string {
 	return map[string]string{
 		ownerutil.OwnerKey:          name,
@@ -4816,34 +4824,30 @@ func TestCARotation(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 	namespace := "ns"
 
-	//apiHash, err := resolvercache.APIKeyToGVKHash(opregistry.APIKey{Group: "g1", Version: "v1", Kind: "c1"})
-	//require.NoError(t, err)
-
-	defaultOperatorGroup := &operatorsv1.OperatorGroup{
+	defaultOperatorGroup := &v1.OperatorGroup{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "OperatorGroup",
-			APIVersion: operatorsv1.SchemeGroupVersion.String(),
+			APIVersion: v1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "default",
 			Namespace: namespace,
 		},
-		Spec: operatorsv1.OperatorGroupSpec{},
-		Status: operatorsv1.OperatorGroupStatus{
+		Spec: v1.OperatorGroupSpec{},
+		Status: v1.OperatorGroupStatus{
 			Namespaces: []string{namespace},
 		},
 	}
 
 	defaultTemplateAnnotations := map[string]string{
-		operatorsv1.OperatorGroupTargetsAnnotationKey:   namespace,
-		operatorsv1.OperatorGroupNamespaceAnnotationKey: namespace,
-		operatorsv1.OperatorGroupAnnotationKey:          defaultOperatorGroup.GetName(),
+		v1.OperatorGroupTargetsAnnotationKey:   namespace,
+		v1.OperatorGroupNamespaceAnnotationKey: namespace,
+		v1.OperatorGroupAnnotationKey:          defaultOperatorGroup.GetName(),
 	}
 
 	// Generate valid and expired CA fixtures
-	expirationTime, rotationTime := install.CalculateCertExpirationAndRotateAt()
-	expiresAt := metav1.Time{Time: expirationTime}
-	rotateAt := metav1.Time{Time: rotationTime}
+	expiresAt := metav1.NewTime(install.CalculateCertExpiration(time.Now()))
+	rotateAt := metav1.NewTime(install.CalculateCertRotatesAt(expiresAt.Time))
 
 	lastUpdate := metav1.Time{Time: time.Now().UTC()}
 
@@ -4859,7 +4863,7 @@ func TestCARotation(t *testing.T) {
 	}
 
 	type operatorConfig struct {
-		apiReconciler APIIntersectionReconciler
+		apiReconciler resolver.APIIntersectionReconciler
 		apiLabeler    labeler.Labeler
 	}
 	type initial struct {
@@ -4889,7 +4893,7 @@ func TestCARotation(t *testing.T) {
 						v1alpha1.CSVPhaseInstallReady,
 					), defaultTemplateAnnotations), apis("a1.v1.a1Kind"), nil),
 				},
-				clientObjs: []runtime.Object{addAnnotation(defaultOperatorGroup, operatorsv1.OperatorGroupProvidedAPIsAnnotationKey, "c1.v1.g1,a1Kind.v1.a1")},
+				clientObjs: []runtime.Object{addAnnotation(defaultOperatorGroup, v1.OperatorGroupProvidedAPIsAnnotationKey, "c1.v1.g1,a1Kind.v1.a1")},
 				crds: []runtime.Object{
 					crd("c1", "v1", "g1"),
 				},
@@ -5062,18 +5066,17 @@ func TestCARotation(t *testing.T) {
 					require.NoError(t, err)
 					require.NotNil(t, serviceSecret)
 
-					// Extract certificate
+					// Extract certificate validity period
 					start, end, err := GetServiceCertificaValidityPeriod(serviceSecret)
 					require.NoError(t, err)
 					require.NotNil(t, start)
 					require.NotNil(t, end)
 
-					// Compare csv status timestamps with certificate timestamps
-					// NOTE: These values (csv.Status.Certs* and the certificate expiry and rotation are calculated
-					// with the same method but independently, therefore a second granularity will need to suffice.
-					// See https://github.com/operator-framework/operator-lifecycle-manager/issues/2764 for more info.
 					rotationTime := end.Add(-1 * install.DefaultCertMinFresh)
-					require.Equal(t, start.Unix(), outCSV.Status.CertsLastUpdated.Unix())
+					// The csv status is updated after the certificate is created/rotated
+					require.LessOrEqual(t, start.Unix(), outCSV.Status.CertsLastUpdated.Unix())
+
+					// Rotation time should always be the same between the certificate and the status
 					require.Equal(t, rotationTime.Unix(), outCSV.Status.CertsRotateAt.Unix())
 				}
 			}
