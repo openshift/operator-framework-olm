@@ -52,7 +52,8 @@ TL;DR;
 We sync three upstream repositories ([api](https://github.com/operator-framework/api), [registry](https://github.com/operator-framework/operator-registry), [olm](https://github.com/operator-framework/operator-lifecycle-manager)) to the downstream [olm mono-repo](https://github.com/openshift/operator-framework-olm). Commits from the upstream repositories are cherry-picked to the appropriate `staging` directory in the downstream repository. Because this is a monorepo in the `Openshift` GitHub organization, two things need to be remembered:
  - we don't pull in upstream `vendor` folder changes
  - we don't pull in changes to `OWNERS` files
- - after each cherry-pick we execute: `make vendor` and `make manifest` to ensure a) the downstream dependencies are updated b) to ensure any manifest changes are picked up downstream
+ - after each cherry-pick we execute: `make vendor` and `make manifests` to ensure a) the downstream dependencies are updated b) to ensure any manifest changes are picked up downstream
+ -- Note: `make manifests` requires [GNU sed](https://www.gnu.org/software/sed/)
 
  While manual changes to the `staging` directory should be avoided, there could be instances where there drift between the downstream `staging` directory and the corresponding upstream repository. This can happen due to applying commits out-of-order, e.g. due to feature freeze, etc.
 

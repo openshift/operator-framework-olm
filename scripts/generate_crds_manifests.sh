@@ -11,11 +11,28 @@ YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
 CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
 HELM="go run helm.sh/helm/v3/cmd/helm"
 
+
 ver=$(cat ./staging/operator-lifecycle-manager/OLM_VERSION)
 tmpdir="$(mktemp -p . -d 2>/dev/null || mktemp -d ./tmpdir.XXXXXXX)"
 chartdir="${tmpdir}/chart"
 crddir="${chartdir}/crds"
 crdsrcdir="${tmpdir}/operators"
+
+SED="sed"
+if ! command -v ${SED} &> /dev/null; then
+    SED="sed"
+fi
+
+# OSX distrubtions do not include GNU sed by default, the test below
+# exits if we detect that the the insert command is not supported by
+# the sed exectuable.
+touch "${tmpdir}/sed-test.tmp"
+SED_EXIT_CODE=0
+${SED} -n -i '1d' "${tmpdir}/sed-test.tmp" &> /dev/null || SED_EXIT_CODE=$?
+if [ $SED_EXIT_CODE -ne 0 ]; then
+  echo "GNU sed is required for creating manifests, unable to proceed"
+  exit $SED_EXIT_CODE
+fi
 
 cp -R "${ROOT_DIR}/staging/operator-lifecycle-manager/deploy/chart/" "${chartdir}"
 cp "${ROOT_DIR}"/values*.yaml "${tmpdir}"
@@ -34,10 +51,10 @@ ${YQ} d --inplace ${crddir}/operators.coreos.com_operatorconditions.yaml 'spec.v
 
 for f in ${crddir}/*.yaml ; do
     ${YQ} d --inplace $f status
-    mv -v "$f" "${crddir}/0000_50_olm_00-$(basename $f | sed 's/^.*_\([^.]\+\)\.yaml/\1.crd.yaml/')"
+    mv -v "$f" "${crddir}/0000_50_olm_00-$(basename $f | ${SED} 's/^.*_\([^.]\+\)\.yaml/\1.crd.yaml/')"
 done
 
-sed -i "s/^[Vv]ersion:.*\$/version: ${ver}/" "${chartdir}/Chart.yaml"
+${SED} -i "s/^[Vv]ersion:.*\$/version: ${ver}/" "${chartdir}/Chart.yaml"
 
 # apply local crc testing patches if necessary
 # CRC_E2E_VALUES contains the path to the values file used for running olm on crc locally
@@ -348,6 +365,5 @@ EOF
 
 add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"
 
-# requires gnu sed if on mac
-find "${ROOT_DIR}/manifests" -type f -exec sed -i "/^#/d" {} \;
-find "${ROOT_DIR}/manifests" -type f -exec sed -i "1{/---/d}" {} \;
+find "${ROOT_DIR}/manifests" -type f -exec $SED -i "/^#/d" {} \;
+find "${ROOT_DIR}/manifests" -type f -exec $SED -i "1{/---/d}" {} \;
