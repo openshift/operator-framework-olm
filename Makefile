@@ -4,6 +4,7 @@ CONTAINER_ENGINE := docker
 
 OPM_VERSION := $(or $(SOURCE_GIT_TAG),$(shell git describe --always --tags HEAD))
 BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+# Test
 # ART builds are performed in dist-git, with content (but not commits) copied
 # from the source repo. Thus at build time if your code is inspecting the local
 # git repo it is getting unrelated commits and tags from the dist-git repo,
@@ -189,4 +190,3 @@ clean:
 .PHONY: help
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
-
