@@ -13,7 +13,7 @@ echo "Using the ${KUBECTL} kubectl binary"
 echo "Using the ${TEST_ARTIFACTS_DIR} output directory"
 mkdir -p "${TEST_ARTIFACTS_DIR}"
 
-OLM_RESOURCES="csv,sub,catsrc,installplan"
+OLM_RESOURCES="csv,sub,catsrc,installplan,og"
 
 commands=()
 commands+=("describe all,${OLM_RESOURCES}")
