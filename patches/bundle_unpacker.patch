@@ -1,0 +1,46 @@
+diff --git a/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker.go b/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker.go
+index f97a6a27d..224a0e491 100644
+--- a/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker.go
++++ b/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker.go
+@@ -195,6 +195,11 @@ func (c *ConfigMapUnpacker) job(cmRef *corev1.ObjectReference, bundlePath string
+ 	// Apply Pod security
+ 	security.ApplyPodSpecSecurity(&job.Spec.Template.Spec)
+ 
++	// Downstream patch
++	// RunAsUser conflicts with the default SCC which requires RunAsRange
++	// SCC will assign the UID for the pod automatically
++	job.Spec.Template.Spec.SecurityContext.RunAsUser = nil
++
+ 	job.SetNamespace(cmRef.Namespace)
+ 	job.SetName(cmRef.Name)
+ 	job.SetOwnerReferences([]metav1.OwnerReference{ownerRef(cmRef)})
+diff --git a/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker_test.go b/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker_test.go
+index 878c739f0..e9424c6c9 100644
+--- a/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker_test.go
++++ b/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker_test.go
+@@ -71,7 +71,11 @@ func TestConfigMapUnpacker(t *testing.T) {
+ 	var expectedReadOnlyRootFilesystem = false
+ 	var expectedAllowPrivilegeEscalation = false
+ 	var expectedRunAsNonRoot = true
+-	var expectedRunAsUser int64 = 1001
++
++	// Downstream patch
++	// RunAsUser conflicts with the default SCC which requires RunAsRange
++	// SCC will assign the UID for the pod automatically
++	// var expectedRunAsUser int64 = 1001
+ 	var expectedPrivileged = false
+ 
+ 	var expectedContainerSecurityContext = &corev1.SecurityContext{
+@@ -85,7 +89,11 @@ func TestConfigMapUnpacker(t *testing.T) {
+ 
+ 	var expectedPodSecurityContext = &corev1.PodSecurityContext{
+ 		RunAsNonRoot: &expectedRunAsNonRoot,
+-		RunAsUser:    &expectedRunAsUser,
++
++		// Downstream patch
++		// RunAsUser conflicts with the default SCC which requires RunAsRange
++		// SCC will assign the UID for the pod automatically
++		// RunAsUser:    &expectedRunAsUser,
+ 		SeccompProfile: &corev1.SeccompProfile{
+ 			Type: corev1.SeccompProfileTypeRuntimeDefault,
+ 		},
