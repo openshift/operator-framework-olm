@@ -755,7 +755,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/vers
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
 # github.com/operator-framework/operator-registry v1.17.5 => ./staging/operator-registry
-## explicit; go 1.17
+## explicit; go 1.18
 github.com/operator-framework/operator-registry/alpha/action
 github.com/operator-framework/operator-registry/alpha/declcfg
 github.com/operator-framework/operator-registry/alpha/model
@@ -1116,7 +1116,7 @@ golang.org/x/text/width
 # golang.org/x/time v0.0.0-20220210224613-90d013bbcef8
 ## explicit
 golang.org/x/time/rate
-# golang.org/x/tools v0.1.10-0.20220218145154-897bd77cd717
+# golang.org/x/tools v0.1.10
 ## explicit; go 1.17
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/ast/inspector
