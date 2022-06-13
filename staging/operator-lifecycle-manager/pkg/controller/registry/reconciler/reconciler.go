@@ -113,8 +113,6 @@ func Pod(source *operatorsv1alpha1.CatalogSource, name string, image string, saN
 		pullPolicy = corev1.PullAlways
 	}
 
-	readOnlyRootFilesystem := false
-
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: source.GetName() + "-",
@@ -165,9 +163,6 @@ func Pod(source *operatorsv1alpha1.CatalogSource, name string, image string, saN
 							corev1.ResourceCPU:    resource.MustParse("10m"),
 							corev1.ResourceMemory: resource.MustParse("50Mi"),
 						},
-					},
-					SecurityContext: &corev1.SecurityContext{
-						ReadOnlyRootFilesystem: &readOnlyRootFilesystem,
 					},
 					ImagePullPolicy:          pullPolicy,
 					TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
