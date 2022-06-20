@@ -258,6 +258,8 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
+replace google.golang.org/grpc => google.golang.org/grpc v1.40.0
+
 replace (
 	// latest tag resolves to a very old version. this is only used for spinning up local test registries
 	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
