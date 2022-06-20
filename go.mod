@@ -32,6 +32,8 @@ require (
 	sigs.k8s.io/controller-tools v0.8.0
 )
 
+replace google.golang.org/grpc => google.golang.org/grpc v1.40.0
+
 replace (
 	go.opentelemetry.io/contrib => go.opentelemetry.io/contrib v0.20.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp => go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.20.0
