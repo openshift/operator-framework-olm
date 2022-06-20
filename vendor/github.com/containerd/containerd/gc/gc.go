@@ -59,6 +59,8 @@ type Stats interface {
 //
 // We can probably use this to inform a design for incremental GC by injecting
 // callbacks to the set modification algorithms.
+//
+// https://en.wikipedia.org/wiki/Tracing_garbage_collection#Tri-color_marking
 func Tricolor(roots []Node, refs func(ref Node) ([]Node, error)) (map[Node]struct{}, error) {
 	var (
 		grays     []Node                // maintain a gray "stack"
@@ -172,7 +174,7 @@ func ConcurrentMark(ctx context.Context, root <-chan Node, refs func(context.Con
 	return seen, nil
 }
 
-// Sweep removes all nodes returned through the channel which are not in
+// Sweep removes all nodes returned through the slice which are not in
 // the reachable set by calling the provided remove function.
 func Sweep(reachable map[Node]struct{}, all []Node, remove func(Node) error) error {
 	// All black objects are now reachable, and all white objects are
