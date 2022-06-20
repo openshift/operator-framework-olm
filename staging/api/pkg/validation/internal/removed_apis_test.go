@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+
 	"testing"
 
 	"github.com/operator-framework/api/pkg/manifests"
