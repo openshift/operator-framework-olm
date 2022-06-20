@@ -6,6 +6,7 @@ ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 WORKDIR /src
 
 COPY . .
+RUN make apply-patches
 RUN make build/registry cross
 
 # copy and build vendored grpc_health_probe
