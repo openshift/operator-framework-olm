@@ -264,6 +264,9 @@ replace (
 	// latest tag resolves to a very old version. this is only used for spinning up local test registries
 	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
 
+	// pin to ginkgo v1 version of gomega (v1.18+ relies on ginkgo v2)
+	github.com/onsi/gomega => github.com/onsi/gomega v1.17.0
+
 	// controller runtime
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
