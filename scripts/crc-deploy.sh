@@ -31,8 +31,8 @@ function push_images {
   IMAGE_REGISTRY_PORT=5000
 
   # Create port-forward to CRC registry
-  kubectl port-forward -n ${OPENSHIFT_REGISTRY_NAMESPACE} svc/${IMAGE_REGISTRY_SVC} ${IMAGE_REGISTRY_PORT}:${IMAGE_REGISTRY_PORT} > /dev/null 2>&1 &
-  PORT_FWD_PID=$!
+  # kubectl port-forward -n ${OPENSHIFT_REGISTRY_NAMESPACE} svc/${IMAGE_REGISTRY_SVC} ${IMAGE_REGISTRY_PORT}:${IMAGE_REGISTRY_PORT} > /dev/null 2>&1 &
+  # PORT_FWD_PID=$!
 
   # Remember to close the port-forward
   trap 'kill "${PORT_FWD_PID}"' EXIT
@@ -43,17 +43,17 @@ function push_images {
   sleep 1
 
   # Login to the CRC registry
-  oc whoami -t | docker login localhost:5000 --username user --password-stdin
+  # oc whoami -t | docker login localhost:5000 --username user --password-stdin
 
   # Tag and push olm image
   echo "Pushing olm image"
-  docker tag "${LOCAL_OLM_IMAGE}" "${CRC_OLM_IMAGE}"
-  docker push "${CRC_OLM_IMAGE}"
+  # docker tag "${LOCAL_OLM_IMAGE}" "${CRC_OLM_IMAGE}"
+  # docker push "${CRC_OLM_IMAGE}"
 
   # Tag and push registry image
   echo "Pushing registry image"
-  docker tag "${LOCAL_OPM_IMAGE}" "${CRC_OPM_IMAGE}"
-  docker push "${CRC_OPM_IMAGE}"
+  # docker tag "${LOCAL_OPM_IMAGE}" "${CRC_OPM_IMAGE}"
+  # docker push "${CRC_OPM_IMAGE}"
 
   # Create image streams
   echo "Creating image streams: ${CRC_OLM_IMAGE} ${CRC_OPM_IMAGE}"

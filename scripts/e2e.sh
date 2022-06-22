@@ -12,6 +12,9 @@ set -o pipefail
 : "${KUBECONFIG:?}"
 : "${WHAT:?}"
 
+# apply patches before testing
+make apply-patches
+
 ROOT_DIR=$(dirname "${BASH_SOURCE[0]}")/..
 
 function run_test() {

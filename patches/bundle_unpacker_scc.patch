@@ -1,0 +1,68 @@
+diff --git a/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker.go b/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker.go
+index 94c952f49..b99229226 100644
+--- a/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker.go
++++ b/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker.go
+@@ -665,6 +665,19 @@ func (c *ConfigMapUnpacker) getRolePolicyRules(cmRef *corev1.ObjectReference) []
+ 			ResourceNames: []string{
+ 				cmRef.Name,
+ 			},
++		}, {
++			APIGroups: []string{
++				"security.openshift.io",
++			},
++			Verbs: []string{
++				"use",
++			},
++			Resources: []string{
++				"securitycontextconstraints",
++			},
++			ResourceNames: []string{
++				"nonroot-v2",
++			},
+ 		},
+ 	}
+ }
+diff --git a/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker_test.go b/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker_test.go
+index 0757596be..c1eb16fc2 100644
+--- a/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker_test.go
++++ b/staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker_test.go
+@@ -361,6 +361,19 @@ func TestConfigMapUnpacker(t *testing.T) {
+ 								ResourceNames: []string{
+ 									pathHash,
+ 								},
++							}, {
++								APIGroups: []string{
++									"security.openshift.io",
++								},
++								Verbs: []string{
++									"use",
++								},
++								Resources: []string{
++									"securitycontextconstraints",
++								},
++								ResourceNames: []string{
++									"nonroot-v2",
++								},
+ 							},
+ 						},
+ 					},
+@@ -777,6 +790,19 @@ func TestConfigMapUnpacker(t *testing.T) {
+ 								ResourceNames: []string{
+ 									pathHash,
+ 								},
++							}, {
++								APIGroups: []string{
++									"security.openshift.io",
++								},
++								Verbs: []string{
++									"use",
++								},
++								Resources: []string{
++									"securitycontextconstraints",
++								},
++								ResourceNames: []string{
++									"nonroot-v2",
++								},
+ 							},
+ 						},
+ 					},

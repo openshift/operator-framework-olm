@@ -50,7 +50,15 @@ ifeq (, $(wildcard $(KUBEBUILDER_ASSETS)/kube-apiserver))
 	$(error kube-apiserver $(KUBEBUILDER_ASSETS_ERR))
 endif
 
-build: $(REGISTRY_CMDS) $(OLM_CMDS) $(OPM) ## build opm and olm binaries
+.PHONY: apply-patches
+apply-patches:
+	echo "Applything patches"
+	git apply patches/*.patch
+	echo "Vendoring changes"
+	$(MAKE) vendor
+
+build:
+	$(REGISTRY_CMDS) $(OLM_CMDS) $(OPM) ## build opm and olm binaries
 
 build/opm:
 	$(MAKE) $(OPM)
@@ -151,8 +159,14 @@ verify-nested-vendor:
 verify-commits:
 	./scripts/verify_commits.sh $(PULL_BASE_SHA) # see https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
 
+.PHONY: verify-patches
+check-patches:
+	git apply --check patches/*.patch
+
 .PHONY: verify
 verify:
+	echo "Checking patches can be applied"
+	$(MAKE) verify-patches
 	echo "Checking for unstaged root vendor changes"
 	$(MAKE) verify-vendor
 	echo "Checking whether the CVO manifests need to be generated"
