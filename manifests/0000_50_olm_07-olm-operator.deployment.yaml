@@ -53,6 +53,8 @@ spec:
             - /srv-cert/tls.key
             - --client-ca
             - /profile-collector-cert/tls.crt
+            - --protectedCopiedCSVNamespaces
+            - openshift
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
           imagePullPolicy: IfNotPresent
           ports:

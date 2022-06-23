@@ -10,6 +10,14 @@
     name: RELEASE_VERSION
     value: "0.0.1-snapshot"
 - command: update
+  path: spec.template.spec.containers[0].args[+]
+  value:
+    --protectedCopiedCSVNamespaces
+- command: update
+  path: spec.template.spec.containers[0].args[+]
+  value:
+    openshift
+- command: update
   path: spec.template.spec.containers[*].securityContext
   value:
     allowPrivilegeEscalation: false
