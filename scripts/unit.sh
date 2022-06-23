@@ -9,9 +9,6 @@ set -o pipefail
 ROOT_DIR=$(dirname "${BASH_SOURCE[0]}")/..
 TARGET_NAME=${TARGET_NAME:="unit"}
 
-# Apply patches before testing
-make apply-patches
-
 # TODO(tflannag): Do we need to trap anything here? Maybe remove staging/*/vendor during SIGINT?
 pushd "${ROOT_DIR}/staging/${WHAT}"
 

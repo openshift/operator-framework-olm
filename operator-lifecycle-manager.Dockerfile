@@ -12,9 +12,7 @@ COPY .git/refs/heads/. .git/refs/heads
 RUN mkdir -p .git/objects
 
 COPY . .
-RUN make apply-patches
 RUN make build/olm bin/cpb
-RUN cat staging/operator-lifecycle-manager/pkg/controller/bundle/bundle_unpacker.go | grep Apply -A 10
 
 FROM registry.ci.openshift.org/ocp/4.11:base
 
