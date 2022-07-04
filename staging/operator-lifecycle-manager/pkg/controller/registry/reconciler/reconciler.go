@@ -6,16 +6,15 @@ import (
 	"hash/fnv"
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
-
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	controllerclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
 	hashutil "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/util/hash"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 type nowFunc func() metav1.Time
@@ -175,6 +174,9 @@ func Pod(source *operatorsv1alpha1.CatalogSource, name string, image string, saN
 		},
 	}
 
+	// Update pod security
+	security.ApplyPodSpecSecurity(&pod.Spec, security.WithRunAsUser(1001))
+	
 	// Override scheduling options if specified
 	if source.Spec.GrpcPodConfig != nil {
 		grpcPodConfig := source.Spec.GrpcPodConfig
