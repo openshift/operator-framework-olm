@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/security"
 	controllerclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
 	hashutil "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/util/hash"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
@@ -175,8 +176,12 @@ func Pod(source *operatorsv1alpha1.CatalogSource, name string, image string, saN
 	}
 
 	// Update pod security
-	security.ApplyPodSpecSecurity(&pod.Spec, security.WithRunAsUser(1001))
-	
+	// Need to use RunAsUser here because the catalog source images do not define a USER directive in their dockerfile
+	// Therefore, if we do not define the UID it will run with UID 0 (root) and the pod won't be scheduled.
+	// This has been fixed: https://github.com/operator-framework/operator-registry/pull/982
+	// But we will either need an escape hatch or a migration story here
+	security.ApplyPodSpecSecurity(&pod.Spec, security.WithRunAsUser())
+
 	// Override scheduling options if specified
 	if source.Spec.GrpcPodConfig != nil {
 		grpcPodConfig := source.Spec.GrpcPodConfig
