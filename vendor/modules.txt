@@ -708,6 +708,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/cache
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/projection
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver
+github.com/operator-framework/operator-lifecycle-manager/pkg/controller/security
 github.com/operator-framework/operator-lifecycle-manager/pkg/feature
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/catalogsource
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clients
