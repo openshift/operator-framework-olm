@@ -22,6 +22,11 @@ spec:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
     spec:
       serviceAccountName: olm-operator-serviceaccount
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
         - name: srv-cert
           secret:
@@ -31,6 +36,10 @@ spec:
             secretName: pprof-cert
       containers:
         - name: catalog-operator
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           volumeMounts:
             - name: srv-cert
               mountPath: "/srv-cert"
@@ -78,10 +87,6 @@ spec:
           env:
             - name: RELEASE_VERSION
               value: "0.0.1-snapshot"
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:
@@ -97,8 +102,3 @@ spec:
           operator: Exists
           tolerationSeconds: 120
       priorityClassName: system-cluster-critical
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 65534
-        seccompProfile:
-          type: RuntimeDefault
