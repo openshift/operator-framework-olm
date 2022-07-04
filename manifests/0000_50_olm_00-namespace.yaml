@@ -4,7 +4,7 @@ metadata:
   name: openshift-operator-lifecycle-manager
   labels:
     pod-security.kubernetes.io/enforce: restricted
-    openshift.io/scc: "anyuid"
+    openshift.io/scc: "restricted-v2"
     openshift.io/cluster-monitoring: "true"
   annotations:
     openshift.io/node-selector: ""
@@ -18,7 +18,7 @@ metadata:
   name: openshift-operators
   labels:
     pod-security.kubernetes.io/enforce: restricted
-    openshift.io/scc: "anyuid"
+    openshift.io/scc: "restricted-v2"
   annotations:
     openshift.io/node-selector: ""
     workload.openshift.io/allowed: "management"

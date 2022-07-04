@@ -24,7 +24,6 @@ spec:
       serviceAccountName: olm-operator-serviceaccount
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65534
         seccompProfile:
           type: RuntimeDefault
       volumes:
@@ -37,9 +36,11 @@ spec:
       containers:
         - name: catalog-operator
           securityContext:
+            privileged: false
+            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
-              drop: ["ALL"]
+              drop: [ "ALL" ]
           volumeMounts:
             - name: srv-cert
               mountPath: "/srv-cert"

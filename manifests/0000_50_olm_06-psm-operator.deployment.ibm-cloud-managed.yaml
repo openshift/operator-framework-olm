@@ -23,7 +23,6 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65534
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: olm-operator-serviceaccount
@@ -31,9 +30,11 @@ spec:
       containers:
         - name: package-server-manager
           securityContext:
+            privileged: false
+            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
-              drop: ["ALL"]
+              drop: [ "ALL" ]
           command:
             - /bin/psm
             - start
