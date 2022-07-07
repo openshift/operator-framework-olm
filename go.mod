@@ -21,7 +21,7 @@ require (
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
-	helm.sh/helm/v3 v3.6.2
+	helm.sh/helm/v3 v3.7.0
 	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2
@@ -48,8 +48,8 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
 	github.com/Masterminds/squirrel v1.5.0 // indirect
 	github.com/Masterminds/vcs v1.13.1 // indirect
-	github.com/Microsoft/go-winio v0.4.16 // indirect
-	github.com/Microsoft/hcsshim v0.8.14 // indirect
+	github.com/Microsoft/go-winio v0.4.17 // indirect
+	github.com/Microsoft/hcsshim v0.8.24 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
@@ -59,21 +59,20 @@ require (
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
-	github.com/containerd/cgroups v0.0.0-20200531161412-0dbf7f05ba59 // indirect
-	github.com/containerd/containerd v1.4.11 // indirect
-	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
-	github.com/containerd/ttrpc v1.0.1 // indirect
+	github.com/containerd/cgroups v1.0.3 // indirect
+	github.com/containerd/containerd v1.5.13 // indirect
+	github.com/containerd/continuity v0.1.0 // indirect
+	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/deislabs/oras v0.11.1 // indirect
 	github.com/distribution/distribution v2.7.1+incompatible // indirect
 	github.com/docker/cli v20.10.12+incompatible // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200618181300-9dc6525e6118+incompatible // indirect
-	github.com/docker/docker-credential-helpers v0.6.3 // indirect
+	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
@@ -108,15 +107,15 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
-	github.com/google/uuid v1.1.2 // indirect
-	github.com/gorilla/mux v1.7.3 // indirect
+	github.com/google/uuid v1.2.0 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/h2non/filetype v1.1.1 // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
-	github.com/huandu/xstrings v1.3.1 // indirect
+	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/itchyny/astgen-go v0.0.0-20200519013840-cf3ea398f645 // indirect
@@ -127,6 +126,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/kisielk/errcheck v1.5.0 // indirect
+	github.com/klauspost/compress v1.11.13 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
@@ -145,7 +145,9 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
+	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
+	github.com/moby/sys/mountinfo v0.4.1 // indirect
 	github.com/moby/term v0.0.0-20210610120745-9d4ed1856297 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
@@ -155,8 +157,8 @@ require (
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/onsi/gomega v1.15.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
-	github.com/opencontainers/runc v0.1.1 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
+	github.com/opencontainers/runc v1.0.2 // indirect
 	github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // indirect
 	github.com/otiai10/copy v1.2.0 // indirect
 	github.com/pbnjay/strptime v0.0.0-20140226051138-5c05b0d668c9 // indirect
@@ -167,7 +169,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.26.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
-	github.com/rubenv/sql-migrate v0.0.0-20200616145509-8d140a17f351 // indirect
+	github.com/rubenv/sql-migrate v0.0.0-20210614095031-55d5740dbbcc // indirect
 	github.com/russross/blackfriday v1.5.2 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
@@ -207,7 +209,7 @@ require (
 	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
 	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
@@ -227,13 +229,14 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/apiextensions-apiserver v0.22.2 // indirect
 	k8s.io/apiserver v0.22.2 // indirect
-	k8s.io/cli-runtime v0.22.0 // indirect
+	k8s.io/cli-runtime v0.22.1 // indirect
 	k8s.io/component-base v0.22.2 // indirect
 	k8s.io/gengo v0.0.0-20201214224949-b6c5ce23f027 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.9.0 // indirect
 	k8s.io/kube-aggregator v0.22.0 // indirect
-	k8s.io/kubectl v0.22.0 // indirect
+	k8s.io/kubectl v0.22.1 // indirect
+	oras.land/oras-go v0.4.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.22 // indirect
 	sigs.k8s.io/kustomize/api v0.8.11 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.11.0 // indirect
@@ -242,13 +245,6 @@ require (
 )
 
 replace (
-	// From staging/operator-registry
-	// Currently on a fork for two issues:
-	// 1. stage registry proxy didn't like requests with no scopes, see https://github.com/containerd/containerd/pull/4223
-	// 2. prod registry proxy returns a 403 on post, see https://github.com/containerd/containerd/pull/3913
-	// The fork can be removed when both issues are resolved in a release, which should be 1.4.0
-	github.com/containerd/containerd => github.com/ecordell/containerd v1.3.1-0.20200629153125-0ff1a1be2fa5
-
 	// latest tag resolves to a very old version. this is only used for spinning up local test registries
 	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
 
