@@ -3,16 +3,23 @@
 ![ci](https://github.com/grpc-ecosystem/grpc-health-probe/workflows/ci/badge.svg)
 ![GitHub all releases](https://img.shields.io/github/downloads/grpc-ecosystem/grpc-health-probe/total)
 
-
 The `grpc_health_probe` utility allows you to query health of gRPC services that
 expose service their status through the [gRPC Health Checking Protocol][hc].
+
+`grpc_health_probe` is meant to be used for health checking gRPC applications in
+[Kubernetes][k8s], using the [exec probes][execprobe].
+
+> :warning: [**Kubernetes v1.23 has now introduced built-in gRPC health checking**][k8s-new]
+> capability as an alpha feature. As a result, you might no longer need to use this tool and use the
+> native Kubernetes feature instead.
+>
+> This tool can still be useful if you are on older versions of Kubernetes,
+> or using advanced configuration (such as custom metadata, TLS or finer timeout tuning),
+> or not using Kubernetes at all.
 
 This command-line utility makes a RPC to `/grpc.health.v1.Health/Check`. If it
 responds with a `SERVING` status, the `grpc_health_probe` will exit with
 success, otherwise it will exit with a non-zero exit code (documented below).
-
-`grpc_health_probe` is meant to be used for health checking gRPC applications in
-[Kubernetes][k8s], using the [exec probes][execprobe].
 
 **EXAMPLES**
 
@@ -73,7 +80,7 @@ liveness and/or readiness checks for your gRPC server pods.
 You can bundle the statically compiled `grpc_health_probe` in your container
 image. Choose a [binary release][rel] and download it in your Dockerfile:
 
-```
+```bash
 RUN GRPC_HEALTH_PROBE_VERSION=v0.3.1 && \
     wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
     chmod +x /bin/grpc_health_probe
@@ -134,6 +141,7 @@ environment variable.
 | **`-v`**    | verbose logs (default: false) |
 | **`-connect-timeout`** | timeout for establishing connection |
 | **`-rpc-timeout`** | timeout for health check rpc |
+| **`-rpc-header`** | sends metadata in the RPC request context (default: empty map) |
 | **`-user-agent`** | user-agent header value of health check requests (default: grpc_health_probe) |
 | **`-service`** | service name to check (default: "") - empty string is convention for server health |
 | **`-gzip`** | use GZIPCompressor for requests and GZIPDecompressor for response (default: false) |
@@ -155,7 +163,9 @@ environment variable.
       $ grpc_health_probe -addr 127.0.0.1:10000 \
           -tls \
           -tls-ca-cert /path/to/testdata/ca.pem \
-          -tls-server-name=x.test.youtube.com
+          -tls-server-name=example.com \
+          -rpc-header=foo:bar \
+          -rpc-header=foo2:bar2
 
       status: SERVING
       ```
@@ -184,3 +194,4 @@ This is not an official Google project.
 [rel]: https://github.com/grpc-ecosystem/grpc-health-probe/releases
 [spiffe]: https://github.com/spiffe/spiffe/blob/master/standards/SPIFFE_Workload_API.md
 [spiffe-socket]: https://github.com/spiffe/spiffe/blob/0f44285b4caa95244ecbf003dd6729d5295ae743/standards/SPIFFE_Workload_Endpoint.md#4-locating-the-endpoint
+[k8s-new]: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-grpc-liveness-probe

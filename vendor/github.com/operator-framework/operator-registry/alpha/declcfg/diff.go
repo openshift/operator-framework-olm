@@ -25,6 +25,8 @@ type DiffGenerator struct {
 	Includer DiffIncluder
 	// IncludeAdditively catalog objects specified in Includer in headsOnly mode.
 	IncludeAdditively bool
+	// HeadsOnly is the mode that selects the head of the channels only.
+	HeadsOnly bool
 
 	initOnce sync.Once
 }
@@ -37,6 +39,8 @@ func (g *DiffGenerator) init() {
 		if g.Includer.Logger == nil {
 			g.Includer.Logger = g.Logger
 		}
+		// Inject headsOnly setting into DiffIncluder from command line setting
+		g.Includer.HeadsOnly = g.HeadsOnly
 	})
 }
 
@@ -79,7 +83,7 @@ func (g *DiffGenerator) Run(oldModel, newModel model.Model) (model.Model, error)
 		return nil
 	}
 
-	headsOnlyMode := len(oldModel) == 0
+	headsOnlyMode := g.HeadsOnly
 	latestMode := !headsOnlyMode
 	isInclude := len(g.Includer.Packages) != 0
 
@@ -95,22 +99,24 @@ func (g *DiffGenerator) Run(oldModel, newModel model.Model) (model.Model, error)
 			if err := latestPruneFromOutput(); err != nil {
 				return nil, err
 			}
-		} else {
-			for _, outputPkg := range outputModel {
-				for _, ch := range outputPkg.Channels {
-					if len(ch.Bundles) == 0 {
-						delete(outputPkg.Channels, ch.Name)
-					}
-				}
-				if len(outputPkg.Channels) == 0 {
-					// Remove empty packages.
-					delete(outputModel, outputPkg.Name)
-				}
-			}
 		}
 
+		for _, outputPkg := range outputModel {
+			for _, ch := range outputPkg.Channels {
+				if len(ch.Bundles) == 0 {
+					delete(outputPkg.Channels, ch.Name)
+				}
+			}
+			if len(outputPkg.Channels) == 0 {
+				// Remove empty packages.
+				delete(outputModel, outputPkg.Name)
+			}
+		}
 	case isInclude: // Add included objects to outputModel.
 
+		// Assume heads-only is false for include additively since we already have the channel heads
+		// in the output model.
+		g.Includer.HeadsOnly = false
 		// Add included packages/channels/bundles from newModel to outputModel.
 		if err := g.Includer.Run(newModel, outputModel); err != nil {
 			return nil, err
@@ -438,7 +444,15 @@ func getBundlesThatProvide(pkg *model.Package, reqGVKs map[property.GVK]struct{}
 	latestBundles := make(map[string]*model.Bundle)
 	for gvk, bundles := range bundlesProvidingGVK {
 		sort.Slice(bundles, func(i, j int) bool {
-			return bundles[i].Version.LT(bundles[j].Version)
+			// sort by version
+			sortedByVersion := bundles[i].Version.LT(bundles[j].Version)
+
+			// sort by channel
+			// prioritize default channel bundles
+			if bundles[i].Version.EQ(bundles[j].Version) {
+				return bundles[i].Channel != pkg.DefaultChannel
+			}
+			return sortedByVersion
 		})
 		lb := bundles[len(bundles)-1]
 		latestBundles[lb.Version.String()] = lb
@@ -453,7 +467,15 @@ func getBundlesThatProvide(pkg *model.Package, reqGVKs map[property.GVK]struct{}
 			continue
 		}
 		sort.Slice(bundlesInRange, func(i, j int) bool {
-			return bundlesInRange[i].Version.LT(bundlesInRange[j].Version)
+			// sort by version
+			sortedByVersion := bundlesInRange[i].Version.LT(bundlesInRange[j].Version)
+
+			// sort by channel
+			// prioritize default channel bundles
+			if bundlesInRange[i].Version.EQ(bundlesInRange[j].Version) {
+				return bundlesInRange[i].Channel != pkg.DefaultChannel
+			}
+			return sortedByVersion
 		})
 		lb := bundlesInRange[len(bundlesInRange)-1]
 		latestBundles[lb.Version.String()] = lb

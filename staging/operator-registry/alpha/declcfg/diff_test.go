@@ -131,6 +131,76 @@ func TestDiffLatest(t *testing.T) {
 			expCfg: DeclarativeConfig{},
 		},
 		{
+			name:   "HasDiff/EmptyChannel",
+			oldCfg: DeclarativeConfig{},
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0"},
+					}},
+					{Schema: schemaChannel, Name: "v1", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.2.0"),
+						},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{
+						{
+							Name: "foo",
+							AllChannels: DiffIncludeChannel{
+								Versions: []semver.Version{semver.MustParse("0.2.0")},
+							},
+						},
+					},
+				},
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.2.0"),
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "HasDiff/OneModifiedBundle",
 			oldCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -1318,6 +1388,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 			},
 			g: &DiffGenerator{
 				IncludeAdditively: false,
+				HeadsOnly:         true,
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{
 						{
@@ -1330,6 +1401,76 @@ func TestDiffHeadsOnly(t *testing.T) {
 				},
 			},
 			expCfg: DeclarativeConfig{},
+		},
+		{
+			name: "HasDiff/EmptyChannel",
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0"},
+					}},
+					{Schema: schemaChannel, Name: "v1", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.2.0"),
+						},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				HeadsOnly: true,
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{
+						{
+							Name: "foo",
+							AllChannels: DiffIncludeChannel{
+								Versions: []semver.Version{semver.MustParse("0.2.0")},
+							},
+						},
+					},
+				},
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.2.0"),
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "HasDiff/OneBundle",
@@ -1354,7 +1495,9 @@ func TestDiffHeadsOnly(t *testing.T) {
 					},
 				},
 			},
-			g: &DiffGenerator{},
+			g: &DiffGenerator{
+				HeadsOnly: true,
+			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
@@ -1468,7 +1611,9 @@ func TestDiffHeadsOnly(t *testing.T) {
 					},
 				},
 			},
-			g: &DiffGenerator{},
+			g: &DiffGenerator{
+				HeadsOnly: true,
+			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
@@ -1559,7 +1704,9 @@ func TestDiffHeadsOnly(t *testing.T) {
 					},
 				},
 			},
-			g: &DiffGenerator{},
+			g: &DiffGenerator{
+				HeadsOnly: true,
+			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "bar", DefaultChannel: "stable"},
@@ -1652,6 +1799,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 			},
 			g: &DiffGenerator{
 				SkipDependencies: true,
+				HeadsOnly:        true,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -1788,7 +1936,9 @@ func TestDiffHeadsOnly(t *testing.T) {
 					},
 				},
 			},
-			g: &DiffGenerator{},
+			g: &DiffGenerator{
+				HeadsOnly: true,
+			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
 					{Schema: schemaPackage, Name: "bar", DefaultChannel: "stable"},
@@ -1870,6 +2020,159 @@ func TestDiffHeadsOnly(t *testing.T) {
 						Properties: []property.Property{
 							property.MustBuildPackage("foo", "0.1.0"),
 							property.MustBuildPackageRequired("etcd", "<0.9.2"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "HasDiff/SelectDependenciesInclude",
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "bar", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v0.9.0"},
+						{Name: "etcd.v0.9.1", Replaces: "etcd.v0.9.0"},
+						{Name: "etcd.v0.9.2", Replaces: "etcd.v0.9.1"},
+						{Name: "etcd.v0.9.3", Replaces: "etcd.v0.9.2"},
+						{Name: "etcd.v1.0.0", Replaces: "etcd.v0.9.3", Skips: []string{"etcd.v0.9.1", "etcd.v0.9.2", "etcd.v0.9.3"}},
+					}},
+					{Schema: schemaChannel, Name: "alpha", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v0.9.2", Replaces: "etcd.v0.9.1"},
+						{Name: "etcd.v0.9.3", Replaces: "etcd.v0.9.2"},
+						{Name: "etcd.v1.0.0", Replaces: "etcd.v0.9.3", Skips: []string{"etcd.v0.9.1", "etcd.v0.9.2", "etcd.v0.9.3"}},
+					}},
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+					}},
+					{Schema: schemaChannel, Name: "stable", Package: "bar", Entries: []ChannelEntry{
+						{Name: "bar.v0.1.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackageRequired("etcd", "<0.9.2"),
+							property.MustBuildPackage("foo", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "bar.v0.1.0",
+						Package: "bar",
+						Image:   "reg/bar:latest",
+						Properties: []property.Property{
+							property.MustBuildGVKRequired("etcd.database.coreos.com", "v1", "EtcdBackup"),
+							property.MustBuildPackage("bar", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.0",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildGVK("etcd.database.coreos.com", "v1beta2", "EtcdBackup"),
+							property.MustBuildPackage("etcd", "0.9.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.1",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildGVK("etcd.database.coreos.com", "v1beta2", "EtcdBackup"),
+							property.MustBuildPackage("etcd", "0.9.1"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.2",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildGVK("etcd.database.coreos.com", "v1beta2", "EtcdBackup"),
+							property.MustBuildPackage("etcd", "0.9.2"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.3",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildGVK("etcd.database.coreos.com", "v1beta2", "EtcdBackup"),
+							property.MustBuildGVK("etcd.database.coreos.com", "v1", "EtcdBackup"),
+							property.MustBuildPackage("etcd", "0.9.3"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v1.0.0",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildGVK("etcd.database.coreos.com", "v1beta2", "EtcdBackup"),
+							property.MustBuildGVK("etcd.database.coreos.com", "v1", "EtcdBackup"),
+							property.MustBuildPackage("etcd", "1.0.0"),
+						},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				IncludeAdditively: false,
+				HeadsOnly:         true,
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{
+						{
+							Name:     "bar",
+							Channels: []DiffIncludeChannel{{Name: "stable"}},
+						},
+					},
+				},
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "bar", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "bar", Entries: []ChannelEntry{
+						{Name: "bar.v0.1.0"},
+					}},
+					{Schema: schemaChannel, Name: "stable", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v1.0.0", Replaces: "etcd.v0.9.3", Skips: []string{"etcd.v0.9.1", "etcd.v0.9.2", "etcd.v0.9.3"}},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "bar.v0.1.0",
+						Package: "bar",
+						Image:   "reg/bar:latest",
+						Properties: []property.Property{
+							property.MustBuildGVKRequired("etcd.database.coreos.com", "v1", "EtcdBackup"),
+							property.MustBuildPackage("bar", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v1.0.0",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildGVK("etcd.database.coreos.com", "v1", "EtcdBackup"),
+							property.MustBuildGVK("etcd.database.coreos.com", "v1beta2", "EtcdBackup"),
+							property.MustBuildPackage("etcd", "1.0.0"),
 						},
 					},
 				},
@@ -1975,6 +2278,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 			},
 			g: &DiffGenerator{
 				IncludeAdditively: true,
+				HeadsOnly:         true,
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{
 						{
@@ -2111,6 +2415,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{{Name: "bar"}},
 				},
+				HeadsOnly: false,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -2176,6 +2481,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 				Includer: DiffIncluder{
 					Packages: []DiffIncludePackage{{Name: "foo", Channels: []DiffIncludeChannel{{Name: "stable"}}}},
 				},
+				HeadsOnly: false,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -2192,6 +2498,122 @@ func TestDiffHeadsOnly(t *testing.T) {
 						Name:   "foo.v0.1.0", Package: "foo", Image: "reg/foo:latest",
 						Properties: []property.Property{property.MustBuildPackage("foo", "0.1.0")},
 					},
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.2.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.2.0")},
+					},
+				},
+			},
+		},
+		{
+			name: "HasDiff/IncludePackageHeadsOnly",
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "bar", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{{Name: "foo.v0.1.0"}}},
+					{Schema: schemaChannel, Name: "stable", Package: "bar", Entries: []ChannelEntry{
+						{Name: "bar.v0.1.0"}, {Name: "bar.v0.2.0", Replaces: "bar.v0.1.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.1.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.1.0")},
+					},
+					{
+						Schema: schemaBundle,
+						Name:   "bar.v0.1.0", Package: "bar", Image: "reg/bar:latest",
+						Properties: []property.Property{property.MustBuildPackage("bar", "0.1.0")},
+					},
+					{
+						Schema: schemaBundle,
+						Name:   "bar.v0.2.0", Package: "bar", Image: "reg/bar:latest",
+						Properties: []property.Property{property.MustBuildPackage("bar", "0.2.0")},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{{Name: "bar"}},
+				},
+				HeadsOnly: true,
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "bar", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "bar", Entries: []ChannelEntry{
+						{Name: "bar.v0.2.0", Replaces: "bar.v0.1.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema: schemaBundle,
+						Name:   "bar.v0.2.0", Package: "bar", Image: "reg/bar:latest",
+						Properties: []property.Property{property.MustBuildPackage("bar", "0.2.0")},
+					},
+				},
+			},
+		},
+		{
+			name: "HasDiff/IncludeChannelHeadsOnly",
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "alpha"}, // Make sure the default channel is still updated.
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"}, {Name: "foo.v0.2.0", Replaces: "foo.v0.1.0"}},
+					},
+					{Schema: schemaChannel, Name: "alpha", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0-alpha.0"}, {Name: "foo.v0.2.0-alpha.0", Replaces: "foo.v0.1.0-alpha.0"}},
+					},
+				},
+				Bundles: []Bundle{
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.1.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.1.0")},
+					},
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.2.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.2.0")},
+					},
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.1.0-alpha.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.1.0-alpha.0")},
+					},
+					{
+						Schema: schemaBundle,
+						Name:   "foo.v0.2.0-alpha.0", Package: "foo", Image: "reg/foo:latest",
+						Properties: []property.Property{property.MustBuildPackage("foo", "0.2.0-alpha.0")},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{{Name: "foo", Channels: []DiffIncludeChannel{{Name: "stable"}}}},
+				},
+				HeadsOnly: true,
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "alpha"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0", Replaces: "foo.v0.1.0"}},
+					},
+				},
+				Bundles: []Bundle{
 					{
 						Schema: schemaBundle,
 						Name:   "foo.v0.2.0", Package: "foo", Image: "reg/foo:latest",
@@ -2242,6 +2664,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 							{Name: "stable", Versions: []semver.Version{{Major: 0, Minor: 2, Patch: 0}}}},
 						}},
 				},
+				HeadsOnly: true,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -2379,6 +2802,7 @@ func TestDiffHeadsOnly(t *testing.T) {
 						},
 					},
 				},
+				HeadsOnly: true,
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
@@ -2446,6 +2870,567 @@ func TestDiffHeadsOnly(t *testing.T) {
 
 			outputCfg := ConvertFromModel(outputModel)
 			require.Equal(t, s.expCfg, outputCfg)
+		})
+	}
+}
+
+func TestDiffRange(t *testing.T) {
+	type spec struct {
+		name      string
+		g         *DiffGenerator
+		oldCfg    DeclarativeConfig
+		newCfg    DeclarativeConfig
+		expCfg    DeclarativeConfig
+		assertion require.ErrorAssertionFunc
+	}
+
+	specs := []spec{
+		{
+			name: "OnlyPackageRange",
+			oldCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+					}},
+					{Schema: schemaChannel, Name: "fast", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0"},
+					}},
+					{Schema: schemaChannel, Name: "stable", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v0.9.0"},
+						{Name: "etcd.v0.9.1", Replaces: "etcd.v0.9.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.2.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.0",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.1",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.1"),
+						},
+					},
+				},
+			},
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+					}},
+					{Schema: schemaChannel, Name: "fast", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0"},
+						{Name: "foo.v0.3.0", Replaces: "foo.v0.2.0"},
+					}},
+					{Schema: schemaChannel, Name: "stable", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v0.9.0"},
+						{Name: "etcd.v0.9.1", Replaces: "etcd.v0.9.0"},
+						{Name: "etcd.v0.9.2", Replaces: "etcd.v0.9.1"},
+						{Name: "etcd.v0.9.3", Replaces: "etcd.v0.9.2"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.2.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.3.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.3.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.0",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.1",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.1"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.2",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.2"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.3",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.3"),
+						},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{
+						{
+							Name:  "foo",
+							Range: semver.MustParseRange("<=0.3.0"),
+						},
+						{
+							Name:  "etcd",
+							Range: semver.MustParseRange(">0.9.0 <0.9.3"),
+						},
+					},
+				},
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v0.9.2", Replaces: "etcd.v0.9.1"},
+					}},
+					{Schema: schemaChannel, Name: "fast", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.3.0", Replaces: "foo.v0.2.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.2",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.2"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.3.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.3.0"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "OnlyChannelRange",
+			oldCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+					}},
+					{Schema: schemaChannel, Name: "fast", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.3.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.3.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.3.0"),
+						},
+					},
+				},
+			},
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+						{Name: "foo.v0.2.0", Replaces: "foo.v0.1.0"},
+					}},
+					{Schema: schemaChannel, Name: "fast", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.3.0"},
+						{Name: "foo.v0.4.0", Replaces: "foo.v0.3.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.2.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.3.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.3.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.4.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.4.0"),
+						},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{
+						{Name: "foo", Channels: []DiffIncludeChannel{
+							{Name: "stable", Range: semver.MustParseRange("0.2.0")},
+							{Name: "fast", Range: semver.MustParseRange("0.4.0")},
+						}},
+					},
+				},
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "fast", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.4.0", Replaces: "foo.v0.3.0"},
+					}},
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0", Replaces: "foo.v0.1.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.2.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.4.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.4.0"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "CombinationPackageChannelRange/Valid",
+			oldCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+					}},
+					{Schema: schemaChannel, Name: "fast", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0"},
+					}},
+					{Schema: schemaChannel, Name: "stable", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v0.9.0"},
+						{Name: "etcd.v0.9.1", Replaces: "etcd.v0.9.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.2.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.0",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.1",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.1"),
+						},
+					},
+				},
+			},
+			newCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.1.0"},
+					}},
+					{Schema: schemaChannel, Name: "fast", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.2.0"},
+						{Name: "foo.v0.3.0", Replaces: "foo.v0.2.0"},
+					}},
+					{Schema: schemaChannel, Name: "stable", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v0.9.0"},
+						{Name: "etcd.v0.9.1", Replaces: "etcd.v0.9.0"},
+						{Name: "etcd.v0.9.2", Replaces: "etcd.v0.9.1"},
+						{Name: "etcd.v0.9.3", Replaces: "etcd.v0.9.2"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.1.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.1.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.2.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.2.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.3.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.3.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.0",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.1",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.1"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.2",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.2"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.3",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.3"),
+						},
+					},
+				},
+			},
+			g: &DiffGenerator{
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{
+						{
+							Name:  "foo",
+							Range: semver.MustParseRange("<=0.3.0"),
+						},
+						{Name: "etcd", Channels: []DiffIncludeChannel{
+							{Name: "stable", Range: semver.MustParseRange(">0.9.1")},
+						}},
+					},
+				},
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "etcd", DefaultChannel: "stable"},
+					{Schema: schemaPackage, Name: "foo", DefaultChannel: "stable"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "stable", Package: "etcd", Entries: []ChannelEntry{
+						{Name: "etcd.v0.9.2", Replaces: "etcd.v0.9.1"},
+						{Name: "etcd.v0.9.3", Replaces: "etcd.v0.9.2"},
+					}},
+					{Schema: schemaChannel, Name: "fast", Package: "foo", Entries: []ChannelEntry{
+						{Name: "foo.v0.3.0", Replaces: "foo.v0.2.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.2",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.2"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "etcd.v0.9.3",
+						Package: "etcd",
+						Image:   "reg/etcd:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("etcd", "0.9.3"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "foo.v0.3.0",
+						Package: "foo",
+						Image:   "reg/foo:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("foo", "0.3.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, s := range specs {
+		t.Run(s.name, func(t *testing.T) {
+			if s.assertion == nil {
+				s.assertion = require.NoError
+			}
+
+			oldModel, err := ConvertToModel(s.oldCfg)
+			require.NoError(t, err)
+
+			newModel, err := ConvertToModel(s.newCfg)
+			require.NoError(t, err)
+
+			outputModel, err := s.g.Run(oldModel, newModel)
+			s.assertion(t, err)
+
+			outputCfg := ConvertFromModel(outputModel)
+			require.EqualValues(t, s.expCfg, outputCfg)
 		})
 	}
 }
