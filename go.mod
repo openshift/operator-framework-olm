@@ -44,6 +44,7 @@ replace (
 	go.opentelemetry.io/otel/sdk/metric => go.opentelemetry.io/otel/sdk/metric v0.20.0
 	go.opentelemetry.io/otel/trace => go.opentelemetry.io/otel/trace v0.20.0
 	go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0
+
 )
 
 require (
@@ -267,8 +268,8 @@ replace (
 	// pin to ginkgo v1 version of gomega (v1.18+ relies on ginkgo v2)
 	github.com/onsi/gomega => github.com/onsi/gomega v1.17.0
 
-	// controller runtime
-	github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
+	github.com/openshift/api => github.com/exdx/openshift-api v0.0.0-20220718193357-293f366a6be1
+
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
 
 	// use staged repositories

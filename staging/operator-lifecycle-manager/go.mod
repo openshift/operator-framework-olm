@@ -68,6 +68,7 @@ replace (
 	go.opentelemetry.io/otel/sdk/metric => go.opentelemetry.io/otel/sdk/metric v0.20.0
 	go.opentelemetry.io/otel/trace => go.opentelemetry.io/otel/trace v0.20.0
 	go.opentelemetry.io/proto/otlp => go.opentelemetry.io/proto/otlp v0.7.0
+
 )
 
 require (
@@ -252,8 +253,7 @@ require (
 )
 
 replace (
-	// controller runtime
-	github.com/openshift/api => github.com/openshift/api v0.0.0-20211014063134-be2a7fb8aa44
+	github.com/openshift/api => github.com/exdx/openshift-api v0.0.0-20220718193357-293f366a6be1
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.20.0
 	go.opentelemetry.io/otel => go.opentelemetry.io/otel v0.20.0
