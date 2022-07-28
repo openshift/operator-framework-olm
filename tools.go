@@ -1,3 +1,4 @@
+//go:build tools
 // +build tools
 
 package tools
@@ -10,13 +11,13 @@ import (
 	// Generate embedded files.
 	_ "github.com/go-bindata/go-bindata/v3/go-bindata"
 	_ "github.com/golang/mock/mockgen"
-	_ "google.golang.org/protobuf/cmd/protoc-gen-go"
-	_ "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
-	_ "github.com/grpc-ecosystem/grpc-health-probe"
 	_ "github.com/googleapis/gnostic"
+	_ "github.com/grpc-ecosystem/grpc-health-probe"
 	_ "github.com/maxbrunsfeld/counterfeiter/v6"
-	_ "github.com/onsi/ginkgo/ginkgo"
+	_ "github.com/onsi/ginkgo/v2/ginkgo"
 	_ "github.com/operator-framework/api/crds" // operators.coreos.com CRD manifests
+	_ "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
+	_ "google.golang.org/protobuf/cmd/protoc-gen-go"
 	_ "helm.sh/helm/v3/cmd/helm"
 	_ "k8s.io/code-generator"
 	_ "k8s.io/kube-openapi/cmd/openapi-gen"
