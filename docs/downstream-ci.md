@@ -4,16 +4,16 @@ The CI configuration for each release branch can be found [here](https://github.
 From `4.11` (`master` as of this writing) we've updated the configuration to able to influence CI on a PR basis. An overview of the `ci-operator` (the system used for ci)
 can be found [here](https://docs.ci.openshift.org/docs/architecture/ci-operator/).
 
-### Structure
+## Structure
 
- * `.ci-operator.yaml` defines the `build_root_image`. To be ART compliant, the image should come from the [ocp-build-data](https://github.com/openshift/ocp-build-data/) repo
- * [openshift-operator-framework-olm-master.yaml](https://github.com/openshift/release/blob/master/ci-operator/config/openshift/operator-framework-olm/openshift-operator-framework-olm-master.yaml) defines the images that are used by ci, produced by ci, and the ci jobs the get executed.
- * `base.Dockerfile` defines the image used by ci to execute the ci jobs
+- `.ci-operator.yaml` defines the `build_root_image`. To be ART compliant, the image should come from the [ocp-build-data](https://github.com/openshift/ocp-build-data/) repo
+- [openshift-operator-framework-olm-master.yaml](https://github.com/openshift/release/blob/master/ci-operator/config/openshift/operator-framework-olm/openshift-operator-framework-olm-master.yaml) defines the images that are used by ci, produced by ci, and the ci jobs the get executed.
+- `base.Dockerfile` defines the image used by ci to execute the ci jobs
 
 From [openshift-operator-framework-olm-master.yaml](https://github.com/openshift/release/blob/master/ci-operator/config/openshift/operator-framework-olm/openshift-operator-framework-olm-master.yaml), we see under the `images` stanza the `ci-image` definition.
 It goes from `src` (the `build_root_image`) to `ci-image` by building `base.Dockerfile` with `src` as the base image.
 
-```
+```yaml
 - dockerfile_path: base.Dockerfile
   from: src
   to: ci-image
@@ -21,7 +21,7 @@ It goes from `src` (the `build_root_image`) to `ci-image` by building `base.Dock
 
 The image is excluded from promotion, to never be posted up anywhere:
 
-```
+```yaml
 promotion:
   excluded_images:
   - ci-image
@@ -29,7 +29,7 @@ promotion:
 
 and each `test` references `ci-image` as the image to be used to the test, e.g.:
 
-```
+```yaml
 tests:
 - as: verify
   commands: make verify
@@ -37,29 +37,30 @@ tests:
     from: ci-image
 ```
 
-### Updating go versions
+## Updating go versions
 
-All we need to do is update the `build_root_image` referenced in `.ci-operator.yaml` and we may also need to update the `base_images` in [openshift-operator-framework-olm-master.yaml](https://github.com/openshift/release/blob/master/ci-operator/config/openshift/operator-framework-olm/openshift-operator-framework-olm-master.yaml). 
+All we need to do is update the `build_root_image` referenced in `.ci-operator.yaml` and we may also need to update the `base_images` in [openshift-operator-framework-olm-master.yaml](https://github.com/openshift/release/blob/master/ci-operator/config/openshift/operator-framework-olm/openshift-operator-framework-olm-master.yaml).
 
 **NOTE**: I believe there is some automation that updates the base images, though I don't know. I'll leave this as a questions to the reviewer, and if no one knows, I'll go after it.
 
-### Downstream sync
+## Downstream sync
 
 The complete information about the downstreaming process can be found [here](https://docs.google.com/document/d/139yXeOqAJbV1ndC7Q4NbaOtzbSdNpcuJan0iemORd3g/edit).
 
 TL;DR;
 
 We sync three upstream repositories ([api](https://github.com/operator-framework/api), [registry](https://github.com/operator-framework/operator-registry), [olm](https://github.com/operator-framework/operator-lifecycle-manager)) to the downstream [olm mono-repo](https://github.com/openshift/operator-framework-olm). Commits from the upstream repositories are cherry-picked to the appropriate `staging` directory in the downstream repository. Because this is a monorepo in the `Openshift` GitHub organization, two things need to be remembered:
- - we don't pull in upstream `vendor` folder changes
- - we don't pull in changes to `OWNERS` files
- - after each cherry-pick we execute: `make vendor` and `make manifests` to ensure a) the downstream dependencies are updated b) to ensure any manifest changes are picked up downstream
- -- Note: `make manifests` requires [GNU sed](https://www.gnu.org/software/sed/)
 
- While manual changes to the `staging` directory should be avoided, there could be instances where there drift between the downstream `staging` directory and the corresponding upstream repository. This can happen due to applying commits out-of-order, e.g. due to feature freeze, etc.
+- we don't pull in upstream `vendor` folder changes
+- we don't pull in changes to `OWNERS` files
+- after each cherry-pick we execute: `make vendor` and `make manifests` to ensure a) the downstream dependencies are updated b) to ensure any manifest changes are picked up downstream
+  - Note: `make manifests` requires [GNU sed](https://www.gnu.org/software/sed/)
 
- Therefore, after a sync, it is important to manually verify the diff of `staging` and the upstream. Please note, though, that some downstream changes are downstream only. These are, however, few and far between and there are comments to indicate that a block of code is downstream only.
+While manual changes to the `staging` directory should be avoided, there could be instances where there drift between the downstream `staging` directory and the corresponding upstream repository. This can happen due to applying commits out-of-order, e.g. due to feature freeze, etc.
 
- The downstream sync process is facilitated by two scripts: `scripts/sync_get_candidates.sh` and `scripts/sync_pop_candidate.sh`, which compare the upstream remote with the appropriate `staging` directory and gets a stack of commits to sync, and cherry-pick those commits in reverse order. What does this look like in practice:
+Therefore, after a sync, it is important to manually verify the diff of `staging` and the upstream. Please note, though, that some downstream changes are downstream only. These are, however, few and far between and there are comments to indicate that a block of code is downstream only.
+
+The downstream sync process is facilitated by two scripts: `scripts/sync_get_candidates.sh` and `scripts/sync_pop_candidate.sh`, which compare the upstream remote with the appropriate `staging` directory and gets a stack of commits to sync, and cherry-pick those commits in reverse order. What does this look like in practice:
 
  ```bash
 # Clone downstream
@@ -72,8 +73,8 @@ git remote add operator-lifecycle-manager git@github.com:operator-framework/oper
 
 # Get upstream commit candidates: ./scripts/sync_get_candidates.sh <api|operator-registry|operator-lifecycle-manager> <branch>
 # The shas will be found in ./<api|operator-registry|operator-lifecycle-manager>.cherrypick
-./scripts/sync_get_candidates.sh api master 
-./scripts/sync_get_candidates.sh operator-registry master 
+./scripts/sync_get_candidates.sh api master
+./scripts/sync_get_candidates.sh operator-registry master
 ./scripts/sync_get_candidates.sh operator-lifecycle-manager master
 
 # Sync upstream commits: ./scripts/sync_pop_candidate.sh <api|operator-registry|operator-lifecycle-manager> [-a]
@@ -90,7 +91,7 @@ sync_pop_candidate.sh operator-registry -a
 # Depending on the changes being pulled in, the order of repos you sync _could_ matter and _could_ leave a commit in an unbuildable state
  ```
 
- Example: 
+ Example:
 
  ```bash
 $ sync_pop_candidate.sh operator-lifecycle-manager -a
@@ -117,7 +118,7 @@ hint: run "git cherry-pick --abort".
 
 $ rm -rf staging/operator-lifecycle-manager/vendor
 
-# make sure there are no conflics in 
+# make sure there are no conflics in
 # staging/operator-lifecycle-manager/go.mod and go.sum
 $ cd staging/operator-lifecycle-manager
 $ go mod tidy

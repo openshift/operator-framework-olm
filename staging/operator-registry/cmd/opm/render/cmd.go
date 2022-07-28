@@ -12,7 +12,6 @@ import (
 	"github.com/operator-framework/operator-registry/alpha/action"
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/cmd/opm/internal/util"
-	containerd "github.com/operator-framework/operator-registry/pkg/image/containerdregistry"
 	"github.com/operator-framework/operator-registry/pkg/sqlite"
 )
 
@@ -37,8 +36,10 @@ func NewCmd() *cobra.Command {
 				write = declcfg.WriteYAML
 			case "json":
 				write = declcfg.WriteJSON
+			case "mermaid":
+				write = declcfg.WriteMermaidChannels
 			default:
-				log.Fatalf("invalid --output value %q, expected (json|yaml)", output)
+				log.Fatalf("invalid --output value %q, expected (json|yaml|mermaid)", output)
 			}
 
 			// The bundle loading impl is somewhat verbose, even on the happy path,
@@ -46,24 +47,9 @@ func NewCmd() *cobra.Command {
 			// returned from render.Run and logged as fatal errors.
 			logrus.SetOutput(ioutil.Discard)
 
-			skipTLSVerify, useHTTP, err := util.GetTLSOptions(cmd)
+			reg, err := util.CreateCLIRegistry(cmd)
 			if err != nil {
 				log.Fatal(err)
-			}
-
-			cacheDir, err := os.MkdirTemp("", "render-registry-")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			reg, err := containerd.NewRegistry(
-				containerd.WithCacheDir(cacheDir),
-				containerd.SkipTLSVerify(skipTLSVerify),
-				containerd.WithPlainHTTP(useHTTP),
-				containerd.WithLog(nullLogger()),
-			)
-			if err != nil {
-				log.Fatalf("creating containerd registry: %v", err)
 			}
 			defer reg.Destroy()
 
@@ -79,9 +65,7 @@ func NewCmd() *cobra.Command {
 			}
 		},
 	}
-	cmd.Flags().StringVarP(&output, "output", "o", "json", "Output format (json|yaml)")
-	cmd.Flags().Bool("skip-tls-verify", false, "disable TLS verification")
-	cmd.Flags().Bool("use-http", false, "use plain HTTP")
+	cmd.Flags().StringVarP(&output, "output", "o", "json", "Output format (json|yaml|mermaid)")
 	return cmd
 }
 

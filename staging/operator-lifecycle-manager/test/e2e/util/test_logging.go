@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	g "github.com/onsi/ginkgo"
+	g "github.com/onsi/ginkgo/v2"
 )
 
 func Logf(f string, v ...interface{}) {

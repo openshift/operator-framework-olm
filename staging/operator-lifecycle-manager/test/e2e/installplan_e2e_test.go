@@ -12,8 +12,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/stretchr/testify/assert"
@@ -993,8 +992,8 @@ var _ = Describe("Install Plan", func() {
 		mainCRDPlural := genName("testcrd-")
 
 		// excluded: new CRD, same version, same schema - won't trigger a CRD update
-		tableEntries := []table.TableEntry{
-			table.Entry("all existing versions are present, different (backwards compatible) schema", schemaPayload{
+		tableEntries := []TableEntry{
+			Entry("all existing versions are present, different (backwards compatible) schema", schemaPayload{
 				name:          "all existing versions are present, different (backwards compatible) schema",
 				expectedPhase: operatorsv1alpha1.InstallPlanPhaseComplete,
 				oldCRD: func() *apiextensions.CustomResourceDefinition {
@@ -1082,7 +1081,7 @@ var _ = Describe("Install Plan", func() {
 					return &newCRD
 				}(),
 			}),
-			table.Entry("all existing versions are present, different (backwards incompatible) schema", schemaPayload{name: "all existing versions are present, different (backwards incompatible) schema",
+			Entry("all existing versions are present, different (backwards incompatible) schema", schemaPayload{name: "all existing versions are present, different (backwards incompatible) schema",
 				expectedPhase: operatorsv1alpha1.InstallPlanPhaseFailed,
 				oldCRD: func() *apiextensions.CustomResourceDefinition {
 					oldCRD := newCRD(mainCRDPlural + "b")
@@ -1143,7 +1142,7 @@ var _ = Describe("Install Plan", func() {
 					return &newCRD
 				}(),
 			}),
-			table.Entry("missing existing versions in new CRD", schemaPayload{name: "missing existing versions in new CRD",
+			Entry("missing existing versions in new CRD", schemaPayload{name: "missing existing versions in new CRD",
 				expectedPhase: operatorsv1alpha1.InstallPlanPhaseComplete,
 				oldCRD: func() *apiextensions.CustomResourceDefinition {
 					oldCRD := newCRD(mainCRDPlural + "c")
@@ -1227,7 +1226,7 @@ var _ = Describe("Install Plan", func() {
 					}
 					return &newCRD
 				}()}),
-			table.Entry("existing version is present in new CRD (deprecated field)", schemaPayload{name: "existing version is present in new CRD (deprecated field)",
+			Entry("existing version is present in new CRD (deprecated field)", schemaPayload{name: "existing version is present in new CRD (deprecated field)",
 				expectedPhase: operatorsv1alpha1.InstallPlanPhaseComplete,
 				oldCRD: func() *apiextensions.CustomResourceDefinition {
 					oldCRD := newCRD(mainCRDPlural + "d")
@@ -1273,7 +1272,7 @@ var _ = Describe("Install Plan", func() {
 				}()}),
 		}
 
-		table.DescribeTable("Test", func(tt schemaPayload) {
+		DescribeTable("Test", func(tt schemaPayload) {
 
 			mainPackageName := genName("nginx-")
 			mainPackageStable := fmt.Sprintf("%s-stable", mainPackageName)
@@ -1419,7 +1418,7 @@ var _ = Describe("Install Plan", func() {
 			require.NoError(GinkgoT(), err)
 
 			GinkgoT().Logf("All expected resources resolved %s", fetchedCSV.Status.Phase)
-		}, tableEntries...)
+		}, tableEntries)
 
 	})
 
@@ -1438,8 +1437,8 @@ var _ = Describe("Install Plan", func() {
 
 		// excluded: new CRD, same version, same schema - won't trigger a CRD update
 
-		tableEntries := []table.TableEntry{
-			table.Entry("upgrade CRD with deprecated version", schemaPayload{
+		tableEntries := []TableEntry{
+			Entry("upgrade CRD with deprecated version", schemaPayload{
 				name:          "upgrade CRD with deprecated version",
 				expectedPhase: operatorsv1alpha1.InstallPlanPhaseComplete,
 				oldCRD: func() *apiextensions.CustomResourceDefinition {
@@ -1529,7 +1528,7 @@ var _ = Describe("Install Plan", func() {
 			}),
 		}
 
-		table.DescribeTable("Test", func(tt schemaPayload) {
+		DescribeTable("Test", func(tt schemaPayload) {
 
 			mainPackageName := genName("nginx-")
 			mainPackageStable := fmt.Sprintf("%s-stable", mainPackageName)
@@ -1691,7 +1690,7 @@ var _ = Describe("Install Plan", func() {
 
 			validateCRDVersions(GinkgoT(), c, tt.oldCRD.GetName(), expectedVersions)
 			GinkgoT().Logf("All expected resources resolved %s", fetchedCSV.Status.Phase)
-		}, tableEntries...)
+		}, tableEntries)
 
 	})
 

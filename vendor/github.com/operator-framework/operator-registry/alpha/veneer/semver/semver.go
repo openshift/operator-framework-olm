@@ -1,10 +1,8 @@
 package semver
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"sort"
 
@@ -13,6 +11,7 @@ import (
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/alpha/property"
 	"github.com/operator-framework/operator-registry/pkg/image"
+	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -140,16 +139,25 @@ func (sv *semverVeneer) getVersionsFromStandardChannels(cfg *declcfg.Declarative
 	if err != nil {
 		return nil, err
 	}
+	if err = validateVersions(&bdm); err != nil {
+		return nil, err
+	}
 	versions[candidateChannelName] = bdm
 
 	bdm, err = sv.getVersionsFromChannel(sv.Fast.Bundles, cfg)
 	if err != nil {
 		return nil, err
 	}
+	if err = validateVersions(&bdm); err != nil {
+		return nil, err
+	}
 	versions[fastChannelName] = bdm
 
 	bdm, err = sv.getVersionsFromChannel(sv.Stable.Bundles, cfg)
 	if err != nil {
+		return nil, err
+	}
+	if err = validateVersions(&bdm); err != nil {
 		return nil, err
 	}
 	versions[stableChannelName] = bdm
@@ -189,9 +197,6 @@ func (sv *semverVeneer) getVersionsFromChannel(semverBundles []semverVeneerBundl
 		if err != nil {
 			return nil, fmt.Errorf("bundle %q has invalid version %q: %v", b.Name, props.Packages[0].Version, err)
 		}
-		if len(v.Build) > 0 {
-			return nil, fmt.Errorf("bundle %q uses build metadata in its versioning, which is not sortable: %v", b.Name, v.String())
-		}
 
 		// package name detection
 		if sv.pkg != "" {
@@ -204,6 +209,10 @@ func (sv *semverVeneer) getVersionsFromChannel(semverBundles []semverVeneerBundl
 			p := newPackage(props.Packages[0].PackageName)
 			cfg.Packages = append(cfg.Packages, *p)
 			sv.pkg = props.Packages[0].PackageName
+		}
+
+		if _, ok := entries[b.Name]; ok {
+			return nil, fmt.Errorf("duplicate bundle name %q", b.Name)
 		}
 
 		entries[b.Name] = v
@@ -255,7 +264,7 @@ func (sv *semverVeneer) generateChannels(semverChannels *semverRenderedChannelVe
 
 		// sort the bundle names according to their semver, so we can walk in ascending order
 		bundleNamesByVersion := []string{}
-		for b, _ := range bundles {
+		for b := range bundles {
 			bundleNamesByVersion = append(bundleNamesByVersion, b)
 		}
 		sort.Slice(bundleNamesByVersion, func(i, j int) bool {
@@ -410,27 +419,40 @@ func getMinorVersion(v semver.Version) semver.Version {
 	}
 }
 
-func MermaidChannelWriter(cfg declcfg.DeclarativeConfig, out io.Writer) error {
-	for _, c := range cfg.Channels {
-		var buf bytes.Buffer
+func withoutBuildMetadataConflict(versions *map[string]semver.Version) error {
+	errs := []error{}
 
-		buf.WriteString(fmt.Sprintf("<-- Channel %q --> \n", c.Name))
-		buf.WriteString("graph LR\n")
-
-		for _, ce := range c.Entries {
-
-			// no support for SkipRange yet
-			buf.WriteString(fmt.Sprintf("%s\n", ce.Name))
-			if len(ce.Replaces) > 0 {
-				buf.WriteString(fmt.Sprintf("%s-- %s --> %s\n", ce.Name, "replaces", ce.Replaces))
-			}
-			if len(ce.Skips) > 0 {
-				for _, s := range ce.Skips {
-					buf.WriteString(fmt.Sprintf("%s-- %s --> %s\n", ce.Name, "skips", s))
-				}
-			}
+	// using the stringified semver because the semver package generates deterministic representations,
+	// and because the semver.Version contains slice fields which make it unsuitable as a map key
+	//      stringified-semver.Version ==> incidence count
+	seen := make(map[string]int)
+	for b := range *versions {
+		stripped := stripBuildMetadata((*versions)[b])
+		if _, ok := seen[stripped]; !ok {
+			seen[stripped] = 1
+		} else {
+			seen[stripped] = seen[stripped] + 1
+			errs = append(errs, fmt.Errorf("bundle version %q cannot be compared to %q", (*versions)[b].String(), stripped))
 		}
-		out.Write(buf.Bytes())
 	}
+
+	if len(errs) != 0 {
+		return fmt.Errorf("encountered bundle versions which differ only by build metadata, which cannot be ordered: %v", errors.NewAggregate(errs))
+	}
+
 	return nil
+}
+
+func validateVersions(versions *map[string]semver.Version) error {
+	// short-circuit if empty, since that is not an error
+	if len(*versions) == 0 {
+		return nil
+	}
+	return withoutBuildMetadataConflict(versions)
+}
+
+// strips out the build metadata from a semver.Version and then stringifies it to make it suitable for collision detection
+func stripBuildMetadata(v semver.Version) string {
+	v.Build = nil
+	return v.String()
 }
