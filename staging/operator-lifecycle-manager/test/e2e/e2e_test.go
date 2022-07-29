@@ -30,6 +30,9 @@ var (
 	olmNamespace = flag.String(
 		"olmNamespace", "", "namespace where olm is running")
 
+	catalogNamespace = flag.String(
+		"catalogNamespace", "", "namespace where the global catalog content is stored")
+
 	communityOperators = flag.String(
 		"communityOperators",
 		"quay.io/operator-framework/upstream-community-operators@sha256:098457dc5e0b6ca9599bd0e7a67809f8eca397907ca4d93597380511db478fec",
@@ -58,6 +61,7 @@ var (
 	testNamespace           = ""
 	operatorNamespace       = ""
 	communityOperatorsImage = ""
+	globalCatalogNamespace  = ""
 	junitDir                = "junit"
 )
 
@@ -95,6 +99,7 @@ var _ = BeforeSuite(func() {
 	testNamespace = *namespace
 	operatorNamespace = *olmNamespace
 	communityOperatorsImage = *communityOperators
+	globalCatalogNamespace = *catalogNamespace
 	testdataDir = *testdataPath
 	deprovision = ctx.MustProvision(ctx.Ctx())
 	ctx.MustInstall(ctx.Ctx())

@@ -49,7 +49,7 @@ var _ = Describe("Global Catalog Exclusion", func() {
 		globalCatalog := &v1alpha1.CatalogSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      genName("bad-global-catalog-"),
-				Namespace: operatorNamespace,
+				Namespace: globalCatalogNamespace,
 			},
 			Spec: v1alpha1.CatalogSourceSpec{
 				DisplayName: "Broken Global Catalog Source",
@@ -105,7 +105,7 @@ var _ = Describe("Global Catalog Exclusion", func() {
 		When("the operator group is annotated with olm.operatorframework.io/exclude-global-namespace-resolution=true", func() {
 			// Note: this test flakes on openshift CI but passes running on a local openshift cluster
 			// For some reason, the subscription does not transition to a failed state in time
-			It("[FLAKE] the broken subscription should resolve and have state AtLatest", func() {
+			It("the broken subscription should resolve and have state AtLatest", func() {
 				By("checking that the subscription is not resolving and has a condition with type ResolutionFailed")
 				EventuallyResource(subscription, 5*time.Minute).Should(ContainSubscriptionConditionOfType(v1alpha1.SubscriptionResolutionFailed))
 
