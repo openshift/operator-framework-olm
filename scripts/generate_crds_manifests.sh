@@ -363,6 +363,41 @@ metadata:
     release.openshift.io/delete: "true"
 EOF
 
+cat << EOF > manifests/0000_50_olm_15-csv-viewer.rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  name: copied-csv-viewer
+  namespace: openshift
+rules:
+- apiGroups:
+  - "operators.coreos.com"
+  resources:
+  - "clusterserviceversions"
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  name: copied-csv-viewers
+  namespace: openshift
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: copied-csv-viewer
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:authenticated
+EOF
+
 add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"
 
 find "${ROOT_DIR}/manifests" -type f -exec $SED -i "/^#/d" {} \;
