@@ -88,6 +88,10 @@ spec:
                   target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
                 creationTimestamp: null
               spec:
+                securityContext:
+                  runAsNonRoot: true
+                  seccompProfile:
+                    type: RuntimeDefault
                 serviceAccountName: olm-operator-serviceaccount
                 nodeSelector:
                   kubernetes.io/os: linux
@@ -106,6 +110,10 @@ spec:
                     tolerationSeconds: 120
                 containers:
                   - name: packageserver
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop: ["ALL"]
                     command:
                       - /bin/package-server
                       - -v=4
@@ -136,10 +144,6 @@ spec:
                     volumeMounts:
                       - name: tmpfs
                         mountPath: /tmp
-                    securityContext:
-                      allowPrivilegeEscalation: false
-                      capabilities:
-                        drop: ["ALL"]
                 volumes:
                   - name: tmpfs
                     emptyDir: {}
@@ -154,11 +158,6 @@ spec:
                               values:
                                 - packageserver
                         topologyKey: "kubernetes.io/hostname"
-                securityContext:
-                  runAsNonRoot: true
-                  runAsUser: 65534
-                  seccompProfile:
-                    type: RuntimeDefault
   maturity: alpha
   version: 0.19.0
   apiservicedefinitions:
