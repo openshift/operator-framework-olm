@@ -4,6 +4,10 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
+ROOT_DIR=$(dirname "${BASH_SOURCE[@]}")/..
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/scripts/common.sh"
+
 function err() {
     echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*" >&2
 }
@@ -18,7 +22,7 @@ function verify_staging_sync() {
     local staging_dir="staging/${remote}"
 
     local outside_staging
-    outside_staging="$(git show --name-only "${downstream_commit}" -- ":!${staging_dir}" ':!vendor' ':!manifests' ':!go.sum' ':!go.mod')"
+    outside_staging="$(git show --name-only "${downstream_commit}" -- ":!${staging_dir}" "${KNOWN_GENERATED_PATHS[@]}")"
     if [[ -n "${outside_staging}" ]]; then
         err "downstream staging commit ${downstream_commit} changes files outside of ${staging_dir}, vendor, and manifests directories"
         err "${outside_staging}"
