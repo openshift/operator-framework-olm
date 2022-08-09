@@ -5,6 +5,10 @@ cph=$(git rev-list -n 1 CHERRY_PICK_HEAD 2> /dev/null)
 set -o errexit
 set -o pipefail
 
+ROOT_DIR=$(dirname "${BASH_SOURCE[@]}")/..
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/scripts/common.sh"
+
 pop_all=true
 
 set +u
@@ -56,7 +60,7 @@ function pop() {
     # 4. Remove from cherrypick set
     make vendor
     make manifests
-    git add .
+    git add "${subtree_dir}" "${ROOT_GENERATED_PATHS[@]}"
     git status
     git commit --amend --allow-empty --no-edit --trailer "Upstream-repository: ${remote}" --trailer "Upstream-commit: ${rc}"
 
