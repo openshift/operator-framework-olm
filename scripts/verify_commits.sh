@@ -140,3 +140,4 @@ function main() {
 }
 
 main "$@"
+test $? -gt 0 || echo "Successfully validated all commits"
