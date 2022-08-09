@@ -63,7 +63,9 @@ function pop() {
     tmp_set=$(mktemp)
     tail -n +2 "${cherrypick_set}" > "${tmp_set}"; cat "${tmp_set}" > "${cherrypick_set}"
 
-    (( --remaining ))
+    # Note: handle edge case where there's zero remaining to avoid
+    # returning a non-zero exit code.
+    (( --remaining )) || true
     printf '%d picks remaining (pop_all=%s)\n' "${remaining}" "${pop_all}"
 
     if [[ $pop_all == 'true' ]] && ((  remaining >  0 )); then
