@@ -3,6 +3,9 @@ rbacApiVersion: rbac.authorization.k8s.io
 namespace: openshift-operator-lifecycle-manager
 catalog_namespace: openshift-marketplace
 operator_namespace: openshift-operators
+operator_namespace_psa: 
+  enforceLevel: baseline
+  enforceVersion: '"v1.24"'
 imagestream: true
 writeStatusName: operator-lifecycle-manager
 writeStatusNameCatalog: operator-lifecycle-manager-catalog
@@ -37,6 +40,7 @@ olm:
       cpu: 10m
       memory: 160Mi
 catalog:
+  setWorkloadUserID: false
   replicaCount: 1
   opmImageArgs: --opmImage=quay.io/operator-framework/configmap-operator-registry:latest
   image:
