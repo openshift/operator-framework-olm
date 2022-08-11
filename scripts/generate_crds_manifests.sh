@@ -133,7 +133,6 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65534
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: olm-operator-serviceaccount
@@ -402,3 +401,5 @@ add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"
 
 find "${ROOT_DIR}/manifests" -type f -exec $SED -i "/^#/d" {} \;
 find "${ROOT_DIR}/manifests" -type f -exec $SED -i "1{/---/d}" {} \;
+
+${YQ} delete --inplace -d'0' manifests/0000_50_olm_00-namespace.yaml 'metadata.labels."pod-security.kubernetes.io/enforce*"'

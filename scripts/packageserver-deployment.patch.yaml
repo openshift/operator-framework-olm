@@ -43,6 +43,5 @@
   path: spec.install.spec.deployments[0].spec.template.spec.securityContext
   value:
     runAsNonRoot: true
-    runAsUser: 65534
     seccompProfile:
       type: RuntimeDefault

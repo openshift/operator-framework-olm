@@ -27,6 +27,5 @@
   path: spec.template.spec.securityContext
   value:
     runAsNonRoot: true
-    runAsUser: 65534
     seccompProfile:
       type: RuntimeDefault
