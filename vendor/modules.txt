@@ -45,18 +45,21 @@ github.com/Masterminds/squirrel
 # github.com/Masterminds/vcs v1.13.1
 ## explicit
 github.com/Masterminds/vcs
-# github.com/Microsoft/go-winio v0.4.16
+# github.com/Microsoft/go-winio v0.4.17
 ## explicit; go 1.12
 github.com/Microsoft/go-winio
+github.com/Microsoft/go-winio/backuptar
 github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/go-winio/pkg/security
 github.com/Microsoft/go-winio/vhd
-# github.com/Microsoft/hcsshim v0.8.14
+# github.com/Microsoft/hcsshim v0.8.24
 ## explicit; go 1.13
 github.com/Microsoft/hcsshim
 github.com/Microsoft/hcsshim/computestorage
 github.com/Microsoft/hcsshim/internal/cow
 github.com/Microsoft/hcsshim/internal/hcs
+github.com/Microsoft/hcsshim/internal/hcs/schema1
+github.com/Microsoft/hcsshim/internal/hcs/schema2
 github.com/Microsoft/hcsshim/internal/hcserror
 github.com/Microsoft/hcsshim/internal/hns
 github.com/Microsoft/hcsshim/internal/interop
@@ -66,13 +69,12 @@ github.com/Microsoft/hcsshim/internal/longpath
 github.com/Microsoft/hcsshim/internal/mergemaps
 github.com/Microsoft/hcsshim/internal/oc
 github.com/Microsoft/hcsshim/internal/safefile
-github.com/Microsoft/hcsshim/internal/schema1
-github.com/Microsoft/hcsshim/internal/schema2
 github.com/Microsoft/hcsshim/internal/timeout
 github.com/Microsoft/hcsshim/internal/vmcompute
 github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
+github.com/Microsoft/hcsshim/pkg/ociwclayer
 # github.com/NYTimes/gziphandler v1.1.1
 ## explicit; go 1.11
 github.com/NYTimes/gziphandler
@@ -100,11 +102,11 @@ github.com/blang/semver/v4
 # github.com/cespare/xxhash/v2 v2.1.1
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
-# github.com/containerd/cgroups v0.0.0-20200531161412-0dbf7f05ba59
-## explicit; go 1.13
+# github.com/containerd/cgroups v1.0.3
+## explicit; go 1.16
 github.com/containerd/cgroups/stats/v1
-# github.com/containerd/containerd v1.4.11 => github.com/ecordell/containerd v1.3.1-0.20200629153125-0ff1a1be2fa5
-## explicit
+# github.com/containerd/containerd v1.5.13
+## explicit; go 1.17
 github.com/containerd/containerd/archive
 github.com/containerd/containerd/archive/compression
 github.com/containerd/containerd/containers
@@ -122,20 +124,23 @@ github.com/containerd/containerd/metadata
 github.com/containerd/containerd/metadata/boltutil
 github.com/containerd/containerd/mount
 github.com/containerd/containerd/namespaces
+github.com/containerd/containerd/pkg/userns
 github.com/containerd/containerd/platforms
 github.com/containerd/containerd/reference
 github.com/containerd/containerd/remotes
 github.com/containerd/containerd/remotes/docker
+github.com/containerd/containerd/remotes/docker/auth
 github.com/containerd/containerd/remotes/docker/schema1
+github.com/containerd/containerd/remotes/errors
 github.com/containerd/containerd/snapshots
 github.com/containerd/containerd/sys
 github.com/containerd/containerd/version
-# github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7
+# github.com/containerd/continuity v0.1.0
 ## explicit; go 1.13
 github.com/containerd/continuity/fs
 github.com/containerd/continuity/pathdriver
 github.com/containerd/continuity/sysx
-# github.com/containerd/ttrpc v1.0.1
+# github.com/containerd/ttrpc v1.1.0
 ## explicit; go 1.13
 github.com/containerd/ttrpc
 # github.com/coreos/go-semver v0.3.0
@@ -154,14 +159,6 @@ github.com/cyphar/filepath-securejoin
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/deislabs/oras v0.11.1
-## explicit; go 1.16
-github.com/deislabs/oras/pkg/artifact
-github.com/deislabs/oras/pkg/auth
-github.com/deislabs/oras/pkg/auth/docker
-github.com/deislabs/oras/pkg/content
-github.com/deislabs/oras/pkg/context
-github.com/deislabs/oras/pkg/oras
 # github.com/distribution/distribution v2.7.1+incompatible
 ## explicit
 github.com/distribution/distribution/reference
@@ -213,8 +210,8 @@ github.com/docker/docker/pkg/term/windows
 github.com/docker/docker/registry
 github.com/docker/docker/registry/resumable
 github.com/docker/docker/rootless
-# github.com/docker/docker-credential-helpers v0.6.3
-## explicit
+# github.com/docker/docker-credential-helpers v0.6.4
+## explicit; go 1.13
 github.com/docker/docker-credential-helpers/client
 github.com/docker/docker-credential-helpers/credentials
 # github.com/docker/go-connections v0.4.0
@@ -387,7 +384,7 @@ github.com/google/gofuzz
 # github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 ## explicit; go 1.13
 github.com/google/shlex
-# github.com/google/uuid v1.1.2
+# github.com/google/uuid v1.2.0
 ## explicit
 github.com/google/uuid
 # github.com/googleapis/gnostic v0.5.5
@@ -403,8 +400,8 @@ github.com/googleapis/gnostic/openapiv2
 github.com/googleapis/gnostic/openapiv3
 github.com/googleapis/gnostic/plugins
 github.com/googleapis/gnostic/surface
-# github.com/gorilla/mux v1.7.3
-## explicit
+# github.com/gorilla/mux v1.8.0
+## explicit; go 1.12
 github.com/gorilla/mux
 # github.com/gosuri/uitable v0.0.4
 ## explicit
@@ -435,7 +432,7 @@ github.com/h2non/filetype/types
 # github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c
 ## explicit
 github.com/h2non/go-is-svg
-# github.com/huandu/xstrings v1.3.1
+# github.com/huandu/xstrings v1.3.2
 ## explicit; go 1.12
 github.com/huandu/xstrings
 # github.com/imdario/mergo v0.3.12
@@ -470,6 +467,13 @@ github.com/json-iterator/go
 ## explicit; go 1.14
 github.com/kisielk/errcheck
 github.com/kisielk/errcheck/errcheck
+# github.com/klauspost/compress v1.11.13
+## explicit; go 1.13
+github.com/klauspost/compress/fse
+github.com/klauspost/compress/huff0
+github.com/klauspost/compress/snappy
+github.com/klauspost/compress/zstd
+github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/kylelemons/godebug v1.1.0
 ## explicit; go 1.11
 github.com/kylelemons/godebug/diff
@@ -539,10 +543,16 @@ github.com/mitchellh/mapstructure
 # github.com/mitchellh/reflectwalk v1.0.1
 ## explicit
 github.com/mitchellh/reflectwalk
+# github.com/moby/locker v1.0.1
+## explicit; go 1.13
+github.com/moby/locker
 # github.com/moby/spdystream v0.2.0
 ## explicit; go 1.13
 github.com/moby/spdystream
 github.com/moby/spdystream/spdy
+# github.com/moby/sys/mountinfo v0.4.1
+## explicit; go 1.14
+github.com/moby/sys/mountinfo
 # github.com/moby/term v0.0.0-20210610120745-9d4ed1856297
 ## explicit; go 1.13
 github.com/moby/term
@@ -601,13 +611,12 @@ github.com/onsi/gomega/types
 # github.com/opencontainers/go-digest v1.0.0
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
-# github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
+# github.com/opencontainers/image-spec v1.0.2
 ## explicit
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
-# github.com/opencontainers/runc v0.1.1
-## explicit
-github.com/opencontainers/runc/libcontainer/system
+# github.com/opencontainers/runc v1.0.2
+## explicit; go 1.13
 github.com/opencontainers/runc/libcontainer/user
 # github.com/openshift/api v0.0.0-20200331152225-585af27e34fd => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
 ## explicit; go 1.15
@@ -816,8 +825,8 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/rubenv/sql-migrate v0.0.0-20200616145509-8d140a17f351
-## explicit; go 1.11
+# github.com/rubenv/sql-migrate v0.0.0-20210614095031-55d5740dbbcc
+## explicit; go 1.16
 github.com/rubenv/sql-migrate
 github.com/rubenv/sql-migrate/sqlparse
 # github.com/russross/blackfriday v1.5.2
@@ -1068,7 +1077,7 @@ golang.org/x/oauth2/jwt
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
 golang.org/x/sync/singleflight
-# golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359
+# golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
@@ -1269,12 +1278,15 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 ## explicit
 gopkg.in/yaml.v3
-# helm.sh/helm/v3 v3.6.2
+# helm.sh/helm/v3 v3.7.0
 ## explicit; go 1.16
 helm.sh/helm/v3/cmd/helm
 helm.sh/helm/v3/cmd/helm/require
 helm.sh/helm/v3/cmd/helm/search
+helm.sh/helm/v3/internal/experimental/action
+helm.sh/helm/v3/internal/experimental/pusher
 helm.sh/helm/v3/internal/experimental/registry
+helm.sh/helm/v3/internal/experimental/uploader
 helm.sh/helm/v3/internal/fileutil
 helm.sh/helm/v3/internal/ignore
 helm.sh/helm/v3/internal/monocular
@@ -1578,7 +1590,7 @@ k8s.io/apiserver/plugin/pkg/audit/truncate
 k8s.io/apiserver/plugin/pkg/audit/webhook
 k8s.io/apiserver/plugin/pkg/authenticator/token/webhook
 k8s.io/apiserver/plugin/pkg/authorizer/webhook
-# k8s.io/cli-runtime v0.22.0
+# k8s.io/cli-runtime v0.22.1
 ## explicit; go 1.16
 k8s.io/cli-runtime/pkg/genericclioptions
 k8s.io/cli-runtime/pkg/printers
@@ -1928,7 +1940,7 @@ k8s.io/kube-openapi/pkg/validation/spec
 k8s.io/kube-openapi/pkg/validation/strfmt
 k8s.io/kube-openapi/pkg/validation/strfmt/bson
 k8s.io/kube-openapi/pkg/validation/validate
-# k8s.io/kubectl v0.22.0
+# k8s.io/kubectl v0.22.1
 ## explicit; go 1.16
 k8s.io/kubectl/pkg/cmd/util
 k8s.io/kubectl/pkg/scheme
@@ -1950,6 +1962,14 @@ k8s.io/utils/net
 k8s.io/utils/path
 k8s.io/utils/pointer
 k8s.io/utils/trace
+# oras.land/oras-go v0.4.0
+## explicit; go 1.16
+oras.land/oras-go/pkg/artifact
+oras.land/oras-go/pkg/auth
+oras.land/oras-go/pkg/auth/docker
+oras.land/oras-go/pkg/content
+oras.land/oras-go/pkg/context
+oras.land/oras-go/pkg/oras
 # sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.22
 ## explicit; go 1.13
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client/pkg/client
@@ -2102,7 +2122,6 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/containerd/containerd => github.com/ecordell/containerd v1.3.1-0.20200629153125-0ff1a1be2fa5
 # github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0

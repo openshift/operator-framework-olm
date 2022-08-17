@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 /*
@@ -68,11 +69,11 @@ func GetLocalListener(path string, uid, gid int) (net.Listener, error) {
 }
 
 func mkdirAs(path string, uid, gid int) error {
-	if _, err := os.Stat(path); err == nil || !os.IsNotExist(err) {
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		return err
 	}
 
-	if err := os.Mkdir(path, 0770); err != nil {
+	if err := os.MkdirAll(path, 0770); err != nil {
 		return err
 	}
 
