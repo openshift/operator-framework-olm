@@ -22,7 +22,7 @@ done
 set -u
 
 remote="${1:-api}"
-subtree_dir="staging/${remote}"
+subtree_dir="staging/${2:-${remote}}"
 cherrypick_set="${remote}.cherrypick"
 remaining=$(wc -l < "${cherrypick_set}")
 
