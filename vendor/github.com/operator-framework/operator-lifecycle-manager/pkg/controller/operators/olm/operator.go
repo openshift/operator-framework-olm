@@ -60,6 +60,10 @@ var (
 	ErrAPIServiceOwnerConflict = errors.New("unable to adopt APIService")
 )
 
+// this unexported operator plugin slice provides and entrypoint for
+// downstream to inject its own plugins to augment the controller behavior
+var operatorPlugIns []OperatorPlugin
+
 type Operator struct {
 	queueinformer.Operator
 
@@ -90,6 +94,7 @@ type Operator struct {
 	clientAttenuator             *scoped.ClientAttenuator
 	serviceAccountQuerier        *scoped.UserDefinedServiceAccountQuerier
 	clientFactory                clients.Factory
+	plugins                      []OperatorPlugin
 }
 
 func NewOperator(ctx context.Context, options ...OperatorOption) (*Operator, error) {
@@ -147,10 +152,12 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		serviceAccountQuerier:        scoped.NewUserDefinedServiceAccountQuerier(config.logger, config.externalClient),
 		clientFactory:                clients.NewFactory(config.restConfig),
 		protectedCopiedCSVNamespaces: config.protectedCopiedCSVNamespaces,
+		plugins:                      operatorPlugIns,
 	}
 
 	// Set up syncing for namespace-scoped resources
 	k8sSyncer := queueinformer.LegacySyncHandler(op.syncObject).ToSyncerWithDelete(op.handleDeletion)
+
 	for _, namespace := range config.watchedNamespaces {
 		// Wire CSVs
 		csvInformer := externalversions.NewSharedInformerFactoryWithOptions(
@@ -585,6 +592,13 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 	overridesBuilderFunc := overrides.NewDeploymentInitializer(op.logger, proxyQuerierInUse, op.lister)
 	op.resolver = &install.StrategyResolver{
 		OverridesBuilderFunc: overridesBuilderFunc.GetDeploymentInitializer,
+	}
+
+	// initialize plugins
+	for _, plugin := range op.plugins {
+		if err := plugin.Init(ctx, config, op); err != nil {
+			return nil, fmt.Errorf("error initializing plugin: %s", err)
+		}
 	}
 
 	return op, nil
