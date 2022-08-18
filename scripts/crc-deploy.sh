@@ -19,31 +19,26 @@ function push_images {
   # push images to the global crc registry "openshift"
   # so that they can be pulled from any other namespace in the cluster
   CRC_GLOBAL_REGISTRY="openshift"
+  CRC_REGISTRY="default-route-openshift-image-registry.apps-crc.testing"
 
   # CRC destined images
-  CRC_OLM_IMAGE="localhost:5000/${CRC_GLOBAL_REGISTRY}/olm:test"
-  CRC_OPM_IMAGE="localhost:5000/${CRC_GLOBAL_REGISTRY}/opm:test"
+  CRC_OLM_IMAGE="${CRC_REGISTRY}/${CRC_GLOBAL_REGISTRY}/olm:test"
+  CRC_OPM_IMAGE="${CRC_REGISTRY}/${CRC_GLOBAL_REGISTRY}/opm:test"
 
   # CRC registry coordinates
-  OPENSHIFT_REGISTRY_NAMESPACE="openshift-image-registry"
   OLM_NAMESPACE="openshift-operator-lifecycle-manager"
-  IMAGE_REGISTRY_SVC="image-registry"
-  IMAGE_REGISTRY_PORT=5000
 
-  # Create port-forward to CRC registry
-  kubectl port-forward -n ${OPENSHIFT_REGISTRY_NAMESPACE} svc/${IMAGE_REGISTRY_SVC} ${IMAGE_REGISTRY_PORT}:${IMAGE_REGISTRY_PORT} > /dev/null 2>&1 &
-  PORT_FWD_PID=$!
+  # Copy OCP docker registry certificate
+  echo "need sudo to copy OCP certificate to docker configuration"
+  rm -rf tls.crt
+  oc extract secret/router-ca --keys=tls.crt -n openshift-ingress-operator
+  sudo mkdir -p /etc/docker/certs.d/default-route-openshift-image-registry.apps-crc.testing/
+  sudo mv tls.crt /etc/docker/certs.d/default-route-openshift-image-registry.apps-crc.testing/tls.crt
 
-  # Remember to close the port-forward
-  trap 'kill "${PORT_FWD_PID}"' EXIT
 
-  # give port-forward a second
-  # I found that without this docker login would not work
-  # as if it couldn't reach the docker server
-  sleep 1
 
   # Login to the CRC registry
-  oc whoami -t | docker login localhost:5000 --username user --password-stdin
+  oc whoami -t | docker login "${CRC_REGISTRY}" --username user --password-stdin
 
   # Tag and push olm image
   echo "Pushing olm image"
