@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	endpoint "net/http/pprof"
@@ -20,18 +19,17 @@ import (
 
 	"github.com/operator-framework/operator-registry/pkg/api"
 	health "github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1"
-	"github.com/operator-framework/operator-registry/pkg/cache"
 	"github.com/operator-framework/operator-registry/pkg/lib/dns"
 	"github.com/operator-framework/operator-registry/pkg/lib/graceful"
 	"github.com/operator-framework/operator-registry/pkg/lib/log"
+	"github.com/operator-framework/operator-registry/pkg/registry"
 	"github.com/operator-framework/operator-registry/pkg/server"
 )
 
 type serve struct {
-	configDir             string
-	cacheDir              string
-	cacheOnly             bool
-	cacheEnforceIntegrity bool
+	configDir string
+	cacheDir  string
+	cacheOnly bool
 
 	port           string
 	terminationLog string
@@ -61,19 +59,15 @@ startup. Changes made to the declarative config after the this command starts
 will not be reflected in the served content.
 `,
 		Args: cobra.ExactArgs(1),
-		PreRun: func(_ *cobra.Command, args []string) {
+		PreRunE: func(_ *cobra.Command, args []string) error {
 			s.configDir = args[0]
 			if s.debug {
 				logger.SetLevel(logrus.DebugLevel)
 			}
+			return nil
 		},
-		Run: func(cmd *cobra.Command, _ []string) {
-			if !cmd.Flags().Changed("cache-enforce-integrity") {
-				s.cacheEnforceIntegrity = s.cacheDir != "" && !s.cacheOnly
-			}
-			if err := s.run(cmd.Context()); err != nil {
-				logger.Fatal(err)
-			}
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return s.run(cmd.Context())
 		},
 	}
 
@@ -83,7 +77,6 @@ will not be reflected in the served content.
 	cmd.Flags().StringVar(&s.pprofAddr, "pprof-addr", "", "address of startup profiling endpoint (addr:port format)")
 	cmd.Flags().StringVar(&s.cacheDir, "cache-dir", "", "if set, sync and persist server cache directory")
 	cmd.Flags().BoolVar(&s.cacheOnly, "cache-only", false, "sync the serve cache and exit without serving")
-	cmd.Flags().BoolVar(&s.cacheEnforceIntegrity, "cache-enforce-integrity", false, "exit with error if cache is not present or has been invalidated. (default: true when --cache-dir is set and --cache-only is false, false otherwise), ")
 	return cmd
 }
 
@@ -109,38 +102,11 @@ func (s *serve) run(ctx context.Context) error {
 
 	s.logger = s.logger.WithFields(logrus.Fields{"configs": s.configDir, "port": s.port})
 
-	if s.cacheDir == "" && s.cacheEnforceIntegrity {
-		return fmt.Errorf("--cache-dir must be specified with --cache-enforce-integrity")
-	}
-
-	if s.cacheDir == "" {
-		s.cacheDir, err = os.MkdirTemp("", "opm-serve-cache-")
-		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(s.cacheDir)
-	}
-
-	store, err := cache.New(s.cacheDir)
+	store, err := registry.NewQuerierFromFS(os.DirFS(s.configDir), s.cacheDir)
+	defer store.Close()
 	if err != nil {
 		return err
 	}
-	if storeCloser, ok := store.(io.Closer); ok {
-		defer storeCloser.Close()
-	}
-	if s.cacheEnforceIntegrity {
-		if err := store.CheckIntegrity(os.DirFS(s.configDir)); err != nil {
-			return err
-		}
-		if err := store.Load(); err != nil {
-			return err
-		}
-	} else {
-		if err := cache.LoadOrRebuild(store, os.DirFS(s.configDir)); err != nil {
-			return err
-		}
-	}
-
 	if s.cacheOnly {
 		return nil
 	}
