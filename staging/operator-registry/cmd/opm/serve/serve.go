@@ -62,6 +62,9 @@ will not be reflected in the served content.
 	cmd.Flags().BoolVar(&s.debug, "debug", false, "enable debug logging")
 	cmd.Flags().StringVarP(&s.port, "port", "p", "50051", "port number to serve on")
 	cmd.Flags().StringVarP(&s.terminationLog, "termination-log", "t", "/dev/termination-log", "path to a container termination log file")
+	cmd.Flags().StringVarP(&s.port, "port", "p", "50051", "port number to serve on")
+	cmd.Flags().StringVar(&s.cacheDir, "cache-dir", "", "if set, sync and persist server cache directory")
+	cmd.Flags().BoolVar(&s.cacheOnly, "cache-only", false, "sync the serve cache and exit without serving")
 	return cmd
 }
 
