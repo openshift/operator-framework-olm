@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"io/fs"
+	"io/fs"
 	"testing"
 	"testing/fstest"
 
@@ -169,6 +170,11 @@ func TestCache_GetPackage(t *testing.T) {
 			},
 		}
 
+		require.ElementsMatch(t, expected.Channels, p.Channels)
+		expected.Channels, p.Channels = nil, nil
+		require.Equal(t, expected, p)
+	}
+}
 		require.ElementsMatch(t, expected.Channels, p.Channels)
 		expected.Channels, p.Channels = nil, nil
 		require.Equal(t, expected, p)
@@ -569,6 +575,48 @@ var validFS = fstest.MapFS{
 }`),
 	},
 }
+
+var badBundleFS = fstest.MapFS{
+	"cockroachdb.json": &fstest.MapFile{
+		Data: []byte(`{
+    "schema": "olm.package",
+    "name": "cockroachdb",
+    "defaultChannel": "stable-5.x",
+    "icon": {
+        "base64data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMS44MiAzMiIgd2lkdGg9IjI0ODYiIGhlaWdodD0iMjUwMCI+PHRpdGxlPkNMPC90aXRsZT48cGF0aCBkPSJNMTkuNDIgOS4xN2ExNS4zOSAxNS4zOSAwIDAgMS0zLjUxLjQgMTUuNDYgMTUuNDYgMCAwIDEtMy41MS0uNCAxNS42MyAxNS42MyAwIDAgMSAzLjUxLTMuOTEgMTUuNzEgMTUuNzEgMCAwIDEgMy41MSAzLjkxek0zMCAuNTdBMTcuMjIgMTcuMjIgMCAwIDAgMjUuNTkgMGExNy40IDE3LjQgMCAwIDAtOS42OCAyLjkzQTE3LjM4IDE3LjM4IDAgMCAwIDYuMjMgMGExNy4yMiAxNy4yMiAwIDAgMC00LjQ0LjU3QTE2LjIyIDE2LjIyIDAgMCAwIDAgMS4xM2EuMDcuMDcgMCAwIDAgMCAuMDkgMTcuMzIgMTcuMzIgMCAwIDAgLjgzIDEuNTcuMDcuMDcgMCAwIDAgLjA4IDAgMTYuMzkgMTYuMzkgMCAwIDEgMS44MS0uNTQgMTUuNjUgMTUuNjUgMCAwIDEgMTEuNTkgMS44OCAxNy41MiAxNy41MiAwIDAgMC0zLjc4IDQuNDhjLS4yLjMyLS4zNy42NS0uNTUgMXMtLjIyLjQ1LS4zMy42OS0uMzEuNzItLjQ0IDEuMDhhMTcuNDYgMTcuNDYgMCAwIDAgNC4yOSAxOC43Yy4yNi4yNS41My40OS44MS43M3MuNDQuMzcuNjcuNTQuNTkuNDQuODkuNjRhLjA3LjA3IDAgMCAwIC4wOCAwYy4zLS4yMS42LS40Mi44OS0uNjRzLjQ1LS4zNS42Ny0uNTQuNTUtLjQ4LjgxLS43M2ExNy40NSAxNy40NSAwIDAgMCA1LjM4LTEyLjYxIDE3LjM5IDE3LjM5IDAgMCAwLTEuMDktNi4wOWMtLjE0LS4zNy0uMjktLjczLS40NS0xLjA5cy0uMjItLjQ3LS4zMy0uNjktLjM1LS42Ni0uNTUtMWExNy42MSAxNy42MSAwIDAgMC0zLjc4LTQuNDggMTUuNjUgMTUuNjUgMCAwIDEgMTEuNi0xLjg0IDE2LjEzIDE2LjEzIDAgMCAxIDEuODEuNTQuMDcuMDcgMCAwIDAgLjA4IDBxLjQ0LS43Ni44Mi0xLjU2YS4wNy4wNyAwIDAgMCAwLS4wOUExNi44OSAxNi44OSAwIDAgMCAzMCAuNTd6IiBmaWxsPSIjMTUxZjM0Ii8+PHBhdGggZD0iTTIxLjgyIDE3LjQ3YTE1LjUxIDE1LjUxIDAgMCAxLTQuMjUgMTAuNjkgMTUuNjYgMTUuNjYgMCAwIDEtLjcyLTQuNjggMTUuNSAxNS41IDAgMCAxIDQuMjUtMTAuNjkgMTUuNjIgMTUuNjIgMCAwIDEgLjcyIDQuNjgiIGZpbGw9IiMzNDg1NDAiLz48cGF0aCBkPSJNMTUgMjMuNDhhMTUuNTUgMTUuNTUgMCAwIDEtLjcyIDQuNjggMTUuNTQgMTUuNTQgMCAwIDEtMy41My0xNS4zN0ExNS41IDE1LjUgMCAwIDEgMTUgMjMuNDgiIGZpbGw9IiM3ZGJjNDIiLz48L3N2Zz4=",
+        "mediatype": "image/svg+xml"
+    }
+}
+{
+	"schema": "olm.channel",
+	"package": "cockroachdb",
+	"name": "stable-5.x",
+	"entries": [
+		{"name": "cockroachdb.v5.0.3"}
+	]
+}
+{
+    "schema": "olm.bundle",
+    "name": "cockroachdb.v5.0.3",
+    "package": "cockroachdb",
+    "image": "quay.io/openshift-community-operators/cockroachdb:v5.0.3",
+    "properties": [
+        {
+            "type": "olm.package",
+            "value": {
+                "packageName": "cockroachdb",
+                "version": "5.0.3"
+            }
+        },
+        {
+            "type": "olm.package",
+            "value": {
+                "packageName": "other-package",
+                "version": "5.0.3"
+            }
+        }
+    ]
+}`)}}
 
 var badBundleFS = fstest.MapFS{
 	"cockroachdb.json": &fstest.MapFile{

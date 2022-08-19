@@ -468,3 +468,6 @@ scripts/**/*.crc.e2e.patch.yaml
 
 # downstream sync sha files
 *.cherrypick
+
+# ignore temp artifacts of building operator-registry images
+vendor/github.com/operator-framework/operator-registry/pkg/lib/indexer/index.Dockerfile*
