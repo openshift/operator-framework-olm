@@ -3,6 +3,8 @@ kind: Namespace
 metadata:
   name: openshift-operator-lifecycle-manager
   labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: "v1.24"
     openshift.io/scc: "anyuid"
     openshift.io/cluster-monitoring: "true"
   annotations:
@@ -16,7 +18,7 @@ kind: Namespace
 metadata:
   name: openshift-operators
   labels:
-    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/enforce-version: "v1.24"
     openshift.io/scc: "anyuid"
   annotations:

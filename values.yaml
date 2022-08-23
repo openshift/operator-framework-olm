@@ -1,10 +1,13 @@
 installType: ocp
 rbacApiVersion: rbac.authorization.k8s.io
 namespace: openshift-operator-lifecycle-manager
+namespace_psa: 
+  enforceLevel: restricted
+  enforceVersion: '"v1.24"'
 catalog_namespace: openshift-marketplace
 operator_namespace: openshift-operators
 operator_namespace_psa: 
-  enforceLevel: baseline
+  enforceLevel: privileged
   enforceVersion: '"v1.24"'
 imagestream: true
 writeStatusName: operator-lifecycle-manager
