@@ -95,7 +95,7 @@ func (s *serve) run(ctx context.Context) error {
 
 	lis, err := net.Listen("tcp", ":"+s.port)
 	if err != nil {
-		s.logger.Fatalf("failed to listen: %s", err)
+		return fmt.Errorf("failed to listen: %s", err)
 	}
 
 	grpcServer := grpc.NewServer()
