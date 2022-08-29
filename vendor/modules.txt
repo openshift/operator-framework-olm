@@ -689,6 +689,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operator
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/overrides
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/overrides/inject
+github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/plugins
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/openshift
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/grpc
