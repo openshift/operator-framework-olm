@@ -11,7 +11,7 @@ require (
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.1.3
-	github.com/openshift/api v0.0.0-20200331152225-585af27e34fd
+	github.com/openshift/api v0.0.0-20220525145417-ee5b62754c68
 	github.com/operator-framework/api v0.16.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.17.5
@@ -176,7 +176,7 @@ require (
 	github.com/onsi/gomega v1.18.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
-	github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // indirect
+	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a // indirect
 	github.com/otiai10/copy v1.2.0 // indirect
 	github.com/pbnjay/strptime v0.0.0-20140226051138-5c05b0d668c9 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
@@ -223,7 +223,7 @@ require (
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
+	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
