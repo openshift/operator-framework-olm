@@ -6,10 +6,14 @@ metadata:
   namespace: openshift-operator-lifecycle-manager
   labels:
 <<<<<<< HEAD
+<<<<<<< HEAD
     olm.version: 0.0.0-99785dad2261fcfbd582e4d4b8abe3da99d14a51
 =======
     olm.version: 0.0.0-ec20167b3d6210d062c84d3ad3f43f4e1bd36ae0
 >>>>>>> 8c124a578 (Fixes doc error: namespace name must have changed (#2839))
+=======
+    olm.version: 0.0.0-a0c41eb1169a64eea5363db2dc5a1f1b7ca58119
+>>>>>>> cb0154b1d (chore: update o-f/api dependency to v0.17 (#2848))
     olm.clusteroperator.name: operator-lifecycle-manager-packageserver
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
@@ -164,10 +168,14 @@ spec:
                         topologyKey: "kubernetes.io/hostname"
   maturity: alpha
 <<<<<<< HEAD
+<<<<<<< HEAD
   version: 0.0.0-99785dad2261fcfbd582e4d4b8abe3da99d14a51
 =======
   version: 0.0.0-ec20167b3d6210d062c84d3ad3f43f4e1bd36ae0
 >>>>>>> 8c124a578 (Fixes doc error: namespace name must have changed (#2839))
+=======
+  version: 0.0.0-a0c41eb1169a64eea5363db2dc5a1f1b7ca58119
+>>>>>>> cb0154b1d (chore: update o-f/api dependency to v0.17 (#2848))
   apiservicedefinitions:
     owned:
       - group: packages.operators.coreos.com
