@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/pkg/api"
 	health "github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1"
 	"github.com/operator-framework/operator-registry/pkg/lib/dns"
@@ -23,6 +22,8 @@ import (
 
 type serve struct {
 	configDir string
+	cacheDir  string
+	cacheOnly bool
 
 	port           string
 	terminationLog string
@@ -78,24 +79,18 @@ func (s *serve) run(ctx context.Context) error {
 
 	s.logger = s.logger.WithFields(logrus.Fields{"configs": s.configDir, "port": s.port})
 
-	cfg, err := declcfg.LoadFS(os.DirFS(s.configDir))
-	if err != nil {
-		return fmt.Errorf("load declarative config directory: %v", err)
-	}
-
-	m, err := declcfg.ConvertToModel(*cfg)
-	if err != nil {
-		return fmt.Errorf("could not build index model from declarative config: %v", err)
-	}
-	store, err := registry.NewQuerier(m)
+	store, err := registry.NewQuerierFromFS(os.DirFS(s.configDir), s.cacheDir)
 	defer store.Close()
 	if err != nil {
 		return err
 	}
+	if s.cacheOnly {
+		return nil
+	}
 
 	lis, err := net.Listen("tcp", ":"+s.port)
 	if err != nil {
-		s.logger.Fatalf("failed to listen: %s", err)
+		return fmt.Errorf("failed to listen: %s", err)
 	}
 
 	grpcServer := grpc.NewServer()
