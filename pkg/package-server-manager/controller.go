@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/go-logr/logr"
@@ -85,11 +86,12 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	res, err := controllerutil.CreateOrUpdate(ctx, r.Client, required, func() error {
 		return reconcileCSV(r.Log, r.Image, required, highAvailabilityMode)
 	})
+
+	log.Info("reconciliation result", "res", res)
 	if err != nil {
 		log.Error(err, "failed to create or update the packageserver csv")
 		return ctrl.Result{}, nil
 	}
-	log.Info("reconciliation result", "res", res)
 
 	return ctrl.Result{}, nil
 }
@@ -98,19 +100,13 @@ func reconcileCSV(log logr.Logger, image string, csv *olmv1alpha1.ClusterService
 	if csv.ObjectMeta.CreationTimestamp.IsZero() {
 		log.Info("attempting to create the packageserver csv")
 	}
-	if !validateCSV(log, csv) {
-		log.Info("updating invalid csv to use the default configuration")
-		tmp, err := manifests.NewPackageServerCSV(
-			manifests.WithName(csv.Name),
-			manifests.WithNamespace(csv.Namespace),
-			manifests.WithImage(image),
-		)
-		if err != nil {
-			return err
-		}
-		csv.Spec = tmp.Spec
+
+	modified, err := ensureCSV(log, image, csv, highAvailabilityMode)
+	if err != nil {
+		return fmt.Errorf("error ensuring CSV: %v", err)
 	}
-	if !ensureCSV(log, image, csv, highAvailabilityMode) {
+
+	if !modified {
 		log.V(3).Info("no further updates are necessary to the packageserver csv")
 	}
 
