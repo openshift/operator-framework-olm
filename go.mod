@@ -3,6 +3,7 @@ module github.com/openshift/operator-framework-olm
 go 1.18
 
 require (
+	github.com/blang/semver/v4 v4.0.0
 	github.com/go-bindata/go-bindata/v3 v3.1.3
 	github.com/go-logr/logr v1.2.2
 	github.com/golang/mock v1.6.0
@@ -72,7 +73,6 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
-	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chai2010/gettext-go v0.0.0-20160711120539-c6fed771bfd5 // indirect
 	github.com/containerd/cgroups v1.0.3 // indirect
