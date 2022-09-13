@@ -25,7 +25,7 @@ require (
 	github.com/openshift/api v0.0.0-20220525145417-ee5b62754c68
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a
 	github.com/openshift/cluster-policy-controller v0.0.0-20230217170320-ac01e3463245
-	github.com/operator-framework/api v0.17.0
+	github.com/operator-framework/api v0.16.0
 	github.com/operator-framework/operator-registry v1.17.5
 	github.com/otiai10/copy v1.2.0
 	github.com/pkg/errors v0.9.1
