@@ -636,7 +636,7 @@ github.com/openshift/client-go/config/listers/config/v1
 # github.com/openshift/cluster-policy-controller v0.0.0-20220825134653-523e4104074f
 ## explicit; go 1.18
 github.com/openshift/cluster-policy-controller/pkg/psalabelsyncer/nsexemptions
-# github.com/operator-framework/api v0.16.0 => ./staging/api
+# github.com/operator-framework/api v0.17.1 => ./staging/api
 ## explicit; go 1.18
 github.com/operator-framework/api/crds
 github.com/operator-framework/api/pkg/constraints
