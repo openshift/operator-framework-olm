@@ -9,4 +9,4 @@ metadata:
   namespace: openshift-operator-lifecycle-manager
 data:
   pprof-config.yaml: |
-    disabled: False
+    disabled: True

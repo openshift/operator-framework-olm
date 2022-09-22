@@ -208,7 +208,7 @@ metadata:
   namespace: openshift-operator-lifecycle-manager
 data:
   pprof-config.yaml: |
-    disabled: False
+    disabled: True
 EOF
 
 cat << EOF > manifests/0000_50_olm_00-pprof-rbac.yaml
