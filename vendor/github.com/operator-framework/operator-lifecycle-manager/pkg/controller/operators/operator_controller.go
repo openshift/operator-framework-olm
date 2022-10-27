@@ -3,6 +3,7 @@ package operators
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -152,9 +153,11 @@ func (r *OperatorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			return ctrl.Result{Requeue: true}, nil
 		}
 	} else {
-		if err := r.Status().Update(ctx, operator.Operator); err != nil {
-			log.Error(err, "Could not update Operator status")
-			return ctrl.Result{Requeue: true}, nil
+		if !reflect.DeepEqual(in.Status, operator.Operator.Status) {
+			if err := r.Status().Update(ctx, operator.Operator); err != nil {
+				log.Error(err, "Could not update Operator status")
+				return ctrl.Result{Requeue: true}, nil
+			}
 		}
 	}
 
