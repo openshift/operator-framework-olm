@@ -1060,6 +1060,8 @@ github.com/openshift/api v0.0.0-20221021112143-4226c2167e40 h1:PxjGCA72RtsdHWToZ
 github.com/openshift/api v0.0.0-20221021112143-4226c2167e40/go.mod h1:aQ6LDasvHMvHZXqLHnX2GRmnfTWCF/iIwz8EMTTIE9A=
 github.com/openshift/client-go v0.0.0-20221019143426-16aed247da5c h1:CV76yFOTXmq9VciBR3Bve5ZWzSxdft7gaMVB3kS0rwg=
 github.com/openshift/client-go v0.0.0-20221019143426-16aed247da5c/go.mod h1:lFMO8mLHXWFzSdYvGNo8ivF9SfF6zInA8ZGw4phRnUE=
+github.com/openshift/cluster-policy-controller v0.0.0-20220825134653-523e4104074f h1:ll0eE7rgGHsFlrI6ksr6nXL2ur8GYBe8Jj0GwNQ/1+o=
+github.com/openshift/cluster-policy-controller v0.0.0-20220825134653-523e4104074f/go.mod h1:r9ZZT5wjwoS2heBfYR26uJhhkGYwgmFqomu9ww0y9Qw=
 github.com/openzipkin/zipkin-go v0.1.6/go.mod h1:QgAqvLzwWbR/WpD4A3cGpPtJrZXNIiJc5AZX7/PBEpw=
 github.com/operator-framework/api v0.7.1/go.mod h1:L7IvLd/ckxJEJg/t4oTTlnHKAJIP/p51AvEslW3wYdY=
 github.com/operator-framework/api v0.17.1 h1:J/6+Xj4IEV8C7hcirqUFwOiZAU3PbnJhWvB0/bB51c4=
