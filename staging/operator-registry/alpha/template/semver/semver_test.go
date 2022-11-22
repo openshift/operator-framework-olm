@@ -5,31 +5,38 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
+	"github.com/stretchr/testify/require"
+
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/alpha/property"
-	"github.com/stretchr/testify/require"
 )
 
 func TestLinkChannels(t *testing.T) {
-	// type entryTuple struct {
-	// 	arch    channelArchetype
-	// 	kind    streamType
-	// 	name    string
-	// 	parent  string
-	// 	index   int
-	// 	version semver.Version
-	// }
-
-	majorChannelEntries := []entryTuple{
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v0.1.0", parent: "stable-v0", index: 0, version: semver.MustParse("0.1.0")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v0.1.1", parent: "stable-v0", index: 1, version: semver.MustParse("0.1.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.1.0", parent: "stable-v1", index: 0, version: semver.MustParse("1.1.0")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.2.1", parent: "stable-v1", index: 1, version: semver.MustParse("1.2.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.3.1", parent: "stable-v1", index: 2, version: semver.MustParse("1.3.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.1.0", parent: "stable-v2", index: 0, version: semver.MustParse("2.1.0")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.1.1", parent: "stable-v2", index: 1, version: semver.MustParse("2.1.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.3.1", parent: "stable-v2", index: 2, version: semver.MustParse("2.3.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.3.2", parent: "stable-v2", index: 3, version: semver.MustParse("2.3.2")},
+	// type semverRenderedChannelVersions map[string]map[string]semver.Version // e.g. d["stable-v1"]["example-operator/v1.0.0"] = 1.0.0
+	channelOperatorVersions := semverRenderedChannelVersions{
+		"stable": {
+			"a-v0.1.0": semver.MustParse("0.1.0"),
+			"a-v0.1.1": semver.MustParse("0.1.1"),
+			"a-v1.1.0": semver.MustParse("1.1.0"),
+			"a-v1.2.1": semver.MustParse("1.2.1"),
+			"a-v1.3.1": semver.MustParse("1.3.1"),
+			"a-v2.1.0": semver.MustParse("2.1.0"),
+			"a-v2.1.1": semver.MustParse("2.1.1"),
+			"a-v2.3.1": semver.MustParse("2.3.1"),
+			"a-v2.3.2": semver.MustParse("2.3.2"),
+		},
+	}
+	// map[string]string
+	channelNameToKind := map[string]string{
+		"stable-v0":   "stable",
+		"stable-v1":   "stable",
+		"stable-v2":   "stable",
+		"stable-v0.1": "stable",
+		"stable-v1.1": "stable",
+		"stable-v1.2": "stable",
+		"stable-v1.3": "stable",
+		"stable-v2.1": "stable",
+		"stable-v2.3": "stable",
 	}
 
 	majorGeneratedUnlinkedChannels := map[string]*declcfg.Channel{
@@ -65,16 +72,120 @@ func TestLinkChannels(t *testing.T) {
 		},
 	}
 
+	minorGeneratedUnlinkedChannels := map[string]*declcfg.Channel{
+		"stable-v0.1": {
+			Schema:  "olm.channel",
+			Name:    "stable-v0.1",
+			Package: "a",
+			Entries: []declcfg.ChannelEntry{
+				{Name: "a-v0.1.0"},
+				{Name: "a-v0.1.1"},
+			},
+		},
+		"stable-v1.1": {
+			Schema:  "olm.channel",
+			Name:    "stable-v1.1",
+			Package: "a",
+			Entries: []declcfg.ChannelEntry{
+				{Name: "a-v1.1.0"},
+			},
+		},
+		"stable-v1.2": {
+			Schema:  "olm.channel",
+			Name:    "stable-v1.2",
+			Package: "a",
+			Entries: []declcfg.ChannelEntry{
+				{Name: "a-v1.2.1"},
+			},
+		},
+		"stable-v1.3": {
+			Schema:  "olm.channel",
+			Name:    "stable-v1.3",
+			Package: "a",
+			Entries: []declcfg.ChannelEntry{
+				{Name: "a-v1.3.1"},
+			},
+		},
+		"stable-v2.1": {
+			Schema:  "olm.channel",
+			Name:    "stable-v2.1",
+			Package: "a",
+			Entries: []declcfg.ChannelEntry{
+				{Name: "a-v2.1.0"},
+				{Name: "a-v2.1.1"},
+			},
+		},
+		"stable-v2.3": {
+			Schema:  "olm.channel",
+			Name:    "stable-v2.3",
+			Package: "a",
+			Entries: []declcfg.ChannelEntry{
+				{Name: "a-v2.3.1"},
+				{Name: "a-v2.3.2"},
+			},
+		},
+		"stable-v3.1": {
+			Schema:  "olm.channel",
+			Name:    "stable-v3.1",
+			Package: "a",
+			Entries: []declcfg.ChannelEntry{
+				{Name: "a-v3.1.0"},
+				{Name: "a-v3.1.1"},
+			},
+		},
+	}
+
 	tests := []struct {
 		name                  string
 		unlinkedChannels      map[string]*declcfg.Channel
+		avoidSkipPatch        bool
 		generateMinorChannels bool
 		generateMajorChannels bool
 		out                   []declcfg.Channel
 	}{
 		{
-			name:                  "No edges between successive major channels",
+			name:                  "NoSkipPatch/No edges between successive major channels",
 			unlinkedChannels:      majorGeneratedUnlinkedChannels,
+			avoidSkipPatch:        true,
+			generateMinorChannels: false,
+			generateMajorChannels: true,
+			out: []declcfg.Channel{
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v0",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v0.1.0", Replaces: ""},
+						{Name: "a-v0.1.1", Replaces: "a-v0.1.0"},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v1",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v1.1.0", Replaces: ""},
+						{Name: "a-v1.2.1", Replaces: "a-v1.1.0"},
+						{Name: "a-v1.3.1", Replaces: "a-v1.2.1"},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v2",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v2.1.0", Replaces: ""},
+						{Name: "a-v2.1.1", Replaces: "a-v2.1.0"},
+						{Name: "a-v2.3.1", Replaces: "a-v2.1.1"},
+						{Name: "a-v2.3.2", Replaces: "a-v2.3.1"},
+					},
+				},
+			},
+		},
+		{
+			name:                  "SkipPatch/No edges between successive major channels",
+			unlinkedChannels:      majorGeneratedUnlinkedChannels,
+			avoidSkipPatch:        false,
 			generateMinorChannels: false,
 			generateMajorChannels: true,
 			out: []declcfg.Channel{
@@ -94,7 +205,7 @@ func TestLinkChannels(t *testing.T) {
 					Entries: []declcfg.ChannelEntry{
 						{Name: "a-v1.1.0", Replaces: "", Skips: []string{}},
 						{Name: "a-v1.2.1", Replaces: "a-v1.1.0", Skips: []string{}},
-						{Name: "a-v1.3.1", Replaces: "a-v1.2.1", Skips: []string{"a-v1.1.0"}},
+						{Name: "a-v1.3.1", Replaces: "a-v1.2.1", Skips: []string{}},
 					},
 				},
 				{
@@ -105,52 +216,84 @@ func TestLinkChannels(t *testing.T) {
 						{Name: "a-v2.1.0", Replaces: ""},
 						{Name: "a-v2.1.1", Replaces: "", Skips: []string{"a-v2.1.0"}},
 						{Name: "a-v2.3.1", Replaces: ""},
-						{Name: "a-v2.3.2", Replaces: "a-v2.1.1", Skips: []string{"a-v2.1.0", "a-v2.3.1"}},
+						{Name: "a-v2.3.2", Replaces: "a-v2.1.1", Skips: []string{"a-v2.3.1"}},
 					},
 				},
 			},
 		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sv := &semverTemplate{pkg: "a", GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels}
-			require.ElementsMatch(t, tt.out, sv.linkChannels(tt.unlinkedChannels, majorChannelEntries))
-		})
-	}
-}
-
-func TestGenerateChannels(t *testing.T) {
-	// type bundleVersions map[string]map[string]semver.Version // e.g. d["stable"]["example-operator.v1.0.0"] = 1.0.0
-	channelOperatorVersions := bundleVersions{
-		"stable": {
-			"a-v0.1.0":       semver.MustParse("0.1.0"),
-			"a-v0.1.1":       semver.MustParse("0.1.1"),
-			"a-v1.1.0":       semver.MustParse("1.1.0"),
-			"a-v1.2.1":       semver.MustParse("1.2.1"),
-			"a-v1.3.1":       semver.MustParse("1.3.1"),
-			"a-v2.1.0":       semver.MustParse("2.1.0"),
-			"a-v1.3.1-beta":  semver.MustParse(("1.3.1-beta")),
-			"a-v2.1.1":       semver.MustParse("2.1.1"),
-			"a-v2.3.1":       semver.MustParse("2.3.1"),
-			"a-v2.3.2":       semver.MustParse("2.3.2"),
-			"a-v3.1.0":       semver.MustParse("3.1.0"),
-			"a-v3.1.1":       semver.MustParse("3.1.1"),
-			"a-v1.3.1-alpha": semver.MustParse("1.3.1-alpha"),
-			"a-v1.4.1":       semver.MustParse("1.4.1"),
-			"a-v1.4.1-beta1": semver.MustParse("1.4.1-beta1"),
-			"a-v1.4.1-beta2": semver.MustParse("1.4.1-beta2"),
-		},
-	}
-
-	tests := []struct {
-		name                  string
-		generateMinorChannels bool
-		generateMajorChannels bool
-		out                   []declcfg.Channel
-	}{
 		{
-			name:                  "Edges between minor channels",
+			name:                  "NoSkipPatch/No edges between minor channels",
+			unlinkedChannels:      minorGeneratedUnlinkedChannels,
+			avoidSkipPatch:        true,
+			generateMinorChannels: true,
+			generateMajorChannels: false,
+			out: []declcfg.Channel{
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v0.1",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v0.1.0", Replaces: ""},
+						{Name: "a-v0.1.1", Replaces: "a-v0.1.0"},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v1.1",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v1.1.0", Replaces: ""},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v1.2",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v1.2.1", Replaces: ""},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v1.3",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v1.3.1", Replaces: ""},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v2.1",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v2.1.0", Replaces: ""},
+						{Name: "a-v2.1.1", Replaces: "a-v2.1.0"},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v2.3",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v2.3.1", Replaces: ""},
+						{Name: "a-v2.3.2", Replaces: "a-v2.3.1"},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v3.1",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v3.1.0", Replaces: ""},
+						{Name: "a-v3.1.1", Replaces: "a-v3.1.0"},
+					},
+				},
+			},
+		},
+		{
+			name:                  "SkipPatch/No edges between minor channels",
+			unlinkedChannels:      minorGeneratedUnlinkedChannels,
+			avoidSkipPatch:        false,
 			generateMinorChannels: true,
 			generateMajorChannels: false,
 			out: []declcfg.Channel{
@@ -176,7 +319,7 @@ func TestGenerateChannels(t *testing.T) {
 					Name:    "stable-v1.2",
 					Package: "a",
 					Entries: []declcfg.ChannelEntry{
-						{Name: "a-v1.2.1", Replaces: "a-v1.1.0", Skips: []string{}},
+						{Name: "a-v1.2.1", Replaces: "", Skips: []string{}},
 					},
 				},
 				{
@@ -184,19 +327,7 @@ func TestGenerateChannels(t *testing.T) {
 					Name:    "stable-v1.3",
 					Package: "a",
 					Entries: []declcfg.ChannelEntry{
-						{Name: "a-v1.3.1-alpha", Replaces: ""},
-						{Name: "a-v1.3.1-beta", Replaces: ""},
-						{Name: "a-v1.3.1", Replaces: "a-v1.2.1", Skips: []string{"a-v1.1.0", "a-v1.3.1-alpha", "a-v1.3.1-beta"}},
-					},
-				},
-				{
-					Schema:  "olm.channel",
-					Name:    "stable-v1.4",
-					Package: "a",
-					Entries: []declcfg.ChannelEntry{
-						{Name: "a-v1.4.1-beta1", Replaces: ""},
-						{Name: "a-v1.4.1-beta2", Replaces: ""},
-						{Name: "a-v1.4.1", Replaces: "a-v1.3.1", Skips: []string{"a-v1.1.0", "a-v1.2.1", "a-v1.3.1-alpha", "a-v1.3.1-beta", "a-v1.4.1-beta1", "a-v1.4.1-beta2"}},
+						{Name: "a-v1.3.1", Replaces: "", Skips: []string{}},
 					},
 				},
 				{
@@ -214,7 +345,7 @@ func TestGenerateChannels(t *testing.T) {
 					Package: "a",
 					Entries: []declcfg.ChannelEntry{
 						{Name: "a-v2.3.1", Replaces: ""},
-						{Name: "a-v2.3.2", Replaces: "a-v2.1.1", Skips: []string{"a-v2.1.0", "a-v2.3.1"}},
+						{Name: "a-v2.3.2", Replaces: "", Skips: []string{"a-v2.3.1"}},
 					},
 				},
 				{
@@ -232,7 +363,132 @@ func TestGenerateChannels(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sv := &semverTemplate{GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels, pkg: "a"}
+			// map[string]*declcfg.Channel
+			unlinkedChannels := map[string]*declcfg.Channel{}
+			for c, e := range tt.unlinkedChannels {
+				unlinkedChannels[c] = e
+			}
+			sv := &semverVeneer{AvoidSkipPatch: tt.avoidSkipPatch, GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels}
+			require.ElementsMatch(t, tt.out, sv.linkChannels(unlinkedChannels, "a", &channelOperatorVersions, &channelNameToKind))
+		})
+	}
+}
+
+func TestGenerateChannels(t *testing.T) {
+	// type semverRenderedChannelVersions map[string]map[string]semver.Version // e.g. d["stable-v1"]["example-operator/v1.0.0"] = 1.0.0
+	channelOperatorVersions := semverRenderedChannelVersions{
+		"stable": {
+			"a-v0.1.0":       semver.MustParse("0.1.0"),
+			"a-v0.1.1":       semver.MustParse("0.1.1"),
+			"a-v1.1.0":       semver.MustParse("1.1.0"),
+			"a-v1.2.1":       semver.MustParse("1.2.1"),
+			"a-v1.3.1":       semver.MustParse("1.3.1"),
+			"a-v2.1.0":       semver.MustParse("2.1.0"),
+			"a-v1.3.1-beta":  semver.MustParse(("1.3.1-beta")),
+			"a-v2.1.1":       semver.MustParse("2.1.1"),
+			"a-v2.3.1":       semver.MustParse("2.3.1"),
+			"a-v2.3.2":       semver.MustParse("2.3.2"),
+			"a-v3.1.0":       semver.MustParse("3.1.0"),
+			"a-v3.1.1":       semver.MustParse("3.1.1"),
+			"a-v1.3.1-alpha": semver.MustParse("1.3.1-alpha"),
+			"a-v1.4.1":       semver.MustParse("1.4.1"),
+			"a-v1.4.1-beta1": semver.MustParse("1.4.1-beta1"),
+			"a-v1.4.1-beta2": semver.MustParse("1.4.1-beta2"),
+		},
+	}
+
+	tests := []struct {
+		name                  string
+		avoidSkipPatch        bool
+		generateMinorChannels bool
+		generateMajorChannels bool
+		out                   []declcfg.Channel
+	}{
+		{
+			name:                  "SkipPatch/No edges between minor channels",
+			avoidSkipPatch:        false,
+			generateMinorChannels: true,
+			generateMajorChannels: false,
+			out: []declcfg.Channel{
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v0.1",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v0.1.0", Replaces: ""},
+						{Name: "a-v0.1.1", Replaces: "", Skips: []string{"a-v0.1.0"}},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v1.1",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v1.1.0", Replaces: "", Skips: []string{}},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v1.2",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v1.2.1", Replaces: "", Skips: []string{}},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v1.3",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v1.3.1-alpha", Replaces: ""},
+						{Name: "a-v1.3.1-beta", Replaces: ""},
+						{Name: "a-v1.3.1", Replaces: "", Skips: []string{"a-v1.3.1-alpha", "a-v1.3.1-beta"}},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v1.4",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v1.4.1-beta1", Replaces: ""},
+						{Name: "a-v1.4.1-beta2", Replaces: ""},
+						{Name: "a-v1.4.1", Replaces: "", Skips: []string{"a-v1.4.1-beta1", "a-v1.4.1-beta2"}},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v2.1",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v2.1.0", Replaces: ""},
+						{Name: "a-v2.1.1", Replaces: "", Skips: []string{"a-v2.1.0"}},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v2.3",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v2.3.1", Replaces: ""},
+						{Name: "a-v2.3.2", Replaces: "", Skips: []string{"a-v2.3.1"}},
+					},
+				},
+				{
+					Schema:  "olm.channel",
+					Name:    "stable-v3.1",
+					Package: "a",
+					Entries: []declcfg.ChannelEntry{
+						{Name: "a-v3.1.0", Replaces: ""},
+						{Name: "a-v3.1.1", Replaces: "", Skips: []string{"a-v3.1.0"}},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sv := &semverVeneer{AvoidSkipPatch: tt.avoidSkipPatch, GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels, pkg: "a"}
 			require.ElementsMatch(t, tt.out, sv.generateChannels(&channelOperatorVersions))
 		})
 	}
@@ -241,15 +497,15 @@ func TestGenerateChannels(t *testing.T) {
 func TestGetVersionsFromStandardChannel(t *testing.T) {
 	tests := []struct {
 		name        string
-		sv          semverTemplate
-		outVersions bundleVersions
+		sv          semverVeneer
+		outVersions semverRenderedChannelVersions
 		dc          declcfg.DeclarativeConfig
 	}{
 		{
 			name: "sunny day case",
-			sv: semverTemplate{
-				Stable: semverTemplateChannelBundles{
-					[]semverTemplateBundleEntry{
+			sv: semverVeneer{
+				Stable: stableBundles{
+					[]semverVeneerBundleEntry{
 						{Image: "repo/origin/a-v0.1.0"},
 						{Image: "repo/origin/a-v0.1.1"},
 						{Image: "repo/origin/a-v1.1.0"},
@@ -263,7 +519,7 @@ func TestGetVersionsFromStandardChannel(t *testing.T) {
 					},
 				},
 			},
-			outVersions: bundleVersions{
+			outVersions: semverRenderedChannelVersions{
 				"candidate": map[string]semver.Version{},
 				"fast":      map[string]semver.Version{},
 				"stable": {
@@ -314,9 +570,9 @@ func TestGetVersionsFromStandardChannel(t *testing.T) {
 }
 
 func TestBailOnVersionBuildMetadata(t *testing.T) {
-	sv := semverTemplate{
-		Stable: semverTemplateChannelBundles{
-			[]semverTemplateBundleEntry{
+	sv := semverVeneer{
+		Stable: stableBundles{
+			[]semverVeneerBundleEntry{
 				{Image: "repo/origin/a-v0.1.0"},
 				{Image: "repo/origin/a-v0.1.1"},
 				{Image: "repo/origin/a-v1.1.0"},
@@ -366,7 +622,7 @@ func TestReadFile(t *testing.T) {
 	type testCase struct {
 		name       string
 		input      string
-		assertions func(*testing.T, *semverTemplate, error)
+		assertions func(*testing.T, *semverVeneer, error)
 	}
 	testCases := []testCase{
 		{
@@ -399,8 +655,8 @@ stable:
     bundles:
         - image: quay.io/foo/olm:testoperator.v1.0.1
 `,
-			assertions: func(t *testing.T, template *semverTemplate, err error) {
-				require.NotNil(t, template)
+			assertions: func(t *testing.T, veneer *semverVeneer, err error) {
+				require.NotNil(t, veneer)
 				require.NoError(t, err)
 			},
 		},
@@ -437,8 +693,8 @@ invalid:
     bundles:
         - image: quay.io/foo/olm:testoperator.v1.0.1
 `,
-			assertions: func(t *testing.T, template *semverTemplate, err error) {
-				require.Nil(t, template)
+			assertions: func(t *testing.T, veneer *semverVeneer, err error) {
+				require.Nil(t, veneer)
 				require.EqualError(t, err, `error unmarshaling JSON: while decoding JSON: json: unknown field "invalid"`)
 			},
 		},
