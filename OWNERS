@@ -1,23 +1,21 @@
 approvers:
-  - njhale
   - dinhxuanvu
   - kevinrizza
-  - gallettilance
   - anik120
   - awgreene
   - ankitathomas
   - joelanford
-  - timflannagan
   - perdasilva
+  - oceanc80
+  - grokspawn
 reviewers:
   - dinhxuanvu
   - kevinrizza
-  - benluddy
-  - gallettilance
   - anik120
   - awgreene
   - ankitathomas
   - joelanford
-  - timflannagan
   - perdasilva
+  - oceanc80
+  - grokspawn
 component: "OLM"
