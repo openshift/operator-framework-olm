@@ -11,7 +11,7 @@ endif
 SHELL := /bin/bash
 ORG := github.com/operator-framework
 PKG   := $(ORG)/operator-lifecycle-manager
-MOD_FLAGS := $(shell (go version | grep -q -E "1\.1[1-9]") && echo -mod=vendor)
+MOD_FLAGS := $(shell (go version | grep -q -E "1\.1[1-9]") && echo -mod=vendor && echo -buildvcs=false)
 BUILD_TAGS := "json1"
 CMDS  := $(shell go list $(MOD_FLAGS) ./cmd/...)
 TCMDS := $(shell go list $(MOD_FLAGS) ./test/e2e/...)
@@ -96,7 +96,7 @@ build-util-linux: build-util
 build-util: bin/cpb
 
 bin/cpb: FORCE
-	CGO_ENABLED=0 $(arch_flags) go build $(MOD_FLAGS) -ldflags '-extldflags "-static"' -o $@ ./util/cpb
+	CGO_ENABLED=0 $(arch_flags) go build -buildvcs=false $(MOD_FLAGS) -ldflags '-extldflags "-static"' -o $@ ./util/cpb
 
 $(CMDS): version_flags=-ldflags "-X $(PKG)/pkg/version.GitCommit=$(GIT_COMMIT) -X $(PKG)/pkg/version.OLMVersion=`cat OLM_VERSION`"
 $(CMDS):
@@ -142,7 +142,7 @@ e2e:
 
 # See workflows/e2e-tests.yml See test/e2e/README.md for details.
 .PHONY: e2e-local
-e2e-local: BUILD_TAGS="json1 experimental_metrics"
+e2e-local: BUILD_TAGS="json1 e2e experimental_metrics"
 e2e-local: extra_args=-kind.images=../test/e2e-local.image.tar -test-data-dir=../test/e2e/testdata -gather-artifacts-script-path=../test/e2e/collect-ci-artifacts.sh
 e2e-local: run=bin/e2e-local.test
 e2e-local: bin/e2e-local.test test/e2e-local.image.tar
