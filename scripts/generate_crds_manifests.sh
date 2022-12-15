@@ -407,3 +407,8 @@ find "${ROOT_DIR}/manifests" -type f -exec $SED -i "1{/---/d}" {} \;
 
 # (anik120): uncomment this once https://issues.redhat.com/browse/OLM-2695 is Done. 
 #${YQ} delete --inplace -d'1' manifests/0000_50_olm_00-namespace.yaml 'metadata.labels."pod-security.kubernetes.io/enforce*"'
+
+# Unlike the namespaces shipped in the upstream version, the openshift-operator-lifecycle-manager and openshift-operator
+# namespaces enforce restricted PSA policies, so warnings and audits labels are not neccessary.
+${YQ} delete --inplace -d'*' manifests/0000_50_olm_00-namespace.yaml 'metadata.labels."pod-security.kubernetes.io/warn*"'
+${YQ} delete --inplace -d'*' manifests/0000_50_olm_00-namespace.yaml 'metadata.labels."pod-security.kubernetes.io/audit*"'
