@@ -286,6 +286,9 @@ spec:
   jobTemplate:
     spec:
       template:
+        metadata:
+          annotations:
+            target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
         spec:
           securityContext:
             runAsNonRoot: true
