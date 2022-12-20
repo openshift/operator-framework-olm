@@ -707,6 +707,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/lib/crd
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/csv
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/event
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/filemonitor
+github.com/operator-framework/operator-lifecycle-manager/pkg/lib/image
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/index
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/apis/rbac
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/apis/rbac/v1
