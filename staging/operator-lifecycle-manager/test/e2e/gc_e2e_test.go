@@ -11,7 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
@@ -109,14 +109,14 @@ var _ = Describe("Garbage collection for dependent resources", func() {
 				// Delete CRD
 				Eventually(func() bool {
 					err := kubeClient.ApiextensionsInterface().ApiextensionsV1().CustomResourceDefinitions().Delete(context.Background(), crd.GetName(), metav1.DeleteOptions{})
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 			})
 
 			It("should delete the associated ClusterRole", func() {
 				Eventually(func() bool {
 					_, err := kubeClient.GetClusterRole(cr.GetName())
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue(), "get cluster role should eventually return \"not found\"")
 			})
 
@@ -179,14 +179,14 @@ var _ = Describe("Garbage collection for dependent resources", func() {
 				// Delete API service
 				Eventually(func() bool {
 					err := kubeClient.DeleteAPIService(apiService.GetName(), &metav1.DeleteOptions{})
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 			})
 
 			It("should delete the associated ClusterRole", func() {
 				Eventually(func() bool {
 					_, err := kubeClient.GetClusterRole(cr.GetName())
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue(), "get cluster role should eventually return \"not found\"")
 			})
 
@@ -256,13 +256,13 @@ var _ = Describe("Garbage collection for dependent resources", func() {
 				// delete ownerA in the foreground (to ensure any "blocking" dependents are deleted before ownerA)
 				Eventually(func() bool {
 					err := operatorClient.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Delete(context.Background(), fetchedA.GetName(), options)
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 
 				// wait for deletion of ownerA
 				Eventually(func() bool {
 					_, err := operatorClient.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Get(context.Background(), ownerA.GetName(), metav1.GetOptions{})
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 			})
 
@@ -281,32 +281,32 @@ var _ = Describe("Garbage collection for dependent resources", func() {
 				// delete ownerA in the foreground (to ensure any "blocking" dependents are deleted before ownerA)
 				Eventually(func() bool {
 					err := operatorClient.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Delete(context.Background(), fetchedA.GetName(), options)
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 
 				// wait for deletion of ownerA
 				Eventually(func() bool {
 					_, err := operatorClient.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Get(context.Background(), ownerA.GetName(), metav1.GetOptions{})
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 
 				// delete ownerB in the foreground (to ensure any "blocking" dependents are deleted before ownerB)
 				Eventually(func() bool {
 					err := operatorClient.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Delete(context.Background(), fetchedB.GetName(), options)
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 
 				// wait for deletion of ownerB
 				Eventually(func() bool {
 					_, err := operatorClient.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Get(context.Background(), ownerB.GetName(), metav1.GetOptions{})
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 			})
 
 			It("should have deleted the dependent since both the owners were deleted", func() {
 				Eventually(func() bool {
 					_, err := kubeClient.KubernetesInterface().CoreV1().ConfigMaps(testNamespace).Get(context.Background(), dependent.GetName(), metav1.GetOptions{})
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue(), "expected dependency configmap would be properly garabage collected")
 				ctx.Ctx().Logf("dependent successfully garbage collected after both owners were deleted")
 			})
@@ -396,25 +396,25 @@ var _ = Describe("Garbage collection for dependent resources", func() {
 				// Delete subscription first
 				Eventually(func() bool {
 					err := operatorClient.OperatorsV1alpha1().Subscriptions(testNamespace).Delete(context.Background(), subName, metav1.DeleteOptions{})
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 
 				// wait for deletion
 				Eventually(func() bool {
 					_, err := operatorClient.OperatorsV1alpha1().Subscriptions(testNamespace).Get(context.Background(), subName, metav1.GetOptions{})
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 
 				// Delete CSV
 				Eventually(func() bool {
 					err := operatorClient.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Delete(context.Background(), csvName, metav1.DeleteOptions{})
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 
 				// wait for deletion
 				Eventually(func() bool {
 					_, err := operatorClient.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Get(context.Background(), csvName, metav1.GetOptions{})
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 			})
 
@@ -422,12 +422,12 @@ var _ = Describe("Garbage collection for dependent resources", func() {
 				// confirm extra bundle objects (secret and configmap) are no longer installed on the cluster
 				Eventually(func() bool {
 					_, err := kubeClient.GetSecret(testNamespace, secretName)
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 
 				Eventually(func() bool {
 					_, err := kubeClient.GetConfigMap(testNamespace, configmapName)
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 				ctx.Ctx().Logf("dependent successfully garbage collected after csv owner was deleted")
 			})
@@ -649,7 +649,7 @@ var _ = Describe("Garbage collection for dependent resources", func() {
 			It("should have removed the old configmap and put the new configmap in place", func() {
 				Eventually(func() bool {
 					_, err := kubeClient.GetConfigMap(testNamespace, configmapName)
-					return k8serrors.IsNotFound(err)
+					return apierrors.IsNotFound(err)
 				}).Should(BeTrue())
 
 				Eventually(func() error {
