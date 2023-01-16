@@ -26,7 +26,7 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -275,7 +275,7 @@ var _ = Describe("Install Plan", func() {
 		AfterEach(func() {
 			Eventually(func() error {
 				return ctx.Ctx().Client().Delete(context.Background(), &crd)
-			}).Should(WithTransform(k8serrors.IsNotFound, BeTrue()))
+			}).Should(WithTransform(apierrors.IsNotFound, BeTrue()))
 		})
 
 		It("is annotated with a reference to its associated ClusterServiceVersion", func() {
@@ -416,7 +416,7 @@ var _ = Describe("Install Plan", func() {
 		AfterEach(func() {
 			Expect(ctx.Ctx().Client().Delete(context.Background(), owned)).To(Or(
 				Succeed(),
-				WithTransform(k8serrors.IsNotFound, BeTrue()),
+				WithTransform(apierrors.IsNotFound, BeTrue()),
 			))
 		})
 
@@ -517,7 +517,7 @@ var _ = Describe("Install Plan", func() {
 		AfterEach(func() {
 			Expect(ctx.Ctx().Client().Delete(context.TODO(), &sa)).To(Or(
 				Succeed(),
-				WithTransform(k8serrors.IsNotFound, BeTrue()),
+				WithTransform(apierrors.IsNotFound, BeTrue()),
 			))
 		})
 
@@ -2712,7 +2712,7 @@ var _ = Describe("Install Plan", func() {
 				err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
 					_, err = c.GetClusterRole(step.Resource.Name)
 					if err != nil {
-						if k8serrors.IsNotFound(err) {
+						if apierrors.IsNotFound(err) {
 							return false, nil
 						}
 						return false, err
@@ -2725,7 +2725,7 @@ var _ = Describe("Install Plan", func() {
 				err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
 					_, err = c.GetClusterRoleBinding(step.Resource.Name)
 					if err != nil {
-						if k8serrors.IsNotFound(err) {
+						if apierrors.IsNotFound(err) {
 							return false, nil
 						}
 						return false, err
@@ -2820,7 +2820,7 @@ var _ = Describe("Install Plan", func() {
 			if err == nil {
 				return fmt.Errorf("The %v/%v ServiceAccount should have been deleted", testNamespace, serviceAccountName)
 			}
-			if !k8serrors.IsNotFound(err) {
+			if !apierrors.IsNotFound(err) {
 				return err
 			}
 			return nil
@@ -4106,7 +4106,7 @@ func waitForInstallPlan(c versioned.Interface, name string, namespace string, ch
 
 	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
 		fetchedInstallPlan, err = c.OperatorsV1alpha1().InstallPlans(namespace).Get(context.TODO(), name, metav1.GetOptions{})
-		if err != nil && !k8serrors.IsNotFound(err) {
+		if err != nil && !apierrors.IsNotFound(err) {
 			return false, err
 		}
 
