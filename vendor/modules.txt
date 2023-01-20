@@ -752,6 +752,7 @@ github.com/operator-framework/operator-registry/alpha/declcfg
 github.com/operator-framework/operator-registry/alpha/model
 github.com/operator-framework/operator-registry/alpha/property
 github.com/operator-framework/operator-registry/alpha/veneer/basic
+github.com/operator-framework/operator-registry/alpha/veneer/composite
 github.com/operator-framework/operator-registry/alpha/veneer/semver
 github.com/operator-framework/operator-registry/cmd/configmap-server
 github.com/operator-framework/operator-registry/cmd/initializer
