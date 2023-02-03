@@ -1607,11 +1607,9 @@ func (a *Operator) transitionCSVState(in v1alpha1.ClusterServiceVersion) (out *v
 			return
 		}
 
-		if out.HasCAResources() {
+		if installer.CertsRotated() {
 			now := metav1.Now()
-			expiration := now.Add(install.DefaultCertValidFor)
-			rotateAt := expiration.Add(-1 * install.DefaultCertMinFresh)
-			rotateTime := metav1.NewTime(rotateAt)
+			rotateTime := metav1.NewTime(installer.CertsRotateAt())
 			out.Status.CertsLastUpdated = &now
 			out.Status.CertsRotateAt = &rotateTime
 		}
