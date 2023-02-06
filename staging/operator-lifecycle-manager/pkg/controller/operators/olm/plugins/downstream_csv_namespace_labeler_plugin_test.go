@@ -306,7 +306,7 @@ func Test_OCPVersion(t *testing.T) {
 	// This list is dependent on the OCP version. Please update the dependency version to correspond to the one
 	// vendored for the new OCP version (or contact the responsible team if it hasn't been updated yet).
 	// Then, bump the OCP version in the `nextOCPUncutBranchName` constant below
-	const nextOCPUncutBranchName = "release-4.14"
+	const nextOCPUncutBranchName = "release-4.15"
 	const errorMessage = "[maintenance alert] new ocp version branch has been cut: please check comments in test for instructions"
 
 	// Get branches
