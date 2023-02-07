@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/plugins"
 	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
 	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/util"
@@ -31,6 +32,10 @@ var _ = Describe("CSV Namespace Labeler Plugin", func() {
 	})
 
 	It("should not label non openshift- namespaces", func() {
+		if !olm.IsPluginEnabled(olm.CsvLabelerPluginId) {
+			Skip("csv labeler plugin is disabled")
+		}
+
 		// create namespace with operator group
 		testNamespace = SetupGeneratedTestNamespace(genName("csv-ns-labeler-"))
 
@@ -46,6 +51,10 @@ var _ = Describe("CSV Namespace Labeler Plugin", func() {
 	})
 
 	It("should label a non-payload openshift- namespace", func() {
+		if !olm.IsPluginEnabled(olm.CsvLabelerPluginId) {
+			Skip("csv labeler plugin is disabled")
+		}
+
 		// create namespace with operator group
 		testNamespace = SetupGeneratedTestNamespace(genName("openshift-csv-ns-labeler-"))
 
@@ -61,6 +70,10 @@ var _ = Describe("CSV Namespace Labeler Plugin", func() {
 	})
 
 	It("should relabel a non-payload openshift- namespace containing csvs if the label is deleted", func() {
+		if !olm.IsPluginEnabled(olm.CsvLabelerPluginId) {
+			Skip("csv labeler plugin is disabled")
+		}
+
 		// create namespace with operator group
 		testNamespace = SetupGeneratedTestNamespace(genName("openshift-csv-ns-labeler-"))
 

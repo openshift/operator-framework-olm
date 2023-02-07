@@ -64,7 +64,7 @@ var (
 
 // this unexported operator plugin slice provides an entrypoint for
 // downstream to inject its own plugins to augment the controller behavior
-var operatorPlugInFactoryFuncs []plugins.OperatorPlugInFactoryFunc
+var operatorPlugInFactoryFuncs plugins.OperatorPlugInFactoryMap
 
 type Operator struct {
 	queueinformer.Operator
