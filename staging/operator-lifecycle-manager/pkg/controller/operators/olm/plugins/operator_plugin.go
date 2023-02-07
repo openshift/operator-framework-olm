@@ -10,6 +10,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type PluginID string
+type OperatorPlugInFactoryMap map[PluginID]OperatorPlugInFactoryFunc
+
 // HostOperator is an extensible and observable operator that hosts the plug-in, i.e. which the plug-in is extending
 type HostOperator interface {
 	queueinformer.ObservableOperator
