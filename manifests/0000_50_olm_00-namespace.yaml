@@ -5,7 +5,7 @@ metadata:
   labels:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: "v1.24"
-    openshift.io/scc: "anyuid"
+    openshift.io/scc: ""
     openshift.io/cluster-monitoring: "true"
   annotations:
     openshift.io/node-selector: ""
@@ -20,7 +20,7 @@ metadata:
   labels:
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/enforce-version: "v1.24"
-    openshift.io/scc: "anyuid"
+    openshift.io/scc: ""
   annotations:
     openshift.io/node-selector: ""
     workload.openshift.io/allowed: "management"
