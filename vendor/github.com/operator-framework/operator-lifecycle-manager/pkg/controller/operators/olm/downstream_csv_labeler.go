@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/plugins"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const CsvLabelerPluginId plugins.PluginID = "csv-labeler-plugin"
 const labelSyncerLabelKey = ""
 
 func NewCSVLabelSyncerLabeler(client operatorclient.ClientInterface, logger *logrus.Logger) *CSVLabelSyncerLabeler {

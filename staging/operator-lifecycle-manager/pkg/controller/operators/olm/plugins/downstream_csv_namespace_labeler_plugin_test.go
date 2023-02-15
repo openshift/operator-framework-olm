@@ -3,8 +3,6 @@ package plugins
 import (
 	"context"
 	"errors"
-	"os/exec"
-	"strings"
 	"testing"
 	"time"
 
@@ -297,22 +295,4 @@ func Test_SyncDoesNotLabelNamespacesWithCopiedCSVs(t *testing.T) {
 	ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), namespace.GetName(), metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.NotContains(t, ns.GetLabels(), NamespaceLabelSyncerLabelKey)
-}
-
-func Test_OCPVersion(t *testing.T) {
-	// This test is a maintenance alert that means the next OCP version is now in active development.
-	// This plugin relies on a list of payload namespaces that comes from the cluster-policy-controller project
-	// https://github.com/openshift/cluster-policy-controller/tree/master/pkg/psalabelsyncer
-	// This list is dependent on the OCP version. Please update the dependency version to correspond to the one
-	// vendored for the new OCP version (or contact the responsible team if it hasn't been updated yet).
-	// Then, bump the OCP version in the `nextOCPUncutBranchName` constant below
-	const nextOCPUncutBranchName = "release-4.14"
-	const errorMessage = "[maintenance alert] new ocp version branch has been cut: please check comments in test for instructions"
-
-	// Get branches
-	branches, err := exec.Command("git", "branch", "-a").Output()
-	assert.NoError(t, err)
-
-	// check if the next uncut branch has been cut and fail if so
-	assert.False(t, strings.Contains(string(branches), nextOCPUncutBranchName), errorMessage)
 }

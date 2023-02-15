@@ -5,9 +5,14 @@ import (
 )
 
 func init() {
-	operatorPlugInFactoryFuncs = []plugins.OperatorPlugInFactoryFunc{
+	operatorPlugInFactoryFuncs = plugins.OperatorPlugInFactoryMap{
 		// labels unlabeled non-payload openshift-* csv namespaces with
 		// security.openshift.io/scc.podSecurityLabelSync: true
-		plugins.NewCsvNamespaceLabelerPluginFunc,
+		CsvLabelerPluginId: plugins.NewCsvNamespaceLabelerPluginFunc,
 	}
+}
+
+func IsPluginEnabled(pluginID plugins.PluginID) bool {
+	_, ok := operatorPlugInFactoryFuncs[pluginID]
+	return ok
 }
