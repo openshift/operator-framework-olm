@@ -751,9 +751,9 @@ github.com/operator-framework/operator-registry/alpha/action
 github.com/operator-framework/operator-registry/alpha/declcfg
 github.com/operator-framework/operator-registry/alpha/model
 github.com/operator-framework/operator-registry/alpha/property
-github.com/operator-framework/operator-registry/alpha/veneer/basic
-github.com/operator-framework/operator-registry/alpha/veneer/composite
-github.com/operator-framework/operator-registry/alpha/veneer/semver
+github.com/operator-framework/operator-registry/alpha/template/basic
+github.com/operator-framework/operator-registry/alpha/template/composite
+github.com/operator-framework/operator-registry/alpha/template/semver
 github.com/operator-framework/operator-registry/cmd/configmap-server
 github.com/operator-framework/operator-registry/cmd/initializer
 github.com/operator-framework/operator-registry/cmd/opm
@@ -761,7 +761,7 @@ github.com/operator-framework/operator-registry/cmd/opm/alpha
 github.com/operator-framework/operator-registry/cmd/opm/alpha/bundle
 github.com/operator-framework/operator-registry/cmd/opm/alpha/list
 github.com/operator-framework/operator-registry/cmd/opm/alpha/render-graph
-github.com/operator-framework/operator-registry/cmd/opm/alpha/veneer
+github.com/operator-framework/operator-registry/cmd/opm/alpha/template
 github.com/operator-framework/operator-registry/cmd/opm/generate
 github.com/operator-framework/operator-registry/cmd/opm/index
 github.com/operator-framework/operator-registry/cmd/opm/init
