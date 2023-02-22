@@ -13,6 +13,39 @@ type OperatorStatus struct {
 	// Components describes resources that compose the operator.
 	// +optional
 	Components *Components `json:"components,omitempty"`
+
+	// relatedObjects is a list of objects that are "interesting" or related to this operator.  Common uses are:
+	// 1. the detailed resource driving the operator
+	// 2. operator namespaces
+	// 3. operand namespaces
+	// 4. custom resources the operator uses
+	// relatedObjects is used by `oc adm inspect` to build a list of interesting resources to retrieve.
+	// Setting this value allows standard debug gathering techniques to point at a root instance of interest
+	// and automatically collect all interesting resources that are related to the root instance.
+	// +optional
+	RelatedObjects []ObjectReference `json:"relatedObjects,omitempty"`
+}
+
+// ObjectReference contains enough information to let you inspect or modify the referred object.
+type ObjectReference struct {
+	// group of the referent.
+	// "" is allowed, but must be explicit.
+	// +kubebuilder:validation:Required
+	// +required
+	Group string `json:"group"`
+	// resource of the referent.
+	// This is the lowercase, plural used in the URL path.
+	// +kubebuilder:validation:Required
+	// +required
+	Resource string `json:"resource"`
+	// namespace of the referent.
+	// If not specified, it means to look across all namespaces.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+	// name of the referent.
+	// If not specified, it means to look at all instances.
+	// +optional
+	Name string `json:"name"`
 }
 
 // ConditionType codifies a condition's type.
