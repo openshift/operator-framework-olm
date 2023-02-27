@@ -1,6 +1,7 @@
 package semver
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/blang/semver/v4"

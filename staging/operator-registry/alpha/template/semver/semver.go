@@ -140,7 +140,7 @@ func readFile(reader io.Reader) (*semverTemplate, error) {
 		GenerateMinorChannels: true,
 		AvoidSkipPatch:        false,
 	}
-	if err := yaml.Unmarshal(fileData, &sv); err != nil {
+	if err := yaml.UnmarshalStrict(fileData, &sv); err != nil {
 		return nil, err
 	}
 	return &sv, nil
