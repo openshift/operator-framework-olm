@@ -12,7 +12,7 @@ CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
 HELM="go run helm.sh/helm/v3/cmd/helm"
 
 
-ver=$(cat ./staging/operator-lifecycle-manager/OLM_VERSION)
+ver=${OLM_VERSION:-"0.0.0-dev"}
 tmpdir="$(mktemp -p . -d 2>/dev/null || mktemp -d ./tmpdir.XXXXXXX)"
 chartdir="${tmpdir}/chart"
 crddir="${chartdir}/crds"

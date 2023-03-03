@@ -12,6 +12,11 @@ BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 # variables are inserted in Dockerfile to enable recovering the original git
 # metadata at build time.
 GIT_COMMIT := $(if $(SOURCE_GIT_COMMIT),$(SOURCE_GIT_COMMIT),$(shell git rev-parse HEAD))
+# ART also populates OS_GIT_MAJOR, OS_GIT_MINOR, OS_GIT_PATCH, OS_GIT_VERSION
+# and BUILD_VERSION as part of the Docker ENV reflecting the OpenShift version
+# for the image.
+# OLM_VERSION needs to be semver2 compatible for helm v2.
+OLM_VERSION := $(or $(OS_GIT_VERSION),0.0.0-$(GIT_COMMIT))
 
 GO_BUILD_OPTS := -mod=vendor
 GO_BUILD_TAGS := -tags "json1"
@@ -69,7 +74,7 @@ $(REGISTRY_CMDS): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gi
 $(REGISTRY_CMDS):
 	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o $@ $(REGISTRY_PKG)/cmd/$(notdir $@)
 
-$(OLM_CMDS): version_flags=-ldflags "-X $(OLM_PKG)/pkg/version.GitCommit=$(GIT_COMMIT) -X $(OLM_PKG)/pkg/version.OLMVersion=`cat staging/operator-lifecycle-manager/OLM_VERSION`"
+$(OLM_CMDS): version_flags=-ldflags "-X $(OLM_PKG)/pkg/version.GitCommit=$(GIT_COMMIT) -X $(OLM_PKG)/pkg/version.OLMVersion=$(OLM_VERSION)"
 $(OLM_CMDS):
 	go build $(version_flags) $(GO_BUILD_OPTS) $(GO_BUILD_TAGS) -o bin/$(shell basename $@) $@
 
@@ -136,7 +141,7 @@ vendor: update-plugin-deps
 
 .PHONY: manifests
 manifests: ## Generate manifests
-	./scripts/generate_crds_manifests.sh
+	OLM_VERSION=$(OLM_VERSION) ./scripts/generate_crds_manifests.sh
 
 .PHONY: diff
 diff:
@@ -145,6 +150,7 @@ diff:
 verify-vendor: vendor
 	$(MAKE) diff
 
+verify-manifests: OLM_VERSION=0.19.0 # set static version to avoid failing for commit based versioning
 verify-manifests: manifests
 	$(MAKE) diff
 
