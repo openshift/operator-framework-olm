@@ -7,19 +7,17 @@ ROOT_DIR=$(dirname "${BASH_SOURCE[@]}")/..
 # shellcheck disable=SC1091
 source "${ROOT_DIR}/scripts/common.sh"
 
-pop_all=true
+pop_all=false
 
-set +u
-while getopts 'a:' flag; do
+while getopts ':a' flag; do
   case "${flag}" in
-    a) pop_all=true; shift ;;
+    a) pop_all=true ;;
     \?) exit 1 ;;
     *) echo "unexpected option ${flag}"; exit 1 ;;
   esac
-
-  shift
 done
-set -u
+# Shift to non-option arguments
+shift $((OPTIND-1))
 
 remote="${1:-api}"
 subtree_dir="staging/${2:-${remote}}"
