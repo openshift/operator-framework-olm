@@ -1,6 +1,7 @@
 package semver
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/blang/semver/v4"
@@ -366,7 +367,7 @@ func TestLinkChannels(t *testing.T) {
 			for c, e := range tt.unlinkedChannels {
 				unlinkedChannels[c] = e
 			}
-			sv := &semverVeneer{AvoidSkipPatch: tt.avoidSkipPatch, GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels}
+			sv := &semverTemplate{AvoidSkipPatch: tt.avoidSkipPatch, GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels}
 			require.ElementsMatch(t, tt.out, sv.linkChannels(unlinkedChannels, "a", &channelOperatorVersions, &channelNameToKind))
 		})
 	}
@@ -486,7 +487,7 @@ func TestGenerateChannels(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sv := &semverVeneer{AvoidSkipPatch: tt.avoidSkipPatch, GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels, pkg: "a"}
+			sv := &semverTemplate{AvoidSkipPatch: tt.avoidSkipPatch, GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels, pkg: "a"}
 			require.ElementsMatch(t, tt.out, sv.generateChannels(&channelOperatorVersions))
 		})
 	}
@@ -495,15 +496,15 @@ func TestGenerateChannels(t *testing.T) {
 func TestGetVersionsFromStandardChannel(t *testing.T) {
 	tests := []struct {
 		name        string
-		sv          semverVeneer
+		sv          semverTemplate
 		outVersions semverRenderedChannelVersions
 		dc          declcfg.DeclarativeConfig
 	}{
 		{
 			name: "sunny day case",
-			sv: semverVeneer{
+			sv: semverTemplate{
 				Stable: stableBundles{
-					[]semverVeneerBundleEntry{
+					[]semverTemplateBundleEntry{
 						{Image: "repo/origin/a-v0.1.0"},
 						{Image: "repo/origin/a-v0.1.1"},
 						{Image: "repo/origin/a-v1.1.0"},
@@ -568,9 +569,9 @@ func TestGetVersionsFromStandardChannel(t *testing.T) {
 }
 
 func TestBailOnVersionBuildMetadata(t *testing.T) {
-	sv := semverVeneer{
+	sv := semverTemplate{
 		Stable: stableBundles{
-			[]semverVeneerBundleEntry{
+			[]semverTemplateBundleEntry{
 				{Image: "repo/origin/a-v0.1.0"},
 				{Image: "repo/origin/a-v0.1.1"},
 				{Image: "repo/origin/a-v1.1.0"},
@@ -614,4 +615,94 @@ func TestBailOnVersionBuildMetadata(t *testing.T) {
 		_, err := sv.getVersionsFromStandardChannels(&dc)
 		require.Error(t, err)
 	})
+}
+
+func TestReadFile(t *testing.T) {
+	type testCase struct {
+		name       string
+		input      string
+		assertions func(*testing.T, *semverTemplate, error)
+	}
+	testCases := []testCase{
+		{
+			name: "valid",
+			input: `---
+schema: olm.semver
+generateMajorChannels: true
+generateMinorChannels: true
+candidate:
+    bundles:
+        - image: quay.io/foo/olm:testoperator.v0.1.0
+        - image: quay.io/foo/olm:testoperator.v0.1.1
+        - image: quay.io/foo/olm:testoperator.v0.1.2
+        - image: quay.io/foo/olm:testoperator.v0.1.3
+        - image: quay.io/foo/olm:testoperator.v0.2.0
+        - image: quay.io/foo/olm:testoperator.v0.2.1
+        - image: quay.io/foo/olm:testoperator.v0.2.2
+        - image: quay.io/foo/olm:testoperator.v0.3.0
+        - image: quay.io/foo/olm:testoperator.v1.0.0
+        - image: quay.io/foo/olm:testoperator.v1.0.1
+        - image: quay.io/foo/olm:testoperator.v1.1.0
+fast:
+    bundles:
+        - image: quay.io/foo/olm:testoperator.v0.2.1
+        - image: quay.io/foo/olm:testoperator.v0.2.2
+        - image: quay.io/foo/olm:testoperator.v0.3.0
+        - image: quay.io/foo/olm:testoperator.v1.0.1
+        - image: quay.io/foo/olm:testoperator.v1.1.0
+stable:
+    bundles:
+        - image: quay.io/foo/olm:testoperator.v1.0.1
+`,
+			assertions: func(t *testing.T, template *semverTemplate, err error) {
+				require.NotNil(t, template)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "unknown channel prefix",
+			input: `---
+schema: olm.semver
+generateMajorChannels: true
+generateMinorChannels: true
+candidate:
+    bundles:
+        - image: quay.io/foo/olm:testoperator.v0.1.0
+        - image: quay.io/foo/olm:testoperator.v0.1.1
+        - image: quay.io/foo/olm:testoperator.v0.1.2
+        - image: quay.io/foo/olm:testoperator.v0.1.3
+        - image: quay.io/foo/olm:testoperator.v0.2.0
+        - image: quay.io/foo/olm:testoperator.v0.2.1
+        - image: quay.io/foo/olm:testoperator.v0.2.2
+        - image: quay.io/foo/olm:testoperator.v0.3.0
+        - image: quay.io/foo/olm:testoperator.v1.0.0
+        - image: quay.io/foo/olm:testoperator.v1.0.1
+        - image: quay.io/foo/olm:testoperator.v1.1.0
+fast:
+    bundles:
+        - image: quay.io/foo/olm:testoperator.v0.2.1
+        - image: quay.io/foo/olm:testoperator.v0.2.2
+        - image: quay.io/foo/olm:testoperator.v0.3.0
+        - image: quay.io/foo/olm:testoperator.v1.0.1
+        - image: quay.io/foo/olm:testoperator.v1.1.0
+stable:
+    bundles:
+        - image: quay.io/foo/olm:testoperator.v1.0.1
+invalid:
+    bundles:
+        - image: quay.io/foo/olm:testoperator.v1.0.1
+`,
+			assertions: func(t *testing.T, template *semverTemplate, err error) {
+				require.Nil(t, template)
+				require.EqualError(t, err, `error unmarshaling JSON: while decoding JSON: json: unknown field "invalid"`)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			sv, err := readFile(strings.NewReader(tc.input))
+			tc.assertions(t, sv, err)
+		})
+	}
 }
