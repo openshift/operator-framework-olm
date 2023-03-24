@@ -13,8 +13,8 @@ SYNC_BRANCH_NAME="sync-$(printf '%(%Y-%m-%d)T\n' -1)"
 add_remote() {
     echo "Adding upstream remotes if they don't already exist"
     git config remote.api.url >&- || git remote add api https://github.com/operator-framework/api
-    git config remote.operator-registry.url >&- || git remote add api https://github.com/operator-framework/operator-registry
-    git config remote.operator-lifecycle-manager.url >&- || git remote add api https://github.com/operator-framework/operator-lifecycle-manager
+    git config remote.operator-registry.url >&- || git remote add operator-registry https://github.com/operator-framework/operator-registry
+    git config remote.operator-lifecycle-manager.url >&- || git remote add operator-lifecycle-manager https://github.com/operator-framework/operator-lifecycle-manager
     git config remote.upstream.url >&- || git remote add upstream https://github.com/openshift/operator-framework-olm
 }
 
@@ -43,7 +43,7 @@ candidates() {
 pop() {
     echo "Applying all upstream commit candidates"
     for remote in "${UPSTREAM_REMOTES[@]}"; do
-        "${ROOT_DIR}"/scripts/sync_pop_candidate.sh "$remote" -a
+        "${ROOT_DIR}"/scripts/sync_pop_candidate.sh -a "${remote}"
     done
 }
 
