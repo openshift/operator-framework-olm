@@ -90,6 +90,8 @@ ${YQ} write --inplace -s scripts/olm-deployment.patch.yaml manifests/0000_50_olm
 ${YQ} write --inplace -s scripts/catalog-deployment.patch.yaml manifests/0000_50_olm_08-catalog-operator.deployment.yaml
 ${YQ} write --inplace -s scripts/packageserver-deployment.patch.yaml manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml
 ${YQ} merge --inplace manifests/0000_50_olm_02-olmconfig.yaml scripts/cluster-olmconfig.patch.yaml
+${YQ} write --inplace -d'2' -s scripts/service-monitor.patch.yaml manifests/0000_90_olm_00-service-monitor.yaml
+${YQ} write --inplace -d'3' -s scripts/service-monitor.patch.yaml manifests/0000_90_olm_00-service-monitor.yaml
 mv manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml pkg/manifests/csv.yaml
 cp scripts/packageserver-pdb.yaml manifests/0000_50_olm_00-packageserver.pdb.yaml
 
