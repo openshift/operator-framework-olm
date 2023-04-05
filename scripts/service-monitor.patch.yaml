@@ -1,6 +1,0 @@
-- command: update
-  path: spec.endpoints[*].tlsConfig.keyFile
-  value: /etc/prometheus/secrets/metrics-client-certs/tls.key
-- command: update
-  path: spec.endpoints[*].tlsConfig.certFile
-  value: /etc/prometheus/secrets/metrics-client-certs/tls.crt
