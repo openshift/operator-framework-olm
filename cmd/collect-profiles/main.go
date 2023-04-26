@@ -32,6 +32,7 @@ import (
 const (
 	profileConfigMapLabelKey = "olm.openshift.io/pprof"
 	pprofSecretName          = "pprof-cert"
+	validity                 = time.Hour * 24
 )
 
 var (
@@ -41,6 +42,8 @@ var (
 	namespace       string
 	configMountPath string
 	certMountPath   string
+
+	tlsCert    tls.Certificate
 )
 
 func init() {
@@ -143,10 +146,13 @@ func newCmd() *cobra.Command {
 			certPath := filepath.Join(certMountPath, corev1.TLSCertKey)
 			keyPath := filepath.Join(certMountPath, corev1.TLSPrivateKeyKey)
 
-			if err := verifyCertAndKeyExist(certPath, keyPath); err != nil {
+			if err := verifyCertAndKey(certPath, keyPath); err != nil {
 				logrus.Infof("error verifying provided cert and key: %v", err)
 				logrus.Info("generating a new cert and key")
-				return populateServingCert(cmd.Context(), cfg.Client)
+				if err = populateServingCert(cmd.Context(), cfg.Client); err != nil {
+					return err
+				}
+				// Continue with new certificate/keypair
 			}
 
 			httpClient, err := getHttpClient(certPath, keyPath)
@@ -205,13 +211,12 @@ func newCmd() *cobra.Command {
 				return fmt.Errorf("error deleting existing pprof configMaps: %v", errs)
 			}
 
-			// Update serving cert after a successful run
-			return populateServingCert(cmd.Context(), cfg.Client)
+			return nil
 		},
 	}
 }
 
-func verifyCertAndKeyExist(certPath, keyPath string) error {
+func verifyCertAndKey(certPath, keyPath string) error {
 	fi, err := os.Stat(certPath)
 	if err != nil {
 		return err
@@ -227,6 +232,27 @@ func verifyCertAndKeyExist(certPath, keyPath string) error {
 	if fi.Size() == 0 {
 		return fmt.Errorf("key file should not be empty")
 	}
+
+	tlsCert, err := tls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
+		return err
+	}
+
+	x509Cert, err := x509.ParseCertificate(tlsCert.Certificate[0])
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	if x509Cert.NotAfter.Before(now) {
+		return fmt.Errorf("certificate has expired")
+	}
+	// Since this cron runs every 15 minutes, we assume that the job takes less
+	// than 15 minutes, so make sure there's still 15 minutes of validity left
+	if x509Cert.NotAfter.Before(now.Add(15 * time.Minute)) {
+		return fmt.Errorf("certificate expires in less than 15 minutes")
+	}
+
 	return nil
 }
 
@@ -280,15 +306,11 @@ func newArgument(s string) (*argument, error) {
 }
 
 func getHttpClient(certPath, keyPath string) (*http.Client, error) {
-	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	if err != nil {
-		return nil, err
-	}
 	return &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
-				Certificates:       []tls.Certificate{cert},
+				Certificates:       []tls.Certificate{tlsCert},
 			},
 		},
 	}, nil
@@ -322,7 +344,7 @@ func populateServingCert(ctx context.Context, client client.Client) error {
 		return err
 	}
 
-	cert, privateKey, err := getCertAndKey()
+	cert, privateKey, err := generateCertAndKey()
 	if err != nil {
 		return err
 	}
@@ -332,39 +354,47 @@ func populateServingCert(ctx context.Context, client client.Client) error {
 	return client.Update(ctx, secret)
 }
 
-func getCertAndKey() ([]byte, []byte, error) {
+func generateCertAndKey() ([]byte, []byte, error) {
+	now := time.Now()
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(1658),
 		Subject: pkix.Name{
 			Organization: []string{"Red Hat, Inc."},
 		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().Add(time.Hour),
+		NotBefore:   now,
+		NotAfter:    now.Add(validity),
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 		KeyUsage:    x509.KeyUsageDigitalSignature,
 	}
 
-	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	keyPair, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	caBytes, err := x509.CreateCertificate(rand.Reader, cert, cert, &caPrivKey.PublicKey, caPrivKey)
+	// Generate a DER-encoded self-signed certificate
+	certDER, err := x509.CreateCertificate(rand.Reader, cert, cert, &keyPair.PublicKey, keyPair)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	caPEM := new(bytes.Buffer)
-	pem.Encode(caPEM, &pem.Block{
+	certPEM := new(bytes.Buffer)
+	pem.Encode(certPEM, &pem.Block{
 		Type:  "CERTIFICATE",
-		Bytes: caBytes,
+		Bytes: certDER,
 	})
 
-	caPrivKeyPEM := new(bytes.Buffer)
-	pem.Encode(caPrivKeyPEM, &pem.Block{
+	privKeyPEM := new(bytes.Buffer)
+	pem.Encode(privKeyPEM, &pem.Block{
 		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
+		Bytes: x509.MarshalPKCS1PrivateKey(keyPair),
 	})
 
-	return caPEM.Bytes(), caPrivKeyPEM.Bytes(), nil
+	// Create tlsCert for client use
+	tlsCert, err = tls.X509KeyPair(certPEM.Bytes(), privKeyPEM.Bytes())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return certPEM.Bytes(), privKeyPEM.Bytes(), nil
 }
