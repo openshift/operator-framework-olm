@@ -155,9 +155,13 @@ func newCmd() *cobra.Command {
 				// Continue with new certificate/keypair
 			}
 
-			httpClient, err := getHttpClient(certPath, keyPath)
-			if err != nil {
-				return err
+			httpClient := &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true,
+						Certificates:       []tls.Certificate{tlsCert},
+					},
+				},
 			}
 
 			// Track successfully created configMaps by generateName for each endpoint being scrapped.
@@ -303,17 +307,6 @@ func newArgument(s string) (*argument, error) {
 	}
 
 	return arg, nil
-}
-
-func getHttpClient(certPath, keyPath string) (*http.Client, error) {
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-				Certificates:       []tls.Certificate{tlsCert},
-			},
-		},
-	}, nil
 }
 
 func requestURLBody(httpClient *http.Client, u *url.URL) ([]byte, error) {
