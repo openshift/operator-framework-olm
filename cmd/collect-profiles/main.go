@@ -2,28 +2,18 @@ package main
 
 import (
 	"bytes"
-	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
 	"io"
-	"math/big"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/openshift/operator-framework-olm/pkg/profiling/config"
@@ -32,7 +22,6 @@ import (
 const (
 	profileConfigMapLabelKey = "olm.openshift.io/pprof"
 	pprofSecretName          = "pprof-cert"
-	validity                 = time.Hour * 24
 )
 
 var (
@@ -41,9 +30,7 @@ var (
 	// Used for flags
 	namespace       string
 	configMountPath string
-	certMountPath   string
-
-	tlsCert    tls.Certificate
+	certMountPath   string // unused, kept to handle command line option
 )
 
 func init() {
@@ -143,23 +130,10 @@ func newCmd() *cobra.Command {
 				return fmt.Errorf("error deleting expired pprof configMaps: %v", errs)
 			}
 
-			certPath := filepath.Join(certMountPath, corev1.TLSCertKey)
-			keyPath := filepath.Join(certMountPath, corev1.TLSPrivateKeyKey)
-
-			if err := verifyCertAndKey(certPath, keyPath); err != nil {
-				logrus.Infof("error verifying provided cert and key: %v", err)
-				logrus.Info("generating a new cert and key")
-				if err = populateServingCert(cmd.Context(), cfg.Client); err != nil {
-					return err
-				}
-				// Continue with new certificate/keypair
-			}
-
 			httpClient := &http.Client{
 				Transport: &http.Transport{
 					TLSClientConfig: &tls.Config{
 						InsecureSkipVerify: true,
-						Certificates:       []tls.Certificate{tlsCert},
 					},
 				},
 			}
@@ -218,46 +192,6 @@ func newCmd() *cobra.Command {
 			return nil
 		},
 	}
-}
-
-func verifyCertAndKey(certPath, keyPath string) error {
-	fi, err := os.Stat(certPath)
-	if err != nil {
-		return err
-	}
-	if fi.Size() == 0 {
-		return fmt.Errorf("cert file should not be empty")
-	}
-
-	fi, err = os.Stat(keyPath)
-	if err != nil {
-		return err
-	}
-	if fi.Size() == 0 {
-		return fmt.Errorf("key file should not be empty")
-	}
-
-	tlsCert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	if err != nil {
-		return err
-	}
-
-	x509Cert, err := x509.ParseCertificate(tlsCert.Certificate[0])
-	if err != nil {
-		return err
-	}
-
-	now := time.Now()
-	if x509Cert.NotAfter.Before(now) {
-		return fmt.Errorf("certificate has expired")
-	}
-	// Since this cron runs every 15 minutes, we assume that the job takes less
-	// than 15 minutes, so make sure there's still 15 minutes of validity left
-	if x509Cert.NotAfter.Before(now.Add(15 * time.Minute)) {
-		return fmt.Errorf("certificate expires in less than 15 minutes")
-	}
-
-	return nil
 }
 
 func separateConfigMapsIntoNewestAndExpired(configMaps []corev1.ConfigMap) (newestCMs []corev1.ConfigMap, expiredCMs []corev1.ConfigMap) {
@@ -328,66 +262,4 @@ func requestURLBody(httpClient *http.Client, u *url.URL) ([]byte, error) {
 	}
 
 	return b.Bytes(), nil
-}
-
-func populateServingCert(ctx context.Context, client client.Client) error {
-	secret := &corev1.Secret{}
-	err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pprofSecretName}, secret)
-	if err != nil {
-		return err
-	}
-
-	cert, privateKey, err := generateCertAndKey()
-	if err != nil {
-		return err
-	}
-
-	secret.Data[corev1.TLSCertKey] = cert
-	secret.Data[corev1.TLSPrivateKeyKey] = privateKey
-	return client.Update(ctx, secret)
-}
-
-func generateCertAndKey() ([]byte, []byte, error) {
-	now := time.Now()
-	cert := &x509.Certificate{
-		SerialNumber: big.NewInt(1658),
-		Subject: pkix.Name{
-			Organization: []string{"Red Hat, Inc."},
-		},
-		NotBefore:   now,
-		NotAfter:    now.Add(validity),
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
-		KeyUsage:    x509.KeyUsageDigitalSignature,
-	}
-
-	keyPair, err := rsa.GenerateKey(rand.Reader, 4096)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Generate a DER-encoded self-signed certificate
-	certDER, err := x509.CreateCertificate(rand.Reader, cert, cert, &keyPair.PublicKey, keyPair)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	certPEM := new(bytes.Buffer)
-	pem.Encode(certPEM, &pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: certDER,
-	})
-
-	privKeyPEM := new(bytes.Buffer)
-	pem.Encode(privKeyPEM, &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(keyPair),
-	})
-
-	// Create tlsCert for client use
-	tlsCert, err = tls.X509KeyPair(certPEM.Bytes(), privKeyPEM.Bytes())
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return certPEM.Bytes(), privKeyPEM.Bytes(), nil
 }
