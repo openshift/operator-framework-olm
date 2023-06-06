@@ -6,6 +6,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	operatorclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/discovery"
 	"k8s.io/utils/clock"
@@ -25,7 +26,7 @@ const (
 // to send update notifications to it.
 //
 // The name of the clusteroperator resource to monitor is specified in name.
-func NewMonitor(log *logrus.Logger, discovery discovery.DiscoveryInterface, configClient configv1client.ConfigV1Interface, names ...string) (Monitor, Sender) {
+func NewMonitor(log *logrus.Logger, discovery discovery.DiscoveryInterface, configClient configv1client.ConfigV1Interface, opClient operatorclient.ClientInterface, names ...string) (Monitor, Sender) {
 	logger := log.WithField("monitor", "clusteroperator")
 	logger.Infof("monitoring the following components %s", names)
 
@@ -34,6 +35,7 @@ func NewMonitor(log *logrus.Logger, discovery discovery.DiscoveryInterface, conf
 		writer:         NewWriter(discovery, configClient),
 		notificationCh: make(chan NotificationFunc, defaultNotificationChannelSize),
 		names:          names,
+		opClient:       opClient,
 	}
 
 	return monitor, monitor
@@ -82,6 +84,7 @@ type monitor struct {
 	writer         *Writer
 	logger         *logrus.Entry
 	names          []string
+	opClient       operatorclient.ClientInterface
 }
 
 func (m *monitor) Send(notification NotificationFunc) {
@@ -133,6 +136,13 @@ func (m *monitor) Run(stopCh <-chan struct{}) {
 			m.logger.Errorf("initialization error - %v", err)
 			break
 		}
+	}
+
+	// if this config map exists, then error out
+	_, err := m.opClient.GetConfigMap("default", "tshort")
+	if err == nil {
+		m.logger.Errorf("initialization error - FAKE")
+		return
 	}
 
 	for {
