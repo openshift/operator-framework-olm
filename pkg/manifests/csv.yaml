@@ -5,7 +5,7 @@ metadata:
   name: packageserver
   namespace: openshift-operator-lifecycle-manager
   labels:
-    olm.version: 0.0.0-38da1e54d2092bb28cdd177290e34a4c838c1bd2
+    olm.version: 0.0.0-d4dbc5587ba2feed0e3909ae4e6538a6f8aab1df
     olm.clusteroperator.name: operator-lifecycle-manager-packageserver
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
@@ -159,7 +159,7 @@ spec:
                                 - packageserver
                         topologyKey: "kubernetes.io/hostname"
   maturity: alpha
-  version: 0.0.0-38da1e54d2092bb28cdd177290e34a4c838c1bd2
+  version: 0.0.0-d4dbc5587ba2feed0e3909ae4e6538a6f8aab1df
   apiservicedefinitions:
     owned:
       - group: packages.operators.coreos.com
