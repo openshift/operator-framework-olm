@@ -131,20 +131,22 @@ func (m *monitor) Run(stopCh <-chan struct{}) {
 	// Given this, let's write an initial ClusterOperator object with our expectation.
 	m.logger.Infof("initializing clusteroperator resource(s) for %s", m.names)
 
-	for _, name := range m.names {
-		if err := m.init(name); err != nil {
-			m.logger.Errorf("initialization error - %v", err)
-			break
-		}
-	}
-
 	// if this config map exists, then error out
 	_, err := m.opClient.GetConfigMap("default", "tshort")
 	if err == nil {
 		m.logger.Errorf("initialization error - FAKE")
-		return
+	} else {
+		m.logger.Info("iterating through names")
+		for _, name := range m.names {
+			m.logger.Infof("iterating on name: %s", name)
+			if err := m.init(name); err != nil {
+				m.logger.Errorf("initialization error - %v", err)
+				break
+			}
+		}
 	}
 
+	m.logger.Info("before for {update} loop")
 	for {
 		select {
 		case notification := <-m.notificationCh:
@@ -156,9 +158,11 @@ func (m *monitor) Run(stopCh <-chan struct{}) {
 			}
 
 		case <-stopCh:
+			m.logger.Info("case <-stopCh: return")
 			return
 		}
 	}
+	m.logger.Info("after for {update} loop")
 }
 
 func (m *monitor) update(name string, mutator MutatorFunc) error {
