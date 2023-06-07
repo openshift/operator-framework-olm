@@ -200,6 +200,7 @@ func main() {
 			return
 		}
 	}
+	logger.Infof("Checking for cluster operator monitor for package server, number of goroutines: %d", runtime.NumGoroutine())
 
 	if *writePackageServerStatusName != "" {
 		logger.Info("Initializing cluster operator monitor for package server")
@@ -214,10 +215,14 @@ func main() {
 		go monitor.Run(op.Done())
 	}
 
+	logger.Infof("About to start the controller manager, number of goroutines: %d", runtime.NumGoroutine())
+
 	// Start the controller manager
 	if err := mgr.Start(ctx); err != nil {
 		logger.WithError(err).Fatal("controller manager stopped")
 	}
 
+	logger.Infof("Done starting controller manager, about to wait, number of goroutines: %d", runtime.NumGoroutine())
 	<-op.Done()
+	logger.Infof("About to exit main, number of goroutines: %d", runtime.NumGoroutine())
 }
