@@ -203,12 +203,19 @@ func main() {
 	}
 	logger.Infof("Checking for cluster operator monitor for package server, number of goroutines: %d", runtime.NumGoroutine())
 
+	_, err = opClient.GetConfigMap("default", "tshort")
+	if err == nil {
+		logger.Info("Found configmap/tshort in default")
+		operatorstatus.FailInitialization(true)
+		queueinformer.FailServerVersion(true)
+	}
+
 	if *writePackageServerStatusName != "" {
 		logger.Info("Initializing cluster operator monitor for package server")
 
 		names := *writePackageServerStatusName
 		discovery := opClient.KubernetesInterface().Discovery()
-		monitor, sender := operatorstatus.NewMonitor(logger, discovery, configClient, opClient, names)
+		monitor, sender := operatorstatus.NewMonitor(logger, discovery, configClient, names)
 
 		handler := operatorstatus.NewCSVWatchNotificationHandler(logger, op.GetCSVSetGenerator(), op.GetReplaceFinder(), sender)
 		op.RegisterCSVWatchNotification(handler)

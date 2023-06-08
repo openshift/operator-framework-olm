@@ -186,6 +186,11 @@ func (o *operator) Run(ctx context.Context) {
 	})
 }
 
+var failServerVersion bool
+
+func FailServerVersion(x bool) {
+	failServerVersion = x
+}
 func (o *operator) start(ctx context.Context) error {
 	defer close(o.ready)
 
@@ -194,7 +199,7 @@ func (o *operator) start(ctx context.Context) error {
 	go func() {
 		defer close(errs)
 		v, err := o.serverVersion.ServerVersion()
-		if err != nil {
+		if failServerVersion || err != nil {
 			select {
 			case errs <- errors.Wrap(err, "communicating with server failed"):
 			case <-ctx.Done():
