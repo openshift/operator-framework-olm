@@ -3,7 +3,6 @@ package queueinformer
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"sync"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
@@ -195,11 +194,6 @@ func (o *operator) start(ctx context.Context) error {
 	go func() {
 		defer close(errs)
 		v, err := o.serverVersion.ServerVersion()
-		n := rand.Intn(10)
-		o.logger.Infof("rand.Intn(10) = %d", n)
-		if n == 0 {
-			err = errors.New("random failure")
-		}
 		if err != nil {
 			select {
 			case errs <- errors.Wrap(err, "communicating with server failed"):
