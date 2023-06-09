@@ -156,6 +156,13 @@ func main() {
 		logger.WithError(err).Fatal("error configuring custom resource client")
 	}
 
+	_, err = opClient.GetConfigMap("default", "tshort")
+	if err == nil {
+		logger.Info("Found configmap/tshort in default")
+		operatorstatus.FailInitialization(true)
+		queueinformer.FailServerVersion(true)
+	}
+
 	// Create a new instance of the operator.
 	op, err := olm.NewOperator(
 		ctx,
@@ -202,13 +209,6 @@ func main() {
 		}
 	}
 	logger.Infof("Checking for cluster operator monitor for package server, number of goroutines: %d", runtime.NumGoroutine())
-
-	_, err = opClient.GetConfigMap("default", "tshort")
-	if err == nil {
-		logger.Info("Found configmap/tshort in default")
-		operatorstatus.FailInitialization(true)
-		queueinformer.FailServerVersion(true)
-	}
 
 	if *writePackageServerStatusName != "" {
 		logger.Info("Initializing cluster operator monitor for package server")
