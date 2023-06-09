@@ -199,7 +199,10 @@ func (o *operator) start(ctx context.Context) error {
 	go func() {
 		defer close(errs)
 		v, err := o.serverVersion.ServerVersion()
-		if failServerVersion || err != nil {
+		if err == nil && failServerVersion {
+			err = errors.New("failServerVersion")
+		}
+		if err != nil {
 			select {
 			case errs <- errors.Wrap(err, "communicating with server failed"):
 			case <-ctx.Done():
