@@ -134,17 +134,16 @@ func (m *monitor) Run(stopCh <-chan struct{}) {
 	// Given this, let's write an initial ClusterOperator object with our expectation.
 	m.logger.Infof("initializing clusteroperator resource(s) for %s", m.names)
 
-	// if this config map exists, then error out
-	if failInitialization {
-		m.logger.Error("initialization error - FAKE")
-	} else {
-		m.logger.Info("iterating through names")
-		for _, name := range m.names {
-			m.logger.Infof("iterating on name: %s", name)
-			if err := m.init(name); err != nil {
-				m.logger.Errorf("initialization error - %v", err)
-				break
-			}
+	m.logger.Info("iterating through names")
+	for _, name := range m.names {
+		m.logger.Infof("iterating on name: %s", name)
+		err := m.init(name)
+		if failInitialization {
+			err = errors.New("FAKE")
+		}
+		if err != nil {
+			m.logger.Errorf("initialization error - %v", err)
+			os.Exit(1)
 		}
 	}
 

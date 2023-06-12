@@ -179,7 +179,7 @@ func (o *operator) Run(ctx context.Context) {
 			}()
 			if err := o.start(ctx); err != nil {
 				o.logger.WithError(err).Error("error encountered during startup")
-				return
+				os.Exit(1)
 			}
 			<-ctx.Done()
 		}()
