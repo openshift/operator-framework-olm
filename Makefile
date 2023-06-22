@@ -129,12 +129,8 @@ e2e/operator-registry: ## Run e2e registry tests
 e2e/olm: ## Run e2e olm tests
 	$(MAKE) e2e WHAT=operator-lifecycle-manager E2E_CATALOG_NS=openshift-marketplace E2E_INSTALL_NS=openshift-operator-lifecycle-manager E2E_TEST_NS=openshift-operators E2E_TIMEOUT=120m KUBECTL=oc
 
-.PHONY: update-plugin-deps
-update-plugin-deps:
-	./scripts/update_plugin_deps.sh
-
 .PHONY: vendor
-vendor: update-plugin-deps
+vendor:
 	go mod tidy
 	go mod vendor
 	go mod verify
