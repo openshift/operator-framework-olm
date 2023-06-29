@@ -28,7 +28,7 @@ cherrypick_set="${remote}.cherrypick"
 : > "${cherrypick_set}" # clear existing file
 for rc in "${remote_commits[@]}"; do
     if [[ -z $(git log -n 1 --no-merges --grep "${rc}" HEAD) && -z $(grep "${rc}" "${remote}.blacklist") ]]; then
-        printf '%s\n' "${rc}" >> "${cherrypick_set}"
+        git show -s --format="%cI ${remote} %H" "${rc}" >> "${cherrypick_set}"
         (( ++picked ))
     fi
 done
