@@ -258,6 +258,3 @@ replace (
 	go.opentelemetry.io/otel => go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/sdk => go.opentelemetry.io/otel/sdk v0.20.0
 )
-
-// downstream only
-require github.com/openshift/cluster-policy-controller v0.0.0-20220825134653-523e4104074f
