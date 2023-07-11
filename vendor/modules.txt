@@ -723,7 +723,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/stor
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/version
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
-# github.com/operator-framework/operator-registry v1.17.5 => ./staging/operator-registry
+# github.com/operator-framework/operator-registry v1.27.1 => ./staging/operator-registry
 ## explicit; go 1.19
 github.com/operator-framework/operator-registry/alpha/action
 github.com/operator-framework/operator-registry/alpha/declcfg
