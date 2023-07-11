@@ -630,7 +630,7 @@ github.com/operator-framework/api/pkg/validation/errors
 github.com/operator-framework/api/pkg/validation/interfaces
 github.com/operator-framework/api/pkg/validation/internal
 # github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000 => ./staging/operator-lifecycle-manager
-## explicit; go 1.19
+## explicit; go 1.20
 github.com/operator-framework/operator-lifecycle-manager/cmd/catalog
 github.com/operator-framework/operator-lifecycle-manager/cmd/olm
 github.com/operator-framework/operator-lifecycle-manager/cmd/package-server
