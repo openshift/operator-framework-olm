@@ -2,7 +2,7 @@
 
 set -o errexit
 set -o pipefail
-set -x
+#set -x
 
 ROOT_DIR=$(dirname "${BASH_SOURCE[@]}")/..
 # shellcheck disable=SC1091
@@ -31,6 +31,10 @@ function pop() {
         printf 'nothing to pick'
         exit
     fi
+    readarray -t rcs < <(echo "$rc" | tr " " "\n")
+    remote="${rcs[1]}"
+    subtree_dir="staging/${remote}"
+    rc="${rcs[2]}"
     printf 'popping: %s\n' "${rc}"
 
     if ! git cherry-pick --allow-empty --keep-redundant-commits -Xsubtree="${subtree_dir}" "${rc}"; then

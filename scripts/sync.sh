@@ -38,13 +38,15 @@ candidates() {
     for remote in "${UPSTREAM_REMOTES[@]}"; do
         "${ROOT_DIR}"/scripts/sync_get_candidates.sh "$remote"
     done
+
+    # Create uber cherry-pick list
+    cat *.cherrypick | sort > all.cherrypick
+    echo "Number of commits to cherrypick: $(cat all.cherrypick | wc -l)"
 }
 
 pop() {
     echo "Applying all upstream commit candidates"
-    for remote in "${UPSTREAM_REMOTES[@]}"; do
-        "${ROOT_DIR}"/scripts/sync_pop_candidate.sh -a "${remote}"
-    done
+    "${ROOT_DIR}"/scripts/sync_pop_candidate.sh -a "all"
 }
 
 check_local_branch_commit_diff() {
