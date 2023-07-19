@@ -169,8 +169,9 @@ func Pod(source *operatorsv1alpha1.CatalogSource, name string, image string, saN
 								Command: []string{"grpc_health_probe", "-addr=:50051"},
 							},
 						},
-						FailureThreshold: 15,
+						FailureThreshold: 10,
 						PeriodSeconds:    10,
+						TimeoutSeconds:   5,
 					},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
