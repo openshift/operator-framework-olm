@@ -13,6 +13,7 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -75,13 +76,13 @@ func run(cmd *cobra.Command, args []string) error {
 		RenewDeadline:           &le.RenewDeadline.Duration,
 		RetryPeriod:             &le.RetryPeriod.Duration,
 		HealthProbeBindAddress:  healthCheckAddr,
-		NewCache: cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
+		Cache: cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
 				&olmv1alpha1.ClusterServiceVersion{}: {
 					Field: packageserverCSVFields.AsSelector(),
 				},
 			},
-		}),
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "failed to setup manager instance")

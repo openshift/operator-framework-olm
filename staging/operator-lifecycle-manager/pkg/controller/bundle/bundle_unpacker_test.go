@@ -2,10 +2,12 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -15,11 +17,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/informers"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
+	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	crfake "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/fake"
 	crinformers "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions"
+	v1listers "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-registry/pkg/api"
 	"github.com/operator-framework/operator-registry/pkg/configmap"
@@ -329,6 +334,31 @@ func TestConfigMapUnpacker(t *testing.T) {
 											},
 										},
 									},
+									NodeSelector: map[string]string{
+										"kubernetes.io/os": "linux",
+									},
+									Tolerations: []corev1.Toleration{
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "amd64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "arm64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "ppc64le",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "s390x",
+											Operator: "Equal",
+										},
+									},
 								},
 							},
 						},
@@ -529,6 +559,31 @@ func TestConfigMapUnpacker(t *testing.T) {
 											VolumeSource: corev1.VolumeSource{
 												EmptyDir: &corev1.EmptyDirVolumeSource{},
 											},
+										},
+									},
+									NodeSelector: map[string]string{
+										"kubernetes.io/os": "linux",
+									},
+									Tolerations: []corev1.Toleration{
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "amd64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "arm64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "ppc64le",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "s390x",
+											Operator: "Equal",
 										},
 									},
 								},
@@ -774,6 +829,31 @@ func TestConfigMapUnpacker(t *testing.T) {
 											},
 										},
 									},
+									NodeSelector: map[string]string{
+										"kubernetes.io/os": "linux",
+									},
+									Tolerations: []corev1.Toleration{
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "amd64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "arm64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "ppc64le",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "s390x",
+											Operator: "Equal",
+										},
+									},
 								},
 							},
 						},
@@ -1011,6 +1091,31 @@ func TestConfigMapUnpacker(t *testing.T) {
 											},
 										},
 									},
+									NodeSelector: map[string]string{
+										"kubernetes.io/os": "linux",
+									},
+									Tolerations: []corev1.Toleration{
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "amd64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "arm64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "ppc64le",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "s390x",
+											Operator: "Equal",
+										},
+									},
 								},
 							},
 						},
@@ -1218,6 +1323,31 @@ func TestConfigMapUnpacker(t *testing.T) {
 											},
 										},
 									},
+									NodeSelector: map[string]string{
+										"kubernetes.io/os": "linux",
+									},
+									Tolerations: []corev1.Toleration{
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "amd64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "arm64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "ppc64le",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "s390x",
+											Operator: "Equal",
+										},
+									},
 								},
 							},
 						},
@@ -1298,7 +1428,7 @@ func TestConfigMapUnpacker(t *testing.T) {
 								LastTransitionTime: &start,
 							},
 							{
-								Type:               BundleLookupFailed,
+								Type:               operatorsv1alpha1.BundleLookupFailed,
 								Status:             corev1.ConditionTrue,
 								Reason:             "DeadlineExceeded",
 								Message:            "Job was active longer than specified deadline",
@@ -1436,6 +1566,31 @@ func TestConfigMapUnpacker(t *testing.T) {
 											},
 										},
 									},
+									NodeSelector: map[string]string{
+										"kubernetes.io/os": "linux",
+									},
+									Tolerations: []corev1.Toleration{
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "amd64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "arm64",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "ppc64le",
+											Operator: "Equal",
+										},
+										{
+											Key:      "kubernetes.io/arch",
+											Value:    "s390x",
+											Operator: "Equal",
+										},
+									},
 								},
 							},
 						},
@@ -1551,6 +1706,117 @@ func TestConfigMapUnpacker(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, rb, stored)
 			}
+		})
+	}
+}
+
+func TestOperatorGroupBundleUnpackTimeout(t *testing.T) {
+	nsName := "fake-ns"
+
+	for _, tc := range []struct {
+		name            string
+		operatorGroups  []*operatorsv1.OperatorGroup
+		expectedTimeout time.Duration
+		expectedError   error
+	}{
+		{
+			name:            "No operator groups exist",
+			expectedTimeout: -1 * time.Minute,
+			expectedError:   errors.New("found 0 operatorGroups, expected 1"),
+		},
+		{
+			name: "Multiple operator groups exist",
+			operatorGroups: []*operatorsv1.OperatorGroup{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       operatorsv1.OperatorGroupKind,
+						APIVersion: operatorsv1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "og1",
+						Namespace: nsName,
+					},
+				},
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       operatorsv1.OperatorGroupKind,
+						APIVersion: operatorsv1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "og2",
+						Namespace: nsName,
+					},
+				},
+			},
+			expectedTimeout: -1 * time.Minute,
+			expectedError:   errors.New("found 2 operatorGroups, expected 1"),
+		},
+		{
+			name: "One operator group exists with valid timeout annotation",
+			operatorGroups: []*operatorsv1.OperatorGroup{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       operatorsv1.OperatorGroupKind,
+						APIVersion: operatorsv1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "og",
+						Namespace:   nsName,
+						Annotations: map[string]string{BundleUnpackTimeoutAnnotationKey: "1m"},
+					},
+				},
+			},
+			expectedTimeout: 1 * time.Minute,
+			expectedError:   nil,
+		},
+		{
+			name: "One operator group exists with no timeout annotation",
+			operatorGroups: []*operatorsv1.OperatorGroup{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       operatorsv1.OperatorGroupKind,
+						APIVersion: operatorsv1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "og",
+						Namespace: nsName,
+					},
+				},
+			},
+			expectedTimeout: -1 * time.Minute,
+		},
+		{
+			name: "One operator group exists with invalid timeout annotation",
+			operatorGroups: []*operatorsv1.OperatorGroup{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       operatorsv1.OperatorGroupKind,
+						APIVersion: operatorsv1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "og",
+						Namespace:   nsName,
+						Annotations: map[string]string{BundleUnpackTimeoutAnnotationKey: "invalid"},
+					},
+				},
+			},
+			expectedTimeout: -1 * time.Minute,
+			expectedError:   fmt.Errorf("failed to parse unpack timeout annotation(operatorframework.io/bundle-unpack-timeout: invalid): %w", errors.New("time: invalid duration \"invalid\"")),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ogIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+			ogLister := v1listers.NewOperatorGroupLister(ogIndexer).OperatorGroups(nsName)
+
+			for _, og := range tc.operatorGroups {
+				err := ogIndexer.Add(og)
+				assert.NoError(t, err)
+			}
+
+			timeout, err := OperatorGroupBundleUnpackTimeout(ogLister)
+
+			assert.Equal(t, tc.expectedTimeout, timeout)
+			assert.Equal(t, tc.expectedError, err)
 		})
 	}
 }

@@ -35,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const (
@@ -113,7 +112,7 @@ func reconcileCSV(log logr.Logger, image string, csv *olmv1alpha1.ClusterService
 	return nil
 }
 
-func (r *PackageServerCSVReconciler) infrastructureHandler(obj client.Object) []reconcile.Request {
+func (r *PackageServerCSVReconciler) infrastructureHandler(_ context.Context, obj client.Object) []reconcile.Request {
 	log := r.Log.WithValues("infrastructure", obj.GetName())
 	if obj.GetName() != infrastructureName {
 		log.Info("not processing events for the non-cluster infrastructure resource")
@@ -135,6 +134,6 @@ func (r *PackageServerCSVReconciler) infrastructureHandler(obj client.Object) []
 func (r *PackageServerCSVReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&olmv1alpha1.ClusterServiceVersion{}).
-		Watches(&source.Kind{Type: &configv1.Infrastructure{}}, handler.EnqueueRequestsFromMapFunc(r.infrastructureHandler)).
+		Watches(&configv1.Infrastructure{}, handler.EnqueueRequestsFromMapFunc(r.infrastructureHandler)).
 		Complete(r)
 }

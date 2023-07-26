@@ -89,6 +89,11 @@ type CatalogSourceSpec struct {
 	// +optional
 	Secrets []string `json:"secrets,omitempty"`
 
+	// RunAsRoot allows admins to indicate that they wish to run the CatalogSource pod in a privileged
+	// pod as root.  This should only be enabled when running older catalog images which could not be run as non-root.
+	// +optional
+	RunAsRoot bool `json:"runAsRoot,omitempty"`
+
 	// Metadata
 	DisplayName string `json:"displayName,omitempty"`
 	Description string `json:"description,omitempty"`
@@ -113,6 +118,10 @@ type GrpcPodConfig struct {
 	// Tolerations are the catalog source's pod's tolerations.
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Affinity is the catalog source's pod's affinity.
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
 	// If specified, indicates the pod's priority.
 	// If not specified, the pod priority will be default or zero if there is no

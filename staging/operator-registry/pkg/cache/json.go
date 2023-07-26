@@ -14,6 +14,7 @@ import (
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/pkg/api"
 	"github.com/operator-framework/operator-registry/pkg/registry"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 var _ Cache = &JSON{}
@@ -58,8 +59,13 @@ func (q *JSON) ListBundles(ctx context.Context) ([]*api.Bundle, error) {
 
 func (q *JSON) SendBundles(_ context.Context, s registry.BundleSender) error {
 	for _, pkg := range q.packageIndex {
-		for _, ch := range pkg.Channels {
-			for _, b := range ch.Bundles {
+		channels := sets.KeySet(pkg.Channels)
+		for _, chName := range sets.List(channels) {
+			ch := pkg.Channels[chName]
+
+			bundles := sets.KeySet(ch.Bundles)
+			for _, bName := range sets.List(bundles) {
+				b := ch.Bundles[bName]
 				apiBundle, err := q.loadAPIBundle(apiBundleKey{pkg.Name, ch.Name, b.Name})
 				if err != nil {
 					return fmt.Errorf("convert bundle %q: %v", b.Name, err)
@@ -172,7 +178,7 @@ func (q *JSON) computeDigest(fbcFsys fs.FS) (string, error) {
 	return fmt.Sprintf("%x", computedHasher.Sum(nil)), nil
 }
 
-func (q *JSON) Build(fbcFsys fs.FS) error {
+func (q *JSON) Build(ctx context.Context, fbcFsys fs.FS) error {
 	// ensure that generated cache is available to all future users
 	oldUmask := umask(000)
 	defer umask(oldUmask)
@@ -184,7 +190,7 @@ func (q *JSON) Build(fbcFsys fs.FS) error {
 		return fmt.Errorf("ensure clean base directory: %v", err)
 	}
 
-	fbc, err := declcfg.LoadFS(fbcFsys)
+	fbc, err := declcfg.LoadFS(ctx, fbcFsys)
 	if err != nil {
 		return err
 	}

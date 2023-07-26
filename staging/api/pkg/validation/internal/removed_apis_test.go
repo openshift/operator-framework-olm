@@ -72,27 +72,47 @@ func Test_GetRemovedAPIsOn1_25From(t *testing.T) {
 	mock["HorizontalPodAutoscaler"] = []string{"memcached-operator-hpa"}
 	mock["PodDisruptionBudget"] = []string{"memcached-operator-policy-manager"}
 
+	warnMock := make(map[string][]string)
+	warnMock["cronjobs"] = []string{"ClusterServiceVersion.Spec.InstallStrategy.StrategySpec.ClusterPermissions[0].Rules[7]"}
+	warnMock["endpointslices"] = []string{"ClusterServiceVersion.Spec.InstallStrategy.StrategySpec.Permissions[0].Rules[3]"}
+	warnMock["events"] = []string{"ClusterServiceVersion.Spec.InstallStrategy.StrategySpec.Permissions[0].Rules[2]"}
+	warnMock["horizontalpodautoscalers"] = []string{"ClusterServiceVersion.Spec.InstallStrategy.StrategySpec.Permissions[0].Rules[4]"}
+	warnMock["poddisruptionbudgets"] = []string{"ClusterServiceVersion.Spec.InstallStrategy.StrategySpec.Permissions[0].Rules[5]"}
+	warnMock["podsecuritypolicies"] = []string{"ClusterServiceVersion.Spec.InstallStrategy.StrategySpec.Permissions[0].Rules[5]"}
+	warnMock["runtimeclasses"] = []string{"ClusterServiceVersion.Spec.InstallStrategy.StrategySpec.Permissions[0].Rules[6]"}
+
 	type args struct {
 		bundleDir string
 	}
 	tests := []struct {
-		name string
-		args args
-		want map[string][]string
+		name     string
+		args     args
+		errWant  map[string][]string
+		warnWant map[string][]string
 	}{
 		{
 			name: "should return an empty map when no deprecated apis are found",
 			args: args{
 				bundleDir: "./testdata/valid_bundle_v1",
 			},
-			want: map[string][]string{},
+			errWant:  map[string][]string{},
+			warnWant: map[string][]string{},
 		},
 		{
 			name: "should fail return the removed APIs in 1.25",
 			args: args{
 				bundleDir: "./testdata/removed_api_1_25",
 			},
-			want: mock,
+			errWant:  mock,
+			warnWant: map[string][]string{},
+		},
+		{
+			name: "should return warnings with all deprecated APIs in 1.25",
+			args: args{
+				bundleDir: "./testdata/deprecated_api_1_25",
+			},
+			errWant:  mock,
+			warnWant: warnMock,
 		},
 	}
 	for _, tt := range tests {
@@ -102,8 +122,14 @@ func Test_GetRemovedAPIsOn1_25From(t *testing.T) {
 			bundle, err := manifests.GetBundleFromDir(tt.args.bundleDir)
 			require.NoError(t, err)
 
-			if got := getRemovedAPIsOn1_25From(bundle); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getRemovedAPIsOn1_25From() = %v, want %v", got, tt.want)
+			errGot, warnGot := getRemovedAPIsOn1_25From(bundle)
+
+			if !reflect.DeepEqual(errGot, tt.errWant) {
+				t.Errorf("getRemovedAPIsOn1_25From() = %v, want %v", errGot, tt.errWant)
+			}
+
+			if !reflect.DeepEqual(warnGot, tt.warnWant) {
+				t.Errorf("getRemovedAPIsOn1_25From() = %v, want %v", warnGot, tt.warnWant)
 			}
 		})
 	}
@@ -252,8 +278,8 @@ func TestValidateDeprecatedAPIS(t *testing.T) {
 			wantWarning: true,
 			warnStrings: []string{"this bundle is using APIs which were deprecated and removed in v1.22. " +
 				"More info: https://kubernetes.io/docs/reference/using-api/deprecation-guide/#v1-22. " +
-				"Migrate the API(s) for CRD: ([\"etcdbackups.etcd.database.coreos.com\"" +
-				" \"etcdclusters.etcd.database.coreos.com\" \"etcdrestores.etcd.database.coreos.com\"])"},
+				"Migrate the API(s) for CRD: ([\"etcdbackups.etcd.database.coreos.com\" " +
+				"\"etcdclusters.etcd.database.coreos.com\" \"etcdrestores.etcd.database.coreos.com\"])"},
 		},
 		{
 			name: "should return an error when the csv.spec.minKubeVersion informed is invalid",
