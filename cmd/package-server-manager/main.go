@@ -28,6 +28,7 @@ const (
 	defaultNamespace            = "openshift-operator-lifecycle-manager"
 	defaultMetricsPort          = "0"
 	defaultHealthCheckPort      = ":8080"
+	defaultPprofPort            = ":6060"
 	leaderElectionConfigmapName = "packageserver-controller-lock"
 )
 
@@ -57,6 +58,10 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	pprofAddr, err := cmd.Flags().GetString("pprof")
+	if err != nil {
+		return err
+	}
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	setupLog := ctrl.Log.WithName("setup")
@@ -76,6 +81,7 @@ func run(cmd *cobra.Command, args []string) error {
 		RenewDeadline:           &le.RenewDeadline.Duration,
 		RetryPeriod:             &le.RetryPeriod.Duration,
 		HealthProbeBindAddress:  healthCheckAddr,
+		PprofBindAddress:        pprofAddr,
 		Cache: cache.Options{
 			ByObject: map[client.Object]cache.ByObject{
 				&olmv1alpha1.ClusterServiceVersion{}: {
