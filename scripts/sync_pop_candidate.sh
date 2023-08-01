@@ -1,5 +1,29 @@
 #!/usr/bin/env bash
 
+if [ $# -eq 0 ]; then
+    cat <<EOF
+USAGE
+    scripts/sync_pop_candidate.sh [-a] <cherry-pick>
+
+OPTIONS
+    -a            Apply all changes from the <cherry-pick>
+    <cherry-pick> Filename (without .cherrypick extension) from which
+                  commits are selected to be synced
+
+DESCRIPTION
+    Use this script to sync a selection of commits from the upstream
+    repositories. This script is called by the sync.sh script to perform
+    the actual downstream sync.
+
+    The <cherry-pick> file is the basename of a file with a .cherrypick
+    extension. Usually, it is the name of a remote repository, but can
+    be any file that follows the .cherrypick format.
+
+    Refer to the README.md file for additional information.
+EOF
+    exit 1
+fi
+
 set -o errexit
 set -o pipefail
 #set -x
@@ -7,6 +31,8 @@ set -o pipefail
 ROOT_DIR=$(dirname "${BASH_SOURCE[@]}")/..
 # shellcheck disable=SC1091
 source "${ROOT_DIR}/scripts/common.sh"
+RED=$(tput setaf 1)
+RESET=$(tput sgr0)
 
 pop_all=false
 
@@ -88,7 +114,9 @@ function pop() {
     if ! git diff --quiet HEAD^ "${subtree_dir}"/go.mod; then
         git diff HEAD^ "${subtree_dir}"/go.mod
         pushd "${subtree_dir}"
-        echo "Running BASH subshell: go.mod has changed, check for regressions!"
+        echo ""
+        echo -e "Pausing script: ${RED}go.mod has changed, check for regressions!${RESET}"
+        echo "Use another terminal window"
         echo -n '<ENTER> to continue, ^C to quit: '
         read
         popd
@@ -99,7 +127,9 @@ function pop() {
     # 3. Ammend commit
     # 4. Remove from cherrypick set
     if ! make vendor; then
-        echo "Running BASH subshell: fix make vendor"
+        echo ""
+        echo -e "Pausing script: ${RED}fix make vendor{$RESET}"
+        echo "Use another terminal window"
         echo -n '<ENTER> to continue, ^C to quit: '
         read
     fi
@@ -107,7 +137,9 @@ function pop() {
     git status
     git commit --amend --allow-empty --no-edit --trailer "Upstream-repository: ${remote}" --trailer "Upstream-commit: ${rc}"
     if ! make manifests; then
-        echo "Running BASH subshell: fix make manifests"
+        echo ""
+        echo -e "Pausing script: ${RED}fix (or ignore) make manifests${RESET}"
+        echo "Use another terminal window"
         echo -n '<ENTER> to continue, ^C to quit: '
         read
     fi
