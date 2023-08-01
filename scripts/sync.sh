@@ -69,4 +69,26 @@ main() {
     check_local_branch_commit_diff
 }
 
+script_help() {
+    cat <<EOF
+USAGE
+    scripts/sync.sh
+
+DESCRIPTION
+    Use this script to bulk sync from the upstream repositories.
+
+    There are no arguments to this script.
+
+    Refer to the README.md file for additional information.
+EOF
+    exit 1
+}
+
+# no arguments are required, look for any help-type arguments and print out help
+for var in "$@"; do
+    if [ "${var}" == "-h" -o "${var}" == "--help" ]; then
+        script_help
+    fi
+done
+
 main
