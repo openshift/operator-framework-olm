@@ -146,7 +146,7 @@ diff:
 verify-vendor: vendor
 	$(MAKE) diff
 
-verify-manifests: OLM_VERSION=0.19.0 # set static version to avoid failing for commit based versioning
+verify-manifests: OLM_VERSION=0.0.1-snapshot
 verify-manifests: manifests
 	$(MAKE) diff
 
