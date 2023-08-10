@@ -8,6 +8,7 @@ approvers:
   - perdasilva
   - oceanc80
   - grokspawn
+  - tmshort
 reviewers:
   - dinhxuanvu
   - kevinrizza
@@ -18,4 +19,5 @@ reviewers:
   - perdasilva
   - oceanc80
   - grokspawn
+  - tmshort
 component: "OLM"
