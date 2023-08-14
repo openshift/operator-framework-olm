@@ -105,7 +105,7 @@ bin/cpb: FORCE
 	CGO_ENABLED=0 go build $(GO_BUILD_OPTS) -ldflags '-extldflags "-static"' -o $@ github.com/operator-framework/operator-lifecycle-manager/util/cpb
 
 unit/olm: bin/kubebuilder
-	echo "Running the OLM unit tests"
+	@echo "Running the OLM unit tests"
 	$(MAKE) unit WHAT=operator-lifecycle-manager
 
 unit/registry:
@@ -157,32 +157,33 @@ verify-nested-vendor:
 verify-commits:
 	./scripts/verify_commits.sh $(PULL_BASE_SHA) # see https://github.com/kubernetes/test-infra/blob/master/prow/jobs.md#job-environment-variables
 
+# Update scripts/sync_pop_candidate.sh if anything is changed in this recipe
 .PHONY: verify
 verify:
-	echo "Checking for unstaged root vendor changes"
+	@echo "Checking for unstaged root vendor changes"
 	$(MAKE) verify-vendor
-	echo "Checking whether the CVO manifests need to be generated"
+	@echo "Checking whether the CVO manifests need to be generated"
 	$(MAKE) verify-manifests
-	echo "Checking for unsynced nested [go.mod,go.sum] files"
+	@echo "Checking for unsynced nested [go.mod,go.sum] files"
 	$(MAKE) verify-nested-vendor
-	echo "Checking commit integrity"
+	@echo "Checking commit integrity"
 	$(MAKE) verify-commits
 
 .PHONY: crc-start
 crc-start:
-	echo "Starting CRC"
+	@echo "Starting CRC"
 	./scripts/crc-start.sh
 
 .PHONY: crc-build
 crc-build:
-	echo "Building olm image"
+	@echo "Building olm image"
 	IMG="olm:test" $(MAKE) build/olm-container
-	echo "Building opm image"
+	@echo "Building opm image"
 	IMG="opm:test" $(MAKE) build/registry-container
 
 .PHONY: crc-deploy
 crc-deploy:
-	echo "Deploying OLM"
+	@echo "Deploying OLM"
 	./scripts/crc-deploy.sh
 
 .PHONY: crc

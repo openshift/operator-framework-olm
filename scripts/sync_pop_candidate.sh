@@ -26,7 +26,6 @@ fi
 
 set -o errexit
 set -o pipefail
-#set -x
 
 ROOT_DIR=$(dirname "${BASH_SOURCE[@]}")/..
 # shellcheck disable=SC1091
@@ -63,6 +62,7 @@ function pop() {
     rc="${rcs[2]}"
     printf 'popping: %s\n' "${rc}"
 
+    # Cherrypick the commit
     if ! git cherry-pick --allow-empty --keep-redundant-commits -Xsubtree="${subtree_dir}" "${rc}"; then
         # Always blast away the vendor directory given OLM/registry still commit it into source control.
         git rm -rf "${subtree_dir}"/vendor 2>/dev/null || true
@@ -122,33 +122,53 @@ function pop() {
         popd
     fi
 
-    # 1. Pop next commit off cherrypick set
-    # 2. Cherry-pick
-    # 3. Ammend commit
-    # 4. Remove from cherrypick set
+    # Update commit with make vendor
     if ! make vendor; then
         echo ""
-        echo -e "Pausing script: ${RED}fix make vendor{$RESET}"
+        echo -e "Pausing script: ${RED}fix (or ignore) make vendor{$RESET}"
         echo "Use another terminal window"
-        echo -n '<ENTER> to continue, ^C to quit: '
+        echo -n '<ENTER> to update commit and continue, ^C to quit: '
         read
     fi
     git add "${subtree_dir}" "${ROOT_GENERATED_PATHS[@]}"
-    git status
-    git commit --amend --allow-empty --no-edit --trailer "Upstream-repository: ${remote}" --trailer "Upstream-commit: ${rc}"
-    if ! make manifests; then
+    git commit --amend --allow-empty --no-edit
+
+    # Update commit with make verify-manifests, this uses the proper OLM_VERSION
+    if ! make verify-manifests; then
         echo ""
         echo -e "Pausing script: ${RED}fix (or ignore) make manifests${RESET}"
         echo "Use another terminal window"
-        echo -n '<ENTER> to continue, ^C to quit: '
+        echo -n '<ENTER> to update commit and continue, ^C to quit: '
         read
     fi
     git add "${subtree_dir}" "${ROOT_GENERATED_PATHS[@]}"
-    git status
     git commit --amend --allow-empty --no-edit
 
+    # Update commit with make verify-nested-vendor
+    if ! make verify-nested-vendor; then
+        echo ""
+        echo -e "Pausing script: ${RED}fix make (or ignore) verify-nested-vendors${RESET}"
+        echo "Use another terminal window"
+        echo -n '<ENTER> to update commit and continue, ^C to quit: '
+        read
+    fi
+    git add "${subtree_dir}" "${ROOT_GENERATED_PATHS[@]}"
+    git commit --amend --allow-empty --no-edit --trailer "Upstream-repository: ${remote}" --trailer "Upstream-commit: ${rc}"
+    # need to add these trailers for make verify-commits
+
+    # Remove from cherrypick set, now that the trailers are added, it's effectively complete
     tmp_set=$(mktemp)
     tail -n +2 "${cherrypick_set}" > "${tmp_set}"; cat "${tmp_set}" > "${cherrypick_set}"
+
+    # Verify commit with make verify-commits - this should not error out
+    if ! make verify-commits; then
+        echo ""
+        echo -e "Pausing script: ${RED}fix make verify-commits${RESET}"
+        echo "Use another terminal window"
+        echo -n '<ENTER> to continue, ^C to quit: '
+        read
+    fi
+    # At this point "make verify" would pass
 
     # Note: handle edge case where there's zero remaining to avoid
     # returning a non-zero exit code.
