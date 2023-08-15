@@ -277,7 +277,7 @@ func cherryPick(ctx context.Context, logger *logrus.Entry, c commit) error {
 			"go", "mod", "verify",
 		), os.Environ()...),
 		withEnv(exec.CommandContext(ctx,
-			"make", "manifests", "OLM_VERSION=0.0.1-snapshot",
+			"make", "generate-manifests",
 		), os.Environ()...),
 		exec.CommandContext(ctx,
 			"git", "add",
