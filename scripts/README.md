@@ -86,9 +86,12 @@ or amended to the last commit of the branch.
 
 Once `make -k verify` is resolved, create a PR from this working sync branch.
 
-## TODO
+# Long-lived Carry Commits
 
-* Add `make verify` to the `sync_pop_candidate.sh` and/or `sync.sh` scripts.
+It is required at times to write commits that will live in the `vendor/` directory
+on top of upstream code and for those commits to be carried on top for the forseeable
+future. In these cases, prefix your commit message with `[CARRY]` to pass the commit
+verification routines.
 
 ## References
 1. [Downstream to operator-framework-olm](https://spaces.redhat.com/display/OOLM/Downstream+to+operator-framework-olm)

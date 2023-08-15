@@ -139,6 +139,10 @@ vendor:
 manifests: ## Generate manifests
 	OLM_VERSION=$(OLM_VERSION) ./scripts/generate_crds_manifests.sh
 
+.PHONY: generate-manifests
+generate-manifests: OLM_VERSION=0.0.1-snapshot
+generate-manifests: manifests
+
 .PHONY: diff
 diff:
 	git diff --stat HEAD --ignore-submodules --exit-code
@@ -146,8 +150,7 @@ diff:
 verify-vendor: vendor
 	$(MAKE) diff
 
-verify-manifests: OLM_VERSION=0.0.1-snapshot
-verify-manifests: manifests
+verify-manifests: generate-manifests
 	$(MAKE) diff
 
 verify-nested-vendor:
