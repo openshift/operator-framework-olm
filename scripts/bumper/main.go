@@ -206,7 +206,7 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir stri
 				infoCmd := exec.CommandContext(ctx,
 					"git", "show",
 					line,
-					"--pretty=format:%H|%cI|%an|%s",
+					"--pretty=format:%H\u00A0%cI\u00A0%an\u00A0%s",
 					"--quiet",
 				)
 				stdout, stderr := bytes.Buffer{}, bytes.Buffer{}
@@ -216,7 +216,7 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir stri
 				if err := infoCmd.Run(); err != nil {
 					return nil, fmt.Errorf("failed to run command: %s %s: %w", stdout.String(), stderr.String(), err)
 				}
-				parts := strings.Split(stdout.String(), "|")
+				parts := strings.Split(stdout.String(), "\u00A0")
 				if len(parts) != 4 {
 					return nil, fmt.Errorf("incorrect parts from git output: %v", stdout.String())
 				}
