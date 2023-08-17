@@ -38,13 +38,15 @@ candidates() {
     for remote in "${UPSTREAM_REMOTES[@]}"; do
         "${ROOT_DIR}"/scripts/sync_get_candidates.sh "$remote"
     done
+
+    # Create uber cherry-pick list
+    cat *.cherrypick | sort > all.cherrypick
+    echo "Number of commits to cherrypick: $(cat all.cherrypick | wc -l)"
 }
 
 pop() {
     echo "Applying all upstream commit candidates"
-    for remote in "${UPSTREAM_REMOTES[@]}"; do
-        "${ROOT_DIR}"/scripts/sync_pop_candidate.sh -a "${remote}"
-    done
+    "${ROOT_DIR}"/scripts/sync_pop_candidate.sh -a "all"
 }
 
 check_local_branch_commit_diff() {
@@ -66,5 +68,27 @@ main() {
     pop
     check_local_branch_commit_diff
 }
+
+script_help() {
+    cat <<EOF
+USAGE
+    scripts/sync.sh
+
+DESCRIPTION
+    Use this script to bulk sync from the upstream repositories.
+
+    There are no arguments to this script.
+
+    Refer to the README.md file for additional information.
+EOF
+    exit 1
+}
+
+# no arguments are required, look for any help-type arguments and print out help
+for var in "$@"; do
+    if [ "${var}" == "-h" -o "${var}" == "--help" ]; then
+        script_help
+    fi
+done
 
 main

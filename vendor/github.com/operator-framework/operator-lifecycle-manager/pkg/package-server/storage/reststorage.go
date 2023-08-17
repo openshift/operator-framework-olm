@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/fields"
 
@@ -34,6 +35,7 @@ var _ rest.Lister = &PackageManifestStorage{}
 var _ rest.Getter = &PackageManifestStorage{}
 var _ rest.Scoper = &PackageManifestStorage{}
 var _ rest.TableConvertor = &PackageManifestStorage{}
+var _ rest.SingularNameProvider = &PackageManifestStorage{}
 
 // NewStorage returns a struct that implements methods needed for Kubernetes to satisfy API requests for the `PackageManifest` resource
 func NewStorage(groupResource schema.GroupResource, prov provider.PackageManifestProvider, scheme *runtime.Scheme) *PackageManifestStorage {
@@ -57,6 +59,10 @@ func (m *PackageManifestStorage) Destroy() {}
 // Kind satisfies the KindProvider interface
 func (m *PackageManifestStorage) Kind() string {
 	return "PackageManifest"
+}
+
+func (m *PackageManifestStorage) GetSingularName() string {
+	return strings.ToLower(m.Kind())
 }
 
 // NewList satisfies part of the Lister interface

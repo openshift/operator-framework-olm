@@ -37,9 +37,12 @@ function verify_downstream_only() {
     local inside_staging
     inside_staging="$(git show --name-only "${downstream_commit}" -- staging)"
     if [[ -n "${inside_staging}" ]]; then
-        err "downstream non-staging commit ${downstream_commit} changes staging"
+        if git log -n 1 "${downstream_commit}" --pretty=%s | grep -q '[CARRY]'; then
+          return 0
+        fi
+        err "downstream non-staging commit ${downstream_commit} changes staging and is not labeled [CARRY]"
         err "${inside_staging}"
-        err "only staging commits (i.e. from an upstream cherry-pick) may change staging"
+        err "only staging commits (i.e. from an upstream cherry-pick) or commits labeled as downstream carries with [CARRY] may change staging"
         return 1
     fi
 }

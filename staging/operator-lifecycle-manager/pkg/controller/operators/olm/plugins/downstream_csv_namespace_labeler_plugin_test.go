@@ -3,11 +3,13 @@ package plugins
 import (
 	"context"
 	"errors"
+	"flag"
 	"testing"
 	"time"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/fake"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions"
 	listerv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
@@ -16,11 +18,13 @@ import (
 	apiextensionsfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/informers"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	v1fake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	listerv1 "k8s.io/client-go/listers/core/v1"
 	clienttesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 	apiregistrationfake "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/fake"
 )
 
@@ -43,6 +47,13 @@ func withExtendedResources(resource ...runtime.Object) fakeClientOption {
 	}
 }
 
+func init() {
+	klog.InitFlags(flag.CommandLine)
+	if err := flag.Lookup("v").Value.Set("14"); err != nil {
+		panic(err)
+	}
+}
+
 func NewFakeCSVNamespaceLabelerPlugin(t *testing.T, options ...fakeClientOption) (*csvNamespaceLabelerPlugin, context.CancelFunc) {
 
 	resyncPeriod := 5 * time.Minute
@@ -51,21 +62,37 @@ func NewFakeCSVNamespaceLabelerPlugin(t *testing.T, options ...fakeClientOption)
 		applyOption(clientOptions)
 	}
 
-	// create fake clients
+	t.Log("creating fake clients")
 	k8sClientFake := operatorclient.NewClient(k8sfake.NewSimpleClientset(clientOptions.k8sResources...), apiextensionsfake.NewSimpleClientset(), apiregistrationfake.NewSimpleClientset())
 	extendedClient := fake.NewReactionForwardingClientsetDecorator(clientOptions.extendedResources)
 
-	// create informers
-	namespaceInformer := newNamespaceInformer(k8sClientFake, resyncPeriod)
-	nonCopiedCsvInformer := newNonCopiedCsvInformerForNamespace(metav1.NamespaceAll, extendedClient, resyncPeriod)
+	t.Log("creating informers")
+	informerFactory := informers.NewSharedInformerFactory(k8sClientFake.KubernetesInterface(), resyncPeriod)
+	namespaceInformer := informerFactory.Core().V1().Namespaces().Informer()
 
-	// sync caches
+	operatorsInformerFactory := externalversions.NewSharedInformerFactory(&extendedClient.Clientset, resyncPeriod)
+	nonCopiedCsvInformer := operatorsInformerFactory.Operators().V1alpha1().ClusterServiceVersions().Informer()
+
+	t.Log("starting informers")
 	ctx, cancel := context.WithCancel(context.TODO())
-	go namespaceInformer.Run(ctx.Done())
-	go nonCopiedCsvInformer.Run(ctx.Done())
+	stopCtx := make(chan struct{})
+	go func() {
+		<-ctx.Done()
+		stopCtx <- struct{}{}
+	}()
+	informerFactory.Start(stopCtx)
+	operatorsInformerFactory.Start(stopCtx)
 
-	if ok := cache.WaitForCacheSync(ctx.Done(), namespaceInformer.HasSynced, nonCopiedCsvInformer.HasSynced); !ok {
-		t.Fatalf("failed to wait for caches to sync")
+	t.Log("waiting for informers to sync")
+	syncCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer func() {
+		cancel()
+	}()
+	if ok := cache.WaitForCacheSync(syncCtx.Done(), namespaceInformer.HasSynced); !ok {
+		t.Fatalf("failed to wait for namespace caches to sync")
+	}
+	if ok := cache.WaitForCacheSync(syncCtx.Done(), nonCopiedCsvInformer.HasSynced); !ok {
+		t.Fatalf("failed to wait for non-copied caches to sync")
 	}
 
 	return &csvNamespaceLabelerPlugin{

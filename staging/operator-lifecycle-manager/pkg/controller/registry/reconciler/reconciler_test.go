@@ -3,8 +3,11 @@ package reconciler
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/image"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
@@ -12,6 +15,166 @@ import (
 )
 
 const workloadUserID = 1001
+
+func TestPodMemoryTarget(t *testing.T) {
+	q := resource.MustParse("5Mi")
+	var testCases = []struct {
+		name     string
+		input    *v1alpha1.CatalogSource
+		expected *corev1.Pod
+	}{
+		{
+			name: "no memory target set",
+			input: &v1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "testns",
+				},
+			},
+			expected: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "test-",
+					Namespace:    "testns",
+					Labels:       map[string]string{"olm.pod-spec-hash": "68d7885bb7"},
+					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "name",
+							Image: "image",
+							Ports: []corev1.ContainerPort{{Name: "grpc", ContainerPort: 50051}},
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								InitialDelaySeconds: 0,
+								TimeoutSeconds:      5,
+							},
+							LivenessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								InitialDelaySeconds: 0,
+								TimeoutSeconds:      5,
+							},
+							StartupProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								FailureThreshold: 10,
+								PeriodSeconds:    10,
+								TimeoutSeconds:   5,
+							},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("10m"),
+									corev1.ResourceMemory: resource.MustParse("50Mi"),
+								},
+							},
+							SecurityContext: &corev1.SecurityContext{
+								ReadOnlyRootFilesystem: pointer.Bool(false),
+							},
+							ImagePullPolicy:          image.InferImagePullPolicy("image"),
+							TerminationMessagePolicy: "FallbackToLogsOnError",
+						},
+					},
+					NodeSelector:       map[string]string{"kubernetes.io/os": "linux"},
+					ServiceAccountName: "service-account",
+				},
+			},
+		},
+		{
+			name: "memory target set",
+			input: &v1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "testns",
+				},
+				Spec: v1alpha1.CatalogSourceSpec{
+					GrpcPodConfig: &v1alpha1.GrpcPodConfig{
+						MemoryTarget: &q,
+					},
+				},
+			},
+			expected: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "test-",
+					Namespace:    "testns",
+					Labels:       map[string]string{"olm.pod-spec-hash": "855b6c6cf6"},
+					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "name",
+							Image: "image",
+							Ports: []corev1.ContainerPort{{Name: "grpc", ContainerPort: 50051}},
+							Env:   []corev1.EnvVar{{Name: "GOMEMLIMIT", Value: "5MiB"}},
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								InitialDelaySeconds: 0,
+								TimeoutSeconds:      5,
+							},
+							LivenessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								InitialDelaySeconds: 0,
+								TimeoutSeconds:      5,
+							},
+							StartupProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								FailureThreshold: 10,
+								PeriodSeconds:    10,
+								TimeoutSeconds:   5,
+							},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("10m"),
+									corev1.ResourceMemory: resource.MustParse("5Mi"),
+								},
+								Limits: corev1.ResourceList{
+									corev1.ResourceMemory: resource.MustParse("10Mi"),
+								},
+							},
+							SecurityContext: &corev1.SecurityContext{
+								ReadOnlyRootFilesystem: pointer.Bool(false),
+							},
+							ImagePullPolicy:          image.InferImagePullPolicy("image"),
+							TerminationMessagePolicy: "FallbackToLogsOnError",
+						},
+					},
+					NodeSelector:       map[string]string{"kubernetes.io/os": "linux"},
+					ServiceAccountName: "service-account",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		pod := Pod(testCase.input, "name", "image", "service-account", map[string]string{}, map[string]string{}, int32(0), int32(0), int64(workloadUserID))
+		if diff := cmp.Diff(pod, testCase.expected); diff != "" {
+			t.Errorf("got incorrect pod: %v", diff)
+		}
+	}
+}
 
 func TestPodNodeSelector(t *testing.T) {
 	catsrc := &v1alpha1.CatalogSource{
@@ -254,11 +417,33 @@ func TestPodSchedulingOverrides(t *testing.T) {
 		},
 	}
 
+	var overriddenAffinity = &corev1.Affinity{
+		NodeAffinity: &corev1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+				NodeSelectorTerms: []corev1.NodeSelectorTerm{
+					{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      "kubernetes.io/arch",
+								Operator: corev1.NodeSelectorOpIn,
+								Values: []string{
+									"amd64",
+									"arm",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
 	testCases := []struct {
 		title                     string
 		catalogSource             *v1alpha1.CatalogSource
 		expectedNodeSelectors     map[string]string
 		expectedTolerations       []corev1.Toleration
+		expectedAffinity          *corev1.Affinity
 		expectedPriorityClassName string
 		annotations               map[string]string
 	}{
@@ -275,6 +460,7 @@ func TestPodSchedulingOverrides(t *testing.T) {
 				},
 			},
 			expectedTolerations:       nil,
+			expectedAffinity:          nil,
 			expectedPriorityClassName: defaultPriorityClassName,
 			expectedNodeSelectors:     defaultNodeSelectors,
 		}, {
@@ -293,6 +479,7 @@ func TestPodSchedulingOverrides(t *testing.T) {
 				},
 			},
 			expectedTolerations:       nil,
+			expectedAffinity:          nil,
 			expectedPriorityClassName: defaultPriorityClassName,
 			expectedNodeSelectors:     overriddenNodeSelectors,
 		}, {
@@ -311,6 +498,7 @@ func TestPodSchedulingOverrides(t *testing.T) {
 				},
 			},
 			expectedTolerations:       nil,
+			expectedAffinity:          nil,
 			expectedPriorityClassName: overriddenPriorityClassName,
 			expectedNodeSelectors:     defaultNodeSelectors,
 		}, {
@@ -329,6 +517,7 @@ func TestPodSchedulingOverrides(t *testing.T) {
 				},
 			},
 			expectedTolerations:       nil,
+			expectedAffinity:          nil,
 			expectedPriorityClassName: defaultPriorityClassName,
 			expectedNodeSelectors:     defaultNodeSelectors,
 		}, {
@@ -347,6 +536,26 @@ func TestPodSchedulingOverrides(t *testing.T) {
 				},
 			},
 			expectedTolerations:       overriddenTolerations,
+			expectedAffinity:          nil,
+			expectedPriorityClassName: defaultPriorityClassName,
+			expectedNodeSelectors:     defaultNodeSelectors,
+		}, {
+			title: "Override affinity",
+			catalogSource: &v1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "testns",
+				},
+				Spec: v1alpha1.CatalogSourceSpec{
+					SourceType: v1alpha1.SourceTypeGrpc,
+					Image:      "repo/image:tag",
+					GrpcPodConfig: &v1alpha1.GrpcPodConfig{
+						Affinity: overriddenAffinity,
+					},
+				},
+			},
+			expectedTolerations:       nil,
+			expectedAffinity:          overriddenAffinity,
 			expectedPriorityClassName: defaultPriorityClassName,
 			expectedNodeSelectors:     defaultNodeSelectors,
 		}, {
@@ -363,10 +572,12 @@ func TestPodSchedulingOverrides(t *testing.T) {
 						NodeSelector:      overriddenNodeSelectors,
 						PriorityClassName: &overriddenPriorityClassName,
 						Tolerations:       overriddenTolerations,
+						Affinity:          overriddenAffinity,
 					},
 				},
 			},
 			expectedTolerations:       overriddenTolerations,
+			expectedAffinity:          overriddenAffinity,
 			expectedPriorityClassName: overriddenPriorityClassName,
 			expectedNodeSelectors:     overriddenNodeSelectors,
 		}, {
@@ -385,6 +596,7 @@ func TestPodSchedulingOverrides(t *testing.T) {
 				},
 			},
 			expectedTolerations: nil,
+			expectedAffinity:    nil,
 			annotations: map[string]string{
 				CatalogPriorityClassKey: "some-OTHER-prio-class",
 			},
@@ -398,5 +610,6 @@ func TestPodSchedulingOverrides(t *testing.T) {
 		require.Equal(t, testCase.expectedNodeSelectors, pod.Spec.NodeSelector)
 		require.Equal(t, testCase.expectedPriorityClassName, pod.Spec.PriorityClassName)
 		require.Equal(t, testCase.expectedTolerations, pod.Spec.Tolerations)
+		require.Equal(t, testCase.expectedAffinity, pod.Spec.Affinity)
 	}
 }

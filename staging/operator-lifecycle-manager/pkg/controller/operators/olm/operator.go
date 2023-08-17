@@ -24,6 +24,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/informers"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/metadata/metadatainformer"
+	"k8s.io/client-go/metadata/metadatalister"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -35,12 +37,10 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions"
-	operatorsv1alpha1listers "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/certs"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/internal/pruning"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/overrides"
-	resolver "github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clients"
 	csvutility "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/csv"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/event"
@@ -75,7 +75,7 @@ type Operator struct {
 	client                       versioned.Interface
 	lister                       operatorlister.OperatorLister
 	protectedCopiedCSVNamespaces map[string]struct{}
-	copiedCSVLister              operatorsv1alpha1listers.ClusterServiceVersionLister
+	copiedCSVLister              metadatalister.Lister
 	ogQueueSet                   *queueinformer.ResourceQueueSet
 	csvQueueSet                  *queueinformer.ResourceQueueSet
 	olmConfigQueue               workqueue.RateLimitingInterface
@@ -97,6 +97,11 @@ type Operator struct {
 	serviceAccountQuerier        *scoped.UserDefinedServiceAccountQuerier
 	clientFactory                clients.Factory
 	plugins                      []plugins.OperatorPlugin
+	informersByNamespace         map[string]*plugins.Informers
+}
+
+func (a *Operator) Informers() map[string]*plugins.Informers {
+	return a.informersByNamespace
 }
 
 func NewOperator(ctx context.Context, options ...OperatorOption) (*Operator, error) {
@@ -125,6 +130,9 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 
 	scheme := runtime.NewScheme()
 	if err := k8sscheme.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := metav1.AddMetaToScheme(scheme); err != nil {
 		return nil, err
 	}
 
@@ -156,9 +164,11 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		protectedCopiedCSVNamespaces: config.protectedCopiedCSVNamespaces,
 	}
 
+	informersByNamespace := map[string]*plugins.Informers{}
 	// Set up syncing for namespace-scoped resources
 	k8sSyncer := queueinformer.LegacySyncHandler(op.syncObject).ToSyncerWithDelete(op.handleDeletion)
 	for _, namespace := range config.watchedNamespaces {
+		informersByNamespace[namespace] = &plugins.Informers{}
 		// Wire CSVs
 		csvInformer := externalversions.NewSharedInformerFactoryWithOptions(
 			op.client,
@@ -168,6 +178,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 				options.LabelSelector = fmt.Sprintf("!%s", v1alpha1.CopiedLabelKey)
 			}),
 		).Operators().V1alpha1().ClusterServiceVersions()
+		informersByNamespace[namespace].CSVInformer = csvInformer
 		op.lister.OperatorsV1alpha1().RegisterClusterServiceVersionLister(namespace, csvInformer.Lister())
 		csvQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), fmt.Sprintf("%s/csv", namespace))
 		op.csvQueueSet.Set(namespace, csvQueue)
@@ -208,44 +219,22 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			return nil, err
 		}
 
-		// A separate informer solely for CSV copies. Fields
-		// are pruned from local copies of the objects managed
+		// A separate informer solely for CSV copies. Object metadata requests are used
 		// by this informer in order to reduce cached size.
-		copiedCSVInformer := cache.NewSharedIndexInformer(
-			pruning.NewListerWatcher(
-				op.client,
-				namespace,
-				func(opts *metav1.ListOptions) {
-					opts.LabelSelector = v1alpha1.CopiedLabelKey
-				},
-				pruning.PrunerFunc(func(csv *v1alpha1.ClusterServiceVersion) {
-					nonstatus, status := copyableCSVHash(csv)
-					*csv = v1alpha1.ClusterServiceVersion{
-						TypeMeta:   csv.TypeMeta,
-						ObjectMeta: csv.ObjectMeta,
-						Status: v1alpha1.ClusterServiceVersionStatus{
-							Phase:  csv.Status.Phase,
-							Reason: csv.Status.Reason,
-						},
-					}
-					if csv.Annotations == nil {
-						csv.Annotations = make(map[string]string, 2)
-					}
-					// These annotation keys are
-					// intentionally invalid -- all writes
-					// to copied CSVs are regenerated from
-					// the corresponding non-copied CSV,
-					// so it should never be transmitted
-					// back to the API server.
-					csv.Annotations["$copyhash-nonstatus"] = nonstatus
-					csv.Annotations["$copyhash-status"] = status
-				}),
-			),
-			&v1alpha1.ClusterServiceVersion{},
+		gvr := v1alpha1.SchemeGroupVersion.WithResource("clusterserviceversions")
+		copiedCSVInformer := metadatainformer.NewFilteredMetadataInformer(
+			config.metadataClient,
+			gvr,
+			namespace,
 			config.resyncPeriod(),
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-		)
-		op.copiedCSVLister = operatorsv1alpha1listers.NewClusterServiceVersionLister(copiedCSVInformer.GetIndexer())
+			func(options *metav1.ListOptions) {
+				options.LabelSelector = v1alpha1.CopiedLabelKey
+			},
+		).Informer()
+		op.copiedCSVLister = metadatalister.New(copiedCSVInformer.GetIndexer(), gvr)
+		informersByNamespace[namespace].CopiedCSVInformer = copiedCSVInformer
+		informersByNamespace[namespace].CopiedCSVLister = op.copiedCSVLister
 
 		// Register separate queue for gcing copied csvs
 		copiedCSVGCQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), fmt.Sprintf("%s/csv-gc", namespace))
@@ -268,6 +257,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		// Wire OperatorGroup reconciliation
 		extInformerFactory := externalversions.NewSharedInformerFactoryWithOptions(op.client, config.resyncPeriod(), externalversions.WithNamespace(namespace))
 		operatorGroupInformer := extInformerFactory.Operators().V1().OperatorGroups()
+		informersByNamespace[namespace].OperatorGroupInformer = operatorGroupInformer
 		op.lister.OperatorsV1().RegisterOperatorGroupLister(namespace, operatorGroupInformer.Lister())
 		ogQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), fmt.Sprintf("%s/og", namespace))
 		op.ogQueueSet.Set(namespace, ogQueue)
@@ -287,6 +277,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 
 		// Register OperatorCondition QueueInformer
 		opConditionInformer := extInformerFactory.Operators().V2().OperatorConditions()
+		informersByNamespace[namespace].OperatorConditionInformer = opConditionInformer
 		op.lister.OperatorsV2().RegisterOperatorConditionLister(namespace, opConditionInformer.Lister())
 		opConditionQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -302,6 +293,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		}
 
 		subInformer := extInformerFactory.Operators().V1alpha1().Subscriptions()
+		informersByNamespace[namespace].SubscriptionInformer = subInformer
 		op.lister.OperatorsV1alpha1().RegisterSubscriptionLister(namespace, subInformer.Lister())
 		subQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -319,6 +311,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		// Wire Deployments
 		k8sInformerFactory := informers.NewSharedInformerFactoryWithOptions(op.opClient.KubernetesInterface(), config.resyncPeriod(), informers.WithNamespace(namespace))
 		depInformer := k8sInformerFactory.Apps().V1().Deployments()
+		informersByNamespace[namespace].DeploymentInformer = depInformer
 		op.lister.AppsV1().RegisterDeploymentLister(namespace, depInformer.Lister())
 		depQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -335,6 +328,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 
 		// Set up RBAC informers
 		roleInformer := k8sInformerFactory.Rbac().V1().Roles()
+		informersByNamespace[namespace].RoleInformer = roleInformer
 		op.lister.RbacV1().RegisterRoleLister(namespace, roleInformer.Lister())
 		roleQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -350,6 +344,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		}
 
 		roleBindingInformer := k8sInformerFactory.Rbac().V1().RoleBindings()
+		informersByNamespace[namespace].RoleBindingInformer = roleBindingInformer
 		op.lister.RbacV1().RegisterRoleBindingLister(namespace, roleBindingInformer.Lister())
 		roleBindingQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -368,6 +363,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		secretInformer := informers.NewSharedInformerFactoryWithOptions(op.opClient.KubernetesInterface(), config.resyncPeriod(), informers.WithNamespace(namespace), informers.WithTweakListOptions(func(options *metav1.ListOptions) {
 			options.LabelSelector = labels.SelectorFromValidatedSet(map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue}).String()
 		})).Core().V1().Secrets()
+		informersByNamespace[namespace].SecretInformer = secretInformer
 		op.lister.CoreV1().RegisterSecretLister(namespace, secretInformer.Lister())
 		secretQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -384,6 +380,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 
 		// Register Service QueueInformer
 		serviceInformer := k8sInformerFactory.Core().V1().Services()
+		informersByNamespace[namespace].ServiceInformer = serviceInformer
 		op.lister.CoreV1().RegisterServiceLister(namespace, serviceInformer.Lister())
 		serviceQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -400,6 +397,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 
 		// Register ServiceAccount QueueInformer
 		serviceAccountInformer := k8sInformerFactory.Core().V1().ServiceAccounts()
+		informersByNamespace[namespace].ServiceAccountInformer = serviceAccountInformer
 		op.lister.CoreV1().RegisterServiceAccountLister(metav1.NamespaceAll, serviceAccountInformer.Lister())
 		serviceAccountQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -450,13 +448,14 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 	olmConfigInformer := externalversions.NewSharedInformerFactoryWithOptions(
 		op.client,
 		config.resyncPeriod(),
-	).Operators().V1().OLMConfigs().Informer()
+	).Operators().V1().OLMConfigs()
+	informersByNamespace[metav1.NamespaceAll].OLMConfigInformer = olmConfigInformer
 	olmConfigQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
-		queueinformer.WithInformer(olmConfigInformer),
+		queueinformer.WithInformer(olmConfigInformer.Informer()),
 		queueinformer.WithLogger(op.logger),
 		queueinformer.WithQueue(op.olmConfigQueue),
-		queueinformer.WithIndexer(olmConfigInformer.GetIndexer()),
+		queueinformer.WithIndexer(olmConfigInformer.Informer().GetIndexer()),
 		queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncOLMConfig).ToSyncer()),
 	)
 	if err != nil {
@@ -468,6 +467,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 
 	k8sInformerFactory := informers.NewSharedInformerFactory(op.opClient.KubernetesInterface(), config.resyncPeriod())
 	clusterRoleInformer := k8sInformerFactory.Rbac().V1().ClusterRoles()
+	informersByNamespace[metav1.NamespaceAll].ClusterRoleInformer = clusterRoleInformer
 	op.lister.RbacV1().RegisterClusterRoleLister(clusterRoleInformer.Lister())
 	clusterRoleQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
@@ -483,6 +483,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 	}
 
 	clusterRoleBindingInformer := k8sInformerFactory.Rbac().V1().ClusterRoleBindings()
+	informersByNamespace[metav1.NamespaceAll].ClusterRoleBindingInformer = clusterRoleBindingInformer
 	op.lister.RbacV1().RegisterClusterRoleBindingLister(clusterRoleBindingInformer.Lister())
 	clusterRoleBindingQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
@@ -499,6 +500,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 
 	// register namespace queueinformer
 	namespaceInformer := k8sInformerFactory.Core().V1().Namespaces()
+	informersByNamespace[metav1.NamespaceAll].NamespaceInformer = namespaceInformer
 	op.lister.CoreV1().RegisterNamespaceLister(namespaceInformer.Lister())
 	op.nsQueueSet = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "resolver")
 	namespaceInformer.Informer().AddEventHandler(
@@ -523,6 +525,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 
 	// Register APIService QueueInformer
 	apiServiceInformer := kagg.NewSharedInformerFactory(op.opClient.ApiregistrationV1Interface(), config.resyncPeriod()).Apiregistration().V1().APIServices()
+	informersByNamespace[metav1.NamespaceAll].APIServiceInformer = apiServiceInformer
 	op.lister.APIRegistrationV1().RegisterAPIServiceLister(apiServiceInformer.Lister())
 	apiServiceQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
@@ -540,6 +543,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 
 	// Register CustomResourceDefinition QueueInformer
 	crdInformer := extinf.NewSharedInformerFactory(op.opClient.ApiextensionsInterface(), config.resyncPeriod()).Apiextensions().V1().CustomResourceDefinitions()
+	informersByNamespace[metav1.NamespaceAll].CRDInformer = crdInformer
 	op.lister.APIExtensionsV1().RegisterCustomResourceDefinitionLister(crdInformer.Lister())
 	crdQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
@@ -593,6 +597,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 	op.resolver = &install.StrategyResolver{
 		OverridesBuilderFunc: overridesBuilderFunc.GetDeploymentInitializer,
 	}
+	op.informersByNamespace = informersByNamespace
 
 	// initialize plugins
 	for _, makePlugIn := range operatorPlugInFactoryFuncs {
@@ -1195,17 +1200,16 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 	}
 }
 
-func (a *Operator) removeDanglingChildCSVs(csv *v1alpha1.ClusterServiceVersion) error {
+func (a *Operator) removeDanglingChildCSVs(csv *metav1.PartialObjectMetadata) error {
 	logger := a.logger.WithFields(logrus.Fields{
 		"id":          queueinformer.NewLoopID(),
 		"csv":         csv.GetName(),
 		"namespace":   csv.GetNamespace(),
-		"phase":       csv.Status.Phase,
 		"labels":      csv.GetLabels(),
 		"annotations": csv.GetAnnotations(),
 	})
 
-	if !csv.IsCopied() {
+	if !v1alpha1.IsCopied(csv) {
 		logger.Warning("removeDanglingChild called on a parent. this is a no-op but should be avoided.")
 		return nil
 	}
@@ -1244,9 +1248,9 @@ func (a *Operator) removeDanglingChildCSVs(csv *v1alpha1.ClusterServiceVersion) 
 	return nil
 }
 
-func (a *Operator) deleteChild(csv *v1alpha1.ClusterServiceVersion, logger *logrus.Entry) error {
+func (a *Operator) deleteChild(csv *metav1.PartialObjectMetadata, logger *logrus.Entry) error {
 	logger.Debug("gcing csv")
-	return a.client.OperatorsV1alpha1().ClusterServiceVersions(csv.GetNamespace()).Delete(context.TODO(), csv.GetName(), *metav1.NewDeleteOptions(0))
+	return a.client.OperatorsV1alpha1().ClusterServiceVersions(csv.GetNamespace()).Delete(context.TODO(), csv.GetName(), metav1.DeleteOptions{})
 }
 
 // syncClusterServiceVersion is the method that gets called when we see a CSV event in the cluster
@@ -1683,12 +1687,12 @@ func (a *Operator) createCSVCopyingDisabledEvent(csv *v1alpha1.ClusterServiceVer
 }
 
 func (a *Operator) syncGcCsv(obj interface{}) (syncError error) {
-	clusterServiceVersion, ok := obj.(*v1alpha1.ClusterServiceVersion)
+	clusterServiceVersion, ok := obj.(*metav1.PartialObjectMetadata)
 	if !ok {
 		a.logger.Debugf("wrong type: %#v", obj)
 		return fmt.Errorf("casting ClusterServiceVersion failed")
 	}
-	if clusterServiceVersion.IsCopied() {
+	if v1alpha1.IsCopied(clusterServiceVersion) {
 		syncError = a.removeDanglingChildCSVs(clusterServiceVersion)
 		return
 	}
@@ -2287,7 +2291,7 @@ func (a *Operator) transitionCSVState(in v1alpha1.ClusterServiceVersion) (out *v
 			syncError = fmt.Errorf("marked as replacement, but no replacement CSV found in cluster")
 		}
 	case v1alpha1.CSVPhaseDeleting:
-		syncError = a.client.OperatorsV1alpha1().ClusterServiceVersions(out.GetNamespace()).Delete(context.TODO(), out.GetName(), *metav1.NewDeleteOptions(0))
+		syncError = a.client.OperatorsV1alpha1().ClusterServiceVersions(out.GetNamespace()).Delete(context.TODO(), out.GetName(), metav1.DeleteOptions{})
 		if syncError != nil {
 			logger.Debugf("unable to get delete csv marked for deletion: %s", syncError.Error())
 		}

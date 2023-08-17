@@ -13,6 +13,7 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -27,6 +28,7 @@ const (
 	defaultNamespace            = "openshift-operator-lifecycle-manager"
 	defaultMetricsPort          = "0"
 	defaultHealthCheckPort      = ":8080"
+	defaultPprofPort            = ":6060"
 	leaderElectionConfigmapName = "packageserver-controller-lock"
 )
 
@@ -56,6 +58,10 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	pprofAddr, err := cmd.Flags().GetString("pprof")
+	if err != nil {
+		return err
+	}
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	setupLog := ctrl.Log.WithName("setup")
@@ -75,13 +81,14 @@ func run(cmd *cobra.Command, args []string) error {
 		RenewDeadline:           &le.RenewDeadline.Duration,
 		RetryPeriod:             &le.RetryPeriod.Duration,
 		HealthProbeBindAddress:  healthCheckAddr,
-		NewCache: cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
+		PprofBindAddress:        pprofAddr,
+		Cache: cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
 				&olmv1alpha1.ClusterServiceVersion{}: {
 					Field: packageserverCSVFields.AsSelector(),
 				},
 			},
-		}),
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "failed to setup manager instance")

@@ -71,15 +71,15 @@ import (
 // containing a list of categories will enable those categories to be used when comparing CSV categories for
 // OperatorHub validation. The json file should be in the following format:
 //
-//	```json
-//	{
-//		"categories":[
-//      "Cloud Pak",
-//      "Registry",
-//      "MyCoolThing",
-//  	 ]
-//	}
-// 	```
+//		```json
+//		{
+//			"categories":[
+//	     "Cloud Pak",
+//	     "Registry",
+//	     "MyCoolThing",
+//	 	 ]
+//		}
+//		```
 //
 // - The `csv.Spec.Provider.Name` was provided
 //
@@ -240,7 +240,7 @@ func checkSpecMinKubeVersion(checks CSVChecks) CSVChecks {
 	if len(strings.TrimSpace(checks.csv.Spec.MinKubeVersion)) == 0 {
 		checks.warns = append(checks.warns, fmt.Errorf(minKubeVersionWarnMessage))
 	} else {
-		if _, err := semver.ParseTolerant(checks.csv.Spec.MinKubeVersion); err != nil {
+		if _, err := semver.Parse(checks.csv.Spec.MinKubeVersion); err != nil {
 			checks.errs = append(checks.errs, fmt.Errorf("csv.Spec.MinKubeVersion has an invalid value: %s", checks.csv.Spec.MinKubeVersion))
 		}
 	}
