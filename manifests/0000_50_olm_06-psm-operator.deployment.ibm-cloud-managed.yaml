@@ -58,10 +58,12 @@ spec:
               value: 5m
             - name: RELEASE_VERSION
               value: "0.0.1-snapshot"
+            - name: GOMEMLIMIT
+              value: "5MiB"
           resources:
             requests:
               cpu: 10m
-              memory: 50Mi
+              memory: 10Mi
           livenessProbe:
             httpGet:
               path: /healthz
