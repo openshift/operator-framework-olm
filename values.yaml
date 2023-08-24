@@ -82,6 +82,7 @@ package:
     pullPolicy: IfNotPresent
   service:
     internalPort: 5443
+  commandArgs: "--interval 24h"
   nodeSelector:
     kubernetes.io/os: linux
     node-role.kubernetes.io/master: ""
