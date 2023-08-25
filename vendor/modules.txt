@@ -805,6 +805,7 @@ github.com/operator-framework/operator-registry/pkg/lib/semver
 github.com/operator-framework/operator-registry/pkg/lib/tmp
 github.com/operator-framework/operator-registry/pkg/lib/validation
 github.com/operator-framework/operator-registry/pkg/mirror
+github.com/operator-framework/operator-registry/pkg/prettyunmarshaler
 github.com/operator-framework/operator-registry/pkg/registry
 github.com/operator-framework/operator-registry/pkg/server
 github.com/operator-framework/operator-registry/pkg/sqlite
