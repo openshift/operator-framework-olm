@@ -16,6 +16,7 @@ func newStartCmd() *cobra.Command {
 	cmd.Flags().String("namespace", defaultNamespace, "configures the metadata.namespace that contains the packageserver csv resource")
 	cmd.Flags().String("health", defaultHealthCheckPort, "configures the health check port that the kubelet is configured to probe")
 	cmd.Flags().String("pprof", defaultPprofPort, "configures the pprof port that the process exposes")
+	cmd.Flags().String("interval", defaultInterval, "configures the wakeup interval for the packageserver csc resource")
 	cmd.Flags().Bool("disable-leader-election", false, "configures whether leader election will be disabled")
 
 	return cmd

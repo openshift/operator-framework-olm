@@ -31,6 +31,25 @@ func NewPackageServerCSV(opts ...CSVOption) (*olmv1alpha1.ClusterServiceVersion,
 	return &csv, nil
 }
 
+func WithRunFlags(flags []string) CSVOption {
+	return func(csv *olmv1alpha1.ClusterServiceVersion) {
+		for i, deployment := range csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
+			for j, container := range deployment.Spec.Template.Spec.Containers {
+				// TODO: Should be fine to hardcode this for now, but likely want
+				// to pass this as a parameter?
+				if container.Name == "packageserver" {
+					for _, flag := range flags {
+						container.Command = append(container.Command, flag)
+					}
+					csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[i].Spec.Template.Spec.Containers[j].Command = container.Command
+					break
+				}
+			}
+		}
+
+	}
+}
+
 func WithName(name string) CSVOption {
 	return func(csv *olmv1alpha1.ClusterServiceVersion) {
 		csv.Name = name
