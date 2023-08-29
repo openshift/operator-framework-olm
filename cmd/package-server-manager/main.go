@@ -80,17 +80,18 @@ func run(cmd *cobra.Command, args []string) error {
 
 	packageserverCSVFields := fields.Set{"metadata.name": name}
 	mgr, err := ctrl.NewManager(restConfig, manager.Options{
-		Scheme:                  setupScheme(),
-		Namespace:               namespace,
-		MetricsBindAddress:      metricsAddr,
-		LeaderElection:          !disableLeaderElection,
-		LeaderElectionNamespace: namespace,
-		LeaderElectionID:        leaderElectionConfigmapName,
-		LeaseDuration:           &le.LeaseDuration.Duration,
-		RenewDeadline:           &le.RenewDeadline.Duration,
-		RetryPeriod:             &le.RetryPeriod.Duration,
-		HealthProbeBindAddress:  healthCheckAddr,
-		PprofBindAddress:        pprofAddr,
+		Scheme:                        setupScheme(),
+		Namespace:                     namespace,
+		MetricsBindAddress:            metricsAddr,
+		LeaderElection:                !disableLeaderElection,
+		LeaderElectionNamespace:       namespace,
+		LeaderElectionID:              leaderElectionConfigmapName,
+		LeaseDuration:                 &le.LeaseDuration.Duration,
+		RenewDeadline:                 &le.RenewDeadline.Duration,
+		RetryPeriod:                   &le.RetryPeriod.Duration,
+		HealthProbeBindAddress:        healthCheckAddr,
+		PprofBindAddress:              pprofAddr,
+		LeaderElectionReleaseOnCancel: true,
 		Cache: cache.Options{
 			ByObject: map[client.Object]cache.ByObject{
 				&olmv1alpha1.ClusterServiceVersion{}: {
