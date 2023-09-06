@@ -29,6 +29,7 @@ const (
 	defaultMetricsPort          = "0"
 	defaultHealthCheckPort      = ":8080"
 	defaultPprofPort            = ":6060"
+	defaultInterval             = "5m"
 	leaderElectionConfigmapName = "packageserver-controller-lock"
 )
 
@@ -59,6 +60,10 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	pprofAddr, err := cmd.Flags().GetString("pprof")
+	if err != nil {
+		return err
+	}
+	interval, err := cmd.Flags().GetString("interval")
 	if err != nil {
 		return err
 	}
@@ -99,6 +104,7 @@ func run(cmd *cobra.Command, args []string) error {
 		Name:      name,
 		Namespace: namespace,
 		Image:     os.Getenv("PACKAGESERVER_IMAGE"),
+		Interval:  interval,
 		Client:    mgr.GetClient(),
 		Log:       ctrl.Log.WithName("controllers").WithName(name),
 		Scheme:    mgr.GetScheme(),

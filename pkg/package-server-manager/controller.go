@@ -54,6 +54,7 @@ type PackageServerCSVReconciler struct {
 	Name      string
 	Namespace string
 	Image     string
+	Interval  string
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which is responsible
@@ -77,13 +78,14 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		manifests.WithName(r.Name),
 		manifests.WithNamespace(r.Namespace),
 		manifests.WithImage(r.Image),
+		manifests.WithRunFlags([]string{"--interval", r.Interval}),
 	)
 	if err != nil {
 		log.Error(err, "failed to serialize a new packageserver csv from the base YAML manifest")
 		return ctrl.Result{}, err
 	}
 	res, err := controllerutil.CreateOrUpdate(ctx, r.Client, required, func() error {
-		return reconcileCSV(r.Log, r.Image, required, highAvailabilityMode)
+		return reconcileCSV(r.Log, r.Image, r.Interval, required, highAvailabilityMode)
 	})
 
 	log.Info("reconciliation result", "res", res)
@@ -95,12 +97,12 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-func reconcileCSV(log logr.Logger, image string, csv *olmv1alpha1.ClusterServiceVersion, highAvailabilityMode bool) error {
+func reconcileCSV(log logr.Logger, image string, interval string, csv *olmv1alpha1.ClusterServiceVersion, highAvailabilityMode bool) error {
 	if csv.ObjectMeta.CreationTimestamp.IsZero() {
 		log.Info("attempting to create the packageserver csv")
 	}
 
-	modified, err := ensureCSV(log, image, csv, highAvailabilityMode)
+	modified, err := ensureCSV(log, image, interval, csv, highAvailabilityMode)
 	if err != nil {
 		return fmt.Errorf("error ensuring CSV: %v", err)
 	}

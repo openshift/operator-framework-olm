@@ -22,6 +22,7 @@ var (
 	name      = "packageserver"
 	namespace = "openshift-operator-lifecycle-manager"
 	image     = getImageFromManifest()
+	interval  = "5m"
 )
 
 func TestHighlyAvailableFromInstructure(t *testing.T) {
@@ -111,6 +112,7 @@ func newTestCSV(
 	csv, err := manifests.NewPackageServerCSV(
 		manifests.WithName(name),
 		manifests.WithNamespace(namespace),
+		manifests.WithRunFlags([]string{"--interval", interval}),
 	)
 	if err != nil {
 		return nil
@@ -133,6 +135,7 @@ func getImageFromManifest() string {
 	csv, err := manifests.NewPackageServerCSV(
 		manifests.WithName(name),
 		manifests.WithNamespace(namespace),
+		manifests.WithRunFlags([]string{"--interval", interval}),
 	)
 	if err != nil {
 		return ""
@@ -258,7 +261,7 @@ func TestEnsureCSV(t *testing.T) {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
-			gotBool, gotErr := ensureCSV(logger, image, tc.inputCSV, tc.highlyAvailable)
+			gotBool, gotErr := ensureCSV(logger, image, interval, tc.inputCSV, tc.highlyAvailable)
 			require.EqualValues(t, tc.want.expectedBool, gotBool)
 			require.EqualValues(t, tc.want.expectedErr, gotErr)
 			require.EqualValues(t, tc.inputCSV.Spec, tc.expectedCSV.Spec)
