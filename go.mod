@@ -245,6 +245,9 @@ require (
 )
 
 replace (
+	// Address CVE-2022-21235
+	github.com/Masterminds/vcs => github.com/Masterminds/vcs v1.13.3
+
 	// latest tag resolves to a very old version. this is only used for spinning up local test registries
 	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
 

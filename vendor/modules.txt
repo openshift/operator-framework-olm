@@ -42,8 +42,8 @@ github.com/Masterminds/sprig/v3
 # github.com/Masterminds/squirrel v1.5.0
 ## explicit; go 1.14
 github.com/Masterminds/squirrel
-# github.com/Masterminds/vcs v1.13.1
-## explicit
+# github.com/Masterminds/vcs v1.13.1 => github.com/Masterminds/vcs v1.13.3
+## explicit; go 1.17
 github.com/Masterminds/vcs
 # github.com/Microsoft/go-winio v0.4.17
 ## explicit; go 1.12
@@ -2122,6 +2122,7 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
+# github.com/Masterminds/vcs => github.com/Masterminds/vcs v1.13.3
 # github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0
