@@ -105,7 +105,7 @@ func (o *options) Validate() error {
 	switch fetchMode(o.fetchMode) {
 	case ssh, https:
 	default:
-		return fmt.Errorf("--mode must be one of %v", []fetchMode{https, ssh})
+		return fmt.Errorf("--fetch-mode must be one of %v", []fetchMode{https, ssh})
 	}
 
 	if _, err := logrus.ParseLevel(o.logLevel); err != nil {
