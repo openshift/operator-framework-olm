@@ -32,6 +32,13 @@ const (
 	publish     mode = "publish"
 )
 
+type fetchMode string
+
+const (
+	https fetchMode = "https"
+	ssh   fetchMode = "ssh"
+)
+
 const (
 	githubOrg   = "openshift"
 	githubRepo  = "operator-framework-olm"
@@ -49,6 +56,7 @@ type options struct {
 	mode             string
 	logLevel         string
 	centralRef       string
+	fetchMode        string
 
 	dryRun       bool
 	githubLogin  string
@@ -71,6 +79,7 @@ func (o *options) Bind(fs *flag.FlagSet) {
 	fs.StringVar(&o.commitFileInput, "commits-input", "", "File to read commits data from in order to drive sync process.")
 	fs.StringVar(&o.logLevel, "log-level", logrus.InfoLevel.String(), "Logging level.")
 	fs.StringVar(&o.centralRef, "central-ref", "origin/master", "Git ref for the central branch that will be updated, used as the base for determining what commits need to be cherry-picked.")
+	fs.StringVar(&o.fetchMode, "fetch-mode", string(ssh), "Method to use for fetching from git remotes.")
 
 	fs.BoolVar(&o.dryRun, "dry-run", true, "Whether to actually create the pull request with github client")
 	fs.StringVar(&o.githubLogin, "github-login", githubLogin, "The GitHub username to use.")
@@ -91,6 +100,12 @@ func (o *options) Validate() error {
 	case summarize, synchronize, publish:
 	default:
 		return fmt.Errorf("--mode must be one of %v", []mode{summarize, synchronize})
+	}
+
+	switch fetchMode(o.fetchMode) {
+	case ssh, https:
+	default:
+		return fmt.Errorf("--mode must be one of %v", []fetchMode{https, ssh})
 	}
 
 	if _, err := logrus.ParseLevel(o.logLevel); err != nil {
@@ -150,7 +165,7 @@ func main() {
 			logrus.WithError(err).Fatal("could not unmarshal input commits")
 		}
 	} else {
-		commits, err = detectNewCommits(ctx, logger.WithField("phase", "detect"), opts.stagingDir, opts.centralRef)
+		commits, err = detectNewCommits(ctx, logger.WithField("phase", "detect"), opts.stagingDir, opts.centralRef, fetchMode(opts.fetchMode))
 		if err != nil {
 			logger.WithError(err).Fatal("failed to detect commits")
 		}
@@ -250,7 +265,7 @@ type commit struct {
 var repoRegex = regexp.MustCompile(`Upstream-repository: ([^ ]+)\n`)
 var commitRegex = regexp.MustCompile(`Upstream-commit: ([a-f0-9]+)\n`)
 
-func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, centralRef string) ([]commit, error) {
+func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, centralRef string, mode fetchMode) ([]commit, error) {
 	lastCommits := map[string]string{}
 	if err := fs.WalkDir(os.DirFS(stagingDir), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -301,9 +316,16 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 
 	var commits []commit
 	for repo, lastCommit := range lastCommits {
+		var remote string
+		switch mode {
+		case ssh:
+			remote = "git@github.com:operator-framework/" + repo
+		case https:
+			remote = "https://github.com/operator-framework/" + repo + ".git"
+		}
 		if _, err := runCommand(logger, exec.CommandContext(ctx,
 			"git", "fetch",
-			"git@github.com:operator-framework/"+repo,
+			remote,
 			"master",
 		)); err != nil {
 			return nil, err
