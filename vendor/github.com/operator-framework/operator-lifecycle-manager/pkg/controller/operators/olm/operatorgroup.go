@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 
+	"golang.org/x/exp/slices"
 	"k8s.io/apimachinery/pkg/api/equality"
 
 	"github.com/sirupsen/logrus"
@@ -56,6 +57,9 @@ var (
 		EditSuffix:  EditVerbs,
 		ViewSuffix:  ViewVerbs,
 	}
+	// These names conflict with OpenShift ClusterRoles
+	ogBadNames = []string{"aggregate-olm", "alert-routing", "cluster", "cluster-monitoring",
+		"monitoring", "monitoring-rules", "packagemanifests-v1", "registry", "storage"}
 )
 
 func aggregationLabelFromAPIKey(k opregistry.APIKey, suffix string) (string, error) {
@@ -994,6 +998,11 @@ func (a *Operator) updateNamespaceList(op *operatorsv1.OperatorGroup) ([]string,
 }
 
 func (a *Operator) getClusterRoleName(op *operatorsv1.OperatorGroup, roleType string) (string, error) {
+	if !slices.Contains(ogBadNames, op.GetName()) {
+		// Use original naming scheme
+		return strings.Join([]string{op.GetName(), roleType}, "-"), nil
+	}
+	// use new naming scheme
 	roleSuffix := hash(fmt.Sprintf("%s/%s/%s", op.GetNamespace(), op.GetName(), roleType))
 	// calculate how many characters are left for the operator group name
 	nameLimit := kubeResourceNameLimit - len(strings.Replace(operatorGroupClusterRoleNameFmt, "%s", "", -1)) - len(roleType) - len(roleSuffix)
