@@ -12,6 +12,7 @@ metadata:
     workload.openshift.io/allowed: "management"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
+    capability.openshift.io/name: "OperatorLifecycleManager"
 ---
 apiVersion: v1
 kind: Namespace
@@ -26,3 +27,4 @@ metadata:
     workload.openshift.io/allowed: "management"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
+    capability.openshift.io/name: "OperatorLifecycleManager"
