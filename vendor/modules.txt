@@ -757,7 +757,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/vers
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
 # github.com/operator-framework/operator-registry v1.29.0 => ./staging/operator-registry
-## explicit; go 1.19
+## explicit; go 1.20
 github.com/operator-framework/operator-registry/alpha/action
 github.com/operator-framework/operator-registry/alpha/declcfg
 github.com/operator-framework/operator-registry/alpha/model
