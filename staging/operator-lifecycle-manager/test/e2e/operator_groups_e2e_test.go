@@ -36,17 +36,21 @@ import (
 
 var _ = Describe("Operator Group", func() {
 	var (
-		c   operatorclient.ClientInterface
-		crc versioned.Interface
+		c                  operatorclient.ClientInterface
+		crc                versioned.Interface
+		generatedNamespace corev1.Namespace
 	)
 
 	BeforeEach(func() {
 		c = ctx.Ctx().KubeClient()
 		crc = ctx.Ctx().OperatorClient()
+
+		generatedNamespace = SetupGeneratedTestNamespace(genName("operator-group-e2e-"))
+
 	})
 
 	AfterEach(func() {
-		TearDown(testNamespace)
+		TearDown(generatedNamespace.GetName())
 	})
 
 	It("e2e functionality", func() {
@@ -71,7 +75,7 @@ var _ = Describe("Operator Group", func() {
 
 		csvName := genName("another-csv-") // must be lowercase for DNS-1123 validation
 
-		opGroupNamespace := genName(testNamespace + "-")
+		opGroupNamespace := genName(generatedNamespace.GetName() + "-")
 		matchingLabel := map[string]string{"inGroup": opGroupNamespace}
 		otherNamespaceName := genName(opGroupNamespace + "-")
 		bothNamespaceNames := opGroupNamespace + "," + otherNamespaceName
@@ -232,7 +236,7 @@ var _ = Describe("Operator Group", func() {
 				if apierrors.IsNotFound(fetchErr) {
 					return false, nil
 				}
-				log(fmt.Sprintf("Error (in %v): %v", testNamespace, fetchErr.Error()))
+				log(fmt.Sprintf("Error (in %v): %v", generatedNamespace.GetName(), fetchErr.Error()))
 				return false, fetchErr
 			}
 			if checkOperatorGroupAnnotations(fetchedCSV, &operatorGroup, true, bothNamespaceNames) == nil {
@@ -886,9 +890,9 @@ var _ = Describe("Operator Group", func() {
 		kvgA := fmt.Sprintf("%s.%s.%s", crdA.Spec.Names.Kind, crdA.Spec.Versions[0].Name, crdA.Spec.Group)
 		kvgB := fmt.Sprintf("%s.%s.%s", crdB.Spec.Names.Kind, crdB.Spec.Versions[0].Name, crdB.Spec.Group)
 		kvgD := fmt.Sprintf("%s.%s.%s", crdD.Spec.Names.Kind, crdD.Spec.Versions[0].Name, crdD.Spec.Group)
-		csvA := newCSV(pkgAStable, testNamespace, "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdA}, nil, &strategyA)
-		csvB := newCSV(pkgBStable, testNamespace, "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdA, crdB}, nil, &strategyB)
-		csvD := newCSV(pkgDStable, testNamespace, "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdD}, nil, &strategyD)
+		csvA := newCSV(pkgAStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdA}, nil, &strategyA)
+		csvB := newCSV(pkgBStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdA, crdB}, nil, &strategyB)
+		csvD := newCSV(pkgDStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdD}, nil, &strategyD)
 
 		// Create namespaces
 		nsA, nsB, nsC, nsD, nsE := genName("a-"), genName("b-"), genName("c-"), genName("d-"), genName("e-")
@@ -1105,7 +1109,7 @@ var _ = Describe("Operator Group", func() {
 		require.NoError(GinkgoT(), awaitAnnotations(GinkgoT(), q, map[string]string{v1.OperatorGroupProvidedAPIsAnnotationKey: ""}))
 
 		// Ensure csvA's deployment is deleted
-		require.NoError(GinkgoT(), waitForDeploymentToDelete(testNamespace, c, pkgAStable))
+		require.NoError(GinkgoT(), waitForDeploymentToDelete(generatedNamespace.GetName(), c, pkgAStable))
 
 		// Await csvB's success
 		_, err = awaitCSV(crc, nsB, csvB.GetName(), csvSucceededChecker)
@@ -1159,8 +1163,8 @@ var _ = Describe("Operator Group", func() {
 		crdB := newCRD(genName(pkgB))
 		kvgA := fmt.Sprintf("%s.%s.%s", crdA.Spec.Names.Kind, crdA.Spec.Versions[0].Name, crdA.Spec.Group)
 		kvgB := fmt.Sprintf("%s.%s.%s", crdB.Spec.Names.Kind, crdB.Spec.Versions[0].Name, crdB.Spec.Group)
-		csvA := newCSV(pkgAStable, testNamespace, "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdA}, nil, &strategyA)
-		csvB := newCSV(pkgBStable, testNamespace, "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdB}, nil, &strategyB)
+		csvA := newCSV(pkgAStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdA}, nil, &strategyA)
+		csvB := newCSV(pkgBStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdB}, nil, &strategyB)
 
 		// Create namespaces
 		nsA, nsB, nsC, nsD := genName("a-"), genName("b-"), genName("c-"), genName("d-")
@@ -1339,7 +1343,7 @@ var _ = Describe("Operator Group", func() {
 
 		csvName := genName("another-csv-") // must be lowercase for DNS-1123 validation
 
-		opGroupNamespace := testNamespace
+		opGroupNamespace := generatedNamespace.GetName()
 		matchingLabel := map[string]string{"inGroup": opGroupNamespace}
 		otherNamespaceName := genName(opGroupNamespace + "-")
 		GinkgoT().Log("Creating CRD")
@@ -1348,8 +1352,7 @@ var _ = Describe("Operator Group", func() {
 		cleanupCRD, err := createCRD(c, mainCRD)
 		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
-		GinkgoT().Logf("Getting default operator group 'global-operators' installed via operatorgroup-default.yaml %v", opGroupNamespace)
-		operatorGroup, err := crc.OperatorsV1().OperatorGroups(opGroupNamespace).Get(context.TODO(), "global-operators", metav1.GetOptions{})
+		operatorGroup, err := crc.OperatorsV1().OperatorGroups(opGroupNamespace).Get(context.TODO(), fmt.Sprintf("%v-operatorgroup", opGroupNamespace), metav1.GetOptions{})
 		require.NoError(GinkgoT(), err)
 
 		expectedOperatorGroupStatus := v1.OperatorGroupStatus{
@@ -1506,7 +1509,7 @@ var _ = Describe("Operator Group", func() {
 				if apierrors.IsNotFound(fetchErr) {
 					return false, nil
 				}
-				GinkgoT().Logf("Error (in %v): %v", testNamespace, fetchErr.Error())
+				GinkgoT().Logf("Error (in %v): %v", generatedNamespace.GetName(), fetchErr.Error())
 				return false, fetchErr
 			}
 			if checkOperatorGroupAnnotations(fetchedCSV, operatorGroup, true, corev1.NamespaceAll) == nil {
@@ -1585,7 +1588,7 @@ var _ = Describe("Operator Group", func() {
 
 		csvName := genName("another-csv-")
 
-		newNamespaceName := genName(testNamespace + "-")
+		newNamespaceName := genName(generatedNamespace.GetName() + "-")
 
 		_, err := c.KubernetesInterface().CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1721,7 +1724,7 @@ var _ = Describe("Operator Group", func() {
 
 		csvName := genName("another-csv-")
 
-		newNamespaceName := genName(testNamespace + "-")
+		newNamespaceName := genName(generatedNamespace.GetName() + "-")
 
 		_, err := c.KubernetesInterface().CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1819,7 +1822,7 @@ var _ = Describe("Operator Group", func() {
 
 		csvName := genName("another-csv-") // must be lowercase for DNS-1123 validation
 
-		opGroupNamespace := testNamespace
+		opGroupNamespace := generatedNamespace.GetName()
 		matchingLabel := map[string]string{"inGroup": opGroupNamespace}
 		otherNamespaceName := genName(opGroupNamespace + "-")
 		GinkgoT().Log("Creating CRD")
@@ -1828,8 +1831,7 @@ var _ = Describe("Operator Group", func() {
 		cleanupCRD, err := createCRD(c, mainCRD)
 		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
-		GinkgoT().Logf("Getting default operator group 'global-operators' installed via operatorgroup-default.yaml %v", opGroupNamespace)
-		operatorGroup, err := crc.OperatorsV1().OperatorGroups(opGroupNamespace).Get(context.TODO(), "global-operators", metav1.GetOptions{})
+		operatorGroup, err := crc.OperatorsV1().OperatorGroups(opGroupNamespace).Get(context.TODO(), fmt.Sprintf("%v-operatorgroup", opGroupNamespace), metav1.GetOptions{})
 		require.NoError(GinkgoT(), err)
 
 		expectedOperatorGroupStatus := v1.OperatorGroupStatus{
@@ -1986,7 +1988,7 @@ var _ = Describe("Operator Group", func() {
 				if apierrors.IsNotFound(fetchErr) {
 					return false, nil
 				}
-				GinkgoT().Logf("Error (in %v): %v", testNamespace, fetchErr.Error())
+				GinkgoT().Logf("Error (in %v): %v", generatedNamespace.GetName(), fetchErr.Error())
 				return false, fetchErr
 			}
 			if checkOperatorGroupAnnotations(fetchedCSV, operatorGroup, true, corev1.NamespaceAll) == nil {
