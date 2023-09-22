@@ -199,7 +199,7 @@ func main() {
 		}
 		for i, commit := range missingCommits {
 			commitLogger := logger.WithField("commit", commit.Hash)
-			commitLogger.Infof("cherry-picking commit %d/%d", i+1, len(commits))
+			commitLogger.Infof("cherry-picking commit %d/%d", i+1, len(missingCommits))
 			if err := cherryPick(ctx, commitLogger, commit, opts.GitCommitArgs()); err != nil {
 				logger.WithError(err).Fatal("failed to cherry-pick commit")
 			}
