@@ -55,7 +55,7 @@ ifeq (, $(wildcard $(KUBEBUILDER_ASSETS)/kube-apiserver))
 	$(error kube-apiserver $(KUBEBUILDER_ASSETS_ERR))
 endif
 
-build: $(REGISTRY_CMDS) $(OLM_CMDS) $(OPM) ## build opm and olm binaries
+build: $(REGISTRY_CMDS) $(OLM_CMDS) $(OPM) bin/copy-content ## build opm and olm binaries
 
 build/opm:
 	$(MAKE) $(OPM)
@@ -64,7 +64,7 @@ build/registry:
 	$(MAKE) $(REGISTRY_CMDS) $(OPM)
 
 build/olm:
-	$(MAKE) $(PSM_CMD) $(OLM_CMDS) $(COLLECT_PROFILES_CMD)
+	$(MAKE) $(PSM_CMD) $(OLM_CMDS) $(COLLECT_PROFILES_CMD) bin/copy-content
 
 $(OPM): version_flags=-ldflags "-X '$(REGISTRY_PKG)/cmd/opm/version.gitCommit=$(GIT_COMMIT)' -X '$(REGISTRY_PKG)/cmd/opm/version.opmVersion=$(OPM_VERSION)' -X '$(REGISTRY_PKG)/cmd/opm/version.buildDate=$(BUILD_DATE)'"
 $(OPM):
@@ -103,6 +103,9 @@ bin/kubebuilder:
 
 bin/cpb: FORCE
 	CGO_ENABLED=0 go build $(GO_BUILD_OPTS) -ldflags '-extldflags "-static"' -o $@ github.com/operator-framework/operator-lifecycle-manager/util/cpb
+
+bin/copy-content: FORCE
+	CGO_ENABLED=0 go build $(GO_BUILD_OPTS) -ldflags '-extldflags "-static"' -o $@ github.com/operator-framework/operator-lifecycle-manager/cmd/copy-content
 
 unit/olm: bin/kubebuilder
 	@echo "Running the OLM unit tests"

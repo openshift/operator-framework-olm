@@ -4,9 +4,9 @@ ENV GO111MODULE auto
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
-# Permit the cpb binary to be compiled statically. The Red Hat compiler
+# Permit the cpb and copy-content binaries to be compiled statically. The Red Hat compiler
 # provided by ART will otherwise force FIPS compliant dynamic compilation.
-ENV GO_COMPLIANCE_EXCLUDE="build.*operator-lifecycle-manager/util/cpb"
+ENV GO_COMPLIANCE_EXCLUDE="build.*operator-lifecycle-manager/(util/cpb|cmd/copy-content)"
 
 WORKDIR /build
 
@@ -30,6 +30,7 @@ COPY --from=builder /build/bin/collect-profiles /bin/collect-profiles
 COPY --from=builder /build/bin/package-server /bin/package-server
 COPY --from=builder /build/bin/cpb /bin/cpb
 COPY --from=builder /build/bin/psm /bin/psm
+COPY --from=builder /build/bin/copy-content /bin/copy-content
 
 # This image doesn't need to run as root user.
 USER 1001
