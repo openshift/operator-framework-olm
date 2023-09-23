@@ -1952,6 +1952,7 @@ var _ = Describe("Operator Group", func() {
 			}
 			return true, nil
 		})
+		require.NoError(GinkgoT(), err)
 		require.EqualValues(GinkgoT(), append(role.Rules, rbacv1.PolicyRule{
 			Verbs:     []string{"get", "list", "watch"},
 			APIGroups: []string{""},
@@ -1968,6 +1969,7 @@ var _ = Describe("Operator Group", func() {
 			}
 			return true, nil
 		})
+		require.NoError(GinkgoT(), err)
 		require.EqualValues(GinkgoT(), roleBinding.Subjects, fetchedRoleBinding.Subjects)
 		require.EqualValues(GinkgoT(), roleBinding.RoleRef.Name, fetchedRoleBinding.RoleRef.Name)
 		require.EqualValues(GinkgoT(), "rbac.authorization.k8s.io", fetchedRoleBinding.RoleRef.APIGroup)
