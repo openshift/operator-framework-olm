@@ -151,8 +151,6 @@ spec:
             - \$(PACKAGESERVER_NAME)
             - --namespace
             - \$(PACKAGESERVER_NAMESPACE)
-            - --interval
-            - \$(PACKAGESERVER_INTERVAL)
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
           imagePullPolicy: IfNotPresent
           env:
@@ -165,7 +163,11 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: PACKAGESERVER_INTERVAL
-              value: 5m
+              valueFrom:
+                configMapKeyRef:
+                  name: packageserver-env
+                  key: PACKAGESERVER_INTERVAL
+                  optional: true
             - name: RELEASE_VERSION
               value: "0.0.1-snapshot"
           resources:

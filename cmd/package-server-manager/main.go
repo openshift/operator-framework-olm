@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -66,6 +67,14 @@ func run(cmd *cobra.Command, args []string) error {
 	interval, err := cmd.Flags().GetString("interval")
 	if err != nil {
 		return err
+	}
+	// Override with optional envornment
+	i := os.Getenv("PACKAGESERVER_INTERVAL")
+	if i != "" {
+		_, err = time.ParseDuration(i)
+		if err == nil {
+			interval = i
+		}
 	}
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
