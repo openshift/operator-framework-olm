@@ -106,6 +106,10 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/operator-framework/configmap-operator-registry:latest
+  - name: kube-rbac-proxy
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-kube-rbac-proxy:latest
 EOF
 
 cat << EOF > manifests/0000_50_olm_06-psm-operator.deployment.yaml
@@ -138,6 +142,32 @@ spec:
       serviceAccountName: olm-operator-serviceaccount
       priorityClassName: "system-cluster-critical"
       containers:
+        - args:
+          - --secure-listen-address=0.0.0.0:8443
+          - --upstream=http://127.0.0.1:9090/
+          - --tls-cert-file=/etc/tls/private/tls.crt
+          - --tls-private-key-file=/etc/tls/private/tls.key
+          - --logtostderr=true
+          image: quay.io/openshift/origin-kube-rbac-proxy:latest
+          imagePullPolicy: IfNotPresent
+          name: kube-rbac-proxy
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          ports:
+          - containerPort: 8443
+            name: metrics
+            protocol: TCP
+          resources:
+            requests:
+              memory: 20Mi
+              cpu: 10m
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /etc/tls/private
+            name: package-server-manager-serving-cert
         - name: package-server-manager
           securityContext:
             allowPrivilegeEscalation: false
@@ -153,6 +183,7 @@ spec:
             - \$(PACKAGESERVER_NAMESPACE)
             - --interval
             - \$(PACKAGESERVER_INTERVAL)
+            - "--metrics=:9090"
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
           imagePullPolicy: IfNotPresent
           env:
@@ -168,10 +199,12 @@ spec:
               value: 5m
             - name: RELEASE_VERSION
               value: "0.0.1-snapshot"
+            - name: GOMEMLIMIT
+              value: "5MiB"
           resources:
             requests:
               cpu: 10m
-              memory: 50Mi
+              memory: 10Mi
           livenessProbe:
             httpGet:
               path: /healthz
@@ -198,6 +231,54 @@ spec:
           key: node.kubernetes.io/not-ready
           operator: Exists
           tolerationSeconds: 120
+      volumes:
+      - name: package-server-manager-serving-cert
+        secret:
+          secretName: package-server-manager-serving-cert
+EOF
+
+cat << EOF > manifests/0000_50_olm_06-psm-operator.service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    service.alpha.openshift.io/serving-cert-secret-name: package-server-manager-serving-cert
+  name: package-server-manager-metrics
+  namespace: openshift-operator-lifecycle-manager
+spec:
+  ports:
+  - name: metrics
+    port: 8443
+    protocol: TCP
+    targetPort: metrics
+  selector:
+    app: package-server-manager
+  sessionAffinity: None
+  type: ClusterIP
+EOF
+
+cat << EOF > manifests/0000_50_olm_06-psm-operator.servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: package-server-manager-metrics
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+spec:
+  endpoints:
+  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    interval: 30s
+    port: metrics
+    scheme: https
+    tlsConfig:
+      caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
+      serverName: package-server-manager-metrics.openshift-operator-lifecycle-manager.svc
+  namespaceSelector:
+    matchNames:
+    - openshift-operator-lifecycle-manager
+  selector: {}
 EOF
 
 cat << EOF > manifests/0000_50_olm_00-pprof-config.yaml

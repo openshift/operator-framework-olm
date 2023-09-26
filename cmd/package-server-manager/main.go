@@ -67,6 +67,10 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	metricsAddr, err := cmd.Flags().GetString("metrics")
+	if err != nil {
+		return err
+	}
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	setupLog := ctrl.Log.WithName("setup")
@@ -78,7 +82,7 @@ func run(cmd *cobra.Command, args []string) error {
 	mgr, err := ctrl.NewManager(restConfig, manager.Options{
 		Scheme:                  setupScheme(),
 		Namespace:               namespace,
-		MetricsBindAddress:      defaultMetricsPort,
+		MetricsBindAddress:      metricsAddr,
 		LeaderElection:          !disableLeaderElection,
 		LeaderElectionNamespace: namespace,
 		LeaderElectionID:        leaderElectionConfigmapName,
