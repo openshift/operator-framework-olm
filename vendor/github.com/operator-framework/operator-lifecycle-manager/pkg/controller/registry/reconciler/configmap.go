@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -52,7 +53,8 @@ const (
 
 func (s *configMapCatalogSourceDecorator) Labels() map[string]string {
 	labels := map[string]string{
-		CatalogSourceLabelKey: s.GetName(),
+		CatalogSourceLabelKey:      s.GetName(),
+		install.OLMManagedLabelKey: install.OLMManagedLabelValue,
 	}
 	if s.Spec.SourceType == v1alpha1.SourceTypeInternal || s.Spec.SourceType == v1alpha1.SourceTypeConfigmap {
 		labels[ConfigMapRVLabelKey] = s.Status.ConfigMapResource.ResourceVersion
@@ -93,7 +95,9 @@ func (s *configMapCatalogSourceDecorator) Service() *corev1.Service {
 		},
 	}
 
-	labels := map[string]string{}
+	labels := map[string]string{
+		install.OLMManagedLabelKey: install.OLMManagedLabelValue,
+	}
 	hash := HashServiceSpec(svc.Spec)
 	labels[ServiceHashLabelKey] = hash
 	svc.SetLabels(labels)
@@ -102,7 +106,7 @@ func (s *configMapCatalogSourceDecorator) Service() *corev1.Service {
 }
 
 func (s *configMapCatalogSourceDecorator) Pod(image string) *corev1.Pod {
-	pod := Pod(s.CatalogSource, "configmap-registry-server", image, "", s.Labels(), s.Annotations(), 5, 5, s.runAsUser)
+	pod := Pod(s.CatalogSource, "configmap-registry-server", "", "", image, "", s.Labels(), s.Annotations(), 5, 5, s.runAsUser)
 	pod.Spec.ServiceAccountName = s.GetName() + ConfigMapServerPostfix
 	pod.Spec.Containers[0].Command = []string{"configmap-server", "-c", s.Spec.ConfigMap, "-n", s.GetNamespace()}
 	ownerutil.AddOwner(pod, s.CatalogSource, false, true)
@@ -114,6 +118,9 @@ func (s *configMapCatalogSourceDecorator) ServiceAccount() *corev1.ServiceAccoun
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s.serviceAccountName(),
 			Namespace: s.GetNamespace(),
+			Labels: map[string]string{
+				install.OLMManagedLabelKey: install.OLMManagedLabelValue,
+			},
 		},
 	}
 	ownerutil.AddOwner(sa, s.CatalogSource, false, false)
@@ -125,6 +132,9 @@ func (s *configMapCatalogSourceDecorator) Role() *rbacv1.Role {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s.roleName(),
 			Namespace: s.GetNamespace(),
+			Labels: map[string]string{
+				install.OLMManagedLabelKey: install.OLMManagedLabelValue,
+			},
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -144,6 +154,9 @@ func (s *configMapCatalogSourceDecorator) RoleBinding() *rbacv1.RoleBinding {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s.GetName() + "-server-configmap-reader",
 			Namespace: s.GetNamespace(),
+			Labels: map[string]string{
+				install.OLMManagedLabelKey: install.OLMManagedLabelValue,
+			},
 		},
 		Subjects: []rbacv1.Subject{
 			{

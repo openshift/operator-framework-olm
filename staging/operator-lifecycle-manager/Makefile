@@ -64,7 +64,7 @@ ifeq (, $(wildcard $(KUBEBUILDER_ASSETS)/kube-apiserver))
 endif
 
 cover.out:
-	go test $(MOD_FLAGS) -tags "json1" -v -race -coverprofile=cover.out -covermode=atomic \
+	go test $(MOD_FLAGS) -tags "json1" -race -coverprofile=cover.out -covermode=atomic \
 		-coverpkg ./pkg/controller/... ./pkg/...
 
 coverage: cover.out
@@ -97,10 +97,13 @@ bin/wait: FORCE
 build-util-linux: arch_flags=GOOS=linux GOARCH=$(ARCH)
 build-util-linux: build-util
 
-build-util: bin/cpb
+build-util: bin/cpb bin/copy-content
 
 bin/cpb: FORCE
 	CGO_ENABLED=0 $(arch_flags) go build -buildvcs=false $(MOD_FLAGS) -ldflags '-extldflags "-static"' -o $@ ./util/cpb
+
+bin/copy-content: FORCE
+	CGO_ENABLED=0 $(arch_flags) go build -buildvcs=false $(MOD_FLAGS) -ldflags '-extldflags "-static"' -o $@ ./cmd/copy-content
 
 $(CMDS): version_flags=-ldflags "-X $(PKG)/pkg/version.GitCommit=$(GIT_COMMIT) -X $(PKG)/pkg/version.OLMVersion=`cat OLM_VERSION`"
 $(CMDS):

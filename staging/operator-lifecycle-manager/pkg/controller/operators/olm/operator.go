@@ -7,21 +7,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/labeller"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/plugins"
 	"github.com/sirupsen/logrus"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	extinf "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	appsv1applyconfigurations "k8s.io/client-go/applyconfigurations/apps/v1"
+	rbacv1applyconfigurations "k8s.io/client-go/applyconfigurations/rbac/v1"
 	"k8s.io/client-go/informers"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/metadata/metadatainformer"
@@ -133,6 +137,11 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		return nil, err
 	}
 	if err := metav1.AddMetaToScheme(scheme); err != nil {
+		return nil, err
+	}
+
+	canFilter, err := labeller.Validate(ctx, config.logger, config.metadataClient)
+	if err != nil {
 		return nil, err
 	}
 
@@ -309,7 +318,17 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		}
 
 		// Wire Deployments
-		k8sInformerFactory := informers.NewSharedInformerFactoryWithOptions(op.opClient.KubernetesInterface(), config.resyncPeriod(), informers.WithNamespace(namespace))
+		k8sInformerFactory := informers.NewSharedInformerFactoryWithOptions(op.opClient.KubernetesInterface(), config.resyncPeriod(), func() []informers.SharedInformerOption {
+			opts := []informers.SharedInformerOption{
+				informers.WithNamespace(namespace),
+			}
+			if canFilter {
+				opts = append(opts, informers.WithTweakListOptions(func(options *metav1.ListOptions) {
+					options.LabelSelector = labels.SelectorFromSet(labels.Set{install.OLMManagedLabelKey: install.OLMManagedLabelValue}).String()
+				}))
+			}
+			return opts
+		}()...)
 		depInformer := k8sInformerFactory.Apps().V1().Deployments()
 		informersByNamespace[namespace].DeploymentInformer = depInformer
 		op.lister.AppsV1().RegisterDeploymentLister(namespace, depInformer.Lister())
@@ -428,6 +447,42 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		}
 	}
 
+	labelObjects := func(gvr schema.GroupVersionResource, informer cache.SharedIndexInformer, sync queueinformer.LegacySyncHandler) error {
+		if canFilter {
+			return nil
+		}
+		queue := workqueue.NewRateLimitingQueueWithConfig(workqueue.DefaultControllerRateLimiter(), workqueue.RateLimitingQueueConfig{
+			Name: gvr.String(),
+		})
+		queueInformer, err := queueinformer.NewQueueInformer(
+			ctx,
+			queueinformer.WithQueue(queue),
+			queueinformer.WithLogger(op.logger),
+			queueinformer.WithInformer(informer),
+			queueinformer.WithSyncer(sync.ToSyncer()),
+		)
+		if err != nil {
+			return err
+		}
+
+		if err := op.RegisterQueueInformer(queueInformer); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	deploymentsgvk := appsv1.SchemeGroupVersion.WithResource("deployments")
+	if err := labelObjects(deploymentsgvk, informersByNamespace[metav1.NamespaceAll].DeploymentInformer.Informer(), labeller.ObjectLabeler[*appsv1.Deployment, *appsv1applyconfigurations.DeploymentApplyConfiguration](
+		ctx, op.logger, labeller.Filter(deploymentsgvk),
+		appsv1applyconfigurations.Deployment,
+		func(namespace string, ctx context.Context, cfg *appsv1applyconfigurations.DeploymentApplyConfiguration, opts metav1.ApplyOptions) (*appsv1.Deployment, error) {
+			return op.opClient.KubernetesInterface().AppsV1().Deployments(namespace).Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
+
 	// add queue for all namespaces as well
 	objGCQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), fmt.Sprintf("%s/obj-gc", ""))
 	op.objGCQueueSet.Set("", objGCQueue)
@@ -465,7 +520,14 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		return nil, err
 	}
 
-	k8sInformerFactory := informers.NewSharedInformerFactory(op.opClient.KubernetesInterface(), config.resyncPeriod())
+	k8sInformerFactory := informers.NewSharedInformerFactoryWithOptions(op.opClient.KubernetesInterface(), config.resyncPeriod(), func() []informers.SharedInformerOption {
+		if !canFilter {
+			return nil
+		}
+		return []informers.SharedInformerOption{informers.WithTweakListOptions(func(options *metav1.ListOptions) {
+			options.LabelSelector = labels.SelectorFromSet(labels.Set{install.OLMManagedLabelKey: install.OLMManagedLabelValue}).String()
+		})}
+	}()...)
 	clusterRoleInformer := k8sInformerFactory.Rbac().V1().ClusterRoles()
 	informersByNamespace[metav1.NamespaceAll].ClusterRoleInformer = clusterRoleInformer
 	op.lister.RbacV1().RegisterClusterRoleLister(clusterRoleInformer.Lister())
@@ -482,6 +544,33 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		return nil, err
 	}
 
+	clusterrolesgvk := rbacv1.SchemeGroupVersion.WithResource("clusterroles")
+	if err := labelObjects(clusterrolesgvk, clusterRoleInformer.Informer(), labeller.ObjectLabeler[*rbacv1.ClusterRole, *rbacv1applyconfigurations.ClusterRoleApplyConfiguration](
+		ctx, op.logger, labeller.Filter(clusterrolesgvk),
+		func(name, _ string) *rbacv1applyconfigurations.ClusterRoleApplyConfiguration {
+			return rbacv1applyconfigurations.ClusterRole(name)
+		},
+		func(_ string, ctx context.Context, cfg *rbacv1applyconfigurations.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (*rbacv1.ClusterRole, error) {
+			return op.opClient.KubernetesInterface().RbacV1().ClusterRoles().Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
+	if err := labelObjects(clusterrolesgvk, clusterRoleInformer.Informer(), labeller.ContentHashLabeler[*rbacv1.ClusterRole, *rbacv1applyconfigurations.ClusterRoleApplyConfiguration](
+		ctx, op.logger, labeller.ContentHashFilter,
+		func(clusterRole *rbacv1.ClusterRole) (string, error) {
+			return resolver.PolicyRuleHashLabelValue(clusterRole.Rules)
+		},
+		func(name, _ string) *rbacv1applyconfigurations.ClusterRoleApplyConfiguration {
+			return rbacv1applyconfigurations.ClusterRole(name)
+		},
+		func(_ string, ctx context.Context, cfg *rbacv1applyconfigurations.ClusterRoleApplyConfiguration, opts metav1.ApplyOptions) (*rbacv1.ClusterRole, error) {
+			return op.opClient.KubernetesInterface().RbacV1().ClusterRoles().Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
+
 	clusterRoleBindingInformer := k8sInformerFactory.Rbac().V1().ClusterRoleBindings()
 	informersByNamespace[metav1.NamespaceAll].ClusterRoleBindingInformer = clusterRoleBindingInformer
 	op.lister.RbacV1().RegisterClusterRoleBindingLister(clusterRoleBindingInformer.Lister())
@@ -495,6 +584,33 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		return nil, err
 	}
 	if err := op.RegisterQueueInformer(clusterRoleBindingQueueInformer); err != nil {
+		return nil, err
+	}
+
+	clusterrolebindingssgvk := rbacv1.SchemeGroupVersion.WithResource("clusterrolebindings")
+	if err := labelObjects(clusterrolebindingssgvk, clusterRoleBindingInformer.Informer(), labeller.ObjectLabeler[*rbacv1.ClusterRoleBinding, *rbacv1applyconfigurations.ClusterRoleBindingApplyConfiguration](
+		ctx, op.logger, labeller.Filter(clusterrolebindingssgvk),
+		func(name, _ string) *rbacv1applyconfigurations.ClusterRoleBindingApplyConfiguration {
+			return rbacv1applyconfigurations.ClusterRoleBinding(name)
+		},
+		func(_ string, ctx context.Context, cfg *rbacv1applyconfigurations.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (*rbacv1.ClusterRoleBinding, error) {
+			return op.opClient.KubernetesInterface().RbacV1().ClusterRoleBindings().Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
+	if err := labelObjects(clusterrolebindingssgvk, clusterRoleBindingInformer.Informer(), labeller.ContentHashLabeler[*rbacv1.ClusterRoleBinding, *rbacv1applyconfigurations.ClusterRoleBindingApplyConfiguration](
+		ctx, op.logger, labeller.ContentHashFilter,
+		func(clusterRoleBinding *rbacv1.ClusterRoleBinding) (string, error) {
+			return resolver.RoleReferenceAndSubjectHashLabelValue(clusterRoleBinding.RoleRef, clusterRoleBinding.Subjects)
+		},
+		func(name, _ string) *rbacv1applyconfigurations.ClusterRoleBindingApplyConfiguration {
+			return rbacv1applyconfigurations.ClusterRoleBinding(name)
+		},
+		func(_ string, ctx context.Context, cfg *rbacv1applyconfigurations.ClusterRoleBindingApplyConfiguration, opts metav1.ApplyOptions) (*rbacv1.ClusterRoleBinding, error) {
+			return op.opClient.KubernetesInterface().RbacV1().ClusterRoleBindings().Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
 		return nil, err
 	}
 
@@ -541,14 +657,25 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		return nil, err
 	}
 
-	// Register CustomResourceDefinition QueueInformer
-	crdInformer := extinf.NewSharedInformerFactory(op.opClient.ApiextensionsInterface(), config.resyncPeriod()).Apiextensions().V1().CustomResourceDefinitions()
+	// Register CustomResourceDefinition QueueInformer. Object metadata requests are used
+	// by this informer in order to reduce cached size.
+	gvr := apiextensionsv1.SchemeGroupVersion.WithResource("customresourcedefinitions")
+	crdInformer := metadatainformer.NewFilteredMetadataInformer(
+		config.metadataClient,
+		gvr,
+		metav1.NamespaceAll,
+		config.resyncPeriod(),
+		cache.Indexers{},
+		nil,
+	).Informer()
+	crdLister := metadatalister.New(crdInformer.GetIndexer(), gvr)
 	informersByNamespace[metav1.NamespaceAll].CRDInformer = crdInformer
-	op.lister.APIExtensionsV1().RegisterCustomResourceDefinitionLister(crdInformer.Lister())
+	informersByNamespace[metav1.NamespaceAll].CRDLister = crdLister
+	op.lister.APIExtensionsV1().RegisterCustomResourceDefinitionLister(crdLister)
 	crdQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
 		queueinformer.WithLogger(op.logger),
-		queueinformer.WithInformer(crdInformer.Informer()),
+		queueinformer.WithInformer(crdInformer),
 		queueinformer.WithSyncer(k8sSyncer),
 	)
 	if err != nil {
@@ -1183,7 +1310,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		}
 
 		for i, crdName := range desc.ConversionCRDs {
-			crd, err := a.lister.APIExtensionsV1().CustomResourceDefinitionLister().Get(crdName)
+			crd, err := a.opClient.ApiextensionsInterface().ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), crdName, metav1.GetOptions{})
 			if err != nil {
 				logger.Errorf("error getting CRD %v which was defined in CSVs spec.WebhookDefinition[%d]: %v\n", crdName, i, err)
 				continue

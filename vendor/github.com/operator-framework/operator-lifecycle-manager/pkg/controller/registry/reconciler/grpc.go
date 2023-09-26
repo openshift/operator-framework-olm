@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"strings"
 	"time"
 
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -33,6 +35,8 @@ const (
 type grpcCatalogSourceDecorator struct {
 	*v1alpha1.CatalogSource
 	createPodAsUser int64
+	opmImage        string
+	utilImage       string
 }
 
 type UpdateNotReadyErr struct {
@@ -58,7 +62,8 @@ func (s *grpcCatalogSourceDecorator) SelectorForUpdate() labels.Selector {
 
 func (s *grpcCatalogSourceDecorator) Labels() map[string]string {
 	return map[string]string{
-		CatalogSourceLabelKey: s.GetName(),
+		CatalogSourceLabelKey:      s.GetName(),
+		install.OLMManagedLabelKey: install.OLMManagedLabelValue,
 	}
 }
 
@@ -70,7 +75,7 @@ func (s *grpcCatalogSourceDecorator) Annotations() map[string]string {
 func (s *grpcCatalogSourceDecorator) Service() *corev1.Service {
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.GetName(),
+			Name:      strings.ReplaceAll(s.GetName(), ".", "-"),
 			Namespace: s.GetNamespace(),
 		},
 		Spec: corev1.ServiceSpec{
@@ -88,6 +93,7 @@ func (s *grpcCatalogSourceDecorator) Service() *corev1.Service {
 	labels := map[string]string{}
 	hash := HashServiceSpec(svc.Spec)
 	labels[ServiceHashLabelKey] = hash
+	labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
 	svc.SetLabels(labels)
 	ownerutil.AddOwner(svc, s.CatalogSource, false, false)
 	return svc
@@ -107,6 +113,7 @@ func (s *grpcCatalogSourceDecorator) ServiceAccount() *corev1.ServiceAccount {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s.GetName(),
 			Namespace: s.GetNamespace(),
+			Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue},
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Name:               s.GetName(),
@@ -123,7 +130,7 @@ func (s *grpcCatalogSourceDecorator) ServiceAccount() *corev1.ServiceAccount {
 }
 
 func (s *grpcCatalogSourceDecorator) Pod(saName string) *corev1.Pod {
-	pod := Pod(s.CatalogSource, "registry-server", s.Spec.Image, saName, s.Labels(), s.Annotations(), 5, 10, s.createPodAsUser)
+	pod := Pod(s.CatalogSource, "registry-server", s.opmImage, s.utilImage, s.Spec.Image, saName, s.Labels(), s.Annotations(), 5, 10, s.createPodAsUser)
 	ownerutil.AddOwner(pod, s.CatalogSource, false, true)
 	return pod
 }
@@ -134,6 +141,8 @@ type GrpcRegistryReconciler struct {
 	OpClient        operatorclient.ClientInterface
 	SSAClient       *controllerclient.ServerSideApplier
 	createPodAsUser int64
+	opmImage        string
+	utilImage       string
 }
 
 var _ RegistryReconciler = &GrpcRegistryReconciler{}
@@ -191,16 +200,25 @@ func (c *GrpcRegistryReconciler) currentPodsWithCorrectImageAndSpec(source grpcC
 	found := []*corev1.Pod{}
 	newPod := source.Pod(saName)
 	for _, p := range pods {
-		if p.Spec.Containers[0].Image == source.Spec.Image && podHashMatch(p, newPod) {
+		if correctImages(source, p) && podHashMatch(p, newPod) {
 			found = append(found, p)
 		}
 	}
 	return found
 }
 
+func correctImages(source grpcCatalogSourceDecorator, pod *corev1.Pod) bool {
+	if source.CatalogSource.Spec.GrpcPodConfig != nil && source.CatalogSource.Spec.GrpcPodConfig.ExtractContent != nil {
+		return pod.Spec.InitContainers[0].Image == source.utilImage &&
+			pod.Spec.InitContainers[1].Image == source.CatalogSource.Spec.Image &&
+			pod.Spec.Containers[0].Image == source.opmImage
+	}
+	return pod.Spec.Containers[0].Image == source.CatalogSource.Spec.Image
+}
+
 // EnsureRegistryServer ensures that all components of registry server are up to date.
 func (c *GrpcRegistryReconciler) EnsureRegistryServer(catalogSource *v1alpha1.CatalogSource) error {
-	source := grpcCatalogSourceDecorator{catalogSource, c.createPodAsUser}
+	source := grpcCatalogSourceDecorator{CatalogSource: catalogSource, createPodAsUser: c.createPodAsUser, opmImage: c.opmImage, utilImage: c.utilImage}
 
 	// if service status is nil, we force create every object to ensure they're created the first time
 	overwrite := source.Status.RegistryServiceStatus == nil || !isRegistryServiceStatusValid(&source)
@@ -449,7 +467,7 @@ func (c *GrpcRegistryReconciler) removePods(pods []*corev1.Pod, namespace string
 
 // CheckRegistryServer returns true if the given CatalogSource is considered healthy; false otherwise.
 func (c *GrpcRegistryReconciler) CheckRegistryServer(catalogSource *v1alpha1.CatalogSource) (healthy bool, err error) {
-	source := grpcCatalogSourceDecorator{catalogSource, c.createPodAsUser}
+	source := grpcCatalogSourceDecorator{CatalogSource: catalogSource, createPodAsUser: c.createPodAsUser, opmImage: c.opmImage, utilImage: c.utilImage}
 	// Check on registry resources
 	// TODO: add gRPC health check
 	if len(c.currentPodsWithCorrectImageAndSpec(source, source.ServiceAccount().GetName())) < 1 ||

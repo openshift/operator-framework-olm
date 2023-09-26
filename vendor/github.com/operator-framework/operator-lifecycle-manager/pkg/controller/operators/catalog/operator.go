@@ -11,16 +11,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/labeller"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/validatingroundtripper"
 	errorwrap "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/connectivity"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/apiserver/validation"
-	extinf "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -32,8 +34,14 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	batchv1applyconfigurations "k8s.io/client-go/applyconfigurations/batch/v1"
+	corev1applyconfigurations "k8s.io/client-go/applyconfigurations/core/v1"
+	rbacv1applyconfigurations "k8s.io/client-go/applyconfigurations/rbac/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
+	"k8s.io/client-go/metadata"
+	"k8s.io/client-go/metadata/metadatainformer"
+	"k8s.io/client-go/metadata/metadatalister"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
@@ -138,14 +146,22 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 		return nil, err
 	}
 
+	// create a config that validates we're creating objects with labels
+	validatingConfig := validatingroundtripper.Wrap(config)
+
 	// Create a new client for dynamic types (CRs)
-	dynamicClient, err := dynamic.NewForConfig(config)
+	dynamicClient, err := dynamic.NewForConfig(validatingConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	metadataClient, err := metadata.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a new queueinformer-based operator.
-	opClient, err := operatorclient.NewClientFromRestConfig(config)
+	opClient, err := operatorclient.NewClientFromRestConfig(validatingConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -165,6 +181,11 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 	}
 
 	ssaClient, err := controllerclient.NewForConfig(config, scheme, RegistryFieldManager)
+	if err != nil {
+		return nil, err
+	}
+
+	canFilter, err := labeller.Validate(ctx, logger, metadataClient)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +215,7 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 	op.sources = grpc.NewSourceStore(logger, 10*time.Second, 10*time.Minute, op.syncSourceState)
 	op.sourceInvalidator = resolver.SourceProviderFromRegistryClientProvider(op.sources, logger)
 	resolverSourceProvider := NewOperatorGroupToggleSourceProvider(op.sourceInvalidator, logger, op.lister.OperatorsV1().OperatorGroupLister())
-	op.reconciler = reconciler.NewRegistryReconcilerFactory(lister, opClient, configmapRegistryImage, op.now, ssaClient, workloadUserID)
+	op.reconciler = reconciler.NewRegistryReconcilerFactory(lister, opClient, configmapRegistryImage, op.now, ssaClient, workloadUserID, opmImage, utilImage)
 	res := resolver.NewOperatorStepResolver(lister, crClient, operatorNamespace, resolverSourceProvider, logger)
 	op.resolver = resolver.NewInstrumentedResolver(res, metrics.RegisterDependencyResolutionSuccess, metrics.RegisterDependencyResolutionFailure)
 
@@ -344,7 +365,14 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 	}
 
 	// Wire k8s sharedIndexInformers
-	k8sInformerFactory := informers.NewSharedInformerFactoryWithOptions(op.opClient.KubernetesInterface(), resyncPeriod())
+	k8sInformerFactory := informers.NewSharedInformerFactoryWithOptions(op.opClient.KubernetesInterface(), resyncPeriod(), func() []informers.SharedInformerOption {
+		if !canFilter {
+			return nil
+		}
+		return []informers.SharedInformerOption{informers.WithTweakListOptions(func(options *metav1.ListOptions) {
+			options.LabelSelector = labels.SelectorFromSet(labels.Set{install.OLMManagedLabelKey: install.OLMManagedLabelValue}).String()
+		})}
+	}()...)
 	sharedIndexInformers := []cache.SharedIndexInformer{}
 
 	// Wire Roles
@@ -352,20 +380,113 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 	op.lister.RbacV1().RegisterRoleLister(metav1.NamespaceAll, roleInformer.Lister())
 	sharedIndexInformers = append(sharedIndexInformers, roleInformer.Informer())
 
+	labelObjects := func(gvr schema.GroupVersionResource, informer cache.SharedIndexInformer, sync queueinformer.LegacySyncHandler) error {
+		if canFilter {
+			return nil
+		}
+		queue := workqueue.NewRateLimitingQueueWithConfig(workqueue.DefaultControllerRateLimiter(), workqueue.RateLimitingQueueConfig{
+			Name: gvr.String(),
+		})
+		queueInformer, err := queueinformer.NewQueueInformer(
+			ctx,
+			queueinformer.WithQueue(queue),
+			queueinformer.WithLogger(op.logger),
+			queueinformer.WithInformer(informer),
+			queueinformer.WithSyncer(sync.ToSyncer()),
+		)
+		if err != nil {
+			return err
+		}
+
+		if err := op.RegisterQueueInformer(queueInformer); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	rolesgvk := rbacv1.SchemeGroupVersion.WithResource("roles")
+	if err := labelObjects(rolesgvk, roleInformer.Informer(), labeller.ObjectLabeler[*rbacv1.Role, *rbacv1applyconfigurations.RoleApplyConfiguration](
+		ctx, op.logger, labeller.Filter(rolesgvk),
+		rbacv1applyconfigurations.Role,
+		func(namespace string, ctx context.Context, cfg *rbacv1applyconfigurations.RoleApplyConfiguration, opts metav1.ApplyOptions) (*rbacv1.Role, error) {
+			return op.opClient.KubernetesInterface().RbacV1().Roles(namespace).Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
+	if err := labelObjects(rolesgvk, roleInformer.Informer(), labeller.ContentHashLabeler[*rbacv1.Role, *rbacv1applyconfigurations.RoleApplyConfiguration](
+		ctx, op.logger, labeller.ContentHashFilter,
+		func(role *rbacv1.Role) (string, error) {
+			return resolver.PolicyRuleHashLabelValue(role.Rules)
+		},
+		rbacv1applyconfigurations.Role,
+		func(namespace string, ctx context.Context, cfg *rbacv1applyconfigurations.RoleApplyConfiguration, opts metav1.ApplyOptions) (*rbacv1.Role, error) {
+			return op.opClient.KubernetesInterface().RbacV1().Roles(namespace).Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
+
 	// Wire RoleBindings
 	roleBindingInformer := k8sInformerFactory.Rbac().V1().RoleBindings()
 	op.lister.RbacV1().RegisterRoleBindingLister(metav1.NamespaceAll, roleBindingInformer.Lister())
 	sharedIndexInformers = append(sharedIndexInformers, roleBindingInformer.Informer())
+
+	rolebindingsgvk := rbacv1.SchemeGroupVersion.WithResource("rolebindings")
+	if err := labelObjects(rolebindingsgvk, roleBindingInformer.Informer(), labeller.ObjectLabeler[*rbacv1.RoleBinding, *rbacv1applyconfigurations.RoleBindingApplyConfiguration](
+		ctx, op.logger, labeller.Filter(rolebindingsgvk),
+		rbacv1applyconfigurations.RoleBinding,
+		func(namespace string, ctx context.Context, cfg *rbacv1applyconfigurations.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (*rbacv1.RoleBinding, error) {
+			return op.opClient.KubernetesInterface().RbacV1().RoleBindings(namespace).Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
+	if err := labelObjects(rolebindingsgvk, roleBindingInformer.Informer(), labeller.ContentHashLabeler[*rbacv1.RoleBinding, *rbacv1applyconfigurations.RoleBindingApplyConfiguration](
+		ctx, op.logger, labeller.ContentHashFilter,
+		func(roleBinding *rbacv1.RoleBinding) (string, error) {
+			return resolver.RoleReferenceAndSubjectHashLabelValue(roleBinding.RoleRef, roleBinding.Subjects)
+		},
+		rbacv1applyconfigurations.RoleBinding,
+		func(namespace string, ctx context.Context, cfg *rbacv1applyconfigurations.RoleBindingApplyConfiguration, opts metav1.ApplyOptions) (*rbacv1.RoleBinding, error) {
+			return op.opClient.KubernetesInterface().RbacV1().RoleBindings(namespace).Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
 
 	// Wire ServiceAccounts
 	serviceAccountInformer := k8sInformerFactory.Core().V1().ServiceAccounts()
 	op.lister.CoreV1().RegisterServiceAccountLister(metav1.NamespaceAll, serviceAccountInformer.Lister())
 	sharedIndexInformers = append(sharedIndexInformers, serviceAccountInformer.Informer())
 
+	serviceaccountsgvk := corev1.SchemeGroupVersion.WithResource("serviceaccounts")
+	if err := labelObjects(serviceaccountsgvk, serviceAccountInformer.Informer(), labeller.ObjectLabeler[*corev1.ServiceAccount, *corev1applyconfigurations.ServiceAccountApplyConfiguration](
+		ctx, op.logger, labeller.Filter(serviceaccountsgvk),
+		corev1applyconfigurations.ServiceAccount,
+		func(namespace string, ctx context.Context, cfg *corev1applyconfigurations.ServiceAccountApplyConfiguration, opts metav1.ApplyOptions) (*corev1.ServiceAccount, error) {
+			return op.opClient.KubernetesInterface().CoreV1().ServiceAccounts(namespace).Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
+
 	// Wire Services
 	serviceInformer := k8sInformerFactory.Core().V1().Services()
 	op.lister.CoreV1().RegisterServiceLister(metav1.NamespaceAll, serviceInformer.Lister())
 	sharedIndexInformers = append(sharedIndexInformers, serviceInformer.Informer())
+
+	servicesgvk := corev1.SchemeGroupVersion.WithResource("services")
+	if err := labelObjects(servicesgvk, serviceInformer.Informer(), labeller.ObjectLabeler[*corev1.Service, *corev1applyconfigurations.ServiceApplyConfiguration](
+		ctx, op.logger, labeller.Filter(servicesgvk),
+		corev1applyconfigurations.Service,
+		func(namespace string, ctx context.Context, cfg *corev1applyconfigurations.ServiceApplyConfiguration, opts metav1.ApplyOptions) (*corev1.Service, error) {
+			return op.opClient.KubernetesInterface().CoreV1().Services(namespace).Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
 
 	// Wire Pods for CatalogSource
 	catsrcReq, err := labels.NewRequirement(reconciler.CatalogSourceLabelKey, selection.Exists, nil)
@@ -380,6 +501,17 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 	})).Core().V1().Pods()
 	op.lister.CoreV1().RegisterPodLister(metav1.NamespaceAll, csPodInformer.Lister())
 	sharedIndexInformers = append(sharedIndexInformers, csPodInformer.Informer())
+
+	podsgvk := corev1.SchemeGroupVersion.WithResource("pods")
+	if err := labelObjects(podsgvk, csPodInformer.Informer(), labeller.ObjectLabeler[*corev1.Pod, *corev1applyconfigurations.PodApplyConfiguration](
+		ctx, op.logger, labeller.Filter(podsgvk),
+		corev1applyconfigurations.Pod,
+		func(namespace string, ctx context.Context, cfg *corev1applyconfigurations.PodApplyConfiguration, opts metav1.ApplyOptions) (*corev1.Pod, error) {
+			return op.opClient.KubernetesInterface().CoreV1().Pods(namespace).Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
 
 	// Wire Pods for BundleUnpack job
 	buReq, err := labels.NewRequirement(bundle.BundleUnpackPodLabel, selection.Exists, nil)
@@ -404,6 +536,19 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 	// Wire Jobs
 	jobInformer := k8sInformerFactory.Batch().V1().Jobs()
 	sharedIndexInformers = append(sharedIndexInformers, jobInformer.Informer())
+
+	jobsgvk := batchv1.SchemeGroupVersion.WithResource("jobs")
+	if err := labelObjects(jobsgvk, jobInformer.Informer(), labeller.ObjectLabeler[*batchv1.Job, *batchv1applyconfigurations.JobApplyConfiguration](
+		ctx, op.logger, labeller.JobFilter(func(namespace, name string) (metav1.Object, error) {
+			return configMapInformer.Lister().ConfigMaps(namespace).Get(name)
+		}),
+		batchv1applyconfigurations.Job,
+		func(namespace string, ctx context.Context, cfg *batchv1applyconfigurations.JobApplyConfiguration, opts metav1.ApplyOptions) (*batchv1.Job, error) {
+			return op.opClient.KubernetesInterface().BatchV1().Jobs(namespace).Apply(ctx, cfg, opts)
+		},
+	)); err != nil {
+		return nil, err
+	}
 
 	// Generate and register QueueInformers for k8s resources
 	k8sSyncer := queueinformer.LegacySyncHandler(op.syncObject).ToSyncerWithDelete(op.handleDeletion)
@@ -443,19 +588,37 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 		return nil, err
 	}
 
-	// Register CustomResourceDefinition QueueInformer
-	crdInformer := extinf.NewSharedInformerFactory(op.opClient.ApiextensionsInterface(), resyncPeriod()).Apiextensions().V1().CustomResourceDefinitions()
-	op.lister.APIExtensionsV1().RegisterCustomResourceDefinitionLister(crdInformer.Lister())
+	// Register CustomResourceDefinition QueueInformer. Object metadata requests are used
+	// by this informer in order to reduce cached size.
+	gvr := apiextensionsv1.SchemeGroupVersion.WithResource("customresourcedefinitions")
+	crdInformer := metadatainformer.NewFilteredMetadataInformer(
+		metadataClient,
+		gvr,
+		metav1.NamespaceAll,
+		resyncPeriod(),
+		cache.Indexers{},
+		nil,
+	).Informer()
+	crdLister := metadatalister.New(crdInformer.GetIndexer(), gvr)
+	op.lister.APIExtensionsV1().RegisterCustomResourceDefinitionLister(crdLister)
 	crdQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
 		queueinformer.WithLogger(op.logger),
-		queueinformer.WithInformer(crdInformer.Informer()),
+		queueinformer.WithInformer(crdInformer),
 		queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncObject).ToSyncerWithDelete(op.handleDeletion)),
 	)
 	if err != nil {
 		return nil, err
 	}
 	if err := op.RegisterQueueInformer(crdQueueInformer); err != nil {
+		return nil, err
+	}
+
+	customresourcedefinitionsgvk := apiextensionsv1.SchemeGroupVersion.WithResource("customresourcedefinitions")
+	if err := labelObjects(customresourcedefinitionsgvk, crdInformer, labeller.ObjectPatchLabeler(
+		ctx, op.logger, labeller.Filter(customresourcedefinitionsgvk),
+		op.opClient.ApiextensionsInterface().ApiextensionsV1().CustomResourceDefinitions().Patch,
+	)); err != nil {
 		return nil, err
 	}
 
@@ -2096,6 +2259,10 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 
 					// Attempt to create the CSV.
 					csv.SetNamespace(namespace)
+					if csv.Labels == nil {
+						csv.Labels = map[string]string{}
+					}
+					csv.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
 
 					status, err := ensurer.EnsureClusterServiceVersion(&csv)
 					if err != nil {
@@ -2121,6 +2288,10 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 
 					// Attempt to create the Subscription
 					sub.SetNamespace(namespace)
+					if sub.Labels == nil {
+						sub.Labels = map[string]string{}
+					}
+					sub.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
 
 					status, err := ensurer.EnsureSubscription(&sub)
 					if err != nil {
@@ -2151,6 +2322,10 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 					}
 					s.SetOwnerReferences(updated)
 					s.SetNamespace(namespace)
+					if s.Labels == nil {
+						s.Labels = map[string]string{}
+					}
+					s.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
 
 					status, err := ensurer.EnsureBundleSecret(plan.Namespace, &s)
 					if err != nil {
@@ -2175,6 +2350,11 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 						return errorwrap.Wrapf(err, "error parsing step manifest: %s", step.Resource.Name)
 					}
 
+					if cr.Labels == nil {
+						cr.Labels = map[string]string{}
+					}
+					cr.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
+
 					status, err := ensurer.EnsureClusterRole(&cr, step)
 					if err != nil {
 						return err
@@ -2189,6 +2369,10 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 					if err != nil {
 						return errorwrap.Wrapf(err, "error parsing step manifest: %s", step.Resource.Name)
 					}
+					if rb.Labels == nil {
+						rb.Labels = map[string]string{}
+					}
+					rb.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
 
 					status, err := ensurer.EnsureClusterRoleBinding(&rb, step)
 					if err != nil {
@@ -2212,6 +2396,10 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 					}
 					r.SetOwnerReferences(updated)
 					r.SetNamespace(namespace)
+					if r.Labels == nil {
+						r.Labels = map[string]string{}
+					}
+					r.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
 
 					status, err := ensurer.EnsureRole(plan.Namespace, &r)
 					if err != nil {
@@ -2235,6 +2423,10 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 					}
 					rb.SetOwnerReferences(updated)
 					rb.SetNamespace(namespace)
+					if rb.Labels == nil {
+						rb.Labels = map[string]string{}
+					}
+					rb.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
 
 					status, err := ensurer.EnsureRoleBinding(plan.Namespace, &rb)
 					if err != nil {
@@ -2258,6 +2450,10 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 					}
 					sa.SetOwnerReferences(updated)
 					sa.SetNamespace(namespace)
+					if sa.Labels == nil {
+						sa.Labels = map[string]string{}
+					}
+					sa.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
 
 					status, err := ensurer.EnsureServiceAccount(namespace, &sa)
 					if err != nil {
@@ -2289,6 +2485,10 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 					}
 					s.SetOwnerReferences(updated)
 					s.SetNamespace(namespace)
+					if s.Labels == nil {
+						s.Labels = map[string]string{}
+					}
+					s.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
 
 					status, err := ensurer.EnsureService(namespace, &s)
 					if err != nil {
@@ -2319,6 +2519,10 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 					}
 					cfg.SetOwnerReferences(updated)
 					cfg.SetNamespace(namespace)
+					if cfg.Labels == nil {
+						cfg.Labels = map[string]string{}
+					}
+					cfg.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
 
 					status, err := ensurer.EnsureConfigMap(plan.Namespace, &cfg)
 					if err != nil {
@@ -2378,6 +2582,12 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 							}
 						}
 					}
+					l := unstructuredObject.GetLabels()
+					if l == nil {
+						l = map[string]string{}
+					}
+					l[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
+					unstructuredObject.SetLabels(l)
 
 					// Set up the dynamic client ResourceInterface and set ownerrefs
 					var resourceInterface dynamic.ResourceInterface

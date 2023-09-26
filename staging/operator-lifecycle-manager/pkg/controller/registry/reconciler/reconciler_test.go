@@ -35,7 +35,7 @@ func TestPodMemoryTarget(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "test-",
 					Namespace:    "testns",
-					Labels:       map[string]string{"olm.pod-spec-hash": "68d7885bb7"},
+					Labels:       map[string]string{"olm.pod-spec-hash": "68d7885bb7", "olm.managed": "true"},
 					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
 				},
 				Spec: corev1.PodSpec{
@@ -107,7 +107,7 @@ func TestPodMemoryTarget(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "test-",
 					Namespace:    "testns",
-					Labels:       map[string]string{"olm.pod-spec-hash": "855b6c6cf6"},
+					Labels:       map[string]string{"olm.pod-spec-hash": "5c6bb6945f", "olm.managed": "true"},
 					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
 				},
 				Spec: corev1.PodSpec{
@@ -150,9 +150,7 @@ func TestPodMemoryTarget(t *testing.T) {
 									corev1.ResourceCPU:    resource.MustParse("10m"),
 									corev1.ResourceMemory: resource.MustParse("5Mi"),
 								},
-								Limits: corev1.ResourceList{
-									corev1.ResourceMemory: resource.MustParse("10Mi"),
-								},
+								Limits: corev1.ResourceList{},
 							},
 							SecurityContext: &corev1.SecurityContext{
 								ReadOnlyRootFilesystem: pointer.Bool(false),
@@ -169,7 +167,202 @@ func TestPodMemoryTarget(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		pod := Pod(testCase.input, "name", "image", "service-account", map[string]string{}, map[string]string{}, int32(0), int32(0), int64(workloadUserID))
+		pod := Pod(testCase.input, "name", "opmImage", "utilImage", "image", "service-account", map[string]string{}, map[string]string{}, int32(0), int32(0), int64(workloadUserID))
+		if diff := cmp.Diff(pod, testCase.expected); diff != "" {
+			t.Errorf("got incorrect pod: %v", diff)
+		}
+	}
+}
+
+func TestPodExtractContent(t *testing.T) {
+	var testCases = []struct {
+		name     string
+		input    *v1alpha1.CatalogSource
+		expected *corev1.Pod
+	}{
+		{
+			name: "content extraction not requested",
+			input: &v1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "testns",
+				},
+			},
+			expected: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "test-",
+					Namespace:    "testns",
+					Labels:       map[string]string{"olm.pod-spec-hash": "68d7885bb7", "olm.managed": "true"},
+					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "name",
+							Image: "image",
+							Ports: []corev1.ContainerPort{{Name: "grpc", ContainerPort: 50051}},
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								InitialDelaySeconds: 0,
+								TimeoutSeconds:      5,
+							},
+							LivenessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								InitialDelaySeconds: 0,
+								TimeoutSeconds:      5,
+							},
+							StartupProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								FailureThreshold: 10,
+								PeriodSeconds:    10,
+								TimeoutSeconds:   5,
+							},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("10m"),
+									corev1.ResourceMemory: resource.MustParse("50Mi"),
+								},
+							},
+							SecurityContext: &corev1.SecurityContext{
+								ReadOnlyRootFilesystem: pointer.Bool(false),
+							},
+							ImagePullPolicy:          image.InferImagePullPolicy("image"),
+							TerminationMessagePolicy: "FallbackToLogsOnError",
+						},
+					},
+					NodeSelector:       map[string]string{"kubernetes.io/os": "linux"},
+					ServiceAccountName: "service-account",
+				},
+			},
+		},
+		{
+			name: "content extraction expected",
+			input: &v1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "testns",
+				},
+				Spec: v1alpha1.CatalogSourceSpec{
+					GrpcPodConfig: &v1alpha1.GrpcPodConfig{
+						ExtractContent: &v1alpha1.ExtractContentConfig{
+							CacheDir:   "/tmp/cache",
+							CatalogDir: "/catalog",
+						},
+					},
+				},
+			},
+			expected: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "test-",
+					Namespace:    "testns",
+					Labels:       map[string]string{"olm.pod-spec-hash": "667f4b9769", "olm.managed": "true"},
+					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
+				},
+				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{
+						{
+							Name:         "utilities",
+							VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}},
+						},
+						{
+							Name:         "catalog-content",
+							VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}},
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:         "extract-utilities",
+							Image:        "utilImage",
+							Command:      []string{"cp"},
+							Args:         []string{"/bin/copy-content", "/utilities/copy-content"},
+							VolumeMounts: []corev1.VolumeMount{{Name: "utilities", MountPath: "/utilities"}},
+						},
+						{
+							Name:    "extract-content",
+							Image:   "image",
+							Command: []string{"/utilities/copy-content"},
+							Args: []string{
+								"--catalog.from=/catalog",
+								"--catalog.to=/extracted-catalog/catalog",
+								"--cache.from=/tmp/cache",
+								"--cache.to=/extracted-catalog/cache",
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{Name: "utilities", MountPath: "/utilities"},
+								{Name: "catalog-content", MountPath: "/extracted-catalog"},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name:    "name",
+							Image:   "opmImage",
+							Command: []string{"/bin/opm"},
+							Args:    []string{"serve", "/extracted-catalog/catalog", "--cache-dir=/extracted-catalog/cache"},
+							Ports:   []corev1.ContainerPort{{Name: "grpc", ContainerPort: 50051}},
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								InitialDelaySeconds: 0,
+								TimeoutSeconds:      5,
+							},
+							LivenessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								InitialDelaySeconds: 0,
+								TimeoutSeconds:      5,
+							},
+							StartupProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"grpc_health_probe", "-addr=:50051"},
+									},
+								},
+								FailureThreshold: 10,
+								PeriodSeconds:    10,
+								TimeoutSeconds:   5,
+							},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("10m"),
+									corev1.ResourceMemory: resource.MustParse("50Mi"),
+								},
+							},
+							SecurityContext: &corev1.SecurityContext{
+								ReadOnlyRootFilesystem: pointer.Bool(false),
+							},
+							ImagePullPolicy:          image.InferImagePullPolicy("image"),
+							TerminationMessagePolicy: "FallbackToLogsOnError",
+							VolumeMounts:             []corev1.VolumeMount{{Name: "catalog-content", MountPath: "/extracted-catalog"}},
+						},
+					},
+					NodeSelector:       map[string]string{"kubernetes.io/os": "linux"},
+					ServiceAccountName: "service-account",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		pod := Pod(testCase.input, "name", "opmImage", "utilImage", "image", "service-account", map[string]string{}, map[string]string{}, int32(0), int32(0), int64(workloadUserID))
 		if diff := cmp.Diff(pod, testCase.expected); diff != "" {
 			t.Errorf("got incorrect pod: %v", diff)
 		}
@@ -187,7 +380,7 @@ func TestPodNodeSelector(t *testing.T) {
 	key := "kubernetes.io/os"
 	value := "linux"
 
-	gotCatSrcPod := Pod(catsrc, "hello", "busybox", "", map[string]string{}, map[string]string{}, int32(0), int32(0), int64(workloadUserID))
+	gotCatSrcPod := Pod(catsrc, "hello", "utilImage", "opmImage", "busybox", "", map[string]string{}, map[string]string{}, int32(0), int32(0), int64(workloadUserID))
 	gotCatSrcPodSelector := gotCatSrcPod.Spec.NodeSelector
 
 	if gotCatSrcPodSelector[key] != value {
@@ -235,7 +428,7 @@ func TestPullPolicy(t *testing.T) {
 	}
 
 	for _, tt := range table {
-		p := Pod(source, "catalog", tt.image, "", nil, nil, int32(0), int32(0), int64(workloadUserID))
+		p := Pod(source, "catalog", "opmImage", "utilImage", tt.image, "", nil, nil, int32(0), int32(0), int64(workloadUserID))
 		policy := p.Spec.Containers[0].ImagePullPolicy
 		if policy != tt.policy {
 			t.Fatalf("expected pull policy %s for image  %s", tt.policy, tt.image)
@@ -347,7 +540,7 @@ func TestPodContainerSecurityContext(t *testing.T) {
 		},
 	}
 	for _, testcase := range testcases {
-		outputPod := Pod(testcase.inputCatsrc, "hello", "busybox", "", map[string]string{}, map[string]string{}, int32(0), int32(0), int64(workloadUserID))
+		outputPod := Pod(testcase.inputCatsrc, "hello", "utilImage", "opmImage", "busybox", "", map[string]string{}, map[string]string{}, int32(0), int32(0), int64(workloadUserID))
 		if testcase.expectedSecurityContext != nil {
 			require.Equal(t, testcase.expectedSecurityContext, outputPod.Spec.SecurityContext)
 		}
@@ -377,7 +570,7 @@ func TestPodAvoidsConcurrentWrite(t *testing.T) {
 		"annotation": "somethingelse",
 	}
 
-	gotPod := Pod(catsrc, "hello", "busybox", "", labels, annotations, int32(0), int32(0), int64(workloadUserID))
+	gotPod := Pod(catsrc, "hello", "opmImage", "utilImage", "busybox", "", labels, annotations, int32(0), int32(0), int64(workloadUserID))
 
 	// check labels and annotations point to different addresses between parameters and what's in the pod
 	require.NotEqual(t, &labels, &gotPod.Labels)
@@ -606,7 +799,7 @@ func TestPodSchedulingOverrides(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		pod := Pod(testCase.catalogSource, "hello", "busybox", "", map[string]string{}, testCase.annotations, int32(0), int32(0), int64(workloadUserID))
+		pod := Pod(testCase.catalogSource, "hello", "opmImage", "utilImage", "busybox", "", map[string]string{}, testCase.annotations, int32(0), int32(0), int64(workloadUserID))
 		require.Equal(t, testCase.expectedNodeSelectors, pod.Spec.NodeSelector)
 		require.Equal(t, testCase.expectedPriorityClassName, pod.Spec.PriorityClassName)
 		require.Equal(t, testCase.expectedTolerations, pod.Spec.Tolerations)

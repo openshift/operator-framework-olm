@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -340,27 +342,41 @@ var _ = Describe("Operator Group", func() {
 		})
 
 		// validate provided API clusterroles for the operatorgroup
-		adminRole, err := c.KubernetesInterface().RbacV1().ClusterRoles().Get(context.TODO(), operatorGroup.Name+"-admin", metav1.GetOptions{})
+		existingClusterRoleList, err := c.KubernetesInterface().RbacV1().ClusterRoles().List(context.TODO(), metav1.ListOptions{
+			LabelSelector: labels.SelectorFromSet(ownerutil.OwnerLabel(&operatorGroup, "OperatorGroup")).String(),
+		})
 		require.NoError(GinkgoT(), err)
-		adminPolicyRules := []rbacv1.PolicyRule{
-			{Verbs: []string{"*"}, APIGroups: []string{mainCRD.Spec.Group}, Resources: []string{mainCRDPlural}},
-		}
-		require.Equal(GinkgoT(), adminPolicyRules, adminRole.Rules)
+		require.Len(GinkgoT(), existingClusterRoleList.Items, 3)
 
-		editRole, err := c.KubernetesInterface().RbacV1().ClusterRoles().Get(context.TODO(), operatorGroup.Name+"-edit", metav1.GetOptions{})
-		require.NoError(GinkgoT(), err)
-		editPolicyRules := []rbacv1.PolicyRule{
-			{Verbs: []string{"create", "update", "patch", "delete"}, APIGroups: []string{mainCRD.Spec.Group}, Resources: []string{mainCRDPlural}},
-		}
-		require.Equal(GinkgoT(), editPolicyRules, editRole.Rules)
+		for _, role := range existingClusterRoleList.Items {
+			if strings.HasSuffix(role.Name, "admin") {
+				adminPolicyRules := []rbacv1.PolicyRule{
+					{Verbs: []string{"*"}, APIGroups: []string{mainCRD.Spec.Group}, Resources: []string{mainCRDPlural}},
+				}
+				if assert.Equal(GinkgoT(), adminPolicyRules, role.Rules) == false {
+					fmt.Println(cmp.Diff(adminPolicyRules, role.Rules))
+					GinkgoT().Fail()
+				}
 
-		viewRole, err := c.KubernetesInterface().RbacV1().ClusterRoles().Get(context.TODO(), operatorGroup.Name+"-view", metav1.GetOptions{})
-		require.NoError(GinkgoT(), err)
-		viewPolicyRules := []rbacv1.PolicyRule{
-			{Verbs: []string{"get"}, APIGroups: []string{"apiextensions.k8s.io"}, Resources: []string{"customresourcedefinitions"}, ResourceNames: []string{mainCRD.Name}},
-			{Verbs: []string{"get", "list", "watch"}, APIGroups: []string{mainCRD.Spec.Group}, Resources: []string{mainCRDPlural}},
+			} else if strings.HasSuffix(role.Name, "edit") {
+				editPolicyRules := []rbacv1.PolicyRule{
+					{Verbs: []string{"create", "update", "patch", "delete"}, APIGroups: []string{mainCRD.Spec.Group}, Resources: []string{mainCRDPlural}},
+				}
+				if assert.Equal(GinkgoT(), editPolicyRules, role.Rules) == false {
+					fmt.Println(cmp.Diff(editPolicyRules, role.Rules))
+					GinkgoT().Fail()
+				}
+			} else if strings.HasSuffix(role.Name, "view") {
+				viewPolicyRules := []rbacv1.PolicyRule{
+					{Verbs: []string{"get"}, APIGroups: []string{"apiextensions.k8s.io"}, Resources: []string{"customresourcedefinitions"}, ResourceNames: []string{mainCRD.Name}},
+					{Verbs: []string{"get", "list", "watch"}, APIGroups: []string{mainCRD.Spec.Group}, Resources: []string{mainCRDPlural}},
+				}
+				if assert.Equal(GinkgoT(), viewPolicyRules, role.Rules) == false {
+					fmt.Println(cmp.Diff(viewPolicyRules, role.Rules))
+					GinkgoT().Fail()
+				}
+			}
 		}
-		require.Equal(GinkgoT(), viewPolicyRules, viewRole.Rules)
 
 		// Unsupport all InstallModes
 		log("unsupporting all csv installmodes")
@@ -426,8 +442,8 @@ var _ = Describe("Operator Group", func() {
 		// Create crd so csv succeeds
 		// Ensure clusterroles created and aggregated for access provided APIs
 
-		// Generate namespaceA
 		nsA := genName("a")
+		GinkgoT().Logf("generating namespaceA: %s", nsA)
 		c := newKubeClient()
 		for _, ns := range []string{nsA} {
 			namespace := &corev1.Namespace{
@@ -442,25 +458,29 @@ var _ = Describe("Operator Group", func() {
 			}(ns)
 		}
 
-		// Generate operatorGroupA - OwnNamespace
-		groupA := newOperatorGroup(nsA, genName("a"), nil, nil, []string{nsA}, false)
+		groupAName := genName("a")
+		GinkgoT().Logf("Generate operatorGroupA - OwnNamespace: %s", groupAName)
+		groupA := newOperatorGroup(nsA, groupAName, nil, nil, []string{nsA}, false)
 		_, err := crc.OperatorsV1().OperatorGroups(nsA).Create(context.TODO(), groupA, metav1.CreateOptions{})
 		require.NoError(GinkgoT(), err)
 		defer func() {
 			require.NoError(GinkgoT(), crc.OperatorsV1().OperatorGroups(nsA).Delete(context.TODO(), groupA.GetName(), metav1.DeleteOptions{}))
 		}()
 
-		// Generate csvA in namespaceA with all installmodes supported
-		crd := newCRD(genName("a"))
-		namedStrategy := newNginxInstallStrategy(genName("dep-"), nil, nil)
-		csvA := newCSV("nginx-a", nsA, "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, &namedStrategy)
+		crdAName := genName("a")
+		strategyName := genName("dep-")
+		csvAName := "nginx-a"
+		GinkgoT().Logf("Generate csv (%s/%s) with crd %s and with all installmodes supported: %s", nsA, csvAName, crdAName, strategyName)
+		crd := newCRD(crdAName)
+		namedStrategy := newNginxInstallStrategy(strategyName, nil, nil)
+		csvA := newCSV(csvAName, nsA, "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, &namedStrategy)
 		_, err = crc.OperatorsV1alpha1().ClusterServiceVersions(nsA).Create(context.TODO(), &csvA, metav1.CreateOptions{})
 		require.NoError(GinkgoT(), err)
 		defer func() {
 			require.NoError(GinkgoT(), crc.OperatorsV1alpha1().ClusterServiceVersions(nsA).Delete(context.TODO(), csvA.GetName(), metav1.DeleteOptions{}))
 		}()
 
-		// Create crd so csv succeeds
+		GinkgoT().Logf("Create crd %s so csv %s/%s succeeds", crdAName, nsA, csvAName)
 		cleanupCRD, err := createCRD(c, crd)
 		require.NoError(GinkgoT(), err)
 		defer cleanupCRD()
@@ -468,8 +488,8 @@ var _ = Describe("Operator Group", func() {
 		_, err = fetchCSV(crc, csvA.GetName(), nsA, csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
-		// Create a csv for an apiserver
 		depName := genName("hat-server")
+		GinkgoT().Logf("Create csv %s/%s for an apiserver", nsA, depName)
 		mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
 		version := "v1alpha1"
 		mockGroupVersion := strings.Join([]string{mockGroup, version}, "/")
@@ -531,19 +551,20 @@ var _ = Describe("Operator Group", func() {
 		}
 		csvB.SetName(depName)
 
-		// Create the APIService CSV
+		GinkgoT().Logf("Create the APIService CSV %s/%s", nsA, depName)
 		cleanupCSV, err := createCSV(c, crc, csvB, nsA, false, true)
 		require.NoError(GinkgoT(), err)
 		defer cleanupCSV()
 
+		GinkgoT().Logf("Fetch the APIService CSV %s/%s", nsA, depName)
 		_, err = fetchCSV(crc, csvB.GetName(), nsA, csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
-		// Ensure clusterroles created and aggregated for access provided APIs
+		GinkgoT().Logf("Ensure clusterroles created and aggregated for access provided APIs")
 		padmin, cleanupPadmin := createProjectAdmin(GinkgoT(), c, nsA)
 		defer cleanupPadmin()
 
-		// Check CRD access aggregated
+		GinkgoT().Logf("Check CRD access aggregated")
 		err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
 			res, err := c.KubernetesInterface().AuthorizationV1().SubjectAccessReviews().Create(context.TODO(), &authorizationv1.SubjectAccessReview{
 				Spec: authorizationv1.SubjectAccessReviewSpec{
@@ -563,12 +584,12 @@ var _ = Describe("Operator Group", func() {
 			if res == nil {
 				return false, nil
 			}
-			GinkgoT().Log("checking padmin for permission")
+			GinkgoT().Logf("checking padmin for permission: %#v", res)
 			return res.Status.Allowed, nil
 		})
 		require.NoError(GinkgoT(), err)
 
-		// Check apiserver access aggregated
+		GinkgoT().Logf("Check apiserver access aggregated")
 		err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
 			res, err := c.KubernetesInterface().AuthorizationV1().SubjectAccessReviews().Create(context.TODO(), &authorizationv1.SubjectAccessReview{
 				Spec: authorizationv1.SubjectAccessReviewSpec{
@@ -917,15 +938,15 @@ var _ = Describe("Operator Group", func() {
 		catalog := genName("catalog-")
 		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalog, nsA, manifests, []apiextensions.CustomResourceDefinition{crdA, crdD, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB, csvD})
 		defer cleanupCatalogSource()
-		_, err := fetchCatalogSourceOnStatus(crc, catalog, nsA, catalogSourceRegistryPodSynced)
+		_, err := fetchCatalogSourceOnStatus(crc, catalog, nsA, catalogSourceRegistryPodSynced())
 		require.NoError(GinkgoT(), err)
 		_, cleanupCatalogSource = createInternalCatalogSource(c, crc, catalog, nsB, manifests, []apiextensions.CustomResourceDefinition{crdA, crdD, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB, csvD})
 		defer cleanupCatalogSource()
-		_, err = fetchCatalogSourceOnStatus(crc, catalog, nsB, catalogSourceRegistryPodSynced)
+		_, err = fetchCatalogSourceOnStatus(crc, catalog, nsB, catalogSourceRegistryPodSynced())
 		require.NoError(GinkgoT(), err)
 		_, cleanupCatalogSource = createInternalCatalogSource(c, crc, catalog, nsD, manifests, []apiextensions.CustomResourceDefinition{crdA, crdD, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB, csvD})
 		defer cleanupCatalogSource()
-		_, err = fetchCatalogSourceOnStatus(crc, catalog, nsD, catalogSourceRegistryPodSynced)
+		_, err = fetchCatalogSourceOnStatus(crc, catalog, nsD, catalogSourceRegistryPodSynced())
 		require.NoError(GinkgoT(), err)
 
 		// Create operatorgroups
@@ -944,7 +965,7 @@ var _ = Describe("Operator Group", func() {
 		subDName := genName("d-")
 		cleanupSubD := createSubscriptionForCatalog(crc, nsD, subDName, catalog, pkgD, stableChannel, pkgDStable, v1alpha1.ApprovalAutomatic)
 		defer cleanupSubD()
-		subD, err := fetchSubscription(crc, nsD, subDName, subscriptionHasInstallPlanChecker)
+		subD, err := fetchSubscription(crc, nsD, subDName, subscriptionHasInstallPlanChecker())
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subD)
 
@@ -967,7 +988,7 @@ var _ = Describe("Operator Group", func() {
 		subD2Name := genName("d2-")
 		cleanupSubD2 := createSubscriptionForCatalog(crc, nsA, subD2Name, catalog, pkgD, stableChannel, pkgDStable, v1alpha1.ApprovalAutomatic)
 		defer cleanupSubD2()
-		subD2, err := fetchSubscription(crc, nsA, subD2Name, subscriptionHasInstallPlanChecker)
+		subD2, err := fetchSubscription(crc, nsA, subD2Name, subscriptionHasInstallPlanChecker())
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subD2)
 
@@ -991,7 +1012,7 @@ var _ = Describe("Operator Group", func() {
 		subAName := genName("a-")
 		cleanupSubA := createSubscriptionForCatalog(crc, nsA, subAName, catalog, pkgA, stableChannel, pkgAStable, v1alpha1.ApprovalAutomatic)
 		defer cleanupSubA()
-		subA, err := fetchSubscription(crc, nsA, subAName, subscriptionHasInstallPlanChecker)
+		subA, err := fetchSubscription(crc, nsA, subAName, subscriptionHasInstallPlanChecker())
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subA)
 
@@ -1062,7 +1083,7 @@ var _ = Describe("Operator Group", func() {
 		subBName := genName("b-")
 		cleanupSubB := createSubscriptionForCatalog(crc, nsB, subBName, catalog, pkgB, stableChannel, pkgBStable, v1alpha1.ApprovalAutomatic)
 		defer cleanupSubB()
-		subB, err := fetchSubscription(crc, nsB, subBName, subscriptionHasInstallPlanChecker)
+		subB, err := fetchSubscription(crc, nsB, subBName, subscriptionHasInstallPlanChecker())
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subB)
 
@@ -1184,11 +1205,11 @@ var _ = Describe("Operator Group", func() {
 		catalog := genName("catalog-")
 		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalog, nsB, manifests, []apiextensions.CustomResourceDefinition{crdA, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB})
 		defer cleanupCatalogSource()
-		_, err := fetchCatalogSourceOnStatus(crc, catalog, nsB, catalogSourceRegistryPodSynced)
+		_, err := fetchCatalogSourceOnStatus(crc, catalog, nsB, catalogSourceRegistryPodSynced())
 		require.NoError(GinkgoT(), err)
 		_, cleanupCatalogSource = createInternalCatalogSource(c, crc, catalog, nsC, manifests, []apiextensions.CustomResourceDefinition{crdA, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB})
 		defer cleanupCatalogSource()
-		_, err = fetchCatalogSourceOnStatus(crc, catalog, nsC, catalogSourceRegistryPodSynced)
+		_, err = fetchCatalogSourceOnStatus(crc, catalog, nsC, catalogSourceRegistryPodSynced())
 		require.NoError(GinkgoT(), err)
 
 		// Create OperatorGroups
@@ -1207,7 +1228,7 @@ var _ = Describe("Operator Group", func() {
 		subAName := genName("a-")
 		cleanupSubA := createSubscriptionForCatalog(crc, nsB, subAName, catalog, pkgA, stableChannel, pkgAStable, v1alpha1.ApprovalAutomatic)
 		defer cleanupSubA()
-		subA, err := fetchSubscription(crc, nsB, subAName, subscriptionHasInstallPlanChecker)
+		subA, err := fetchSubscription(crc, nsB, subAName, subscriptionHasInstallPlanChecker())
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subA)
 
@@ -1233,7 +1254,7 @@ var _ = Describe("Operator Group", func() {
 		// Create subscription for csvA in namespaceC
 		cleanupSubAC := createSubscriptionForCatalog(crc, nsC, subAName, catalog, pkgA, stableChannel, pkgAStable, v1alpha1.ApprovalAutomatic)
 		defer cleanupSubAC()
-		subAC, err := fetchSubscription(crc, nsC, subAName, subscriptionHasInstallPlanChecker)
+		subAC, err := fetchSubscription(crc, nsC, subAName, subscriptionHasInstallPlanChecker())
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subAC)
 
@@ -1259,7 +1280,7 @@ var _ = Describe("Operator Group", func() {
 		subBName := genName("b-")
 		cleanupSubB := createSubscriptionForCatalog(crc, nsB, subBName, catalog, pkgB, stableChannel, pkgBStable, v1alpha1.ApprovalAutomatic)
 		defer cleanupSubB()
-		subB, err := fetchSubscription(crc, nsB, subBName, subscriptionHasInstallPlanChecker)
+		subB, err := fetchSubscription(crc, nsB, subBName, subscriptionHasInstallPlanChecker())
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subB)
 

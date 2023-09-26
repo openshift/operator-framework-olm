@@ -2,6 +2,7 @@ package cmds
 
 import (
 	_ "github.com/operator-framework/operator-lifecycle-manager/cmd/catalog"
+	_ "github.com/operator-framework/operator-lifecycle-manager/cmd/copy-content"
 	_ "github.com/operator-framework/operator-lifecycle-manager/cmd/olm"
 	_ "github.com/operator-framework/operator-lifecycle-manager/cmd/package-server"
 	_ "github.com/operator-framework/operator-lifecycle-manager/util/cpb"

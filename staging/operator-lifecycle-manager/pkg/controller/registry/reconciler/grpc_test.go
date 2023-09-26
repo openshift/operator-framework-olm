@@ -2,9 +2,12 @@ package reconciler
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -61,6 +64,13 @@ func grpcCatalogSourceWithAnnotations(annotations map[string]string) *v1alpha1.C
 	return catsrc
 }
 
+func grpcCatalogSourceWithName(name string) *v1alpha1.CatalogSource {
+	catsrc := validGrpcCatalogSource("image", "")
+	catsrc.SetName(name)
+	catsrc.ObjectMeta.Labels["olm.catalogSource"] = name
+	return catsrc
+}
+
 func TestGrpcRegistryReconciler(t *testing.T) {
 	now := func() metav1.Time { return metav1.Date(2018, time.January, 26, 20, 40, 0, 0, time.UTC) }
 	blockOwnerDeletion := true
@@ -91,6 +101,21 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			testName: "Grpc/NoExistingRegistry/CreateSuccessful",
 			in: in{
 				catsrc: validGrpcCatalogSource("test-img", ""),
+			},
+			out: out{
+				status: &v1alpha1.RegistryServiceStatus{
+					CreatedAt:        now(),
+					Protocol:         "grpc",
+					ServiceName:      "img-catalog",
+					ServiceNamespace: testNamespace,
+					Port:             "50051",
+				},
+			},
+		},
+		{
+			testName: "Grpc/NoExistingRegistry/CreateSuccessful/CatalogSourceWithPeriodInNameCreatesValidServiceName",
+			in: in{
+				catsrc: grpcCatalogSourceWithName("img.catalog"),
 			},
 			out: out{
 				status: &v1alpha1.RegistryServiceStatus{
@@ -250,6 +275,7 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "private-catalog",
 								Namespace: testNamespace,
+								Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue},
 								OwnerReferences: []metav1.OwnerReference{
 									{
 										Name:               "private-catalog",
@@ -331,7 +357,7 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			}
 
 			// Check for resource existence
-			decorated := grpcCatalogSourceDecorator{tt.in.catsrc, runAsUser}
+			decorated := grpcCatalogSourceDecorator{CatalogSource: tt.in.catsrc, createPodAsUser: runAsUser}
 			pod := decorated.Pod(tt.in.catsrc.GetName())
 			service := decorated.Service()
 			sa := decorated.ServiceAccount()
@@ -343,6 +369,9 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			case *GrpcRegistryReconciler:
 				// Should be created by a GrpcRegistryReconciler
 				require.NoError(t, podErr)
+				if diff := cmp.Diff(outPods.Items, []corev1.Pod{*pod}); diff != "" {
+					fmt.Printf("incorrect pods: %s\n", diff)
+				}
 				require.Len(t, outPods.Items, 1)
 				outPod := outPods.Items[0]
 				require.Equal(t, pod.GetGenerateName(), outPod.GetGenerateName())
@@ -421,7 +450,7 @@ func TestRegistryPodPriorityClass(t *testing.T) {
 			require.NoError(t, err)
 
 			// Check for resource existence
-			decorated := grpcCatalogSourceDecorator{tt.in.catsrc, runAsUser}
+			decorated := grpcCatalogSourceDecorator{CatalogSource: tt.in.catsrc, createPodAsUser: runAsUser}
 			pod := decorated.Pod(tt.in.catsrc.GetName())
 			listOptions := metav1.ListOptions{LabelSelector: labels.SelectorFromSet(labels.Set{CatalogSourceLabelKey: tt.in.catsrc.GetName()}).String()}
 			outPods, podErr := client.KubernetesInterface().CoreV1().Pods(pod.GetNamespace()).List(context.TODO(), listOptions)

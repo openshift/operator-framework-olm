@@ -20,10 +20,9 @@ import (
 )
 
 const (
-	OwnerKey           = "olm.owner"
-	OwnerNamespaceKey  = "olm.owner.namespace"
-	OwnerKind          = "olm.owner.kind"
-	OwnerPackageServer = "packageserver"
+	OwnerKey          = "olm.owner"
+	OwnerNamespaceKey = "olm.owner.namespace"
+	OwnerKind         = "olm.owner.kind"
 )
 
 var (
@@ -270,6 +269,11 @@ func AdoptableLabels(labels map[string]string, checkName bool, targets ...Owner)
 // CSVOwnerSelector returns a label selector to find generated objects owned by owner
 func CSVOwnerSelector(owner *operatorsv1alpha1.ClusterServiceVersion) labels.Selector {
 	return labels.SelectorFromSet(OwnerLabel(owner, operatorsv1alpha1.ClusterServiceVersionKind))
+}
+
+// OperatorGroupOwnerSelector returns a label selector to find generated objects owned by owner
+func OperatorGroupOwnerSelector(owner *operatorsv1.OperatorGroup) labels.Selector {
+	return labels.SelectorFromSet(OwnerLabel(owner, operatorsv1.OperatorGroupKind))
 }
 
 // AddOwner adds an owner to the ownerref list.

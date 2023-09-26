@@ -5,6 +5,7 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	packageserverclientset "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -47,13 +49,14 @@ const (
 
 var _ = Describe("Starting CatalogSource e2e tests", func() {
 	var (
-		ns  corev1.Namespace
-		c   operatorclient.ClientInterface
-		crc versioned.Interface
+		ns                  corev1.Namespace
+		c                   operatorclient.ClientInterface
+		crc                 versioned.Interface
+		packageserverClient *packageserverclientset.Clientset
 	)
 
 	BeforeEach(func() {
-		// In OPC, PSA labels for any namespace created that is not prefixed with "openshift-" is overriden to enforce
+		// In OCP, PSA labels for any namespace created that is not prefixed with "openshift-" is overridden to enforce
 		// PSA restricted. This test namespace needs to prefixed with openshift- so that baseline/privileged enforcement
 		// for the PSA specific tests are not overridden,
 		// Change it only after https://github.com/operator-framework/operator-lifecycle-manager/issues/2859 is closed.
@@ -67,6 +70,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		ns = SetupGeneratedTestNamespaceWithOperatorGroup(namespaceName, og)
 		c = ctx.Ctx().KubeClient()
 		crc = ctx.Ctx().OperatorClient()
+		packageserverClient = packageserverclientset.NewForConfigOrDie(ctx.Ctx().RESTConfig())
 	})
 
 	AfterEach(func() {
@@ -105,7 +109,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		defer cleanupSource()
 
 		// ensure the mock catalog exists and has been synced by the catalog operator
-		catalogSource, err := fetchCatalogSourceOnStatus(crc, catalogSourceName, ns.GetName(), catalogSourceRegistryPodSynced)
+		catalogSource, err := fetchCatalogSourceOnStatus(crc, catalogSourceName, ns.GetName(), catalogSourceRegistryPodSynced())
 		Expect(err).ShouldNot(HaveOccurred())
 
 		// get catalog operator deployment
@@ -176,7 +180,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		defer cleanup()
 
 		// Attempt to get the catalog source before creating install plan
-		_, err := fetchCatalogSourceOnStatus(crc, cs.GetName(), cs.GetNamespace(), catalogSourceRegistryPodSynced)
+		_, err := fetchCatalogSourceOnStatus(crc, cs.GetName(), cs.GetNamespace(), catalogSourceRegistryPodSynced())
 		Expect(err).ToNot(HaveOccurred())
 
 		subscriptionSpec := &v1alpha1.SubscriptionSpec{
@@ -192,7 +196,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		subscriptionName := genName("sub-")
 		createSubscriptionForCatalogWithSpec(GinkgoT(), crc, ns.GetName(), subscriptionName, subscriptionSpec)
 
-		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionHasInstallPlanChecker)
+		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionHasInstallPlanChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ToNot(BeNil())
 
@@ -228,10 +232,10 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		updateInternalCatalog(GinkgoT(), c, crc, cs.GetName(), cs.GetNamespace(), []apiextensions.CustomResourceDefinition{mainCRD}, []v1alpha1.ClusterServiceVersion{mainCSV, replacementCSV}, mainManifests)
 
 		// Get updated catalogsource
-		fetchedUpdatedCatalog, err := fetchCatalogSourceOnStatus(crc, cs.GetName(), cs.GetNamespace(), catalogSourceRegistryPodSynced)
+		fetchedUpdatedCatalog, err := fetchCatalogSourceOnStatus(crc, cs.GetName(), cs.GetNamespace(), catalogSourceRegistryPodSynced())
 		Expect(err).ShouldNot(HaveOccurred())
 
-		subscription, err = fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateUpgradePendingChecker)
+		subscription, err = fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateUpgradePendingChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ShouldNot(BeNil())
 
@@ -294,7 +298,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		createInternalCatalogSource(c, crc, mainCatalogName, ns.GetName(), mainManifests, nil, []v1alpha1.ClusterServiceVersion{mainCSV})
 
 		// Attempt to get the catalog source before creating install plan
-		fetchedInitialCatalog, err := fetchCatalogSourceOnStatus(crc, mainCatalogName, ns.GetName(), catalogSourceRegistryPodSynced)
+		fetchedInitialCatalog, err := fetchCatalogSourceOnStatus(crc, mainCatalogName, ns.GetName(), catalogSourceRegistryPodSynced())
 		Expect(err).ShouldNot(HaveOccurred())
 
 		// Get initial configmap
@@ -357,7 +361,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		subscriptionName := genName("sub-")
 		createSubscriptionForCatalog(crc, ns.GetName(), subscriptionName, fetchedUpdatedCatalog.GetName(), mainPackageName, stableChannel, "", v1alpha1.ApprovalAutomatic)
 
-		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateAtLatestChecker)
+		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateAtLatestChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ShouldNot(BeNil())
 		_, err = fetchCSV(crc, subscription.Status.CurrentCSV, ns.GetName(), buildCSVConditionChecker(v1alpha1.CSVPhaseSucceeded))
@@ -427,7 +431,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		_, cleanupSource := createInternalCatalogSource(c, crc, mainCatalogName, ns.GetName(), mainManifests, nil, []v1alpha1.ClusterServiceVersion{mainCSV})
 
 		// Attempt to get the catalog source before creating install plan
-		fetchedInitialCatalog, err := fetchCatalogSourceOnStatus(crc, mainCatalogName, ns.GetName(), catalogSourceRegistryPodSynced)
+		fetchedInitialCatalog, err := fetchCatalogSourceOnStatus(crc, mainCatalogName, ns.GetName(), catalogSourceRegistryPodSynced())
 		Expect(err).ShouldNot(HaveOccurred())
 		// Get initial configmap
 		configMap, err := c.KubernetesInterface().CoreV1().ConfigMaps(ns.GetName()).Get(context.Background(), fetchedInitialCatalog.Spec.ConfigMap, metav1.GetOptions{})
@@ -448,7 +452,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		subscriptionName := genName("sub-")
 		createSubscriptionForCatalog(crc, ns.GetName(), subscriptionName, mainCatalogName, mainPackageName, stableChannel, "", v1alpha1.ApprovalAutomatic)
 
-		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateAtLatestChecker)
+		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateAtLatestChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ToNot(BeNil())
 		_, err = fetchCSV(crc, subscription.Status.CurrentCSV, ns.GetName(), buildCSVConditionChecker(v1alpha1.CSVPhaseSucceeded))
@@ -536,9 +540,9 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		createInternalCatalogSource(c, crc, replacementSourceName, ns.GetName(), append(replacementManifests, dependentManifests...), []apiextensions.CustomResourceDefinition{dependentCRD}, []v1alpha1.ClusterServiceVersion{replacementCSV, mainCSV, dependentCSV})
 
 		// Wait for ConfigMap CatalogSources to be ready
-		mainSource, err := fetchCatalogSourceOnStatus(crc, mainSourceName, ns.GetName(), catalogSourceRegistryPodSynced)
+		mainSource, err := fetchCatalogSourceOnStatus(crc, mainSourceName, ns.GetName(), catalogSourceRegistryPodSynced())
 		Expect(err).ShouldNot(HaveOccurred())
-		replacementSource, err := fetchCatalogSourceOnStatus(crc, replacementSourceName, ns.GetName(), catalogSourceRegistryPodSynced)
+		replacementSource, err := fetchCatalogSourceOnStatus(crc, replacementSourceName, ns.GetName(), catalogSourceRegistryPodSynced())
 		Expect(err).ShouldNot(HaveOccurred())
 
 		// Replicate catalog pods with no OwnerReferences
@@ -576,7 +580,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		}()
 
 		// Wait for the CatalogSource to be ready
-		_, err = fetchCatalogSourceOnStatus(crc, addressSource.GetName(), addressSource.GetNamespace(), catalogSourceRegistryPodSynced)
+		_, err = fetchCatalogSourceOnStatus(crc, addressSource.GetName(), addressSource.GetNamespace(), catalogSourceRegistryPodSynced())
 		Expect(err).ToNot(HaveOccurred(), "catalog source did not become ready")
 
 		// Delete CatalogSources
@@ -590,7 +594,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		cleanupSubscription := createSubscriptionForCatalog(crc, ns.GetName(), subscriptionName, addressSourceName, mainPackageName, stableChannel, "", v1alpha1.ApprovalAutomatic)
 		defer cleanupSubscription()
 
-		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateAtLatestChecker)
+		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateAtLatestChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ShouldNot(BeNil())
 		_, err = fetchCSV(crc, subscription.Status.CurrentCSV, ns.GetName(), csvSucceededChecker)
@@ -750,6 +754,54 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		Expect(registryPods.Items).To(HaveLen(1), "unexpected number of replacement registry pods found")
 	})
 
+	It("configure gRPC registry pod to extract content", func() {
+
+		By("Create gRPC CatalogSource using an external registry image (community-operators)")
+		source := &v1alpha1.CatalogSource{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       v1alpha1.CatalogSourceKind,
+				APIVersion: v1alpha1.CatalogSourceCRDAPIVersion,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      genName("catalog-"),
+				Namespace: ns.GetName(),
+			},
+			Spec: v1alpha1.CatalogSourceSpec{
+				SourceType: v1alpha1.SourceTypeGrpc,
+				Image:      communityOperatorsImage,
+				GrpcPodConfig: &v1alpha1.GrpcPodConfig{
+					SecurityContextConfig: v1alpha1.Restricted,
+					ExtractContent: &v1alpha1.ExtractContentConfig{
+						CacheDir:   "/tmp/cache",
+						CatalogDir: "/configs",
+					},
+				},
+			},
+		}
+
+		source, err := crc.OperatorsV1alpha1().CatalogSources(source.GetNamespace()).Create(context.Background(), source, metav1.CreateOptions{})
+		Expect(err).ShouldNot(HaveOccurred())
+
+		By("Wait for the CatalogSource to be ready")
+		source, err = fetchCatalogSourceOnStatus(crc, source.GetName(), source.GetNamespace(), catalogSourceRegistryPodSynced())
+		Expect(err).ToNot(HaveOccurred(), "catalog source did not become ready")
+
+		// the gRPC endpoints are not exposed from the pod, and there's no simple way to get at them -
+		// the index images don't contain `grpcurl`, port-forwarding is a mess, etc. let's use the
+		// package-server as a proxy for a functional catalog
+		By("Waiting for packages from the catalog to show up in the Kubernetes API")
+		Eventually(func() error {
+			manifests, err := packageserverClient.OperatorsV1().PackageManifests("default").List(context.Background(), metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+			if len(manifests.Items) == 0 {
+				return errors.New("did not find any PackageManifests")
+			}
+			return nil
+		}).Should(Succeed())
+	})
+
 	It("image update", func() {
 		if ok, err := inKind(c); ok && err == nil {
 			Skip("This spec fails when run using KIND cluster. See https://github.com/operator-framework/operator-lifecycle-manager/issues/2420 for more details")
@@ -871,7 +923,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		defer cleanupSubscription()
 
 		// Wait for the Subscription to succeed
-		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateAtLatestChecker)
+		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateAtLatestChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ShouldNot(BeNil())
 
@@ -1036,7 +1088,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		}()
 
 		By("waiting for the CatalogSource to be ready")
-		_, err = fetchCatalogSourceOnStatus(crc, source.GetName(), source.GetNamespace(), catalogSourceRegistryPodSynced)
+		_, err = fetchCatalogSourceOnStatus(crc, source.GetName(), source.GetNamespace(), catalogSourceRegistryPodSynced())
 		Expect(err).ToNot(HaveOccurred(), "catalog source did not become ready")
 
 		By("creating a Subscription for busybox")
@@ -1045,7 +1097,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		defer cleanupSubscription()
 
 		By("waiting for the Subscription to succeed")
-		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateAtLatestChecker)
+		subscription, err := fetchSubscription(crc, ns.GetName(), subscriptionName, subscriptionStateAtLatestChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ShouldNot(BeNil())
 		Expect(subscription.Status.InstalledCSV).To(Equal("busybox.v1.0.0"))
@@ -1062,7 +1114,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		Expect(dependencySubscriptionName).ToNot(BeEmpty())
 
 		By("waiting for the Subscription to succeed")
-		subscription, err = fetchSubscription(crc, ns.GetName(), dependencySubscriptionName, subscriptionStateAtLatestChecker)
+		subscription, err = fetchSubscription(crc, ns.GetName(), dependencySubscriptionName, subscriptionStateAtLatestChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ShouldNot(BeNil())
 		Expect(subscription.Status.InstalledCSV).To(Equal("busybox-dependency.v1.0.0"))
@@ -1080,7 +1132,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		}).Should(Succeed())
 
 		By("waiting for the CatalogSource to be ready")
-		_, err = fetchCatalogSourceOnStatus(crc, source.GetName(), source.GetNamespace(), catalogSourceRegistryPodSynced)
+		_, err = fetchCatalogSourceOnStatus(crc, source.GetName(), source.GetNamespace(), catalogSourceRegistryPodSynced())
 		Expect(err).ToNot(HaveOccurred(), "catalog source did not become ready")
 
 		By("waiting for the busybox v2 Subscription to succeed")

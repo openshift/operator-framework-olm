@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -11,10 +12,16 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
 )
+
+func init() {
+	log.SetLogger(zap.New())
+}
 
 var (
 	kubeConfigPath = flag.String(
@@ -31,7 +38,7 @@ var (
 
 	communityOperators = flag.String(
 		"communityOperators",
-		"quay.io/operator-framework/upstream-community-operators@sha256:098457dc5e0b6ca9599bd0e7a67809f8eca397907ca4d93597380511db478fec",
+		"quay.io/operatorhubio/catalog:latest",
 		"reference to upstream-community-operators image",
 	)
 
@@ -121,5 +128,9 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	if env := os.Getenv("SKIP_CLEANUP"); env != "" {
+		fmt.Println("Skipping deprovisioning...")
+		return
+	}
 	deprovision()
 })
