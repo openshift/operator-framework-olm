@@ -259,9 +259,13 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 	}
 	op.logger.Warn("OLMConfig informer created")
 
-	op.Run(ctx)
-	<-op.Ready()
-	op.logger.Warn("OLMConfig informer ready")
+	cfg, err := olmConfigInformer.Lister().Get("cluster")
+	if err != nil {
+		op.logger.Warnf("Error retrieving Interval from OLMConfig: '%v'", err)
+	} else {
+		o.WakeupInterval = cfg.Spec.Features.PackageServerWakeupInterval.Duration
+		op.logger.Warnf("Retrieved Interval from OLMConfig: '%v'", o.WakeupInterval.String())
+	}
 
 	op.logger.Warn("About to create sourceProvider")
 	sourceProvider, err := provider.NewRegistryProvider(ctx, crClient, queueOperator, o.WakeupInterval, o.GlobalNamespace)
