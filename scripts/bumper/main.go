@@ -208,6 +208,7 @@ func main() {
 
 	if len(missingCommits) == 0 {
 		logger.Info("Current repository state is up-to-date with upstream.")
+		return
 	}
 
 	switch mode(opts.mode) {
