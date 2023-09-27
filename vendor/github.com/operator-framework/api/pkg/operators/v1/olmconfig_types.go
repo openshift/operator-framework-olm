@@ -23,6 +23,9 @@ type Features struct {
 	// When reenabled, OLM will recreate the "Copied CSVs" for each
 	// cluster scoped operator.
 	DisableCopiedCSVs *bool `json:"disableCopiedCSVs,omitempty"`
+	// PackageServerWakeupInterval is used to define the PackageServerWakeupInterval
+	// for packagerservers
+	PackageServerWakeupInterval *metav1.Duration `json:"packageServerWakeupInterval,omitempty"`
 }
 
 // OLMConfigStatus is the status for an OLMConfig resource.
