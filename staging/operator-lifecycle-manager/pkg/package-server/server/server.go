@@ -312,7 +312,7 @@ func (a *Operator) syncOLMConfig(obj interface{}) (syncError error) {
 		return nil
 	}
 	// restart the pod on change
-	if olmConfig.Spec.Features.PackageServerWakeupInterval == nil {
+	if olmConfig.Spec.Features == nil || olmConfig.Spec.Features.PackageServerWakeupInterval == nil {
 		if a.options.WakeupInterval != DefaultWakeupInterval {
 			a.logger.Warnf("TO EXIT: Change to olmConfig: '%v' != default '%v'", a.options.WakeupInterval, DefaultWakeupInterval)
 			// os.Exit(0)
