@@ -262,8 +262,12 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 	if err != nil {
 		log.Warnf("Error retrieving Interval from OLMConfig: '%v'", err)
 	} else {
-		o.WakeupInterval = cfg.Spec.Features.PackageServerWakeupInterval.Duration
-		log.Warnf("Retrieved Interval from OLMConfig: '%v'", o.WakeupInterval.String())
+		if cfg.Spec.Features != nil && cfg.Spec.Features.PackageServerWakeupInterval != nil {
+			o.WakeupInterval = cfg.Spec.Features.PackageServerWakeupInterval.Duration
+			log.Warnf("Retrieved Interval from OLMConfig: '%v'", o.WakeupInterval.String())
+		} else {
+			log.Warn("Defaulting Interval")
+		}
 	}
 
 	log.Warn("About to create sourceProvider")
