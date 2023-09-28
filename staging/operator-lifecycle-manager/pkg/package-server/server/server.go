@@ -7,7 +7,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -34,7 +33,6 @@ const DefaultWakeupInterval = 5 * time.Minute
 type Operator struct {
 	queueinformer.Operator
 	olmConfigQueue workqueue.RateLimitingInterface
-	logger         *logrus.Logger
 	client         versioned.Interface
 	options        *PackageServerOptions
 	sourceProvider *provider.RegistryProvider
@@ -235,18 +233,16 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 	op := &Operator{
 		Operator:       queueOperator,
 		olmConfigQueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "olmConfig"),
-		logger:         &log.Logger{},
 		client:         crClient,
 		options:        o,
 		config:         config,
 	}
 
-	op.logger.Warn("about to create OLMConfig informer")
+	log.Warn("about to create OLMConfig informer")
 	olmConfigInformer := externalversions.NewSharedInformerFactoryWithOptions(op.client, o.WakeupInterval).Operators().V1().OLMConfigs()
 	olmConfigQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
 		queueinformer.WithInformer(olmConfigInformer.Informer()),
-		queueinformer.WithLogger(op.logger),
 		queueinformer.WithQueue(op.olmConfigQueue),
 		queueinformer.WithIndexer(olmConfigInformer.Informer().GetIndexer()),
 		queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncOLMConfig).ToSyncer()),
@@ -257,24 +253,24 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 	if err := op.RegisterQueueInformer(olmConfigQueueInformer); err != nil {
 		return err
 	}
-	op.logger.Warn("OLMConfig informer created")
+	log.Warn("OLMConfig informer created")
 
 	cfg, err := olmConfigInformer.Lister().Get("cluster")
 	if err != nil {
-		op.logger.Warnf("Error retrieving Interval from OLMConfig: '%v'", err)
+		log.Warnf("Error retrieving Interval from OLMConfig: '%v'", err)
 	} else {
 		o.WakeupInterval = cfg.Spec.Features.PackageServerWakeupInterval.Duration
-		op.logger.Warnf("Retrieved Interval from OLMConfig: '%v'", o.WakeupInterval.String())
+		log.Warnf("Retrieved Interval from OLMConfig: '%v'", o.WakeupInterval.String())
 	}
 
-	op.logger.Warn("About to create sourceProvider")
+	log.Warn("About to create sourceProvider")
 	sourceProvider, err := provider.NewRegistryProvider(ctx, crClient, queueOperator, o.WakeupInterval, o.GlobalNamespace)
 	if err != nil {
 		return err
 	}
 	config.ProviderConfig.Provider = sourceProvider
 	op.sourceProvider = sourceProvider
-	op.logger.Warn("sourceProvider created")
+	log.Warn("sourceProvider created")
 
 	// We should never need to resync, since we're not worried about missing events,
 	// and resync is actually for regular interval-based reconciliation these days,
@@ -296,35 +292,35 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 }
 
 func (a *Operator) syncOLMConfig(obj interface{}) (syncError error) {
-	a.logger.Warn("Processing olmConfig")
+	log.Warn("Processing olmConfig")
 	olmConfig, ok := obj.(*operatorsv1.OLMConfig)
 	if !ok {
 		return fmt.Errorf("casting OLMConfig failed")
 	}
 	if a.sourceProvider == nil {
-		a.logger.Warn("Source provider has not been created yet; saving values")
+		log.Warn("Source provider has not been created yet; saving values")
 		if olmConfig.Spec.Features.PackageServerWakeupInterval == nil {
 			a.options.WakeupInterval = DefaultWakeupInterval
 		} else {
 			a.options.WakeupInterval = olmConfig.Spec.Features.PackageServerWakeupInterval.Duration
 		}
-		a.logger.Warnf("Wakeup interval now '%v'", a.options.WakeupInterval)
+		log.Warnf("Wakeup interval now '%v'", a.options.WakeupInterval)
 		return nil
 	}
 	// restart the pod on change
 	if olmConfig.Spec.Features == nil || olmConfig.Spec.Features.PackageServerWakeupInterval == nil {
 		if a.options.WakeupInterval != DefaultWakeupInterval {
-			a.logger.Warnf("TO EXIT: Change to olmConfig: '%v' != default '%v'", a.options.WakeupInterval, DefaultWakeupInterval)
+			log.Warnf("TO EXIT: Change to olmConfig: '%v' != default '%v'", a.options.WakeupInterval, DefaultWakeupInterval)
 			// os.Exit(0)
 		} else {
-			a.logger.Warnf("No change to olmConfig: '%v'", a.options.WakeupInterval)
+			log.Warnf("No change to olmConfig: '%v'", a.options.WakeupInterval)
 		}
 	} else {
 		if a.options.WakeupInterval != olmConfig.Spec.Features.PackageServerWakeupInterval.Duration {
-			a.logger.Warnf("TO EXIT: Change to olmConfig: old '%v' != new '%v'", a.options.WakeupInterval, olmConfig.Spec.Features.PackageServerWakeupInterval.Duration)
+			log.Warnf("TO EXIT: Change to olmConfig: old '%v' != new '%v'", a.options.WakeupInterval, olmConfig.Spec.Features.PackageServerWakeupInterval.Duration)
 			// os.Exit(0)
 		} else {
-			a.logger.Warnf("No change to olmConfig: '%v'", a.options.WakeupInterval)
+			log.Warnf("No change to olmConfig: '%v'", a.options.WakeupInterval)
 		}
 	}
 
