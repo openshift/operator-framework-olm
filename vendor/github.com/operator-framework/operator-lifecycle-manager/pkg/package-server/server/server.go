@@ -239,7 +239,7 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 	}
 
 	log.Warn("about to create OLMConfig informer")
-	olmConfigInformer := externalversions.NewSharedInformerFactoryWithOptions(op.client, o.WakeupInterval).Operators().V1().OLMConfigs()
+	olmConfigInformer := externalversions.NewSharedInformerFactoryWithOptions(op.client, 0).Operators().V1().OLMConfigs()
 	olmConfigQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
 		queueinformer.WithInformer(olmConfigInformer.Informer()),
@@ -255,6 +255,9 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 	}
 	log.Warn("OLMConfig informer created")
 
+	op.Run(ctx)
+	<-op.Ready()
+	log.Warn("OLMConfig informer ready")
 	cfg, err := olmConfigInformer.Lister().Get("cluster")
 	if err != nil {
 		log.Warnf("Error retrieving Interval from OLMConfig: '%v'", err)
