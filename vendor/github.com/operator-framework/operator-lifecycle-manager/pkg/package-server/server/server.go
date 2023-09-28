@@ -9,6 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	genericserver "k8s.io/apiserver/pkg/server"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
@@ -255,10 +256,8 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 	}
 	log.Warn("OLMConfig informer created")
 
-	op.Run(ctx)
-	<-op.Ready()
-	log.Warn("OLMConfig informer ready")
-	cfg, err := olmConfigInformer.Lister().Get("cluster")
+	// Grab the config
+	cfg, err := crClient.OperatorsV1().OLMConfigs().Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		log.Warnf("Error retrieving Interval from OLMConfig: '%v'", err)
 	} else {
