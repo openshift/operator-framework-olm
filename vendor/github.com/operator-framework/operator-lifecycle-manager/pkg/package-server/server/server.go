@@ -260,8 +260,8 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 	if err != nil {
 		log.Warnf("Error retrieving Interval from OLMConfig: '%v'", err)
 	} else {
-		if cfg.Spec.Features != nil && cfg.Spec.Features.PackageServerWakeupInterval != nil {
-			o.WakeupInterval = cfg.Spec.Features.PackageServerWakeupInterval.Duration
+		if cfg.Spec.Features != nil && cfg.Spec.Features.PackageServerSyncInterval != nil {
+			o.WakeupInterval = cfg.Spec.Features.PackageServerSyncInterval.Duration
 			log.Infof("Retrieved Interval from OLMConfig: '%v'", o.WakeupInterval.String())
 		} else {
 			log.Infof("Defaulting Interval to '%v'", DefaultWakeupInterval)
@@ -300,14 +300,14 @@ func (a *Operator) syncOLMConfig(obj interface{}) error {
 		return fmt.Errorf("casting OLMConfig failed")
 	}
 	// restart the pod on change
-	if olmConfig.Spec.Features == nil || olmConfig.Spec.Features.PackageServerWakeupInterval == nil {
+	if olmConfig.Spec.Features == nil || olmConfig.Spec.Features.PackageServerSyncInterval == nil {
 		if a.options.WakeupInterval != DefaultWakeupInterval {
 			log.Warnf("Change to olmConfig: '%v' != default '%v'", a.options.WakeupInterval, DefaultWakeupInterval)
 			os.Exit(0)
 		}
 	} else {
-		if a.options.WakeupInterval != olmConfig.Spec.Features.PackageServerWakeupInterval.Duration {
-			log.Warnf("Change to olmConfig: old '%v' != new '%v'", a.options.WakeupInterval, olmConfig.Spec.Features.PackageServerWakeupInterval.Duration)
+		if a.options.WakeupInterval != olmConfig.Spec.Features.PackageServerSyncInterval.Duration {
+			log.Warnf("Change to olmConfig: old '%v' != new '%v'", a.options.WakeupInterval, olmConfig.Spec.Features.PackageServerSyncInterval.Duration)
 			os.Exit(0)
 		}
 	}
