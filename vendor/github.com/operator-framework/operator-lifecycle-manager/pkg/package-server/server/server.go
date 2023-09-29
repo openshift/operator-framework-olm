@@ -82,7 +82,7 @@ func NewPackageServerOptions(out, errOut io.Writer) *PackageServerOptions {
 		Authorization:  genericoptions.NewDelegatingAuthorizationOptions(),
 		Features:       genericoptions.NewFeatureOptions(),
 
-		WakeupInterval: 5 * time.Minute,
+		WakeupInterval: 12 * time.Hour,
 
 		DisableAuthForTesting: false,
 		Debug:                 false,
