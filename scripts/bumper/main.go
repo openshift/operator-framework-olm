@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -315,7 +314,7 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 		return nil, fmt.Errorf("failed to walk %s: %w", stagingDir, err)
 	}
 
-	var commits []commit
+	commits := map[string][]commit{}
 	for repo, lastCommit := range lastCommits {
 		var remote string
 		switch mode {
@@ -365,7 +364,10 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 				if err != nil {
 					return nil, fmt.Errorf("invalid time %s: %w", parts[1], err)
 				}
-				commits = append(commits, commit{
+				if _, ok := commits[repo]; !ok {
+					commits[repo] = []commit{}
+				}
+				commits[repo] = append(commits[repo], commit{
 					Hash:    parts[0],
 					Date:    committedTime,
 					Author:  parts[2],
@@ -375,10 +377,43 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 			}
 		}
 	}
-	sort.Slice(commits, func(i, j int) bool {
-		return commits[i].Date.Before(commits[j].Date)
-	})
-	return commits, nil
+	// we would like to intertwine the commits from each upstream repository by date, while
+	// keeping the order of commits from any one repository in the order they were committed in
+	var orderedCommits []commit
+	indices := map[string]int{}
+	for repo := range commits {
+		indices[repo] = 0
+	}
+	for {
+		// find which repo's commit stack we should pop off to get the next earliest commit
+		nextTime := time.Now()
+		var nextRepo string
+		for repo, index := range indices {
+			if commits[repo][index].Date.Before(nextTime) {
+				nextTime = commits[repo][index].Date
+				nextRepo = repo
+			}
+		}
+
+		// pop the commit, add it to our list and do housekeeping for our index records
+		orderedCommits = append(orderedCommits, commits[nextRepo][indices[nextRepo]])
+		if indices[nextRepo] == len(commits[nextRepo])-1 {
+			delete(indices, nextRepo)
+		} else {
+			indices[nextRepo] += 1
+		}
+
+		if len(indices) == 0 {
+			break
+		}
+	}
+
+	// our ordered list is descending, but we need to cherry-pick from the oldest first
+	var reversedCommits []commit
+	for i := range orderedCommits {
+		reversedCommits = append(reversedCommits, orderedCommits[len(orderedCommits)-i-1])
+	}
+	return reversedCommits, nil
 }
 
 func isCommitMissing(ctx context.Context, logger *logrus.Entry, stagingDir string, c commit) (bool, error) {
