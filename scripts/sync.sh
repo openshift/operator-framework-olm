@@ -29,7 +29,7 @@ fetch_remote() {
 
 new_candidate_branch() {
     echo "Creating a sync branch if it doesn't already exist"
-    git checkout -b "$SYNC_BRANCH_NAME" upstream/master 2>/dev/null || git checkout "$SYNC_BRANCH_NAME"
+    git checkout -b "$SYNC_BRANCH_NAME" master 2>/dev/null || git checkout "$SYNC_BRANCH_NAME"
 }
 
 candidates() {
@@ -50,13 +50,13 @@ pop() {
 }
 
 check_local_branch_commit_diff() {
-    commits_ahead=$(git rev-list upstream/master..HEAD | wc -l)
+    commits_ahead=$(git rev-list master..HEAD | wc -l)
 
     if [[ "$commits_ahead" -gt 1 ]]; then
         # TODO: automatically open a new pull request here.
-        echo "The local sync branch is $commits_ahead commits ahead of the upstream/master branch"
+        echo "The local sync branch is $commits_ahead commits ahead of the master branch"
     else
-        echo "No sync PR is needed as the upstream/master branch is up-to-date"
+        echo "No sync PR is needed as the master branch is up-to-date"
     fi
 }
 
