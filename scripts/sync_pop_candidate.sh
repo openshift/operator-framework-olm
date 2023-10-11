@@ -57,9 +57,9 @@ function pop() {
         exit
     fi
     readarray -t rcs < <(echo "$rc" | tr " " "\n")
-    remote="${rcs[1]}"
+    remote="${rcs[2]}"
     subtree_dir="staging/${remote}"
-    rc="${rcs[2]}"
+    rc="${rcs[3]}"
     printf 'popping: %s\n' "${rc}"
 
     # Cherrypick the commit
