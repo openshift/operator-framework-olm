@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -56,6 +57,7 @@ type options struct {
 	logLevel         string
 	centralRef       string
 	fetchMode        string
+	history          int
 
 	dryRun       bool
 	githubLogin  string
@@ -79,6 +81,7 @@ func (o *options) Bind(fs *flag.FlagSet) {
 	fs.StringVar(&o.logLevel, "log-level", logrus.InfoLevel.String(), "Logging level.")
 	fs.StringVar(&o.centralRef, "central-ref", "origin/master", "Git ref for the central branch that will be updated, used as the base for determining what commits need to be cherry-picked.")
 	fs.StringVar(&o.fetchMode, "fetch-mode", string(ssh), "Method to use for fetching from git remotes.")
+	fs.IntVar(&o.history, "history", 1, "How many commits back to start searching for missing vendor commits.")
 
 	fs.BoolVar(&o.dryRun, "dry-run", true, "Whether to actually create the pull request with github client")
 	fs.StringVar(&o.githubLogin, "github-login", githubLogin, "The GitHub username to use.")
@@ -164,7 +167,7 @@ func main() {
 			logrus.WithError(err).Fatal("could not unmarshal input commits")
 		}
 	} else {
-		commits, err = detectNewCommits(ctx, logger.WithField("phase", "detect"), opts.stagingDir, opts.centralRef, fetchMode(opts.fetchMode))
+		commits, err = detectNewCommits(ctx, logger.WithField("phase", "detect"), opts.stagingDir, opts.centralRef, fetchMode(opts.fetchMode), opts.history)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to detect commits")
 		}
@@ -265,7 +268,7 @@ type commit struct {
 var repoRegex = regexp.MustCompile(`Upstream-repository: ([^ ]+)\n`)
 var commitRegex = regexp.MustCompile(`Upstream-commit: ([a-f0-9]+)\n`)
 
-func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, centralRef string, mode fetchMode) ([]commit, error) {
+func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, centralRef string, mode fetchMode, history int) ([]commit, error) {
 	lastCommits := map[string]string{}
 	if err := fs.WalkDir(os.DirFS(stagingDir), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -283,11 +286,12 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 		output, err := runCommand(logger, exec.CommandContext(ctx,
 			"git", "log",
 			centralRef,
-			"-n", "1",
+			"-n", strconv.Itoa(history),
 			"--grep", "Upstream-repository: "+path,
 			"--grep", "Upstream-commit",
 			"--all-match",
 			"--pretty=%B",
+			"--reverse",
 			"--",
 			filepath.Join(stagingDir, path),
 		))
@@ -334,6 +338,7 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 		output, err := runCommand(logger, exec.CommandContext(ctx,
 			"git", "log",
 			"--pretty=%H",
+			"--no-merges",
 			lastCommit+"...FETCH_HEAD",
 		))
 		if err != nil {
