@@ -29,7 +29,7 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/provider"
 )
 
-const DefaultWakeupInterval = 12 * time.Hour
+const DefaultWakeupInterval = 6 * time.Hour
 
 type Operator struct {
 	queueinformer.Operator
