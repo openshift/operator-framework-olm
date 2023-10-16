@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	extScheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -600,7 +599,7 @@ func createInternalCatalogSource(
 	name,
 	namespace string,
 	manifests []registry.PackageManifest,
-	crds []apiextensions.CustomResourceDefinition,
+	crds []apiextensionsv1.CustomResourceDefinition,
 	csvs []operatorsv1alpha1.ClusterServiceVersion,
 ) (*operatorsv1alpha1.CatalogSource, cleanupFunc) {
 	configMap, configMapCleanup := createConfigMapForCatalogData(c, name, namespace, manifests, crds, csvs)
@@ -643,7 +642,7 @@ func createInternalCatalogSourceWithPriority(c operatorclient.ClientInterface,
 	name,
 	namespace string,
 	manifests []registry.PackageManifest,
-	crds []apiextensions.CustomResourceDefinition,
+	crds []apiextensionsv1.CustomResourceDefinition,
 	csvs []operatorsv1alpha1.ClusterServiceVersion,
 	priority int,
 ) (*operatorsv1alpha1.CatalogSource, cleanupFunc) {
@@ -734,7 +733,7 @@ func createConfigMapForCatalogData(
 	name,
 	namespace string,
 	manifests []registry.PackageManifest,
-	crds []apiextensions.CustomResourceDefinition,
+	crds []apiextensionsv1.CustomResourceDefinition,
 	csvs []operatorsv1alpha1.ClusterServiceVersion,
 ) (*corev1.ConfigMap, cleanupFunc) {
 	// Create a config map containing the PackageManifests and CSVs
@@ -838,7 +837,7 @@ func createV1CRDConfigMapForCatalogData(
 	return createdConfigMap, buildConfigMapCleanupFunc(c, namespace, createdConfigMap)
 }
 
-func serializeCRD(crd apiextensions.CustomResourceDefinition) string {
+func serializeCRD(crd apiextensionsv1.CustomResourceDefinition) string {
 	scheme := runtime.NewScheme()
 
 	Expect(extScheme.AddToScheme(scheme)).Should(Succeed())
