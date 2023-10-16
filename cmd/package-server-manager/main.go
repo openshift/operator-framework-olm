@@ -29,7 +29,7 @@ const (
 	defaultMetricsPort          = "0"
 	defaultHealthCheckPort      = ":8080"
 	defaultPprofPort            = ":6060"
-	defaultInterval             = "5m"
+	defaultInterval             = ""
 	leaderElectionConfigmapName = "packageserver-controller-lock"
 )
 
