@@ -499,6 +499,15 @@ func cherryPick(ctx context.Context, logger *logrus.Entry, c commit, commitArgs 
 		withEnv(exec.CommandContext(ctx,
 			"go", "mod", "verify",
 		), os.Environ()...),
+		withDir(withEnv(exec.CommandContext(ctx,
+			"go", "mod", "tidy",
+		), os.Environ()...), filepath.Join("staging", c.Repo)),
+		withDir(withEnv(exec.CommandContext(ctx,
+			"go", "mod", "vendor",
+		), os.Environ()...), filepath.Join("staging", c.Repo)),
+		withDir(withEnv(exec.CommandContext(ctx,
+			"go", "mod", "verify",
+		), os.Environ()...), filepath.Join("staging", c.Repo)),
 		withEnv(exec.CommandContext(ctx,
 			"make", "generate-manifests",
 		), os.Environ()...),
@@ -542,6 +551,11 @@ func runCommand(logger *logrus.Entry, cmd *exec.Cmd) (string, error) {
 
 func withEnv(command *exec.Cmd, env ...string) *exec.Cmd {
 	command.Env = append(command.Env, env...)
+	return command
+}
+
+func withDir(command *exec.Cmd, dir string) *exec.Cmd {
+	command.Dir = dir
 	return command
 }
 
