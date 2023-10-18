@@ -12,7 +12,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -57,6 +57,7 @@ type options struct {
 	logLevel         string
 	centralRef       string
 	fetchMode        string
+	history          int
 
 	dryRun       bool
 	githubLogin  string
@@ -80,6 +81,7 @@ func (o *options) Bind(fs *flag.FlagSet) {
 	fs.StringVar(&o.logLevel, "log-level", logrus.InfoLevel.String(), "Logging level.")
 	fs.StringVar(&o.centralRef, "central-ref", "origin/master", "Git ref for the central branch that will be updated, used as the base for determining what commits need to be cherry-picked.")
 	fs.StringVar(&o.fetchMode, "fetch-mode", string(ssh), "Method to use for fetching from git remotes.")
+	fs.IntVar(&o.history, "history", 1, "How many commits back to start searching for missing vendor commits.")
 
 	fs.BoolVar(&o.dryRun, "dry-run", true, "Whether to actually create the pull request with github client")
 	fs.StringVar(&o.githubLogin, "github-login", githubLogin, "The GitHub username to use.")
@@ -165,7 +167,7 @@ func main() {
 			logrus.WithError(err).Fatal("could not unmarshal input commits")
 		}
 	} else {
-		commits, err = detectNewCommits(ctx, logger.WithField("phase", "detect"), opts.stagingDir, opts.centralRef, fetchMode(opts.fetchMode))
+		commits, err = detectNewCommits(ctx, logger.WithField("phase", "detect"), opts.stagingDir, opts.centralRef, fetchMode(opts.fetchMode), opts.history)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to detect commits")
 		}
@@ -266,7 +268,7 @@ type commit struct {
 var repoRegex = regexp.MustCompile(`Upstream-repository: ([^ ]+)\n`)
 var commitRegex = regexp.MustCompile(`Upstream-commit: ([a-f0-9]+)\n`)
 
-func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, centralRef string, mode fetchMode) ([]commit, error) {
+func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, centralRef string, mode fetchMode, history int) ([]commit, error) {
 	lastCommits := map[string]string{}
 	if err := fs.WalkDir(os.DirFS(stagingDir), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -284,11 +286,12 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 		output, err := runCommand(logger, exec.CommandContext(ctx,
 			"git", "log",
 			centralRef,
-			"-n", "1",
+			"-n", strconv.Itoa(history),
 			"--grep", "Upstream-repository: "+path,
 			"--grep", "Upstream-commit",
 			"--all-match",
 			"--pretty=%B",
+			"--reverse",
 			"--",
 			filepath.Join(stagingDir, path),
 		))
@@ -315,7 +318,7 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 		return nil, fmt.Errorf("failed to walk %s: %w", stagingDir, err)
 	}
 
-	var commits []commit
+	commits := map[string][]commit{}
 	for repo, lastCommit := range lastCommits {
 		var remote string
 		switch mode {
@@ -335,6 +338,7 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 		output, err := runCommand(logger, exec.CommandContext(ctx,
 			"git", "log",
 			"--pretty=%H",
+			"--no-merges",
 			lastCommit+"...FETCH_HEAD",
 		))
 		if err != nil {
@@ -365,7 +369,10 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 				if err != nil {
 					return nil, fmt.Errorf("invalid time %s: %w", parts[1], err)
 				}
-				commits = append(commits, commit{
+				if _, ok := commits[repo]; !ok {
+					commits[repo] = []commit{}
+				}
+				commits[repo] = append(commits[repo], commit{
 					Hash:    parts[0],
 					Date:    committedTime,
 					Author:  parts[2],
@@ -375,10 +382,43 @@ func detectNewCommits(ctx context.Context, logger *logrus.Entry, stagingDir, cen
 			}
 		}
 	}
-	sort.Slice(commits, func(i, j int) bool {
-		return commits[i].Date.Before(commits[j].Date)
-	})
-	return commits, nil
+	// we would like to intertwine the commits from each upstream repository by date, while
+	// keeping the order of commits from any one repository in the order they were committed in
+	var orderedCommits []commit
+	indices := map[string]int{}
+	for repo := range commits {
+		indices[repo] = 0
+	}
+	for {
+		// find which repo's commit stack we should pop off to get the next earliest commit
+		nextTime := time.Now()
+		var nextRepo string
+		for repo, index := range indices {
+			if commits[repo][index].Date.Before(nextTime) {
+				nextTime = commits[repo][index].Date
+				nextRepo = repo
+			}
+		}
+
+		// pop the commit, add it to our list and do housekeeping for our index records
+		orderedCommits = append(orderedCommits, commits[nextRepo][indices[nextRepo]])
+		if indices[nextRepo] == len(commits[nextRepo])-1 {
+			delete(indices, nextRepo)
+		} else {
+			indices[nextRepo] += 1
+		}
+
+		if len(indices) == 0 {
+			break
+		}
+	}
+
+	// our ordered list is descending, but we need to cherry-pick from the oldest first
+	var reversedCommits []commit
+	for i := range orderedCommits {
+		reversedCommits = append(reversedCommits, orderedCommits[len(orderedCommits)-i-1])
+	}
+	return reversedCommits, nil
 }
 
 func isCommitMissing(ctx context.Context, logger *logrus.Entry, stagingDir string, c commit) (bool, error) {
