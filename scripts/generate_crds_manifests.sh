@@ -78,9 +78,11 @@ add_ibm_managed_cloud_annotations() {
          g="${f/%.yaml/.ibm-cloud-managed.yaml}"
          cp "${f}" "${g}"
          ${YQ} w -d'*' --inplace --style=double "$g" 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
+         ${YQ} w -d'*' --inplace --style=double "$g" 'metadata.annotations['capability.openshift.io/name']' OperatorLifecycleManager
          ${YQ} d -d'*' --inplace "$g" 'spec.template.spec.nodeSelector."node-role.kubernetes.io/master"'
       fi
       ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/self-managed-high-availability']' true
+      ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['capability.openshift.io/name']' OperatorLifecycleManager
    done
 }
 
