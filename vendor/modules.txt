@@ -1347,7 +1347,7 @@ helm.sh/helm/v3/pkg/storage/driver
 helm.sh/helm/v3/pkg/strvals
 helm.sh/helm/v3/pkg/time
 helm.sh/helm/v3/pkg/uploader
-# k8s.io/api v0.27.2
+# k8s.io/api v0.27.7
 ## explicit; go 1.20
 k8s.io/api/admission/v1
 k8s.io/api/admission/v1beta1
@@ -1404,7 +1404,7 @@ k8s.io/api/scheduling/v1beta1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.27.2
+# k8s.io/apiextensions-apiserver v0.27.7
 ## explicit; go 1.20
 k8s.io/apiextensions-apiserver/pkg/apihelpers
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
@@ -1419,6 +1419,8 @@ k8s.io/apiextensions-apiserver/pkg/apiserver/schema/defaulting
 k8s.io/apiextensions-apiserver/pkg/apiserver/schema/objectmeta
 k8s.io/apiextensions-apiserver/pkg/apiserver/schema/pruning
 k8s.io/apiextensions-apiserver/pkg/apiserver/validation
+k8s.io/apiextensions-apiserver/pkg/client/applyconfiguration/apiextensions/v1
+k8s.io/apiextensions-apiserver/pkg/client/applyconfiguration/apiextensions/v1beta1
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1
@@ -1430,7 +1432,7 @@ k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensio
 k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/internalinterfaces
 k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1
-# k8s.io/apimachinery v0.27.2
+# k8s.io/apimachinery v0.27.7
 ## explicit; go 1.20
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -1492,7 +1494,7 @@ k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/apiserver v0.27.2
+# k8s.io/apiserver v0.27.7
 ## explicit; go 1.20
 k8s.io/apiserver/pkg/admission
 k8s.io/apiserver/pkg/admission/cel
@@ -1640,7 +1642,7 @@ k8s.io/apiserver/plugin/pkg/authorizer/webhook
 k8s.io/cli-runtime/pkg/genericclioptions
 k8s.io/cli-runtime/pkg/printers
 k8s.io/cli-runtime/pkg/resource
-# k8s.io/client-go v0.27.2
+# k8s.io/client-go v0.27.7
 ## explicit; go 1.20
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1alpha1
@@ -1919,7 +1921,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.27.2
+# k8s.io/code-generator v0.27.7
 ## explicit; go 1.20
 k8s.io/code-generator
 k8s.io/code-generator/cmd/applyconfiguration-gen
@@ -1957,7 +1959,7 @@ k8s.io/code-generator/cmd/set-gen
 k8s.io/code-generator/pkg/namer
 k8s.io/code-generator/pkg/util
 k8s.io/code-generator/third_party/forked/golang/reflect
-# k8s.io/component-base v0.27.2
+# k8s.io/component-base v0.27.7
 ## explicit; go 1.20
 k8s.io/component-base/cli/flag
 k8s.io/component-base/config
@@ -2001,7 +2003,7 @@ k8s.io/klog/v2/internal/clock
 k8s.io/klog/v2/internal/dbg
 k8s.io/klog/v2/internal/serialize
 k8s.io/klog/v2/internal/severity
-# k8s.io/kms v0.27.2
+# k8s.io/kms v0.27.7
 ## explicit; go 1.20
 k8s.io/kms/apis/v1beta1
 k8s.io/kms/apis/v2
