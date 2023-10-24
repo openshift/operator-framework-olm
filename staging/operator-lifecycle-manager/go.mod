@@ -225,9 +225,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/cli-runtime v0.27.7 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
-	k8s.io/kms v0.27.2 // indirect
-	k8s.io/kubectl v0.27.2 // indirect
-	k8s.io/klog/v2 v2.90.1 // indirect
 	k8s.io/kms v0.27.7 // indirect
 	k8s.io/kubectl v0.27.7 // indirect
 	oras.land/oras-go v1.2.3 // indirect
