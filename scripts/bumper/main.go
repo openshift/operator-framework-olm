@@ -173,16 +173,6 @@ func main() {
 		}
 	}
 
-	if opts.commitFileOutput != "" {
-		commitsJson, err := json.Marshal(commits)
-		if err != nil {
-			logrus.WithError(err).Fatal("could not marshal commits")
-		}
-		if err := os.WriteFile(opts.commitFileOutput, commitsJson, 0666); err != nil {
-			logrus.WithError(err).Fatal("could not write commits")
-		}
-	}
-
 	var missingCommits []commit
 	for _, commit := range commits {
 		commitLogger := logger.WithField("commit", commit.Hash)
@@ -192,6 +182,16 @@ func main() {
 		}
 		if missing {
 			missingCommits = append(missingCommits, commit)
+		}
+	}
+
+	if opts.commitFileOutput != "" {
+		commitsJson, err := json.Marshal(missingCommits)
+		if err != nil {
+			logrus.WithError(err).Fatal("could not marshal commits")
+		}
+		if err := os.WriteFile(opts.commitFileOutput, commitsJson, 0666); err != nil {
+			logrus.WithError(err).Fatal("could not write commits")
 		}
 	}
 
