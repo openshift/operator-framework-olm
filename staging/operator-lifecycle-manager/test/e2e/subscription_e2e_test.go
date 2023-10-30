@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -19,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -50,6 +51,10 @@ func Step(level int, text string, callbacks ...func()) {
 const (
 	timeout  = time.Second * 20
 	interval = time.Millisecond * 100
+)
+
+const (
+	subscriptionTestDataBaseDir = "subscription/"
 )
 
 var _ = Describe("Subscription", func() {
@@ -102,7 +107,7 @@ var _ = Describe("Subscription", func() {
 				},
 			}
 
-			crds := []apiextensions.CustomResourceDefinition{newCRD(genName("crd-"))}
+			crds := []apiextensionsv1.CustomResourceDefinition{newCRD(genName("crd-"))}
 			csvs := []operatorsv1alpha1.ClusterServiceVersion{
 				newCSV("csv-dependency-1", generatedNamespace.GetName(), "", semver.MustParse("1.0.0"), crds, nil, nil),
 				newCSV("csv-dependency-2", generatedNamespace.GetName(), "csv-dependency-1", semver.MustParse("2.0.0"), nil, nil, nil),
@@ -213,32 +218,32 @@ var _ = Describe("Subscription", func() {
 
 		crdPlural := genName("ins")
 		crdName := crdPlural + ".cluster.com"
-		crd := apiextensions.CustomResourceDefinition{
+		crd := apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: crdName,
 			},
-			Spec: apiextensions.CustomResourceDefinitionSpec{
+			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: "cluster.com",
-				Versions: []apiextensions.CustomResourceDefinitionVersion{
+				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 					{
 						Name:    "v1alpha1",
 						Served:  true,
 						Storage: true,
-						Schema: &apiextensions.CustomResourceValidation{
-							OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+						Schema: &apiextensionsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 								Type:        "object",
 								Description: "my crd schema",
 							},
 						},
 					},
 				},
-				Names: apiextensions.CustomResourceDefinitionNames{
+				Names: apiextensionsv1.CustomResourceDefinitionNames{
 					Plural:   crdPlural,
 					Singular: crdPlural,
 					Kind:     crdPlural,
 					ListKind: "list" + crdPlural,
 				},
-				Scope: apiextensions.NamespaceScoped,
+				Scope: apiextensionsv1.NamespaceScoped,
 			},
 		}
 
@@ -246,8 +251,8 @@ var _ = Describe("Subscription", func() {
 		mainPackageStable := fmt.Sprintf("%s-stable", mainPackageName)
 		updatedPackageStable := fmt.Sprintf("%s-updated", mainPackageName)
 		stableChannel := "stable"
-		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0-1556661347"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
-		updatedCSV := newCSV(updatedPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0-1556661832"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0-1556661347"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
+		updatedCSV := newCSV(updatedPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0-1556661832"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 		updatedCSV.SetAnnotations(map[string]string{"olm.skipRange": ">=0.1.0-1556661347 <0.1.0-1556661832"})
 
 		c := newKubeClient()
@@ -279,7 +284,7 @@ var _ = Describe("Subscription", func() {
 		}
 
 		// Create catalog source
-		_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensions.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
+		_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensionsv1.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
 		defer cleanupMainCatalogSource()
 		// Attempt to get the catalog source before creating subscription
 		_, err := fetchCatalogSourceOnStatus(crc, mainCatalogName, generatedNamespace.GetName(), catalogSourceRegistryPodSynced())
@@ -295,7 +300,7 @@ var _ = Describe("Subscription", func() {
 		require.NoError(GinkgoT(), err)
 
 		// Update catalog with a new csv in the channel with a skip range
-		updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{updatedCSV}, updatedManifests)
+		updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{updatedCSV}, updatedManifests)
 
 		// Wait for csv to update
 		finalCSV, err := awaitCSV(crc, generatedNamespace.GetName(), updatedCSV.GetName(), csvSucceededChecker)
@@ -372,32 +377,32 @@ var _ = Describe("Subscription", func() {
 		crdPlural := genName("ins")
 		crdName := crdPlural + ".cluster.com"
 
-		crd := apiextensions.CustomResourceDefinition{
+		crd := apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: crdName,
 			},
-			Spec: apiextensions.CustomResourceDefinitionSpec{
+			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: "cluster.com",
-				Versions: []apiextensions.CustomResourceDefinitionVersion{
+				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 					{
 						Name:    "v1alpha1",
 						Served:  true,
 						Storage: true,
-						Schema: &apiextensions.CustomResourceValidation{
-							OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+						Schema: &apiextensionsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 								Type:        "object",
 								Description: "my crd schema",
 							},
 						},
 					},
 				},
-				Names: apiextensions.CustomResourceDefinitionNames{
+				Names: apiextensionsv1.CustomResourceDefinitionNames{
 					Plural:   crdPlural,
 					Singular: crdPlural,
 					Kind:     crdPlural,
 					ListKind: "list" + crdPlural,
 				},
-				Scope: apiextensions.NamespaceScoped,
+				Scope: apiextensionsv1.NamespaceScoped,
 			},
 		}
 
@@ -405,8 +410,8 @@ var _ = Describe("Subscription", func() {
 		packageName := genName("nginx-")
 		stableChannel := "stable"
 
-		csvA := newCSV("nginx-a", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
-		csvB := newCSV("nginx-b", generatedNamespace.GetName(), "nginx-a", semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+		csvA := newCSV("nginx-a", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
+		csvB := newCSV("nginx-b", generatedNamespace.GetName(), "nginx-a", semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 
 		// Create PackageManifests
 		manifests := []registry.PackageManifest{
@@ -421,7 +426,7 @@ var _ = Describe("Subscription", func() {
 
 		// Create the CatalogSource
 		catalogSourceName := genName("mock-nginx-")
-		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalogSourceName, generatedNamespace.GetName(), manifests, []apiextensions.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csvA, csvB})
+		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalogSourceName, generatedNamespace.GetName(), manifests, []apiextensionsv1.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csvA, csvB})
 		defer cleanupCatalogSource()
 
 		// Attempt to get the catalog source before creating install plan
@@ -525,9 +530,9 @@ var _ = Describe("Subscription", func() {
 		packageName := genName("nginx-")
 		stableChannel := "stable"
 
-		csvA := newCSV("nginx-a", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
-		csvB := newCSV("nginx-b", generatedNamespace.GetName(), "nginx-a", semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
-		csvC := newCSV("nginx-c", generatedNamespace.GetName(), "nginx-b", semver.MustParse("0.3.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+		csvA := newCSV("nginx-a", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
+		csvB := newCSV("nginx-b", generatedNamespace.GetName(), "nginx-a", semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
+		csvC := newCSV("nginx-c", generatedNamespace.GetName(), "nginx-b", semver.MustParse("0.3.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 
 		// Create PackageManifests
 		manifests := []registry.PackageManifest{
@@ -542,7 +547,7 @@ var _ = Describe("Subscription", func() {
 
 		// Create the CatalogSource with just one version
 		catalogSourceName := genName("mock-nginx-")
-		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalogSourceName, generatedNamespace.GetName(), manifests, []apiextensions.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csvA})
+		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalogSourceName, generatedNamespace.GetName(), manifests, []apiextensionsv1.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csvA})
 		defer cleanupCatalogSource()
 
 		// Attempt to get the catalog source before creating install plan
@@ -581,7 +586,7 @@ var _ = Describe("Subscription", func() {
 			},
 		}
 
-		updateInternalCatalog(GinkgoT(), c, crc, catalogSourceName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csvA, csvB, csvC}, packages)
+		updateInternalCatalog(GinkgoT(), c, crc, catalogSourceName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csvA, csvB, csvC}, packages)
 
 		// wait for checks on intermediate csvs to succeed
 		wg.Wait()
@@ -758,10 +763,19 @@ var _ = Describe("Subscription", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(sub).ToNot(BeNil())
 
-				// Update sub to target an existing CatalogSource
-				sub.Spec.CatalogSource = catalogSourceName
-				_, err = crc.OperatorsV1alpha1().Subscriptions(generatedNamespace.GetName()).Update(context.Background(), sub, metav1.UpdateOptions{})
-				Expect(err).NotTo(HaveOccurred())
+				By("updating the subscription to target an existing catsrc")
+				Eventually(func() error {
+					sub, err := crc.OperatorsV1alpha1().Subscriptions(generatedNamespace.GetName()).Get(context.Background(), testSubscriptionName, metav1.GetOptions{})
+					if err != nil {
+						return err
+					}
+					if sub == nil {
+						return fmt.Errorf("subscription is nil")
+					}
+					sub.Spec.CatalogSource = catalogSourceName
+					_, err = crc.OperatorsV1alpha1().Subscriptions(generatedNamespace.GetName()).Update(context.Background(), sub, metav1.UpdateOptions{})
+					return err
+				}).Should(Succeed())
 
 				// Wait for SubscriptionCatalogSourcesUnhealthy to be false
 				By("detecting a new existing target")
@@ -1043,7 +1057,7 @@ var _ = Describe("Subscription", func() {
 		pkgName := genName("pkg-")
 		channelName := genName("channel-")
 		crd := newCRD(pkgName)
-		csv := newCSV(pkgName, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+		csv := newCSV(pkgName, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 		manifests := []registry.PackageManifest{
 			{
 				PackageName: pkgName,
@@ -1054,7 +1068,7 @@ var _ = Describe("Subscription", func() {
 			},
 		}
 		catalogName := genName("catalog-")
-		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalogName, generatedNamespace.GetName(), manifests, []apiextensions.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csv})
+		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalogName, generatedNamespace.GetName(), manifests, []apiextensionsv1.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csv})
 		defer cleanupCatalogSource()
 		_, err := fetchCatalogSourceOnStatus(crc, catalogName, generatedNamespace.GetName(), catalogSourceRegistryPodSynced())
 		Expect(err).ToNot(HaveOccurred())
@@ -1476,7 +1490,7 @@ var _ = Describe("Subscription", func() {
 
 			Step(1, "Channel Stable", func() {
 				Step(2, "Operator A (Requires CRD, CRD 2)", func() {
-					csvA := newCSV("csv-a", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensions.CustomResourceDefinition{crd, crd2}, nil)
+					csvA := newCSV("csv-a", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensionsv1.CustomResourceDefinition{crd, crd2}, nil)
 					packageA.Channels = append(packageA.Channels, registry.PackageChannel{Name: stableChannel, CurrentCSVName: csvA.GetName()})
 					csvs1 = append(csvs1, csvA)
 				})
@@ -1484,7 +1498,7 @@ var _ = Describe("Subscription", func() {
 
 			Step(1, "Channel Alpha", func() {
 				Step(2, "Operator ABC (Provides: CRD, CRD 2)", func() {
-					csvABC := newCSV("csv-abc", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd, crd2}, nil, nil)
+					csvABC := newCSV("csv-abc", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd, crd2}, nil, nil)
 					packageA.Channels = append(packageA.Channels, registry.PackageChannel{Name: alphaChannel, CurrentCSVName: csvABC.GetName()})
 					csvs1 = append(csvs1, csvABC)
 				})
@@ -1499,7 +1513,7 @@ var _ = Describe("Subscription", func() {
 
 			Step(1, "Channel Stable", func() {
 				Step(2, "Operator B (Provides: CRD)", func() {
-					csvB := newCSV("csv-b", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+					csvB := newCSV("csv-b", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 					packageB.Channels = append(packageB.Channels, registry.PackageChannel{Name: stableChannel, CurrentCSVName: csvB.GetName()})
 					csvs1 = append(csvs1, csvB)
 				})
@@ -1507,7 +1521,7 @@ var _ = Describe("Subscription", func() {
 
 			Step(1, "Channel Alpha", func() {
 				Step(2, "Operator D (Provides: CRD)", func() {
-					csvD := newCSV("csv-d", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+					csvD := newCSV("csv-d", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 					packageB.Channels = append(packageB.Channels, registry.PackageChannel{Name: alphaChannel, CurrentCSVName: csvD.GetName()})
 					csvs1 = append(csvs1, csvD)
 				})
@@ -1522,7 +1536,7 @@ var _ = Describe("Subscription", func() {
 
 			Step(1, "Channel Stable", func() {
 				Step(2, "Operator C (Provides: CRD 2)", func() {
-					csvC := newCSV("csv-c", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd2}, nil, nil)
+					csvC := newCSV("csv-c", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd2}, nil, nil)
 					packageBInCatsrc2.Channels = append(packageBInCatsrc2.Channels, registry.PackageChannel{Name: stableChannel, CurrentCSVName: csvC.GetName()})
 					csvs2 = append(csvs2, csvC)
 				})
@@ -1537,7 +1551,7 @@ var _ = Describe("Subscription", func() {
 
 			Step(1, "Channel Stable", func() {
 				Step(2, "Operator E (Provides: CRD 2)", func() {
-					csvE := newCSV("csv-e", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd2}, nil, nil)
+					csvE := newCSV("csv-e", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd2}, nil, nil)
 					packageC.Channels = append(packageC.Channels, registry.PackageChannel{Name: stable, CurrentCSVName: csvE.GetName()})
 					csvs2 = append(csvs2, csvE)
 				})
@@ -1549,8 +1563,8 @@ var _ = Describe("Subscription", func() {
 		var cleanup cleanupFunc
 		By("creating catalogsources", func() {
 			var c1, c2 cleanupFunc
-			catsrc, c1 = createInternalCatalogSource(kubeClient, crClient, genName("catsrc"), generatedNamespace.GetName(), []registry.PackageManifest{packageA, packageB}, []apiextensions.CustomResourceDefinition{crd, crd2}, csvs1)
-			catsrc2, c2 = createInternalCatalogSource(kubeClient, crClient, genName("catsrc2"), generatedNamespace.GetName(), []registry.PackageManifest{packageBInCatsrc2, packageC}, []apiextensions.CustomResourceDefinition{crd, crd2}, csvs2)
+			catsrc, c1 = createInternalCatalogSource(kubeClient, crClient, genName("catsrc"), generatedNamespace.GetName(), []registry.PackageManifest{packageA, packageB}, []apiextensionsv1.CustomResourceDefinition{crd, crd2}, csvs1)
+			catsrc2, c2 = createInternalCatalogSource(kubeClient, crClient, genName("catsrc2"), generatedNamespace.GetName(), []registry.PackageManifest{packageBInCatsrc2, packageC}, []apiextensionsv1.CustomResourceDefinition{crd, crd2}, csvs2)
 			cleanup = func() {
 				c1()
 				c2()
@@ -1598,7 +1612,7 @@ var _ = Describe("Subscription", func() {
 		var (
 			kubeClient                                    operatorclient.ClientInterface
 			crClient                                      versioned.Interface
-			crd                                           apiextensions.CustomResourceDefinition
+			crd                                           apiextensionsv1.CustomResourceDefinition
 			packageMain, packageDepRight, packageDepWrong registry.PackageManifest
 			csvsMain, csvsRight, csvsWrong                []operatorsv1alpha1.ClusterServiceVersion
 			catsrcMain, catsrcDepRight, catsrcDepWrong    *operatorsv1alpha1.CatalogSource
@@ -1617,7 +1631,7 @@ var _ = Describe("Subscription", func() {
 
 			packageMain = registry.PackageManifest{PackageName: genName("PkgMain-")}
 			csv := newCSV(mainCSVName, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil,
-				[]apiextensions.CustomResourceDefinition{crd}, nil)
+				[]apiextensionsv1.CustomResourceDefinition{crd}, nil)
 			packageMain.DefaultChannelName = stableChannel
 			packageMain.Channels = append(packageMain.Channels, registry.PackageChannel{Name: stableChannel, CurrentCSVName: csv.GetName()})
 
@@ -1632,7 +1646,7 @@ var _ = Describe("Subscription", func() {
 			BeforeEach(func() {
 				packageDepRight = registry.PackageManifest{PackageName: "PackageDependent"}
 				csv := newCSV(rightCSVName, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"),
-					[]apiextensions.CustomResourceDefinition{crd}, nil, nil)
+					[]apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 				packageDepRight.DefaultChannelName = alphaChannel
 				packageDepRight.Channels = []registry.PackageChannel{{Name: alphaChannel, CurrentCSVName: csv.GetName()}}
 				csvsRight = append(csvsRight, csv)
@@ -1646,10 +1660,10 @@ var _ = Describe("Subscription", func() {
 					[]registry.PackageManifest{packageMain}, nil, csvsMain)
 
 				catsrcDepRight, catsrcCleanup2 = createInternalCatalogSource(kubeClient, crClient, "catsrc1", generatedNamespace.GetName(),
-					[]registry.PackageManifest{packageDepRight}, []apiextensions.CustomResourceDefinition{crd}, csvsRight)
+					[]registry.PackageManifest{packageDepRight}, []apiextensionsv1.CustomResourceDefinition{crd}, csvsRight)
 
 				catsrcDepWrong, catsrcCleanup3 = createInternalCatalogSource(kubeClient, crClient, "catsrc2", generatedNamespace.GetName(),
-					[]registry.PackageManifest{packageDepWrong}, []apiextensions.CustomResourceDefinition{crd}, csvsWrong)
+					[]registry.PackageManifest{packageDepWrong}, []apiextensionsv1.CustomResourceDefinition{crd}, csvsWrong)
 
 				_, err := fetchCatalogSourceOnStatus(crClient, catsrcMain.GetName(), generatedNamespace.GetName(), catalogSourceRegistryPodSynced())
 				Expect(err).ToNot(HaveOccurred())
@@ -1725,7 +1739,7 @@ var _ = Describe("Subscription", func() {
 
 				packageDepRight = registry.PackageManifest{PackageName: "PackageDependent"}
 				csv := newCSV(rightCSVName, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"),
-					[]apiextensions.CustomResourceDefinition{crd}, nil, nil)
+					[]apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 				packageDepRight.DefaultChannelName = alphaChannel
 				packageDepRight.Channels = []registry.PackageChannel{{Name: alphaChannel, CurrentCSVName: csv.GetName()}}
 				csvsMain = append(csvsMain, csv)
@@ -1736,10 +1750,10 @@ var _ = Describe("Subscription", func() {
 				csvsWrong = append(csvsWrong, csv)
 
 				catsrcMain, catsrcCleanup1 = createInternalCatalogSource(kubeClient, crClient, genName("catsrc"), generatedNamespace.GetName(),
-					[]registry.PackageManifest{packageDepRight, packageMain}, []apiextensions.CustomResourceDefinition{crd}, csvsMain)
+					[]registry.PackageManifest{packageDepRight, packageMain}, []apiextensionsv1.CustomResourceDefinition{crd}, csvsMain)
 
 				catsrcDepWrong, catsrcCleanup2 = createInternalCatalogSourceWithPriority(kubeClient, crClient,
-					genName("catsrc"), generatedNamespace.GetName(), []registry.PackageManifest{packageDepWrong}, []apiextensions.CustomResourceDefinition{crd},
+					genName("catsrc"), generatedNamespace.GetName(), []registry.PackageManifest{packageDepWrong}, []apiextensionsv1.CustomResourceDefinition{crd},
 					csvsWrong, 100)
 
 				// waiting for catalogsources to be ready
@@ -1812,7 +1826,7 @@ var _ = Describe("Subscription", func() {
 			BeforeEach(func() {
 				packageDepRight = registry.PackageManifest{PackageName: "PackageDependent"}
 				csv := newCSV(rightCSVName, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"),
-					[]apiextensions.CustomResourceDefinition{crd}, nil, nil)
+					[]apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 				packageDepRight.DefaultChannelName = alphaChannel
 				packageDepRight.Channels = []registry.PackageChannel{{Name: alphaChannel, CurrentCSVName: csv.GetName()}}
 				csvsRight = append(csvsRight, csv)
@@ -1826,11 +1840,11 @@ var _ = Describe("Subscription", func() {
 					[]registry.PackageManifest{packageMain}, nil, csvsMain)
 
 				catsrcDepRight, catsrcCleanup2 = createInternalCatalogSourceWithPriority(kubeClient, crClient,
-					genName("catsrc"), generatedNamespace.GetName(), []registry.PackageManifest{packageDepRight}, []apiextensions.CustomResourceDefinition{crd},
+					genName("catsrc"), generatedNamespace.GetName(), []registry.PackageManifest{packageDepRight}, []apiextensionsv1.CustomResourceDefinition{crd},
 					csvsRight, 100)
 
 				catsrcDepWrong, catsrcCleanup3 = createInternalCatalogSource(kubeClient, crClient, genName("catsrc"), generatedNamespace.GetName(),
-					[]registry.PackageManifest{packageDepWrong}, []apiextensions.CustomResourceDefinition{crd}, csvsWrong)
+					[]registry.PackageManifest{packageDepWrong}, []apiextensionsv1.CustomResourceDefinition{crd}, csvsWrong)
 
 				// waiting for catalogsources to be ready
 				_, err := fetchCatalogSourceOnStatus(crClient, catsrcMain.GetName(), generatedNamespace.GetName(), catalogSourceRegistryPodSynced())
@@ -1907,7 +1921,7 @@ var _ = Describe("Subscription", func() {
 
 				packageDepRight = registry.PackageManifest{PackageName: "PackageDependent"}
 				csv := newCSV(rightCSVName, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"),
-					[]apiextensions.CustomResourceDefinition{crd}, nil, nil)
+					[]apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 				packageDepRight.DefaultChannelName = alphaChannel
 				packageDepRight.Channels = []registry.PackageChannel{{Name: alphaChannel, CurrentCSVName: csv.GetName()}}
 				csvsRight = append(csvsRight, csv)
@@ -1921,10 +1935,10 @@ var _ = Describe("Subscription", func() {
 					[]registry.PackageManifest{packageMain}, nil, csvsMain)
 
 				catsrcDepRight, catsrcCleanup2 = createInternalCatalogSource(kubeClient, crClient, genName("catsrc"), generatedNamespace.GetName(),
-					[]registry.PackageManifest{packageDepRight}, []apiextensions.CustomResourceDefinition{crd}, csvsRight)
+					[]registry.PackageManifest{packageDepRight}, []apiextensionsv1.CustomResourceDefinition{crd}, csvsRight)
 
 				catsrcDepWrong, catsrcCleanup3 = createInternalCatalogSource(kubeClient, crClient, genName("catsrc"), operatorNamespace,
-					[]registry.PackageManifest{packageDepWrong}, []apiextensions.CustomResourceDefinition{crd}, csvsWrong)
+					[]registry.PackageManifest{packageDepWrong}, []apiextensionsv1.CustomResourceDefinition{crd}, csvsWrong)
 
 				// waiting for catalogsources to be ready
 				_, err := fetchCatalogSourceOnStatus(crClient, catsrcMain.GetName(), generatedNamespace.GetName(), catalogSourceRegistryPodSynced())
@@ -2018,13 +2032,13 @@ var _ = Describe("Subscription", func() {
 		packageName2 := genName("bpackage")
 
 		// csvA provides CRD
-		csvA := newCSV("nginx-a", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+		csvA := newCSV("nginx-a", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 		// csvB provides CRD2 and requires CRD
-		csvB := newCSV("nginx-b", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd2}, []apiextensions.CustomResourceDefinition{crd}, nil)
+		csvB := newCSV("nginx-b", generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd2}, []apiextensionsv1.CustomResourceDefinition{crd}, nil)
 		// New csvA requires CRD (transfer CRD ownership to the new csvB)
-		csvNewA := newCSV("nginx-new-a", generatedNamespace.GetName(), "nginx-a", semver.MustParse("0.2.0"), nil, []apiextensions.CustomResourceDefinition{crd}, nil)
+		csvNewA := newCSV("nginx-new-a", generatedNamespace.GetName(), "nginx-a", semver.MustParse("0.2.0"), nil, []apiextensionsv1.CustomResourceDefinition{crd}, nil)
 		// New csvB provides CRD and CRD2
-		csvNewB := newCSV("nginx-new-b", generatedNamespace.GetName(), "nginx-b", semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{crd, crd2}, nil, nil)
+		csvNewB := newCSV("nginx-new-b", generatedNamespace.GetName(), "nginx-b", semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{crd, crd2}, nil, nil)
 
 		// constraints not satisfiable:
 		// apackagert6cq requires at least one of catsrcc6xgr/operators/stable/nginx-new-a,
@@ -2052,7 +2066,7 @@ var _ = Describe("Subscription", func() {
 		}
 
 		catalogSourceName := genName("catsrc")
-		catsrc, cleanup := createInternalCatalogSource(kubeClient, crClient, catalogSourceName, generatedNamespace.GetName(), manifests, []apiextensions.CustomResourceDefinition{crd, crd2}, []operatorsv1alpha1.ClusterServiceVersion{csvA, csvB})
+		catsrc, cleanup := createInternalCatalogSource(kubeClient, crClient, catalogSourceName, generatedNamespace.GetName(), manifests, []apiextensionsv1.CustomResourceDefinition{crd, crd2}, []operatorsv1alpha1.ClusterServiceVersion{csvA, csvB})
 		defer cleanup()
 
 		// Ensure that the catalog source is resolved before we create a subscription.
@@ -2103,7 +2117,7 @@ var _ = Describe("Subscription", func() {
 				DefaultChannelName: stableChannel,
 			},
 		}
-		updateInternalCatalog(GinkgoT(), kubeClient, crClient, catalogSourceName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{crd, crd2}, []operatorsv1alpha1.ClusterServiceVersion{csvNewA, csvA, csvB}, manifests)
+		updateInternalCatalog(GinkgoT(), kubeClient, crClient, catalogSourceName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{crd, crd2}, []operatorsv1alpha1.ClusterServiceVersion{csvNewA, csvA, csvB}, manifests)
 		csvAsub := strings.Join([]string{packageName1, stableChannel, catalogSourceName, generatedNamespace.GetName()}, "-")
 		_, err = fetchSubscription(crClient, generatedNamespace.GetName(), csvAsub, subscriptionStateAtLatestChecker())
 		require.NoError(GinkgoT(), err)
@@ -2131,7 +2145,7 @@ var _ = Describe("Subscription", func() {
 				DefaultChannelName: stableChannel,
 			},
 		}
-		updateInternalCatalog(GinkgoT(), kubeClient, crClient, catalogSourceName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{crd, crd2}, []operatorsv1alpha1.ClusterServiceVersion{csvA, csvB, csvNewA, csvNewB}, manifests)
+		updateInternalCatalog(GinkgoT(), kubeClient, crClient, catalogSourceName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{crd, crd2}, []operatorsv1alpha1.ClusterServiceVersion{csvA, csvB, csvNewA, csvNewB}, manifests)
 
 		_, err = fetchSubscription(crClient, generatedNamespace.GetName(), subscriptionName, subscriptionHasInstallPlanDifferentChecker(subscription.Status.InstallPlanRef.Name))
 		require.NoError(GinkgoT(), err)
@@ -2170,7 +2184,7 @@ var _ = Describe("Subscription", func() {
 					DefaultChannelName: "alpha",
 				},
 			}
-			csvA = newCSV("csvA", generatedNamespace.GetName(), "", semver.MustParse("1.0.0"), nil, []apiextensions.CustomResourceDefinition{crd}, nil)
+			csvA = newCSV("csvA", generatedNamespace.GetName(), "", semver.MustParse("1.0.0"), nil, []apiextensionsv1.CustomResourceDefinition{crd}, nil)
 
 			_, teardown = createInternalCatalogSource(c, ctx.Ctx().OperatorClient(), catSrcName, generatedNamespace.GetName(), packages, nil, []operatorsv1alpha1.ClusterServiceVersion{csvA})
 
@@ -2208,9 +2222,9 @@ var _ = Describe("Subscription", func() {
 				}
 				packages = append(packages, newPkg)
 
-				csvB = newCSV("csvB", generatedNamespace.GetName(), "", semver.MustParse("1.0.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+				csvB = newCSV("csvB", generatedNamespace.GetName(), "", semver.MustParse("1.0.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 
-				updateInternalCatalog(GinkgoT(), c, crc, catSrcName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csvA, csvB}, packages)
+				updateInternalCatalog(GinkgoT(), c, crc, catSrcName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csvA, csvB}, packages)
 			})
 
 			It("the ResolutionFailed condition previously set in its status that indicated the resolution error is cleared off", func() {
@@ -2304,7 +2318,7 @@ var _ = Describe("Subscription", func() {
 				},
 			}
 
-			crds := []apiextensions.CustomResourceDefinition{newCRD(genName("crd-"))}
+			crds := []apiextensionsv1.CustomResourceDefinition{newCRD(genName("crd-"))}
 			csvs := []operatorsv1alpha1.ClusterServiceVersion{
 				newCSV("csv-dependency", generatedNamespace.GetName(), "", semver.MustParse("1.0.0"), crds, nil, nil),
 				newCSV("csv-root", generatedNamespace.GetName(), "", semver.MustParse("1.0.0"), nil, crds, nil),
@@ -2422,7 +2436,7 @@ var _ = Describe("Subscription", func() {
 
 		BeforeEach(func() {
 			By("deploying the testing catalog")
-			provider, err := NewFileBasedFiledBasedCatalogProvider(filepath.Join(testdataDir, failForwardTestDataBaseDir, "example-operator.v0.1.0.yaml"))
+			provider, err := NewFileBasedFiledBasedCatalogProvider(filepath.Join(testdataDir, subscriptionTestDataBaseDir, "example-operator.v0.1.0.yaml"))
 			Expect(err).To(BeNil())
 			catalogSourceName = fmt.Sprintf("%s-catsrc", generatedNamespace.GetName())
 			magicCatalog = NewMagicCatalog(ctx.Ctx().Client(), generatedNamespace.GetName(), catalogSourceName, provider)
@@ -2478,7 +2492,7 @@ var _ = Describe("Subscription", func() {
 				addBundleUnpackTimeoutOGAnnotation(context.Background(), ctx.Ctx().Client(), ogNN, "1s")
 
 				By("updating the catalog with a broken v0.2.0 bundle image")
-				brokenProvider, err := NewFileBasedFiledBasedCatalogProvider(filepath.Join(testdataDir, failForwardTestDataBaseDir, "example-operator.v0.2.0-non-existent-tag.yaml"))
+				brokenProvider, err := NewFileBasedFiledBasedCatalogProvider(filepath.Join(testdataDir, subscriptionTestDataBaseDir, "example-operator.v0.2.0-non-existent-tag.yaml"))
 				Expect(err).To(BeNil())
 				err = magicCatalog.UpdateCatalog(context.Background(), brokenProvider)
 				Expect(err).To(BeNil())
@@ -2513,7 +2527,7 @@ var _ = Describe("Subscription", func() {
 				addBundleUnpackTimeoutOGAnnotation(context.Background(), ctx.Ctx().Client(), ogNN, "5m")
 
 				By("updating the catalog with a fixed v0.2.0 bundle image")
-				brokenProvider, err := NewFileBasedFiledBasedCatalogProvider(filepath.Join(testdataDir, failForwardTestDataBaseDir, "example-operator.v0.2.0.yaml"))
+				brokenProvider, err := NewFileBasedFiledBasedCatalogProvider(filepath.Join(testdataDir, subscriptionTestDataBaseDir, "example-operator.v0.2.0.yaml"))
 				Expect(err).To(BeNil())
 				err = magicCatalog.UpdateCatalog(context.Background(), brokenProvider)
 				Expect(err).To(BeNil())
@@ -2682,7 +2696,7 @@ properties:
 
 		It("should not retry successful unpack jobs", func() {
 			By("deploying the testing catalog")
-			provider, err := NewFileBasedFiledBasedCatalogProvider(filepath.Join(testdataDir, failForwardTestDataBaseDir, "example-operator.v0.1.0.yaml"))
+			provider, err := NewFileBasedFiledBasedCatalogProvider(filepath.Join(testdataDir, subscriptionTestDataBaseDir, "example-operator.v0.1.0.yaml"))
 			Expect(err).To(BeNil())
 			catalogSourceName := fmt.Sprintf("%s-catsrc", generatedNamespace.GetName())
 			magicCatalog := NewMagicCatalog(ctx.Ctx().Client(), generatedNamespace.GetName(), catalogSourceName, provider)
@@ -3085,9 +3099,9 @@ func fetchSubscription(crc versioned.Interface, namespace, name string, checker 
 			return false, err
 		}
 		thisState, thisCSV, thisInstallPlanRef := fetchedSubscription.Status.State, fetchedSubscription.Status.CurrentCSV, fetchedSubscription.Status.InstallPlanRef
-		if thisState != lastState || thisCSV != lastCSV || equality.Semantic.DeepEqual(thisInstallPlanRef, lastInstallPlanRef) {
+		if thisState != lastState || thisCSV != lastCSV || !equality.Semantic.DeepEqual(thisInstallPlanRef, lastInstallPlanRef) {
 			lastState, lastCSV, lastInstallPlanRef = thisState, thisCSV, thisInstallPlanRef
-			log(fmt.Sprintf("%s (%s): %s", thisState, thisCSV, thisInstallPlanRef))
+			log(fmt.Sprintf("subscription %s/%s state: %s (csv %s): installPlanRef: %#v", namespace, name, thisState, thisCSV, thisInstallPlanRef))
 		}
 		return checker(fetchedSubscription), nil
 	})
@@ -3100,6 +3114,11 @@ func fetchSubscription(crc versioned.Interface, namespace, name string, checker 
 
 func buildSubscriptionCleanupFunc(crc versioned.Interface, subscription *operatorsv1alpha1.Subscription) cleanupFunc {
 	return func() {
+		if env := os.Getenv("SKIP_CLEANUP"); env != "" {
+			fmt.Printf("Skipping cleanup of install plan for subscription %s/%s...\n", subscription.GetNamespace(), subscription.GetName())
+			return
+		}
+
 		if installPlanRef := subscription.Status.InstallPlanRef; installPlanRef != nil {
 			installPlan, err := crc.OperatorsV1alpha1().InstallPlans(subscription.GetNamespace()).Get(context.Background(), installPlanRef.Name, metav1.GetOptions{})
 			if err == nil {
@@ -3330,7 +3349,7 @@ func checkDeploymentWithPodConfiguration(client operatorclient.ClientInterface, 
 	return nil
 }
 
-func updateInternalCatalog(t GinkgoTInterface, c operatorclient.ClientInterface, crc versioned.Interface, catalogSourceName, namespace string, crds []apiextensions.CustomResourceDefinition, csvs []operatorsv1alpha1.ClusterServiceVersion, packages []registry.PackageManifest) {
+func updateInternalCatalog(t GinkgoTInterface, c operatorclient.ClientInterface, crc versioned.Interface, catalogSourceName, namespace string, crds []apiextensionsv1.CustomResourceDefinition, csvs []operatorsv1alpha1.ClusterServiceVersion, packages []registry.PackageManifest) {
 	fetchedInitialCatalog, err := fetchCatalogSourceOnStatus(crc, catalogSourceName, namespace, catalogSourceRegistryPodSynced())
 	require.NoError(t, err)
 

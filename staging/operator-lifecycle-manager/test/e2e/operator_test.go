@@ -3,12 +3,15 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	gomegatypes "github.com/onsi/gomega/types"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -74,6 +77,7 @@ var _ = Describe("Operator API", func() {
 	It("should surface components in its status", func() {
 		o := &operatorsv1.Operator{}
 		o.SetName(genName("o-"))
+		By(fmt.Sprintf("Creating an Operator resource %s", o.GetName()))
 
 		Consistently(o).ShouldNot(ContainCopiedCSVReferences())
 
@@ -83,6 +87,10 @@ var _ = Describe("Operator API", func() {
 
 		defer func() {
 			Eventually(func() error {
+				if env := os.Getenv("SKIP_CLEANUP"); env != "" {
+					fmt.Printf("Skipping cleanup of operator %s...\n", o.GetName())
+					return nil
+				}
 				err := client.Delete(clientCtx, o)
 				if apierrors.IsNotFound(err) {
 					return nil
@@ -116,11 +124,11 @@ var _ = Describe("Operator API", func() {
 		}))
 		defer w.Stop()
 
-		// Create namespaces ns-a and ns-b
 		nsA := &corev1.Namespace{}
 		nsA.SetName(genName("ns-a-"))
 		nsB := &corev1.Namespace{}
 		nsB.SetName(genName("ns-b-"))
+		By(fmt.Sprintf("Create namespaces ns-a: (%s) and ns-b: (%s)", nsA.GetName(), nsB.GetName()))
 
 		for _, ns := range []*corev1.Namespace{nsA, nsB} {
 			Eventually(func() error {
@@ -128,6 +136,10 @@ var _ = Describe("Operator API", func() {
 			}).Should(Succeed())
 
 			defer func(n *corev1.Namespace) {
+				if env := os.Getenv("SKIP_CLEANUP"); env != "" {
+					fmt.Printf("Skipping cleanup of namespace %s...\n", n.GetName())
+					return
+				}
 				Eventually(func() error {
 					err := client.Delete(clientCtx, n)
 					if apierrors.IsNotFound(err) {
@@ -138,24 +150,27 @@ var _ = Describe("Operator API", func() {
 			}(ns)
 		}
 
-		// Label ns-a with o's component label
+		By(fmt.Sprintf("Label ns-a (%s) with o's (%s) component label (%s)", nsA.GetName(), o.GetName(), expectedKey))
 		setComponentLabel := func(m metav1.Object) error {
-			m.SetLabels(map[string]string{expectedKey: ""})
+			m.SetLabels(map[string]string{
+				install.OLMManagedLabelKey: install.OLMManagedLabelValue,
+				expectedKey:                "",
+			})
 			return nil
 		}
 		Eventually(Apply(nsA, setComponentLabel)).Should(Succeed())
 
-		// Ensure o's status.components.refs field eventually contains a reference to ns-a
+		By("Ensure o's status.components.refs field eventually contains a reference to ns-a")
 		By("eventually listing a single component reference")
 		componentRefEventuallyExists(w, true, getReference(scheme, nsA))
 
-		// Create ServiceAccounts sa-a and sa-b in namespaces ns-a and ns-b respectively
 		saA := &corev1.ServiceAccount{}
 		saA.SetName(genName("sa-a-"))
 		saA.SetNamespace(nsA.GetName())
 		saB := &corev1.ServiceAccount{}
 		saB.SetName(genName("sa-b-"))
 		saB.SetNamespace(nsB.GetName())
+		By(fmt.Sprintf("Create ServiceAccounts sa-a (%s/%s) and sa-b (%s/%s) in namespaces ns-a and ns-b respectively", saA.GetNamespace(), saA.GetName(), saB.GetNamespace(), saB.GetName()))
 
 		for _, sa := range []*corev1.ServiceAccount{saA, saB} {
 			Eventually(func() error {
@@ -163,6 +178,10 @@ var _ = Describe("Operator API", func() {
 			}).Should(Succeed())
 			defer func(sa *corev1.ServiceAccount) {
 				Eventually(func() error {
+					if env := os.Getenv("SKIP_CLEANUP"); env != "" {
+						fmt.Printf("Skipping cleanup of serviceaccount %s/%s...\n", sa.GetNamespace(), sa.GetName())
+						return nil
+					}
 					err := client.Delete(clientCtx, sa)
 					if apierrors.IsNotFound(err) {
 						return nil
@@ -172,26 +191,26 @@ var _ = Describe("Operator API", func() {
 			}(sa)
 		}
 
-		// Label sa-a and sa-b with o's component label
+		By("Label sa-a and sa-b with o's component label")
 		Eventually(Apply(saA, setComponentLabel)).Should(Succeed())
 		Eventually(Apply(saB, setComponentLabel)).Should(Succeed())
 
-		// Ensure o's status.components.refs field eventually contains references to sa-a and sa-b
+		By("Ensure o's status.components.refs field eventually contains references to sa-a and sa-b")
 		By("eventually listing multiple component references")
 		componentRefEventuallyExists(w, true, getReference(scheme, saA))
 		componentRefEventuallyExists(w, true, getReference(scheme, saB))
 
-		// Remove the component label from sa-b
+		By("Remove the component label from sa-b")
 		Eventually(Apply(saB, func(m metav1.Object) error {
 			m.SetLabels(nil)
 			return nil
 		})).Should(Succeed())
 
-		// Ensure the reference to sa-b is eventually removed from o's status.components.refs field
+		By("Ensure the reference to sa-b is eventually removed from o's status.components.refs field")
 		By("removing a component's reference when it no longer bears the component label")
 		componentRefEventuallyExists(w, false, getReference(scheme, saB))
 
-		// Delete o
+		By("Delete o")
 		Eventually(func() error {
 			err := client.Delete(clientCtx, o)
 			if err != nil && !apierrors.IsNotFound(err) {
@@ -200,13 +219,13 @@ var _ = Describe("Operator API", func() {
 			return nil
 		}).Should(Succeed())
 
-		// Ensure that o is eventually recreated (because some of its components still exist).
+		By("Ensure that o is eventually recreated (because some of its components still exist).")
 		By("recreating the Operator when any components still exist")
 		Eventually(func() error {
 			return client.Get(clientCtx, types.NamespacedName{Name: o.GetName()}, o)
 		}).Should(Succeed())
 
-		// Delete ns-a
+		By("Delete ns-a")
 		Eventually(func() error {
 			err := client.Delete(clientCtx, nsA)
 			if apierrors.IsNotFound(err) {
@@ -215,11 +234,11 @@ var _ = Describe("Operator API", func() {
 			return err
 		}).Should(Succeed())
 
-		// Ensure the reference to ns-a is eventually removed from o's status.components.refs field
+		By("Ensure the reference to ns-a is eventually removed from o's status.components.refs field")
 		By("removing a component's reference when it no longer exists")
 		componentRefEventuallyExists(w, false, getReference(scheme, nsA))
 
-		// Delete o
+		By("Delete o")
 		Eventually(func() error {
 			err := client.Delete(clientCtx, o)
 			if apierrors.IsNotFound(err) {
@@ -228,7 +247,7 @@ var _ = Describe("Operator API", func() {
 			return err
 		}).Should(Succeed())
 
-		// Ensure that o is consistently not found
+		By("Ensure that o is consistently not found")
 		By("verifying the Operator is permanently deleted if it has no components")
 		Consistently(func() error {
 			err := client.Get(clientCtx, types.NamespacedName{Name: o.GetName()}, o)
@@ -248,20 +267,22 @@ var _ = Describe("Operator API", func() {
 		)
 
 		BeforeEach(func() {
-			// Subscribe to a package and await a successful install
+			By("Subscribe to a package and await a successful install")
 			ns = &corev1.Namespace{}
 			ns.SetName(genName("ns-"))
 			Eventually(func() error {
 				return client.Create(clientCtx, ns)
 			}).Should(Succeed())
+			By(fmt.Sprintf("created namespace %s", ns.Name))
 
-			// Default to AllNamespaces
+			By("Default to AllNamespaces")
 			og := &operatorsv1.OperatorGroup{}
 			og.SetNamespace(ns.GetName())
 			og.SetName(genName("og-"))
 			Eventually(func() error {
 				return client.Create(clientCtx, og)
 			}).Should(Succeed())
+			By(fmt.Sprintf("created operator group %s/%s", og.Namespace, og.Name))
 
 			cs := &operatorsv1alpha1.CatalogSource{
 				Spec: operatorsv1alpha1.CatalogSourceSpec{
@@ -277,8 +298,9 @@ var _ = Describe("Operator API", func() {
 			Eventually(func() error {
 				return client.Create(clientCtx, cs)
 			}).Should(Succeed())
+			By(fmt.Sprintf("created catalog source %s/%s", cs.Namespace, cs.Name))
 
-			// Wait for the CatalogSource to be ready
+			By("Wait for the CatalogSource to be ready")
 			_, err := fetchCatalogSourceOnStatus(newCRClient(), cs.GetName(), cs.GetNamespace(), catalogSourceRegistryPodSynced())
 			Expect(err).ToNot(HaveOccurred())
 
@@ -296,38 +318,31 @@ var _ = Describe("Operator API", func() {
 			Eventually(func() error {
 				return client.Create(clientCtx, sub)
 			}).Should(Succeed())
+			By(fmt.Sprintf("created subscription %s/%s", sub.Namespace, sub.Name))
 
-			Eventually(func() (operatorsv1alpha1.SubscriptionState, error) {
-				s := sub.DeepCopy()
-				if err := client.Get(clientCtx, testobj.NamespacedName(s), s); err != nil {
-					return operatorsv1alpha1.SubscriptionStateNone, err
-				}
+			_, err = fetchSubscription(newCRClient(), sub.Namespace, sub.Name, subscriptionStateAtLatestChecker())
+			require.NoError(GinkgoT(), err)
 
-				return s.Status.State, nil
-			}).Should(BeEquivalentTo(operatorsv1alpha1.SubscriptionStateAtLatest))
+			subscriptionWithInstallPLan, err := fetchSubscription(newCRClient(), sub.Namespace, sub.Name, subscriptionHasInstallPlanChecker())
+			require.NoError(GinkgoT(), err)
+			require.NotNil(GinkgoT(), subscriptionWithInstallPLan)
+			ipRef := subscriptionWithInstallPLan.Status.InstallPlanRef
 
-			var ipRef *corev1.ObjectReference
-			Eventually(func() (*corev1.ObjectReference, error) {
-				if err := client.Get(clientCtx, testobj.NamespacedName(sub), sub); err != nil {
-					return nil, err
-				}
-				ipRef = sub.Status.InstallPlanRef
-
-				return ipRef, nil
-			}).ShouldNot(BeNil())
-
-			ip = &operatorsv1alpha1.InstallPlan{}
-			Eventually(func() error {
-				return client.Get(clientCtx, types.NamespacedName{Namespace: ipRef.Namespace, Name: ipRef.Name}, ip)
-			}).Should(Succeed())
+			ip, err = fetchInstallPlan(GinkgoT(), newCRClient(), ipRef.Name, ipRef.Namespace, buildInstallPlanPhaseCheckFunc(operatorsv1alpha1.InstallPlanPhaseComplete))
+			Expect(err).To(BeNil())
 
 			operator, err := operatorFactory.NewPackageOperator(sub.Spec.Package, sub.GetNamespace())
 			Expect(err).ToNot(HaveOccurred())
 			operatorName = testobj.NamespacedName(operator)
+			By(fmt.Sprintf("waiting for operator %s/%s to exist", operator.Namespace, operator.Name))
 		})
 
 		AfterEach(func() {
 			Eventually(func() error {
+				if env := os.Getenv("SKIP_CLEANUP"); env != "" {
+					fmt.Printf("Skipping cleanup of namespace %s...\n", ns.Name)
+					return nil
+				}
 				err := client.Delete(clientCtx, ns)
 				if apierrors.IsNotFound(err) {
 					return nil
@@ -368,7 +383,7 @@ var _ = Describe("Operator API", func() {
 			var newNs *corev1.Namespace
 
 			BeforeEach(func() {
-				// Subscribe to a package and await a successful install
+				By("Subscribe to a package and await a successful install")
 				newNs = &corev1.Namespace{}
 				newNs.SetName(genName("ns-"))
 				Eventually(func() error {

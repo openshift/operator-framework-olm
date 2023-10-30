@@ -12,7 +12,7 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
 	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/util"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8scontrollerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -105,6 +105,6 @@ var _ = Describe("CSV Namespace Labeler Plugin", func() {
 
 func newCsv(namespace string) *v1alpha1.ClusterServiceVersion {
 	crd := newCRD(genName("ins-"))
-	csv := newCSV(genName("package-"), namespace, "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+	csv := newCSV(genName("package-"), namespace, "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 	return &csv
 }

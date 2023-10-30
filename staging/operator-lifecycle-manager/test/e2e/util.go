@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	extScheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -50,7 +49,7 @@ import (
 )
 
 const (
-	pollInterval = 1 * time.Second
+	pollInterval = 100 * time.Millisecond
 	pollDuration = 5 * time.Minute
 
 	olmConfigMap = "olm-operators" // No-longer used, how long do we keep this around?
@@ -383,12 +382,16 @@ func fetchCatalogSourceOnStatus(crc versioned.Interface, name, namespace string,
 	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
 		fetched, err = crc.OperatorsV1alpha1().CatalogSources(namespace).Get(context.Background(), name, metav1.GetOptions{})
 		if err != nil || fetched == nil {
-			fmt.Printf("failed to fetch catalogSource %s/%s: %v\n", namespace, name, err)
+			err = fmt.Errorf("failed to fetch catalogSource %s/%s: %v\n", namespace, name, err)
+			fmt.Println(err.Error())
 			return false, err
 		}
 		return check(fetched), nil
 	})
 
+	if err != nil {
+		err = fmt.Errorf("failed to wati for catalog source to reach intended state: %w", err)
+	}
 	return fetched, err
 }
 
@@ -563,7 +566,9 @@ func buildCatalogSourceCleanupFunc(c operatorclient.ClientInterface, crc version
 		}
 		ctx.Ctx().Logf("Deleting catalog source %s...", catalogSource.GetName())
 		err := crc.OperatorsV1alpha1().CatalogSources(namespace).Delete(context.Background(), catalogSource.GetName(), metav1.DeleteOptions{})
-		Expect(err).ToNot(HaveOccurred())
+		if err != nil && !apierrors.IsNotFound(err) {
+			Expect(err).ToNot(HaveOccurred())
+		}
 
 		Eventually(func() (bool, error) {
 			listOpts := metav1.ListOptions{
@@ -591,7 +596,9 @@ func buildConfigMapCleanupFunc(c operatorclient.ClientInterface, namespace strin
 		}
 		ctx.Ctx().Logf("Deleting config map %s...", configMap.GetName())
 		err := c.KubernetesInterface().CoreV1().ConfigMaps(namespace).Delete(context.Background(), configMap.GetName(), metav1.DeleteOptions{})
-		Expect(err).ToNot(HaveOccurred())
+		if err != nil && !apierrors.IsNotFound(err) {
+			Expect(err).ToNot(HaveOccurred())
+		}
 	}
 }
 
@@ -638,7 +645,7 @@ func createInternalCatalogSource(
 	name,
 	namespace string,
 	manifests []registry.PackageManifest,
-	crds []apiextensions.CustomResourceDefinition,
+	crds []apiextensionsv1.CustomResourceDefinition,
 	csvs []operatorsv1alpha1.ClusterServiceVersion,
 ) (*operatorsv1alpha1.CatalogSource, cleanupFunc) {
 	configMap, configMapCleanup := createConfigMapForCatalogData(c, name, namespace, manifests, crds, csvs)
@@ -681,7 +688,7 @@ func createInternalCatalogSourceWithPriority(c operatorclient.ClientInterface,
 	name,
 	namespace string,
 	manifests []registry.PackageManifest,
-	crds []apiextensions.CustomResourceDefinition,
+	crds []apiextensionsv1.CustomResourceDefinition,
 	csvs []operatorsv1alpha1.ClusterServiceVersion,
 	priority int,
 ) (*operatorsv1alpha1.CatalogSource, cleanupFunc) {
@@ -772,7 +779,7 @@ func createConfigMapForCatalogData(
 	name,
 	namespace string,
 	manifests []registry.PackageManifest,
-	crds []apiextensions.CustomResourceDefinition,
+	crds []apiextensionsv1.CustomResourceDefinition,
 	csvs []operatorsv1alpha1.ClusterServiceVersion,
 ) (*corev1.ConfigMap, cleanupFunc) {
 	// Create a config map containing the PackageManifests and CSVs
@@ -876,7 +883,7 @@ func createV1CRDConfigMapForCatalogData(
 	return createdConfigMap, buildConfigMapCleanupFunc(c, namespace, createdConfigMap)
 }
 
-func serializeCRD(crd apiextensions.CustomResourceDefinition) string {
+func serializeCRD(crd apiextensionsv1.CustomResourceDefinition) string {
 	scheme := runtime.NewScheme()
 
 	Expect(extScheme.AddToScheme(scheme)).Should(Succeed())
