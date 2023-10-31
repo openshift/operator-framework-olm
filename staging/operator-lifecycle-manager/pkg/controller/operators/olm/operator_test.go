@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -51,6 +52,9 @@ import (
 
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
+	clienttesting "k8s.io/client-go/testing"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/fake"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/certs"
@@ -65,8 +69,6 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/scoped"
-	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
-	clienttesting "k8s.io/client-go/testing"
 )
 
 type TestStrategy struct{}
@@ -4519,6 +4521,346 @@ func TestSyncOperatorGroups(t *testing.T) {
 			},
 		},
 		{
+			name:          "MatchingNamespace/NoCSVs/CreatesClusterRoles",
+			expectedEqual: true,
+			initial: initial{
+				operatorGroup: &operatorsv1.OperatorGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "operator-group-1",
+						Namespace: operatorNamespace, Labels: map[string]string{"app": "app-a"},
+					},
+					Spec: operatorsv1.OperatorGroupSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"app": "app-a"},
+						},
+					},
+				},
+				k8sObjs: []runtime.Object{
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: operatorNamespace,
+						},
+					},
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:   targetNamespace,
+							Labels: map[string]string{"app": "app-a"},
+						},
+					},
+				},
+			},
+			expectedStatus: operatorsv1.OperatorGroupStatus{
+				Namespaces:  []string{targetNamespace},
+				LastUpdated: &now,
+			},
+			final: final{objects: map[string][]runtime.Object{
+				"": {
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-admin",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-edit",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-view",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+				},
+			}},
+		},
+		{
+			name:          "MatchingNamespace/NoCSVs/BadName/CreatesNewClusterRoles",
+			expectedEqual: true,
+			initial: initial{
+				operatorGroup: &operatorsv1.OperatorGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cluster",
+						Namespace: operatorNamespace, Labels: map[string]string{"app": "app-a"},
+					},
+					Spec: operatorsv1.OperatorGroupSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"app": "app-a"},
+						},
+					},
+				},
+				k8sObjs: []runtime.Object{
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: operatorNamespace,
+						},
+					},
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:   targetNamespace,
+							Labels: map[string]string{"app": "app-a"},
+						},
+					},
+				},
+			},
+			expectedStatus: operatorsv1.OperatorGroupStatus{
+				Namespaces:  []string{targetNamespace},
+				LastUpdated: &now,
+			},
+			final: final{objects: map[string][]runtime.Object{
+				"": {
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "olm.og.cluster.admin-1AhLz9hXoj1XlbuCglsaI0MOC20vzSo5sCacK3",
+							Labels: map[string]string{
+								"olm.owner":           "cluster",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "olm.og.cluster.edit-8nE6Ev6g4SwsnbLbzRYki14Ne0WhS8ultUNYt2",
+							Labels: map[string]string{
+								"olm.owner":           "cluster",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "olm.og.cluster.view-4OToC5vUrHlMW6Fdmjgce3KPhr7WoxjFYnvsH8",
+							Labels: map[string]string{
+								"olm.owner":           "cluster",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+				},
+			}},
+		},
+		{
+			// ensure that ownership labels are fixed but user labels are preserved
+			name:          "MatchingNamespace/NoCSVs/ClusterRoleOwnershipLabels",
+			expectedEqual: true,
+			initial: initial{
+				operatorGroup: &operatorsv1.OperatorGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "operator-group-1",
+						Namespace: operatorNamespace,
+					},
+					Spec: operatorsv1.OperatorGroupSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"app": "app-a"},
+						},
+					},
+				},
+				k8sObjs: []runtime.Object{
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: operatorNamespace,
+						},
+					},
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:   targetNamespace,
+							Labels: map[string]string{"app": "app-a"},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-admin",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns-bob",
+								"olm.owner.kind":      "OperatorGroup",
+								"not.an.olm.label":    "true",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-view",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-5",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+								"not.an.olm.label":    "false",
+								"another.olm.label":   "or maybe not",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-edit",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroupKind",
+							},
+						},
+					},
+				},
+			},
+			expectedStatus: operatorsv1.OperatorGroupStatus{
+				Namespaces:  []string{targetNamespace},
+				LastUpdated: &now,
+			},
+			final: final{objects: map[string][]runtime.Object{
+				"": {
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-admin",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+								"not.an.olm.label":    "true",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-edit",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-view",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+								"not.an.olm.label":    "false",
+								"another.olm.label":   "or maybe not",
+							},
+						},
+					},
+				},
+			}},
+		},
+		{
+			// if a cluster role exists with the correct name, use that
+			name:          "MatchingNamespace/NoCSVs/DoesNotUpdateClusterRoles",
+			expectedEqual: true,
+			initial: initial{
+				operatorGroup: &operatorsv1.OperatorGroup{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "operator-group-1",
+						Namespace: operatorNamespace,
+					},
+					Spec: operatorsv1.OperatorGroupSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"app": "app-a"},
+						},
+					},
+				},
+				k8sObjs: []runtime.Object{
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: operatorNamespace,
+						},
+					},
+					&corev1.Namespace{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:   targetNamespace,
+							Labels: map[string]string{"app": "app-a"},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-admin",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-edit",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-view",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					}},
+			},
+			expectedStatus: operatorsv1.OperatorGroupStatus{
+				Namespaces:  []string{targetNamespace},
+				LastUpdated: &now,
+			},
+			final: final{objects: map[string][]runtime.Object{
+				"": {
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-admin",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-edit",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+					&rbacv1.ClusterRole{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "operator-group-1-view",
+							Labels: map[string]string{
+								"olm.owner":           "operator-group-1",
+								"olm.owner.namespace": "operator-ns",
+								"olm.owner.kind":      "OperatorGroup",
+							},
+						},
+					},
+				},
+			},
+			},
+		},
+		{
 			name:          "MatchingNamespace/CSVPresent/Found",
 			expectedEqual: true,
 			initial: initial{
@@ -5349,7 +5691,10 @@ func RequireObjectsInCache(t *testing.T, lister operatorlister.OperatorLister, n
 			require.Failf(t, "couldn't find expected object", "%#v", object)
 		}
 		if err != nil {
-			return fmt.Errorf("namespace: %v, error: %v", namespace, err)
+			if apierrors.IsNotFound(err) {
+				return err
+			}
+			return errors.Join(err, fmt.Errorf("namespace: %v, error: %v", namespace, err))
 		}
 		if doCompare {
 			if !reflect.DeepEqual(object, fetched) {
