@@ -5,6 +5,17 @@ All of the staged repositories live in the top level `staging` directory.
 The downstreaming process is complex and helper scripts have been written
 to facilitate downstreaming.
 
+## Automatic Downstreaming
+
+There is now an automated downstreaming process for OLMv0 from the three
+source repositories.
+
+The "bumper" program is located in [openshift/operator-framework-tooling](https://github.com/openshift/operator-framework-tooling).
+It is automatically run on a daily basis based on the following [openshift/release](https://github.com/openshift/release/blob/3bf0b3ae011debaefefb564ad6f233c380d033f7/ci-operator/jobs/infra-periodics.yaml#L926-L978) config.
+
+If the bumper program fails to create a mergeable PR, manual intervention will be necessary.
+This may require copying, modifying and resubmitting the PR.
+
 ## Assumptions
 
 The helper scripts assume that the upstream remote repos are configured
@@ -18,6 +29,9 @@ The [sync.sh](sync.sh) script will automatically create these
 remote repositories.
 
 ## Bulk Sync
+
+**NOTE**: This should no longer be necessary, given the "bumper" program above.
+The "bumper" program can be used instead of the following process.
 
 To sync all current changes from upstream, simply run the sync script:
 ```sh
@@ -54,14 +68,18 @@ file in the repositry root directory with the repos and commit SHAs.
 
 The format of the cherrypick file is:
 ```
-<order> <repo> <commit-SHA>
+<date-order> <commit-order> <repo> <commit-SHA>
 ```
+
+* The `<date-order>` field is usually an ISO date without spaces.
+* The `<commit-order>` field is a sequential number indicating the order of a commit within a pull request.
+* For this _manual_ purpose, both can just be the same sequential number.
 
 For example:
 ```
-1 api 0123456789abcdef0123456789abcdef01234567
-2 operator-lifecycle-manager 123456789abcdef0123456789abcdef012345678
-3 operator-lifecycle-manager 23456789abcdef0123456789abcdef0123456789
+1 1 api 0123456789abcdef0123456789abcdef01234567
+2 2 operator-lifecycle-manager 123456789abcdef0123456789abcdef012345678
+3 3 operator-lifecycle-manager 23456789abcdef0123456789abcdef0123456789
 ```
 Do _not_ commit the cherrypick file, it is a temporary working file that
 is ignored by `git`.

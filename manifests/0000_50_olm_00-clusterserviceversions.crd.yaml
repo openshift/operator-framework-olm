@@ -1700,7 +1700,11 @@ spec:
                                                   type: object
                                                   properties:
                                                     claims:
+<<<<<<< HEAD
                                                       description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers."
+=======
+                                                      description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable."
+>>>>>>> 07c80820c (bump golang-migrate to v4.16.1 (#1107))
                                                       type: array
                                                       items:
                                                         description: ResourceClaim references one entry in PodSpec.ResourceClaims.
@@ -2544,7 +2548,11 @@ spec:
                                                   type: object
                                                   properties:
                                                     claims:
+<<<<<<< HEAD
                                                       description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers."
+=======
+                                                      description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable."
+>>>>>>> 07c80820c (bump golang-migrate to v4.16.1 (#1107))
                                                       type: array
                                                       items:
                                                         description: ResourceClaim references one entry in PodSpec.ResourceClaims.
@@ -3399,7 +3407,11 @@ spec:
                                                   type: object
                                                   properties:
                                                     claims:
+<<<<<<< HEAD
                                                       description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers."
+=======
+                                                      description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable."
+>>>>>>> 07c80820c (bump golang-migrate to v4.16.1 (#1107))
                                                       type: array
                                                       items:
                                                         description: ResourceClaim references one entry in PodSpec.ResourceClaims.
@@ -3766,7 +3778,11 @@ spec:
                                             description: If specified, the pod will be dispatched by specified scheduler. If not specified, the pod will be dispatched by default scheduler.
                                             type: string
                                           schedulingGates:
+<<<<<<< HEAD
                                             description: "SchedulingGates is an opaque list of values that if specified will block scheduling the pod. If schedulingGates is not empty, the pod will stay in the SchedulingGated state and the scheduler will not attempt to schedule the pod. \n SchedulingGates can only be set at pod creation time, and be removed only afterwards. \n This is a beta feature enabled by the PodSchedulingReadiness feature gate."
+=======
+                                            description: "SchedulingGates is an opaque list of values that if specified will block scheduling the pod. More info:  https://git.k8s.io/enhancements/keps/sig-scheduling/3521-pod-scheduling-readiness. \n This is an alpha-level feature enabled by PodSchedulingReadiness feature gate."
+>>>>>>> 07c80820c (bump golang-migrate to v4.16.1 (#1107))
                                             type: array
                                             items:
                                               description: PodSchedulingGate is associated to a Pod to guard its scheduling.
@@ -4294,7 +4310,11 @@ spec:
                                                               type: object
                                                               properties:
                                                                 claims:
+<<<<<<< HEAD
                                                                   description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers."
+=======
+                                                                  description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable."
+>>>>>>> 07c80820c (bump golang-migrate to v4.16.1 (#1107))
                                                                   type: array
                                                                   items:
                                                                     description: ResourceClaim references one entry in PodSpec.ResourceClaims.

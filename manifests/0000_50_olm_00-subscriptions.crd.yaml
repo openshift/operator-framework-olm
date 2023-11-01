@@ -647,7 +647,11 @@ spec:
                       type: object
                       properties:
                         claims:
+<<<<<<< HEAD
                           description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers."
+=======
+                          description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable."
+>>>>>>> 07c80820c (bump golang-migrate to v4.16.1 (#1107))
                           type: array
                           items:
                             description: ResourceClaim references one entry in PodSpec.ResourceClaims.
@@ -1073,7 +1077,11 @@ spec:
                                         type: object
                                         properties:
                                           claims:
+<<<<<<< HEAD
                                             description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers."
+=======
+                                            description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable."
+>>>>>>> 07c80820c (bump golang-migrate to v4.16.1 (#1107))
                                             type: array
                                             items:
                                               description: ResourceClaim references one entry in PodSpec.ResourceClaims.
