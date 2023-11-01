@@ -14,3 +14,5 @@ above), and then downstreamed to this repository.
 
 Please refer to the [scripts README.md](scripts/README.md) to learn how to
 downstream commits from those projects to this repo.
+
+A [TestGrid](https://testgrid.k8s.io/redhat-openshift-olm) is configured for this repository.
