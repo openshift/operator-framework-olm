@@ -74,11 +74,16 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	highAvailabilityMode := getTopologyModeFromInfra(&infra)
 	log.Info("currently topology mode", "highly available", highAvailabilityMode)
 
+	flags := []string{}
+	if r.Interval != "" {
+		flags = append(flags, "--interval", r.Interval)
+	}
+
 	required, err := manifests.NewPackageServerCSV(
 		manifests.WithName(r.Name),
 		manifests.WithNamespace(r.Namespace),
 		manifests.WithImage(r.Image),
-		manifests.WithRunFlags([]string{"--interval", r.Interval}),
+		manifests.WithRunFlags(flags),
 	)
 	if err != nil {
 		log.Error(err, "failed to serialize a new packageserver csv from the base YAML manifest")

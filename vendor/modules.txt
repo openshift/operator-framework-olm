@@ -226,7 +226,7 @@ github.com/docker/go-metrics
 # github.com/docker/go-units v0.5.0
 ## explicit
 github.com/docker/go-units
-# github.com/emicklei/go-restful/v3 v3.10.1
+# github.com/emicklei/go-restful/v3 v3.10.2
 ## explicit; go 1.13
 github.com/emicklei/go-restful/v3
 github.com/emicklei/go-restful/v3/log
@@ -642,7 +642,7 @@ github.com/openshift/client-go/config/informers/externalversions/config
 github.com/openshift/client-go/config/informers/externalversions/config/v1
 github.com/openshift/client-go/config/informers/externalversions/internalinterfaces
 github.com/openshift/client-go/config/listers/config/v1
-# github.com/operator-framework/api v0.17.8-0.20230803152844-704ae942c4a9 => ./staging/api
+# github.com/operator-framework/api v0.17.8-0.20230929142219-7961b0208d99 => ./staging/api
 ## explicit; go 1.19
 github.com/operator-framework/api/crds
 github.com/operator-framework/api/pkg/constraints
