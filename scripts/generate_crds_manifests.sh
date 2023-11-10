@@ -126,7 +126,7 @@ metadata:
   annotations:
 spec:
   strategy:
-    type: RollingUpdate
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
