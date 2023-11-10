@@ -214,7 +214,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 			return err
 		}).Should(Succeed())
 
-		_, err = awaitCSV(crc, generatedNamespace.GetName(), mainCSV.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), mainCSV.GetName(), csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
 
 		// Update manifest
@@ -364,7 +364,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		subscription, err := fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionStateAtLatestChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ShouldNot(BeNil())
-		_, err = fetchCSV(crc, subscription.Status.CurrentCSV, generatedNamespace.GetName(), buildCSVConditionChecker(v1alpha1.CSVPhaseSucceeded))
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), subscription.Status.CurrentCSV, buildCSVConditionChecker(v1alpha1.CSVPhaseSucceeded))
 		Expect(err).ShouldNot(HaveOccurred())
 
 		ipList, err := crc.OperatorsV1alpha1().InstallPlans(generatedNamespace.GetName()).List(context.Background(), metav1.ListOptions{})
@@ -455,7 +455,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		subscription, err := fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionStateAtLatestChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ToNot(BeNil())
-		_, err = fetchCSV(crc, subscription.Status.CurrentCSV, generatedNamespace.GetName(), buildCSVConditionChecker(v1alpha1.CSVPhaseSucceeded))
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), subscription.Status.CurrentCSV, buildCSVConditionChecker(v1alpha1.CSVPhaseSucceeded))
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 
@@ -597,7 +597,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		subscription, err := fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionStateAtLatestChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ShouldNot(BeNil())
-		_, err = fetchCSV(crc, subscription.Status.CurrentCSV, generatedNamespace.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), subscription.Status.CurrentCSV, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
 
 		// Update the catalog's address to point at the other registry pod's cluster ip
@@ -613,7 +613,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		}).Should(Succeed())
 
 		// Wait for the replacement CSV to be installed
-		_, err = awaitCSV(crc, generatedNamespace.GetName(), replacementCSV.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), replacementCSV.GetName(), csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 
@@ -822,20 +822,24 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		local, err := Local(c)
 		Expect(err).NotTo(HaveOccurred(), "cannot determine if test running locally or on CI: %s", err)
 
+		By("Create an image based catalog source from public Quay image using a unique tag as identifier")
 		var registryURL string
 		var registryAuth string
 		if local {
+			By("Creating a local registry to use")
 			registryURL, err = createDockerRegistry(c, generatedNamespace.GetName())
 			Expect(err).NotTo(HaveOccurred(), "error creating container registry: %s", err)
 			defer deleteDockerRegistry(c, generatedNamespace.GetName())
 
-			// ensure registry pod is ready before attempting port-forwarding
+			By("ensure registry pod with local URL " + registryURL + " is ready before attempting port-forwarding")
 			_ = awaitPod(GinkgoT(), c, generatedNamespace.GetName(), registryName, podReady)
 
+			By("By port-forwarding to the registry")
 			err = registryPortForward(generatedNamespace.GetName())
 			Expect(err).NotTo(HaveOccurred(), "port-forwarding local registry: %s", err)
 		} else {
 			registryURL = fmt.Sprintf("%s/%s", openshiftregistryFQDN, generatedNamespace.GetName())
+			By("Using the OpenShift registry at " + registryURL)
 			registryAuth, err = openshiftRegistryAuth(c, generatedNamespace.GetName())
 			Expect(err).NotTo(HaveOccurred(), "error getting openshift registry authentication: %s", err)
 		}
@@ -844,33 +848,35 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		// the tag is generated randomly and appended to the end of the testImage
 		testImage := fmt.Sprint("docker://", registryURL, "/catsrc-update", ":")
 		tag := genName("x")
+		By("Generating a target test image name " + testImage + " with tag " + tag)
 
-		// 1. copy old catalog image into test-specific tag in internal docker registry
-		// create skopeo pod to actually do the work of copying (on openshift) or exec out to local skopeo
+		By("copying old catalog image into test-specific tag in internal docker registry")
 		if local {
+			By("executing out to a local skopeo client")
 			_, err := skopeoLocalCopy(testImage, tag, catsrcImage, "old")
 			Expect(err).NotTo(HaveOccurred(), "error copying old registry file: %s", err)
 		} else {
+			By("creating a skopoeo Pod to do the copying")
 			skopeoArgs := skopeoCopyCmd(testImage, tag, catsrcImage, "old", registryAuth)
 			err = createSkopeoPod(c, skopeoArgs, generatedNamespace.GetName())
 			Expect(err).NotTo(HaveOccurred(), "error creating skopeo pod: %s", err)
 
-			// wait for skopeo pod to exit successfully
+			By("waiting for the skopeo pod to exit successfully")
 			awaitPod(GinkgoT(), c, generatedNamespace.GetName(), skopeo, func(pod *corev1.Pod) bool {
 				return pod.Status.Phase == corev1.PodSucceeded
 			})
 
+			By("removing the skopeo pod")
 			err = deleteSkopeoPod(c, generatedNamespace.GetName())
 			Expect(err).NotTo(HaveOccurred(), "error deleting skopeo pod: %s", err)
 		}
 
-		// 2. setup catalog source
-
+		By("setting catalog source")
 		sourceName := genName("catalog-")
 		packageName := "busybox"
 		channelName := "alpha"
 
-		// Create gRPC CatalogSource using an external registry image and poll interval
+		By("Create gRPC CatalogSource using an external registry image and poll interval")
 		var image string
 		image = testImage[9:] // strip off docker://
 		image = fmt.Sprint(image, tag)
@@ -909,7 +915,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		}()
 
 		// wait for new catalog source pod to be created
-		// Wait for a new registry pod to be created
+		By("Wait for a new registry pod to be created")
 		selector := labels.SelectorFromSet(map[string]string{"olm.catalogSource": source.GetName()})
 		singlePod := podCount(1)
 		registryPods, err := awaitPods(GinkgoT(), c, source.GetNamespace(), selector.String(), singlePod)
@@ -917,18 +923,18 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		Expect(registryPods).ShouldNot(BeNil(), "nil registry pods")
 		Expect(registryPods.Items).To(HaveLen(1), "unexpected number of registry pods found")
 
-		// Create a Subscription for package
+		By("Create a Subscription for package")
 		subscriptionName := genName("sub-")
 		cleanupSubscription := createSubscriptionForCatalog(crc, source.GetNamespace(), subscriptionName, source.GetName(), packageName, channelName, "", v1alpha1.ApprovalAutomatic)
 		defer cleanupSubscription()
 
-		// Wait for the Subscription to succeed
+		By("Wait for the Subscription to succeed")
 		subscription, err := fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionStateAtLatestChecker())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ShouldNot(BeNil())
 
-		// Wait for csv to succeed
-		_, err = fetchCSV(crc, subscription.Status.CurrentCSV, subscription.GetNamespace(), csvSucceededChecker)
+		By("Wait for csv to succeed")
+		_, err = fetchCSV(crc, subscription.GetNamespace(), subscription.Status.CurrentCSV, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
 
 		registryCheckFunc := func(podList *corev1.PodList) bool {
@@ -937,29 +943,30 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 			}
 			return podList.Items[0].Status.ContainerStatuses[0].ImageID != ""
 		}
-		// get old catalog source pod
+		By("get old catalog source pod")
 		registryPod, err := awaitPods(GinkgoT(), c, source.GetNamespace(), selector.String(), registryCheckFunc)
-		// 3. Update image on registry via skopeo: this should trigger a newly updated version of the catalog source pod
-		// to be deployed after some time
-		// Make another skopeo pod to do the work of copying the image
+		By("Updateing image on registry to trigger a newly updated version of the catalog source pod to be deployed after some time")
 		if local {
+			By("executing out to a local skopeo client")
 			_, err := skopeoLocalCopy(testImage, tag, catsrcImage, "new")
 			Expect(err).NotTo(HaveOccurred(), "error copying new registry file: %s", err)
 		} else {
+			By("creating a skopoeo Pod to do the copying")
 			skopeoArgs := skopeoCopyCmd(testImage, tag, catsrcImage, "new", registryAuth)
 			err = createSkopeoPod(c, skopeoArgs, generatedNamespace.GetName())
 			Expect(err).NotTo(HaveOccurred(), "error creating skopeo pod: %s", err)
 
-			// wait for skopeo pod to exit successfully
+			By("waiting for the skopeo pod to exit successfully")
 			awaitPod(GinkgoT(), c, generatedNamespace.GetName(), skopeo, func(pod *corev1.Pod) bool {
 				return pod.Status.Phase == corev1.PodSucceeded
 			})
 
+			By("removing the skopeo pod")
 			err = deleteSkopeoPod(c, generatedNamespace.GetName())
 			Expect(err).NotTo(HaveOccurred(), "error deleting skopeo pod: %s", err)
 		}
 
-		// update catalog source with annotation (to kick resync)
+		By("update catalog source with annotation (to kick resync)")
 		Eventually(func() error {
 			source, err = crc.OperatorsV1alpha1().CatalogSources(source.GetNamespace()).Get(context.Background(), source.GetName(), metav1.GetOptions{})
 			if err != nil {
@@ -972,9 +979,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 			return err
 		}).Should(Succeed())
 
-		time.Sleep(11 * time.Second)
-
-		// ensure new registry pod container image is as we expect
+		By("ensure new registry pod container image is as we expect")
 		podCheckFunc := func(podList *corev1.PodList) bool {
 			ctx.Ctx().Logf("pod list length %d\n", len(podList.Items))
 			for _, pod := range podList.Items {
@@ -988,7 +993,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 					return true
 				}
 			}
-			// update catalog source with annotation (to kick resync)
+			By("update catalog source with annotation (to kick resync)")
 			Eventually(func() error {
 				source, err = crc.OperatorsV1alpha1().CatalogSources(source.GetNamespace()).Get(context.Background(), source.GetName(), metav1.GetOptions{})
 				if err != nil {
@@ -1006,13 +1011,13 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 
 			return false
 		}
-		// await new catalog source and ensure old one was deleted
+		By("await new catalog source and ensure old one was deleted")
 		registryPods, err = awaitPodsWithInterval(GinkgoT(), c, source.GetNamespace(), selector.String(), 30*time.Second, 10*time.Minute, podCheckFunc)
 		Expect(err).ShouldNot(HaveOccurred(), "error awaiting registry pod")
 		Expect(registryPods).ShouldNot(BeNil(), "nil registry pods")
 		Expect(registryPods.Items).To(HaveLen(1), "unexpected number of registry pods found")
 
-		// update catalog source with annotation (to kick resync)
+		By("update catalog source with annotation (to kick resync)")
 		Eventually(func() error {
 			source, err = crc.OperatorsV1alpha1().CatalogSources(source.GetNamespace()).Get(context.Background(), source.GetName(), metav1.GetOptions{})
 			if err != nil {
@@ -1027,16 +1032,16 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		subChecker := func(sub *v1alpha1.Subscription) bool {
 			return sub.Status.InstalledCSV == "busybox.v2.0.0"
 		}
-		// Wait for the Subscription to succeed
+		By("Wait for the Subscription to succeed")
 		subscription, err = fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subChecker)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(subscription).ShouldNot(BeNil())
 
-		// Wait for csv to succeed
-		csv, err := fetchCSV(crc, subscription.Status.CurrentCSV, subscription.GetNamespace(), csvSucceededChecker)
+		By("Wait for csv to succeed")
+		csv, err := fetchCSV(crc, subscription.GetNamespace(), subscription.Status.CurrentCSV, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
 
-		// check version of running csv to ensure the latest version (0.9.2) was installed onto the cluster
+		By("check version of running csv to ensure the latest version (0.9.2) was installed onto the cluster")
 		v := csv.Spec.Version
 		busyboxVersion := semver.Version{
 			Major: 2,
@@ -1144,7 +1149,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		Expect(subscription).ShouldNot(BeNil())
 
 		By("waiting for busybox v2 csv to succeed and check the replaces field")
-		csv, err := fetchCSV(crc, subscription.Status.CurrentCSV, subscription.GetNamespace(), csvSucceededChecker)
+		csv, err := fetchCSV(crc, subscription.GetNamespace(), subscription.Status.CurrentCSV, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(csv.Spec.Replaces).To(Equal("busybox.v1.0.0"))
 
@@ -1157,7 +1162,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		Expect(subscription).ShouldNot(BeNil())
 
 		By("waiting for busybox-dependency v2 csv to succeed and check the replaces field")
-		csv, err = fetchCSV(crc, subscription.Status.CurrentCSV, subscription.GetNamespace(), csvSucceededChecker)
+		csv, err = fetchCSV(crc, subscription.GetNamespace(), subscription.Status.CurrentCSV, csvSucceededChecker)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(csv.Spec.Replaces).To(Equal("busybox-dependency.v1.0.0"))
 	})
