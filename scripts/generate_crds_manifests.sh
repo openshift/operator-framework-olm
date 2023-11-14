@@ -11,7 +11,6 @@ YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
 CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
 HELM="go run helm.sh/helm/v3/cmd/helm"
 
-
 ver=${OLM_VERSION:-"0.0.0-dev"}
 tmpdir="$(mktemp -p . -d 2>/dev/null || mktemp -d ./tmpdir.XXXXXXX)"
 chartdir="${tmpdir}/chart"
@@ -496,3 +495,49 @@ find "${ROOT_DIR}/manifests" -type f -exec $SED -i "1{/---/d}" {} \;
 # namespaces enforce restricted PSA policies, so warnings and audits labels are not neccessary.
 ${YQ} delete --inplace -d'*' manifests/0000_50_olm_00-namespace.yaml 'metadata.labels."pod-security.kubernetes.io/warn*"'
 ${YQ} delete --inplace -d'*' manifests/0000_50_olm_00-namespace.yaml 'metadata.labels."pod-security.kubernetes.io/audit*"'
+
+# Let's copy all the manifests to a separate directory for microshift
+mkdir -p "${ROOT_DIR}/microshift-manifests/"
+rm -rf "${ROOT_DIR}/microshift-manifests/"*
+cp "${ROOT_DIR}"/manifests/* "${ROOT_DIR}/microshift-manifests/"
+
+# Let's generate the microshift-manifests.
+# There are some differences that we need to take care of:
+# - The manifests require a kustomization.yaml file
+# - We don't need the specific ibm-cloud-managed manifests
+# - We need to adapt some of the manifests to be compatible with microshift as there's no 
+#   ClusterVersion or ClusterOperator in microshift
+
+# Create the kustomization file
+cat << EOF > "${ROOT_DIR}/microshift-manifests/kustomization.yaml"
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+EOF
+
+# Now let's generate the kustomization.yaml file for microshift to pick up the manifests.
+microshift_manifests_files=$(find "${ROOT_DIR}/microshift-manifests" -type f -name "*.yaml")
+# Let's sort the files so that we can have a deterministic order
+microshift_manifests_files=$(echo "${microshift_manifests_files}" | sort)
+# files to ignore, substring match.
+files_to_ignore=("ibm-cloud-managed.yaml" "kustomization.yaml" "psm-operator")
+
+# Add all the manifests files to the kustomization file while ignoring the files in the files_to_ignore list
+for file in ${microshift_manifests_files}; do
+  for file_to_ignore in ${files_to_ignore[@]}; do
+    if [[ "${file}" =~ "${file_to_ignore}" ]]; then
+     continue 2
+    fi
+  done
+  echo "  - $(realpath --relative-to "${ROOT_DIR}/microshift-manifests" "${file}")" >> "${ROOT_DIR}/microshift-manifests/kustomization.yaml"
+done 
+
+# Now we need to get rid of these args from the olm-operator deployment:
+#
+# - --writeStatusName
+# - operator-lifecycle-manager
+# - --writePackageServerStatusName
+# - operator-lifecycle-manager-packageserver
+#
+${SED} -i '/- --writeStatusName/,+3d' ${ROOT_DIR}/microshift-manifests/0000_50_olm_07-olm-operator.deployment.yaml 
+
