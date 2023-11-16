@@ -1,7 +1,6 @@
 package indexer
 
 import (
-	"io/ioutil"
 	"os"
 	"reflect"
 	"sort"
@@ -64,14 +63,14 @@ func TestGeneratePackageYaml(t *testing.T) {
 	}
 
 	var expected pregistry.PackageManifest
-	expectedBytes, _ := ioutil.ReadFile("./testdata/package.yaml")
+	expectedBytes, _ := os.ReadFile("./testdata/package.yaml")
 	err = yaml.Unmarshal(expectedBytes, &expected)
 	if err != nil {
 		t.Fatalf("unmarshaling: %s", err)
 	}
 
 	var actual pregistry.PackageManifest
-	actualBytes, _ := ioutil.ReadFile("./package.yaml")
+	actualBytes, _ := os.ReadFile("./package.yaml")
 	err = yaml.Unmarshal(actualBytes, &actual)
 	if err != nil {
 		t.Fatalf("unmarshaling: %s", err)
@@ -127,6 +126,7 @@ func TestBuildContext(t *testing.T) {
 			// prevent regression - cleanup should never be nil
 			t.Fatal("buildContext returned nil cleanup function")
 		}
+		defer actualCleanup()
 
 		if testCase.expectedOutDockerfile != nil && actualOutDockerfile != *testCase.expectedOutDockerfile {
 			t.Fatalf("comparing outDockerfile: expected %v actual %v",
