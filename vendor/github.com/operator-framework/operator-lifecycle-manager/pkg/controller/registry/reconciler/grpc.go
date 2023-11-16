@@ -2,6 +2,7 @@ package reconciler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"strings"
@@ -201,11 +202,17 @@ func (c *GrpcRegistryReconciler) currentPodsWithCorrectImageAndSpec(logger *logr
 	}
 	found := []*corev1.Pod{}
 	newPod := source.Pod(serviceAccount)
+	raw, err := json.Marshal(&newPod)
+	if err != nil {
+		panic(err)
+	}
+	logger.WithField("wantHash", newPod.Labels[PodHashLabelKey]).Infof("want pod spec: %s", string(raw))
 	for _, p := range pods {
 		images, hash := correctImages(source, p), podHashMatch(p, newPod)
 		logger = logger.WithFields(logrus.Fields{
 			"current-pod.namespace": p.Namespace, "current-pod.name": p.Name,
 			"correctImages": images, "correctHash": hash,
+			"haveHash": p.Labels[PodHashLabelKey], "wantHash": newPod.Labels[PodHashLabelKey],
 		})
 		logger.Info("evaluating current pod")
 		if !hash {
@@ -318,7 +325,14 @@ func (c *GrpcRegistryReconciler) ensurePod(logger *logrus.Entry, source grpcCata
 		}
 	}
 	desiredPod := source.Pod(serviceAccount)
-	logger.WithFields(logrus.Fields{"pod.namespace": source.GetNamespace(), "pod.name": desiredPod.Namespace}).Info("deleting current pod")
+	{
+		raw, err := json.Marshal(&desiredPod)
+		if err != nil {
+			panic(err)
+		}
+		logger.WithField("wantHash", desiredPod.Labels[PodHashLabelKey]).Infof("ensuring pod spec: %s", string(raw))
+	}
+	logger.WithFields(logrus.Fields{"pod.namespace": source.GetNamespace(), "pod.name": desiredPod.Namespace}).Info("creating current pod")
 	_, err := c.OpClient.KubernetesInterface().CoreV1().Pods(source.GetNamespace()).Create(context.TODO(), desiredPod, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "error creating new pod: %s", desiredPod.GetGenerateName())

@@ -117,6 +117,19 @@ func NewRegistryReconcilerFactory(lister operatorlister.OperatorLister, opClient
 }
 
 func Pod(source *operatorsv1alpha1.CatalogSource, name, opmImg, utilImage, img string, serviceAccount *corev1.ServiceAccount, labels, annotations map[string]string, readinessDelay, livenessDelay int32, runAsUser int64) *corev1.Pod {
+	logrus.WithFields(logrus.Fields{
+		"source":         source,
+		"name":           name,
+		"opmImg":         opmImg,
+		"utilImage":      utilImage,
+		"img":            img,
+		"serviceAccount": serviceAccount,
+		"labels":         labels,
+		"annotations":    annotations,
+		"readinessDelay": readinessDelay,
+		"livenessDelay":  livenessDelay,
+		"runAsUser":      runAsUser,
+	}).Info("Pod() called")
 	// make a copy of the labels and annotations to avoid mutating the input parameters
 	podLabels := make(map[string]string)
 	podAnnotations := make(map[string]string)
