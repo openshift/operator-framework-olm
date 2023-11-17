@@ -15,7 +15,7 @@ require (
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/operator-framework/api v0.19.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
-	github.com/operator-framework/operator-registry v1.30.1
+	github.com/operator-framework/operator-registry v1.32.0
 	github.com/sirupsen/logrus v1.9.2
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.3
