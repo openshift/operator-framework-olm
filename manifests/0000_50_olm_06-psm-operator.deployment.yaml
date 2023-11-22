@@ -9,7 +9,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
 spec:
   strategy:
-    type: RollingUpdate
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
