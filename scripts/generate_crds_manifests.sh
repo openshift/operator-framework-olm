@@ -520,7 +520,7 @@ microshift_manifests_files=$(find "${ROOT_DIR}/microshift-manifests" -type f -na
 # Let's sort the files so that we can have a deterministic order
 microshift_manifests_files=$(echo "${microshift_manifests_files}" | sort)
 # files to ignore, substring match.
-files_to_ignore=("ibm-cloud-managed.yaml" "kustomization.yaml" "psm-operator")
+files_to_ignore=("ibm-cloud-managed.yaml" "kustomization.yaml" "psm-operator" "removed")
 
 # Add all the manifests files to the kustomization file while ignoring the files in the files_to_ignore list
 for file in ${microshift_manifests_files}; do
