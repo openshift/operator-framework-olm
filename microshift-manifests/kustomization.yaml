@@ -22,6 +22,3 @@ resources:
   - 0000_50_olm_09-aggregated.clusterrole.yaml
   - 0000_50_olm_13-operatorgroup-default.yaml
   - 0000_50_olm_15-csv-viewer.rbac.yaml
-  - 0000_50_olm_99-operatorstatus.yaml
-  - 0000_90_olm_00-service-monitor.yaml
-  - 0000_90_olm_01-prometheus-rule.yaml
