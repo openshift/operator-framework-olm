@@ -2900,3 +2900,27 @@ func (a *Operator) ensureLabels(in *v1alpha1.ClusterServiceVersion, labelSets ..
 	out, err := a.client.OperatorsV1alpha1().ClusterServiceVersions(out.GetNamespace()).Update(context.TODO(), out, metav1.UpdateOptions{})
 	return out, err
 }
+
+// syncSecret adds required ownership annotations to olm-managed secrets
+func (a *Operator) EnsureSecretOwnershipAnnotations() error {
+	secrets, err := a.lister.CoreV1().SecretLister().List(labels.SelectorFromSet(labels.Set{install.OLMManagedLabelKey: install.OLMManagedLabelValue}))
+	if err != nil {
+		return err
+	}
+	for _, secret := range secrets {
+		if secret.Annotations[install.OpenShiftComponent] == "" {
+			secret.Annotations[install.OpenShiftComponent] = install.OLMOwnershipAnnotation
+			logger := a.logger.WithFields(logrus.Fields{
+				"name":      secret.GetName(),
+				"namespace": secret.GetNamespace(),
+				"self":      secret.GetSelfLink(),
+			})
+			logger.Debug("injecting ownership annotations to existing secret")
+			if _, updateErr := a.opClient.UpdateSecret(secret); updateErr != nil {
+				logger.WithError(err).Warn("error adding ownership annotations to existing secret")
+				return err
+			}
+		}
+	}
+	return nil
+}

@@ -184,7 +184,7 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "test-service-cert",
 						Namespace:   namespace,
-						Annotations: map[string]string{OLMCAHashAnnotationKey: caHash},
+						Annotations: map[string]string{OLMCAHashAnnotationKey: caHash, OpenShiftComponent: OLMOwnershipAnnotation},
 						Labels:      map[string]string{OLMManagedLabelKey: OLMManagedLabelValue},
 					},
 					Data: map[string][]byte{
@@ -413,7 +413,7 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "test-service-cert",
 						Namespace:   namespace,
-						Annotations: map[string]string{OLMCAHashAnnotationKey: caHash},
+						Annotations: map[string]string{OLMCAHashAnnotationKey: caHash, OpenShiftComponent: OLMOwnershipAnnotation},
 						Labels:      map[string]string{OLMManagedLabelKey: OLMManagedLabelValue},
 					},
 					Data: map[string][]byte{
@@ -635,7 +635,7 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "test-service-cert",
 						Namespace:   namespace,
-						Annotations: map[string]string{OLMCAHashAnnotationKey: caHash},
+						Annotations: map[string]string{OLMCAHashAnnotationKey: caHash, OpenShiftComponent: OLMOwnershipAnnotation},
 						Labels:      map[string]string{OLMManagedLabelKey: OLMManagedLabelValue},
 						OwnerReferences: []metav1.OwnerReference{
 							ownerutil.NonBlockingOwner(&v1alpha1.ClusterServiceVersion{}),
