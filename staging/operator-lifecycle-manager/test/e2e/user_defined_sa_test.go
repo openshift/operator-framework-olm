@@ -55,6 +55,7 @@ var _ = Describe("User defined service account", func() {
 		saName := genName("scoped-sa-")
 		_, cleanupSA := newServiceAccount(c, generatedNamespace.GetName(), saName)
 		defer cleanupSA()
+
 		By("Create token secret for the serviceaccount")
 		_, cleanupSE := newTokenSecret(c, generatedNamespace.GetName(), saName)
 		defer cleanupSE()
@@ -64,6 +65,7 @@ var _ = Describe("User defined service account", func() {
 		_, cleanupOG := newOperatorGroupWithServiceAccount(crc, generatedNamespace.GetName(), ogName, saName)
 		defer cleanupOG()
 
+		By("Create a new CatalogSource")
 		permissions := deploymentPermissions()
 		catsrc, subSpec, catsrcCleanup := newCatalogSource(GinkgoT(), c, crc, "scoped", generatedNamespace.GetName(), permissions)
 		defer catsrcCleanup()
@@ -72,6 +74,7 @@ var _ = Describe("User defined service account", func() {
 		_, err := fetchCatalogSourceOnStatus(crc, catsrc.GetName(), generatedNamespace.GetName(), catalogSourceRegistryPodSynced())
 		require.NoError(GinkgoT(), err)
 
+		By("Create the subscription for the catalog")
 		subscriptionName := genName("scoped-sub-")
 		cleanupSubscription := createSubscriptionForCatalog(crc, generatedNamespace.GetName(), subscriptionName, catsrc.GetName(), subSpec.Package, subSpec.Channel, subSpec.StartingCSV, subSpec.InstallPlanApproval)
 		defer cleanupSubscription()
