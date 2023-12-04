@@ -310,9 +310,6 @@ github.com/fsnotify/fsnotify
 # github.com/fvbommel/sortorder v1.0.1
 ## explicit; go 1.13
 github.com/fvbommel/sortorder
-# github.com/ghodss/yaml v1.0.0
-## explicit
-github.com/ghodss/yaml
 # github.com/go-air/gini v1.0.4
 ## explicit; go 1.16
 github.com/go-air/gini
