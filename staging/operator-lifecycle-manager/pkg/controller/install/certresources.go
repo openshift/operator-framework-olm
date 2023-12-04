@@ -42,6 +42,10 @@ const (
 	// olm managed label
 	OLMManagedLabelKey   = "olm.managed"
 	OLMManagedLabelValue = "true"
+	// Use this const for now to avoid openshift/api bump
+	// TODO: Bump openshift/api and remove this const
+	OpenShiftComponent     = "openshift.io/owning-component"
+	OLMOwnershipAnnotation = "Operator Framework / operator-lifecycle-manager"
 )
 
 type certResource interface {
@@ -300,6 +304,11 @@ func (i *StrategyDeploymentInstaller) installCertRequirementsForDeployment(deplo
 	}
 	caHash := certs.PEMSHA256(caPEM)
 
+	annotations := map[string]string{
+		OpenShiftComponent:     OLMOwnershipAnnotation,
+		OLMCAHashAnnotationKey: caHash,
+	}
+
 	secret := &corev1.Secret{
 		Data: map[string][]byte{
 			"tls.crt":   certPEM,
@@ -310,8 +319,8 @@ func (i *StrategyDeploymentInstaller) installCertRequirementsForDeployment(deplo
 	}
 	secret.SetName(SecretName(service.GetName()))
 	secret.SetNamespace(i.owner.GetNamespace())
-	secret.SetAnnotations(map[string]string{OLMCAHashAnnotationKey: caHash})
 	secret.SetLabels(map[string]string{OLMManagedLabelKey: OLMManagedLabelValue})
+	secret.SetAnnotations(annotations)
 
 	existingSecret, err := i.strategyClient.GetOpLister().CoreV1().SecretLister().Secrets(i.owner.GetNamespace()).Get(secret.GetName())
 	if err == nil {
@@ -322,7 +331,7 @@ func (i *StrategyDeploymentInstaller) installCertRequirementsForDeployment(deplo
 
 		// Attempt an update
 		// TODO: Check that the secret was not modified
-		if existingCAPEM, ok := existingSecret.Data[OLMCAPEMKey]; ok && !ShouldRotateCerts(i.owner.(*v1alpha1.ClusterServiceVersion)) {
+		if existingCAPEM, ok := existingSecret.Data[OLMCAPEMKey]; ok && !ShouldRotateCerts(i.owner.(*v1alpha1.ClusterServiceVersion)) && existingSecret.Annotations[OpenShiftComponent] != "" {
 			logger.Warnf("reusing existing cert %s", secret.GetName())
 			secret = existingSecret
 			caPEM = existingCAPEM

@@ -346,6 +346,7 @@ metadata:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
     release.openshift.io/create-only: "true"
+    openshift.io/owning-component: "Operator Framework / operator-lifecycle-manager"
   name: pprof-cert
   namespace: openshift-operator-lifecycle-manager
 type: kubernetes.io/tls
@@ -488,7 +489,7 @@ add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"
 find "${ROOT_DIR}/manifests" -type f -exec $SED -i "/^#/d" {} \;
 find "${ROOT_DIR}/manifests" -type f -exec $SED -i "1{/---/d}" {} \;
 
-# (anik120): uncomment this once https://issues.redhat.com/browse/OLM-2695 is Done. 
+# (anik120): uncomment this once https://issues.redhat.com/browse/OLM-2695 is Done.
 #${YQ} delete --inplace -d'1' manifests/0000_50_olm_00-namespace.yaml 'metadata.labels."pod-security.kubernetes.io/enforce*"'
 
 # Unlike the namespaces shipped in the upstream version, the openshift-operator-lifecycle-manager and openshift-operator
@@ -505,7 +506,7 @@ cp "${ROOT_DIR}"/manifests/* "${ROOT_DIR}/microshift-manifests/"
 # There are some differences that we need to take care of:
 # - The manifests require a kustomization.yaml file
 # - We don't need the specific ibm-cloud-managed manifests
-# - We need to adapt some of the manifests to be compatible with microshift as there's no 
+# - We need to adapt some of the manifests to be compatible with microshift as there's no
 #   ClusterVersion or ClusterOperator in microshift
 
 # Create the kustomization file
@@ -530,7 +531,7 @@ for file in ${microshift_manifests_files}; do
     fi
   done
   echo "  - $(realpath --relative-to "${ROOT_DIR}/microshift-manifests" "${file}")" >> "${ROOT_DIR}/microshift-manifests/kustomization.yaml"
-done 
+done
 
 # Now we need to get rid of these args from the olm-operator deployment:
 #
@@ -539,7 +540,7 @@ done
 # - --writePackageServerStatusName
 # - operator-lifecycle-manager-packageserver
 #
-${SED} -i '/- --writeStatusName/,+3d' ${ROOT_DIR}/microshift-manifests/0000_50_olm_07-olm-operator.deployment.yaml 
+${SED} -i '/- --writeStatusName/,+3d' ${ROOT_DIR}/microshift-manifests/0000_50_olm_07-olm-operator.deployment.yaml
 
 # Replace the namespace openshift, as it doesn't exist on microshift, in the rbac file
 ${SED} -i 's/  namespace: openshift/  namespace: openshift-operator-lifecycle-manager/g' ${ROOT_DIR}/microshift-manifests/0000_50_olm_15-csv-viewer.rbac.yaml

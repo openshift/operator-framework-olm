@@ -224,6 +224,11 @@ func main() {
 		go monitor.Run(op.Done())
 	}
 
+	// Reconcile all olm-managed secrets to add ownership annotations if not existed
+	if err = op.EnsureSecretOwnershipAnnotations(); err != nil {
+		logger.WithError(err).Fatal("error injecting ownership annotations to existing olm-managed secrets")
+	}
+
 	// Start the controller manager
 	if err := mgr.Start(ctx); err != nil {
 		logger.WithError(err).Fatal("controller manager stopped")
