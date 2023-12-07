@@ -1215,7 +1215,9 @@ func (a *Operator) syncNamespace(obj interface{}) error {
 	return err
 }
 
+// TMS
 func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
+	a.logger.Info("handleClusterServiceVersionDeletion: ENTER")
 	clusterServiceVersion, ok := obj.(*v1alpha1.ClusterServiceVersion)
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
@@ -1231,16 +1233,17 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		}
 	}
 
-	if a.csvNotification != nil {
-		a.csvNotification.OnDelete(clusterServiceVersion)
-	}
-
 	logger := a.logger.WithFields(logrus.Fields{
 		"id":        queueinformer.NewLoopID(),
 		"csv":       clusterServiceVersion.GetName(),
 		"namespace": clusterServiceVersion.GetNamespace(),
 		"phase":     clusterServiceVersion.Status.Phase,
 	})
+	logger.Info("handleClusterServiceVersionDeletion: ENTER")
+
+	if a.csvNotification != nil {
+		a.csvNotification.OnDelete(clusterServiceVersion)
+	}
 
 	metrics.DeleteCSVMetric(clusterServiceVersion)
 
@@ -1472,6 +1475,7 @@ func (a *Operator) deleteChild(csv *metav1.PartialObjectMetadata, logger *logrus
 
 // syncClusterServiceVersion is the method that gets called when we see a CSV event in the cluster
 func (a *Operator) syncClusterServiceVersion(obj interface{}) (syncError error) {
+	a.logger.Info("syncClusterServiceVersion: ENTER")
 	clusterServiceVersion, ok := obj.(*v1alpha1.ClusterServiceVersion)
 	if !ok {
 		a.logger.Debugf("wrong type: %#v", obj)
@@ -1484,6 +1488,7 @@ func (a *Operator) syncClusterServiceVersion(obj interface{}) (syncError error) 
 		"namespace": clusterServiceVersion.GetNamespace(),
 		"phase":     clusterServiceVersion.Status.Phase,
 	})
+	logger.Info("syncClusterServiceVersion: ENTER")
 	logger.Debug("syncing CSV")
 
 	if a.csvNotification != nil {
@@ -1711,6 +1716,7 @@ func getCopiedCSVsCondition(enabled, csvIsRequeued bool) metav1.Condition {
 }
 
 func (a *Operator) syncCopyCSV(obj interface{}) (syncError error) {
+	a.logger.Info("syncCopyCSV: ENTER")
 	clusterServiceVersion, ok := obj.(*v1alpha1.ClusterServiceVersion)
 	if !ok {
 		a.logger.Debugf("wrong type: %#v", obj)
