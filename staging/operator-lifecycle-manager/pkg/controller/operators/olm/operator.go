@@ -1240,6 +1240,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		"phase":     clusterServiceVersion.Status.Phase,
 	})
 	logger.Info("handleClusterServiceVersionDeletion: ENTER")
+	defer logger.Info("handleClusterServiceVersionDeletion: EXIT")
 
 	if a.csvNotification != nil {
 		a.csvNotification.OnDelete(clusterServiceVersion)
@@ -1275,24 +1276,27 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		}
 	}(*clusterServiceVersion)
 
+	logger.Info("CSVdeletion: getting targetNamespaces")
 	targetNamespaces, ok := clusterServiceVersion.Annotations[operatorsv1.OperatorGroupTargetsAnnotationKey]
 	if !ok {
 		logger.Debug("missing target namespaces annotation on csv")
 		return
 	}
 
+	logger.Info("CSVdeletion: getting operatorNamespaces")
 	operatorNamespace, ok := clusterServiceVersion.Annotations[operatorsv1.OperatorGroupNamespaceAnnotationKey]
 	if !ok {
 		logger.Debug("missing operator namespace annotation on csv")
 		return
 	}
 
+	logger.Info("CSVdeletion: checking for perator group annotation")
 	if _, ok = clusterServiceVersion.Annotations[operatorsv1.OperatorGroupAnnotationKey]; !ok {
 		logger.Debug("missing operatorgroup name annotation on csv")
 		return
 	}
 
-	logger.Info("gcing children")
+	logger.Info("gcing children - namespaces")
 	namespaces := make([]string, 0)
 	if targetNamespaces == "" {
 		namespaceList, err := a.opClient.KubernetesInterface().CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
@@ -1315,6 +1319,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		}
 	}
 
+	logger.Info("gcing children - api service")
 	for _, desc := range clusterServiceVersion.Spec.APIServiceDefinitions.Owned {
 		apiServiceName := fmt.Sprintf("%s.%s", desc.Version, desc.Group)
 		fetched, err := a.lister.APIRegistrationV1().APIServiceLister().Get(apiServiceName)
@@ -1335,6 +1340,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		}
 	}
 
+	logger.Info("gcing children - crb")
 	ownerSelector := ownerutil.CSVOwnerSelector(clusterServiceVersion)
 	crbs, err := a.lister.RbacV1().ClusterRoleBindingLister().List(ownerSelector)
 	if err != nil {
@@ -1346,6 +1352,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		}
 	}
 
+	logger.Info("gcing children - cr")
 	crs, err := a.lister.RbacV1().ClusterRoleLister().List(ownerSelector)
 	if err != nil {
 		logger.WithError(err).Warn("cannot list cluster roles")
@@ -1356,6 +1363,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		}
 	}
 
+	logger.Info("gcing children - mutating webhook")
 	webhookSelector := labels.SelectorFromSet(ownerutil.OwnerLabel(clusterServiceVersion, v1alpha1.ClusterServiceVersionKind)).String()
 	mWebhooks, err := a.opClient.KubernetesInterface().AdmissionregistrationV1().MutatingWebhookConfigurations().List(context.TODO(), metav1.ListOptions{LabelSelector: webhookSelector})
 	if err != nil {
@@ -1368,6 +1376,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		}
 	}
 
+	logger.Info("gcing children - validating webhook")
 	vWebhooks, err := a.opClient.KubernetesInterface().AdmissionregistrationV1().ValidatingWebhookConfigurations().List(context.TODO(), metav1.ListOptions{LabelSelector: webhookSelector})
 	if err != nil {
 		logger.WithError(err).Warn("cannot list ValidatingWebhookConfigurations")
@@ -1387,6 +1396,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 	// openapiv3 schema fails.
 	// As such, when a CSV is deleted OLM will check if it is being replaced. If the CSV is not being replaced, OLM will remove the conversion
 	// webhook from the CRD definition.
+	logger.Info("CSVdeletion: checking for replacement")
 	csvs, err := a.lister.OperatorsV1alpha1().ClusterServiceVersionLister().ClusterServiceVersions(clusterServiceVersion.GetNamespace()).List(labels.Everything())
 	if err != nil {
 		logger.Errorf("error listing csvs: %v\n", err)
@@ -1397,6 +1407,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		}
 	}
 
+	logger.Info("CSVdeletion: updating conversion webhooks")
 	for _, desc := range clusterServiceVersion.Spec.WebhookDefinitions {
 		if desc.Type != v1alpha1.ConversionWebhook || len(desc.ConversionCRDs) == 0 {
 			continue
@@ -1418,6 +1429,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 			}
 		}
 	}
+	logger.Info("Reached end of handleClusterServiceVersionDeletion")
 }
 
 func (a *Operator) removeDanglingChildCSVs(csv *metav1.PartialObjectMetadata) error {
