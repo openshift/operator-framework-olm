@@ -2907,19 +2907,29 @@ func (a *Operator) EnsureSecretOwnershipAnnotations() error {
 	if err != nil {
 		return err
 	}
+
 	for _, secret := range secrets {
-		if secret.Annotations[install.OpenShiftComponent] == "" {
-			secret.Annotations[install.OpenShiftComponent] = install.OLMOwnershipAnnotation
-			logger := a.logger.WithFields(logrus.Fields{
-				"name":      secret.GetName(),
-				"namespace": secret.GetNamespace(),
-				"self":      secret.GetSelfLink(),
-			})
-			logger.Debug("injecting ownership annotations to existing secret")
-			if _, updateErr := a.opClient.UpdateSecret(secret); updateErr != nil {
-				logger.WithError(err).Warn("error adding ownership annotations to existing secret")
-				return err
+		logger := a.logger.WithFields(logrus.Fields{
+			"name":      secret.GetName(),
+			"namespace": secret.GetNamespace(),
+			"self":      secret.GetSelfLink(),
+		})
+		logger.Debug("ensuring ownership annotations existed in the secret")
+
+		if secret.Annotations != nil {
+			if secret.Annotations[install.OpenShiftComponent] == "" {
+				secret.Annotations[install.OpenShiftComponent] = install.OLMOwnershipAnnotation
+			} else {
+				continue
 			}
+		} else {
+			secret.Annotations = map[string]string{}
+			secret.Annotations[install.OpenShiftComponent] = install.OLMOwnershipAnnotation
+		}
+		logger.Debug("injecting ownership annotations to existing secret")
+		if _, updateErr := a.opClient.UpdateSecret(secret); updateErr != nil {
+			logger.WithError(err).Warn("error adding ownership annotations to existing secret")
+			return err
 		}
 	}
 	return nil
