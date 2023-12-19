@@ -24,7 +24,7 @@ function verify_staging_sync() {
     local outside_staging
     outside_staging="$(git show --name-only "${downstream_commit}" -- ":!${staging_dir}" "${KNOWN_GENERATED_PATHS[@]}")"
     if [[ -n "${outside_staging}" ]]; then
-        err "downstream staging commit ${downstream_commit} changes files outside of ${staging_dir}, vendor, and manifests directories"
+        err "downstream staging commit ${downstream_commit} changes files outside of ${staging_dir}, vendor, and [microshift-]manifests directories"
         err "${outside_staging}"
         err "hint: factor out changes to these directories into a standalone commit"
         return 1
