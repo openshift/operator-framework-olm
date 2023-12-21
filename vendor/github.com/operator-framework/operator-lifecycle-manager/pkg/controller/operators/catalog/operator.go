@@ -1524,14 +1524,14 @@ func (o *Operator) ensureSubscriptionCSVState(logger *logrus.Entry, sub *v1alpha
 	out.Status.LastUpdated = o.now()
 
 	// Update Subscription with status of transition. Log errors if we can't write them to the status.
-	updatedSub, err := o.client.OperatorsV1alpha1().Subscriptions(out.GetNamespace()).UpdateStatus(context.TODO(), out, metav1.UpdateOptions{})
+	subsOut, err := o.updateSubscriptionStatuses([]*v1alpha1.Subscription{out})
 	if err != nil {
-		logger.WithError(err).Info("error updating subscription status")
-		return nil, false, fmt.Errorf("error updating Subscription status: " + err.Error())
+		logger.WithError(err).Infof("error updating Subscription %s/%s status in ensureSubscriptionCSVState", out.GetNamespace(), out.GetName())
+		return nil, false, fmt.Errorf("error updating Subscription %s/%s status in ensureSubscriptionCSVState: %s", out.GetNamespace(), out.GetName(), err.Error())
 	}
 
 	// subscription status represents cluster state
-	return updatedSub, true, nil
+	return subsOut[0], true, nil
 }
 
 func (o *Operator) setIPReference(subs []*v1alpha1.Subscription, gen int, installPlanRef *corev1.ObjectReference) []*v1alpha1.Subscription {

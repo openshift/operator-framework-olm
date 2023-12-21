@@ -8,11 +8,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	clientv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/comparison"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
+	"github.com/sirupsen/logrus"
 )
 
 // SubscriptionState describes subscription states.
@@ -372,6 +375,33 @@ func (i *installPlanReferencedState) isInstallPlanReferencedState() {}
 
 var hashEqual = comparison.NewHashEqualitor()
 
+func updateSubscriptionStatus(client clientv1alpha1.SubscriptionInterface, logger *logrus.Logger, sub *v1alpha1.Subscription) (*v1alpha1.Subscription, error) {
+	var (
+		errs       []error
+		getOpts    = metav1.GetOptions{}
+		updateOpts = metav1.UpdateOptions{}
+	)
+
+	update := func() error {
+		// Update the status of the latest revision
+		latest, err := client.Get(context.TODO(), sub.GetName(), getOpts)
+		if err != nil {
+			return err
+		}
+		latest.Status = sub.Status
+		*sub = *latest
+		_, err = client.UpdateStatus(context.TODO(), latest, updateOpts)
+		if err != nil && logger != nil {
+			logger.WithError(err).Infof("error updating subscription %s/%s status in updateSubscriptionStatus", latest.GetNamespace(), latest.GetName())
+		}
+		return err
+	}
+	if err := retry.RetryOnConflict(retry.DefaultRetry, update); err != nil {
+		errs = append(errs, err)
+	}
+	return sub, utilerrors.NewAggregate(errs)
+}
+
 func (i *installPlanReferencedState) InstallPlanNotFound(now *metav1.Time, client clientv1alpha1.SubscriptionInterface) (InstallPlanReferencedState, error) {
 	in := i.Subscription()
 	out := in.DeepCopy()
@@ -410,8 +440,10 @@ func (i *installPlanReferencedState) InstallPlanNotFound(now *metav1.Time, clien
 
 	// Update the Subscription
 	out.Status.LastUpdated = *now
-	updated, err := client.UpdateStatus(context.TODO(), out, metav1.UpdateOptions{})
+	logger := logrus.New()
+	updated, err := updateSubscriptionStatus(client, logger, out)
 	if err != nil {
+		logger.WithError(err).Infof("Failed to update subscription %s/%s in InstallPlanNotFound", out.GetNamespace(), out.GetName())
 		return i, err
 	}
 
@@ -492,8 +524,10 @@ func (i *installPlanReferencedState) CheckInstallPlanStatus(now *metav1.Time, cl
 
 	// Update the Subscription
 	out.Status.LastUpdated = *now
-	updated, err := client.UpdateStatus(context.TODO(), out, metav1.UpdateOptions{})
+	logger := logrus.New()
+	updated, err := updateSubscriptionStatus(client, logger, out)
 	if err != nil {
+		logger.WithError(err).Infof("Failed to update subscription %s/%s in CheckInstallPlanStatus", out.GetNamespace(), out.GetName())
 		return i, err
 	}
 

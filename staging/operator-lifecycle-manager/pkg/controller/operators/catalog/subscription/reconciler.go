@@ -96,7 +96,11 @@ func (c *catalogHealthReconciler) Reconcile(ctx context.Context, in kubestate.St
 					return next, err
 				}
 				if healthUpdated || deprecationUpdated {
-					_, err = c.client.OperatorsV1alpha1().Subscriptions(ns).UpdateStatus(ctx, s.Subscription(), metav1.UpdateOptions{})
+					logger := logrus.New()
+					_, err = updateSubscriptionStatus(c.client.OperatorsV1alpha1().Subscriptions(ns), logger, s.Subscription())
+					if err != nil {
+						logger.WithError(err).Infof("Error updating Subscription %s/%s status in Reconcile()", ns, s.Subscription().GetName())
+					}
 				}
 			case SubscriptionExistsState:
 				if s == nil {
