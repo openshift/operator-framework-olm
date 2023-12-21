@@ -1351,6 +1351,23 @@ func (o *Operator) syncResolvingNamespace(obj interface{}) error {
 
 	// create installplan if anything updated
 	if len(updatedSubs) > 0 {
+		// Pull updatedSubs into Subs now
+		newSub := true
+		for _, updatedSub := range updatedSubs {
+			updatedSub.Status.RemoveConditions(v1alpha1.SubscriptionResolutionFailed)
+			for i, sub := range subs {
+				if sub.Name == updatedSub.Name && sub.Namespace == updatedSub.Namespace {
+					subs[i] = updatedSub
+					newSub = false
+					break
+				}
+			}
+			if newSub {
+				subs = append(subs, updatedSub)
+				continue
+			}
+			newSub = true
+		}
 		logger.Info("resolution caused subscription changes, creating installplan")
 		// Finish calculating max generation by checking the existing installplans
 		installPlans, err := o.listInstallPlans(namespace)
@@ -1378,7 +1395,7 @@ func (o *Operator) syncResolvingNamespace(obj interface{}) error {
 			logger.WithError(err).Debug("error ensuring installplan")
 			return err
 		}
-		updatedSubs = o.setIPReference(updatedSubs, maxGeneration+1, installPlanReference)
+		subs = o.setIPReference(subs, maxGeneration+1, installPlanReference)
 	} else {
 		logger.Infof("no subscriptions were updated")
 	}
@@ -1394,22 +1411,6 @@ func (o *Operator) syncResolvingNamespace(obj interface{}) error {
 
 	// Remove resolutionfailed condition from subscriptions
 	o.removeSubsCond(subs, v1alpha1.SubscriptionResolutionFailed)
-	newSub := true
-	for _, updatedSub := range updatedSubs {
-		updatedSub.Status.RemoveConditions(v1alpha1.SubscriptionResolutionFailed)
-		for i, sub := range subs {
-			if sub.Name == updatedSub.Name && sub.Namespace == updatedSub.Namespace {
-				subs[i] = updatedSub
-				newSub = false
-				break
-			}
-		}
-		if newSub {
-			subs = append(subs, updatedSub)
-			continue
-		}
-		newSub = true
-	}
 
 	// Update subscriptions with all changes so far
 	_, updateErr := o.updateSubscriptionStatuses(subs)
