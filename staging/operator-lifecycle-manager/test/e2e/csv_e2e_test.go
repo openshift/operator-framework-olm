@@ -4394,23 +4394,39 @@ var csvFailedChecker = buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseFailed
 var csvAnyChecker = buildCSVConditionChecker(operatorsv1alpha1.CSVPhasePending, operatorsv1alpha1.CSVPhaseSucceeded, operatorsv1alpha1.CSVPhaseReplacing, operatorsv1alpha1.CSVPhaseDeleting, operatorsv1alpha1.CSVPhaseFailed)
 var csvCopiedChecker = buildCSVReasonChecker(operatorsv1alpha1.CSVReasonCopied)
 
-func fetchCSV(c versioned.Interface, name, namespace string, checker csvConditionChecker) (*operatorsv1alpha1.ClusterServiceVersion, error) {
-	var fetchedCSV *operatorsv1alpha1.ClusterServiceVersion
-	var err error
+func fetchCSV(c versioned.Interface, namespace, name string, checker csvConditionChecker) (*operatorsv1alpha1.ClusterServiceVersion, error) {
+	var lastPhase operatorsv1alpha1.ClusterServiceVersionPhase
+	var lastReason operatorsv1alpha1.ConditionReason
+	var lastMessage string
+	var lastError string
+	lastTime := time.Now()
+	var csv *operatorsv1alpha1.ClusterServiceVersion
 
-	Eventually(func() (bool, error) {
-		fetchedCSV, err = c.OperatorsV1alpha1().ClusterServiceVersions(namespace).Get(context.TODO(), name, metav1.GetOptions{})
-		if err != nil {
-			return false, err
+	ctx.Ctx().Logf("waiting for CSV %s/%s to reach condition", namespace, name)
+	err := wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		var err error
+		csv, err = c.OperatorsV1alpha1().ClusterServiceVersions(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil || csv == nil {
+			if lastError != err.Error() {
+				ctx.Ctx().Logf("error getting csv %s/%s: %v", namespace, name, err)
+				lastError = err.Error()
+			}
+			return false, nil
 		}
-		ctx.Ctx().Logf("%s (%s): %s", fetchedCSV.Status.Phase, fetchedCSV.Status.Reason, fetchedCSV.Status.Message)
-		return checker(fetchedCSV), nil
-	}).Should(BeTrue())
+		phase, reason, message := csv.Status.Phase, csv.Status.Reason, csv.Status.Message
+		if phase != lastPhase || reason != lastReason || message != lastMessage {
+			ctx.Ctx().Logf("waited %s for csv %s/%s - %s (%s): %s", time.Since(lastTime), namespace, name, phase, reason, message)
+			lastPhase, lastReason, lastMessage = phase, reason, message
+			lastTime = time.Now()
+		}
+		return checker(csv), nil
+	})
 
-	if err != nil {
-		ctx.Ctx().Logf("never got correct status: %#v", fetchedCSV.Status)
+	// Only want to return `csv` if there was no (timeout) error
+	if err == nil {
+		return csv, nil
 	}
-	return fetchedCSV, err
+	return nil, err
 }
 
 func awaitCSV(c versioned.Interface, namespace, name string, checker csvConditionChecker) (*operatorsv1alpha1.ClusterServiceVersion, error) {
@@ -4464,6 +4480,36 @@ func waitForDeploymentToDelete(namespace string, c operatorclient.ClientInterfac
 		}
 		return false, nil
 	}).Should(BeTrue())
+	return err
+}
+
+func waitForCsvToDelete(namespace, name string, c versioned.Interface) error {
+	var lastPhase operatorsv1alpha1.ClusterServiceVersionPhase
+	var lastReason operatorsv1alpha1.ConditionReason
+	var lastMessage string
+	lastTime := time.Now()
+
+	ctx.Ctx().Logf("waiting for csv %s/%s to delete", namespace, name)
+	err := wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		csv, err := c.OperatorsV1alpha1().ClusterServiceVersions(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			ctx.Ctx().Logf("csv %s/%s deleted", namespace, name)
+			return true, nil
+		}
+		if err != nil {
+			ctx.Ctx().Logf("error getting csv %s/%s: %v", namespace, name, err)
+		}
+		if csv != nil {
+			phase, reason, message := csv.Status.Phase, csv.Status.Reason, csv.Status.Message
+			if phase != lastPhase || reason != lastReason || message != lastMessage {
+				ctx.Ctx().Logf("waited %s for csv %s/%s status: %s (%s): %s", time.Since(lastTime), namespace, name, phase, reason, message)
+				lastPhase, lastReason, lastMessage = phase, reason, message
+				lastTime = time.Now()
+			}
+		}
+		return false, nil
+	})
+
 	return err
 }
 
