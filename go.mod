@@ -33,8 +33,6 @@ require (
 	sigs.k8s.io/controller-tools v0.8.0
 )
 
-replace google.golang.org/grpc => google.golang.org/grpc v1.40.0
-
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
