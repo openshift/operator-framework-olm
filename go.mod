@@ -116,7 +116,7 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0 // indirect
-	github.com/h2non/filetype v1.1.1 // indirect
+	github.com/h2non/filetype v1.1.3 // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
