@@ -33,8 +33,6 @@ require (
 	sigs.k8s.io/controller-tools v0.8.0
 )
 
-replace google.golang.org/grpc => google.golang.org/grpc v1.40.0
-
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
@@ -256,9 +254,6 @@ require (
 )
 
 replace (
-	// latest tag resolves to a very old version. this is only used for spinning up local test registries
-	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
-
 	// controller runtime
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
@@ -267,9 +262,6 @@ replace (
 	github.com/operator-framework/api => ./staging/api
 	github.com/operator-framework/operator-lifecycle-manager => ./staging/operator-lifecycle-manager
 	github.com/operator-framework/operator-registry => ./staging/operator-registry
-
-	// this should be removeable once https://issues.redhat.com/browse/CLOUDBLD-11068 is resolved
-	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.25.0
 
 	// pinned because no tag supports 1.18 yet
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06
