@@ -1,8 +1,6 @@
-// +build appengine
-
 /*
  *
- * Copyright 2018 gRPC authors.
+ * Copyright 2022 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +16,12 @@
  *
  */
 
-package credentials
+package googlecloud
 
-import (
-	"net"
-)
+import "os"
 
-// WrapSyscallConn returns newConn on appengine.
-func WrapSyscallConn(rawConn, newConn net.Conn) net.Conn {
-	return newConn
+const linuxProductNameFile = "/sys/class/dmi/id/product_name"
+
+func manufacturer() ([]byte, error) {
+	return os.ReadFile(linuxProductNameFile)
 }
