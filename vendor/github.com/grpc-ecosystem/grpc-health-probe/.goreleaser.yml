@@ -5,12 +5,13 @@ builds:
 - main: .
   binary: grpc_health_probe
   flags: ["-tags=netgo"] # sync changes to .ko.yml
-  ldflags: ["-w"]        # sync changes to .ko.yml
+  ldflags: ["-w -X main.versionTag={{.Version}}"] # sync changes to .ko.yml
   env:
   - CGO_ENABLED=0
   goos:
   - linux
   - darwin
+  - windows
   goarch:
   - "386"
   - amd64
@@ -19,8 +20,9 @@ builds:
   - ppc64le
   - s390x
   ignore:
-  - goos: darwin
-    goarch: "386"
+  - {goos: "darwin", goarch: "386"}
+  - {goos: "windows", goarch: "386"}
+  - {goos: "windows", goarch: "arm"}
   goarm: [6]
 checksum:
   name_template: "checksums.txt"
