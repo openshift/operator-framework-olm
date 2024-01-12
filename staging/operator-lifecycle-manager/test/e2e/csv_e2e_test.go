@@ -3669,13 +3669,6 @@ var _ = Describe("ClusterServiceVersion", func() {
 				},
 			}
 
-			// Fetch the current csv
-			fetchedCSV, err := fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			// Update csv with modified deployment spec
-			fetchedCSV.Spec.InstallStrategy.StrategySpec = strategyNew
-
 			Eventually(func() error {
 				// Fetch the current csv
 				fetchedCSV, err := fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)

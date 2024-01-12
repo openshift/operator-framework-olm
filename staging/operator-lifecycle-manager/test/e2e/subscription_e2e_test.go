@@ -2658,6 +2658,32 @@ func subscriptionHasCondition(condType operatorsv1alpha1.SubscriptionConditionTy
 	}
 }
 
+func subscriptionDoesNotHaveCondition(condType operatorsv1alpha1.SubscriptionConditionType) subscriptionStateChecker {
+	var lastStatus corev1.ConditionStatus
+	lastTime := time.Now()
+	// if status meets expectations, then subscription state is considered met/true
+	// IFF this is the result of a recent change of status
+	// else, cache the current status for next loop/comparison
+	return func(subscription *operatorsv1alpha1.Subscription) bool {
+		cond := subscription.Status.GetCondition(condType)
+		if cond.Status == corev1.ConditionUnknown {
+			if cond.Status != lastStatus {
+				GinkgoT().Logf("waited %s subscription condition not found\n", time.Since(lastTime))
+				lastStatus = cond.Status
+				lastTime = time.Now()
+			}
+			return true
+		}
+
+		if cond.Status != lastStatus {
+			GinkgoT().Logf("waited %s subscription condition found: %v\n", time.Since(lastTime), cond)
+			lastStatus = cond.Status
+			lastTime = time.Now()
+		}
+		return false
+	}
+}
+
 func fetchSubscription(crc versioned.Interface, namespace, name string, checker subscriptionStateChecker) (*operatorsv1alpha1.Subscription, error) {
 	var fetchedSubscription *operatorsv1alpha1.Subscription
 	var err error
