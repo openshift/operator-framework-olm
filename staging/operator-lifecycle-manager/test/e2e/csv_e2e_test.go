@@ -3670,14 +3670,16 @@ var _ = Describe("ClusterServiceVersion", func() {
 				},
 			}
 
-			// Fetch the current csv
-			fetchedCSV, err := fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			// Update csv with modified deployment spec
-			fetchedCSV.Spec.InstallStrategy.StrategySpec = strategyNew
-
 			Eventually(func() error {
+				// Fetch the current csv
+				fetchedCSV, err := fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+				if err != nil {
+					return err
+				}
+
+				// Update csv with modified deployment spec
+				fetchedCSV.Spec.InstallStrategy.StrategySpec = strategyNew
+
 				// Update the current csv
 				_, err = crc.OperatorsV1alpha1().ClusterServiceVersions(generatedNamespace.GetName()).Update(context.TODO(), fetchedCSV, metav1.UpdateOptions{})
 				return err
@@ -3688,10 +3690,14 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 				// Should have updated existing deployment
 				depUpdated, err := c.GetDeployment(generatedNamespace.GetName(), strategyNew.DeploymentSpecs[0].Name)
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(depUpdated).ShouldNot(BeNil())
+				if err != nil || depUpdated == nil {
+					return false
+				}
+
 				// container name has been updated and differs from initial CSV spec and updated CSV spec
-				Expect(depUpdated.Spec.Template.Spec.Containers[0].Name).ShouldNot(Equal(strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name))
+				if depUpdated.Spec.Template.Spec.Containers[0].Name != strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name {
+					return false
+				}
 
 				// Check for success
 				return csvSucceededChecker(csv)
@@ -4394,7 +4400,7 @@ var csvFailedChecker = buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseFailed
 var csvAnyChecker = buildCSVConditionChecker(operatorsv1alpha1.CSVPhasePending, operatorsv1alpha1.CSVPhaseSucceeded, operatorsv1alpha1.CSVPhaseReplacing, operatorsv1alpha1.CSVPhaseDeleting, operatorsv1alpha1.CSVPhaseFailed)
 var csvCopiedChecker = buildCSVReasonChecker(operatorsv1alpha1.CSVReasonCopied)
 
-func fetchCSV(c versioned.Interface, namespace, name string, checker csvConditionChecker) (*operatorsv1alpha1.ClusterServiceVersion, error) {
+func fetchCSV(c versioned.Interface, name, namespace string, checker csvConditionChecker) (*operatorsv1alpha1.ClusterServiceVersion, error) {
 	var lastPhase operatorsv1alpha1.ClusterServiceVersionPhase
 	var lastReason operatorsv1alpha1.ConditionReason
 	var lastMessage string

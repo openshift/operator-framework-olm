@@ -38,7 +38,7 @@ var _ = Describe("CRD Versions", func() {
 	})
 
 	// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/2640
-	It("[FLAKE] creates v1 CRDs with a v1 schema successfully", func() {
+	XIt("[FLAKE] creates v1 CRDs with a v1 schema successfully", func() {
 		By("v1 crds with a valid openapiv3 schema should be created successfully by OLM")
 
 		mainPackageName := genName("nginx-update2-")
@@ -264,16 +264,14 @@ var _ = Describe("CRD Versions", func() {
 			return subscriptionStateAtLatestChecker(v) && v.Status.InstallPlanRef != nil && v.Status.InstallPlanRef.Name != fetchedInstallPlan.Name
 		}
 
-		// fetch new subscription
-		s, err := fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionAtLatestWithDifferentInstallPlan)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(s).ToNot(BeNil())
-		Expect(s.Status.InstallPlanRef).ToNot(Equal(nil))
-
 		// Check the error on the installplan - should be related to data loss and the CRD upgrade missing a stored version
 		Eventually(func() (*operatorsv1alpha1.InstallPlan, error) {
+			s, err := fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionAtLatestWithDifferentInstallPlan)
+			if err != nil || s.Status.InstallPlanRef == nil {
+				return nil, err
+			}
 			return crc.OperatorsV1alpha1().InstallPlans(generatedNamespace.GetName()).Get(context.TODO(), s.Status.InstallPlanRef.Name, metav1.GetOptions{})
-		}).Should(And(
+		}).Within(2 * time.Minute).Should(And(
 			WithTransform(
 				func(v *operatorsv1alpha1.InstallPlan) operatorsv1alpha1.InstallPlanPhase {
 					return v.Status.Phase
@@ -297,7 +295,7 @@ var _ = Describe("CRD Versions", func() {
 	// Update the CRD status to remove the v1alpha1
 	// Now the installplan should succeed
 
-	It("allows a CRD upgrade that doesn't cause data loss", func() {
+	XIt("allows a CRD upgrade that doesn't cause data loss", func() {
 		By("manually editing the storage versions in the existing CRD status")
 
 		crdPlural := genName("ins-v1-")

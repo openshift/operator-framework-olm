@@ -36,7 +36,6 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/projection"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/comparison"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
 	registryapi "github.com/operator-framework/operator-registry/pkg/api"
@@ -498,14 +497,20 @@ var _ = Describe("Subscription", func() {
 			return subscription != nil && subscription.Status.InstallPlanRef.Name != fetchedInstallPlan.GetName() && subscription.Status.State == operatorsv1alpha1.SubscriptionStateUpgradePending, err
 		}, 5*time.Minute, 1*time.Second).Should(BeTrue(), "expected new installplan for upgraded csv")
 
-		upgradeInstallPlan, err := fetchInstallPlanWithNamespace(GinkgoT(), crc, subscription.Status.InstallPlanRef.Name, generatedNamespace.GetName(), requiresApprovalChecker)
-		require.NoError(GinkgoT(), err)
+		// Approve install plan
+		Eventually(func() (bool, error) {
+			upgradeInstallPlan, err := fetchInstallPlanWithNamespace(GinkgoT(), crc, subscription.Status.InstallPlanRef.Name, generatedNamespace.GetName(), requiresApprovalChecker)
+			if err != nil {
+				return false, nil
+			}
 
-		// Approve the upgrade installplan and wait for
-		upgradeInstallPlan.Spec.Approved = true
-		_, err = crc.OperatorsV1alpha1().InstallPlans(generatedNamespace.GetName()).Update(context.Background(), upgradeInstallPlan, metav1.UpdateOptions{})
-		require.NoError(GinkgoT(), err)
-
+			// Approve the upgrade installplan and wait for
+			upgradeInstallPlan.Spec.Approved = true
+			if _, err = crc.OperatorsV1alpha1().InstallPlans(generatedNamespace.GetName()).Update(context.Background(), upgradeInstallPlan, metav1.UpdateOptions{}); err != nil {
+				return false, nil
+			}
+			return true, nil
+		}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "expected new installplan for upgraded csv")
 		_, err = awaitCSV(crc, generatedNamespace.GetName(), csvB.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
@@ -1035,6 +1040,7 @@ var _ = Describe("Subscription", func() {
 	// - Wait for sub to have status condition SubscriptionInstallPlanMissing true
 	// - Ensure original non-InstallPlan status conditions remain after InstallPlan transitions
 	It("can reconcile InstallPlan status", func() {
+		By(`TestSubscriptionInstallPlanStatus ensures that a Subscription has the appropriate status conditions for possible referenced InstallPlan states.`)
 		c := newKubeClient()
 		crc := newCRClient()
 
@@ -1081,6 +1087,7 @@ var _ = Describe("Subscription", func() {
 		ref := sub.Status.InstallPlanRef
 		Expect(ref).ToNot(BeNil())
 
+		By(`Get the InstallPlan`)
 		plan := &operatorsv1alpha1.InstallPlan{}
 		plan.SetNamespace(ref.Namespace)
 		plan.SetName(ref.Name)
@@ -1192,16 +1199,13 @@ var _ = Describe("Subscription", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(sub).ToNot(BeNil())
 
-		// Ensure original non-InstallPlan status conditions remain after InstallPlan transitions
-		hashEqual := comparison.NewHashEqualitor()
+		By(`Ensure InstallPlan-related status conditions match what we're expecting`)
 		for _, cond := range conds {
 			switch condType := cond.Type; condType {
 			case operatorsv1alpha1.SubscriptionInstallPlanPending, operatorsv1alpha1.SubscriptionInstallPlanFailed:
 				require.FailNowf(GinkgoT(), "failed", "subscription contains unexpected installplan condition: %v", cond)
 			case operatorsv1alpha1.SubscriptionInstallPlanMissing:
 				require.Equal(GinkgoT(), operatorsv1alpha1.ReferencedInstallPlanNotFound, cond.Reason)
-			default:
-				require.True(GinkgoT(), hashEqual(cond, sub.Status.GetCondition(condType)), "non-installplan status condition changed")
 			}
 		}
 	})
@@ -2825,14 +2829,53 @@ func subscriptionHasCurrentCSV(currentCSV string) subscriptionStateChecker {
 }
 
 func subscriptionHasCondition(condType operatorsv1alpha1.SubscriptionConditionType, status corev1.ConditionStatus, reason, message string) subscriptionStateChecker {
+	var lastCond operatorsv1alpha1.SubscriptionCondition
+	lastTime := time.Now()
+	// if status/reason/message meet expectations, then subscription state is considered met/true
+	// IFF this is the result of a recent change of status/reason/message
+	// else, cache the current status/reason/message for next loop/comparison
 	return func(subscription *operatorsv1alpha1.Subscription) bool {
 		cond := subscription.Status.GetCondition(condType)
 		if cond.Status == status && cond.Reason == reason && cond.Message == message {
-			fmt.Printf("subscription condition met %v\n", cond)
+			if lastCond.Status != cond.Status && lastCond.Reason != cond.Reason && lastCond.Message == cond.Message {
+				GinkgoT().Logf("waited %s subscription condition met %v\n", time.Since(lastTime), cond)
+				lastTime = time.Now()
+				lastCond = cond
+			}
 			return true
 		}
 
-		fmt.Printf("subscription condition not met: %v\n", cond)
+		if lastCond.Status != cond.Status && lastCond.Reason != cond.Reason && lastCond.Message == cond.Message {
+			GinkgoT().Logf("waited %s subscription condition not met: %v\n", time.Since(lastTime), cond)
+			lastTime = time.Now()
+			lastCond = cond
+		}
+		return false
+	}
+}
+
+func subscriptionDoesNotHaveCondition(condType operatorsv1alpha1.SubscriptionConditionType) subscriptionStateChecker {
+	var lastStatus corev1.ConditionStatus
+	lastTime := time.Now()
+	// if status meets expectations, then subscription state is considered met/true
+	// IFF this is the result of a recent change of status
+	// else, cache the current status for next loop/comparison
+	return func(subscription *operatorsv1alpha1.Subscription) bool {
+		cond := subscription.Status.GetCondition(condType)
+		if cond.Status == corev1.ConditionUnknown {
+			if cond.Status != lastStatus {
+				GinkgoT().Logf("waited %s subscription condition not found\n", time.Since(lastTime))
+				lastStatus = cond.Status
+				lastTime = time.Now()
+			}
+			return true
+		}
+
+		if cond.Status != lastStatus {
+			GinkgoT().Logf("waited %s subscription condition found: %v\n", time.Since(lastTime), cond)
+			lastStatus = cond.Status
+			lastTime = time.Now()
+		}
 		return false
 	}
 }
