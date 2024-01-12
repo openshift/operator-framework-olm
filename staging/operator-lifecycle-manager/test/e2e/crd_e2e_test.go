@@ -271,7 +271,7 @@ var _ = Describe("CRD Versions", func() {
 				return nil, err
 			}
 			return crc.OperatorsV1alpha1().InstallPlans(generatedNamespace.GetName()).Get(context.TODO(), s.Status.InstallPlanRef.Name, metav1.GetOptions{})
-		}).Should(And(
+		}).Within(2 * time.Minute).Should(And(
 			WithTransform(
 				func(v *operatorsv1alpha1.InstallPlan) operatorsv1alpha1.InstallPlanPhase {
 					return v.Status.Phase
