@@ -3675,6 +3675,15 @@ var _ = Describe("ClusterServiceVersion", func() {
 			fetchedCSV.Spec.InstallStrategy.StrategySpec = strategyNew
 
 			Eventually(func() error {
+				// Fetch the current csv
+				fetchedCSV, err := fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+				if err != nil {
+					return err
+				}
+
+				// Update csv with modified deployment spec
+				fetchedCSV.Spec.InstallStrategy.StrategySpec = strategyNew
+
 				// Update the current csv
 				_, err = crc.OperatorsV1alpha1().ClusterServiceVersions(generatedNamespace.GetName()).Update(context.TODO(), fetchedCSV, metav1.UpdateOptions{})
 				return err
@@ -3685,14 +3694,14 @@ var _ = Describe("ClusterServiceVersion", func() {
 
 				// Should have updated existing deployment
 				depUpdated, err := c.GetDeployment(generatedNamespace.GetName(), strategyNew.DeploymentSpecs[0].Name)
-				if err != nil {
+				if err != nil || depUpdated == nil {
 					return false
 				}
-				if depUpdated == nil {
-					return false
-				}
+
 				// container name has been updated and differs from initial CSV spec and updated CSV spec
-				Expect(depUpdated.Spec.Template.Spec.Containers[0].Name).ShouldNot(Equal(strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name))
+				if depUpdated.Spec.Template.Spec.Containers[0].Name != strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name {
+					return false
+				}
 
 				// Check for success
 				return csvSucceededChecker(csv)
