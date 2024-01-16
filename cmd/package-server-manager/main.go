@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/openshift/operator-framework-olm/pkg/leaderelection"
 	controllers "github.com/openshift/operator-framework-olm/pkg/package-server-manager"
@@ -81,8 +82,7 @@ func run(cmd *cobra.Command, args []string) error {
 	packageserverCSVFields := fields.Set{"metadata.name": name}
 	mgr, err := ctrl.NewManager(restConfig, manager.Options{
 		Scheme:                        setupScheme(),
-		Namespace:                     namespace,
-		MetricsBindAddress:            metricsAddr,
+		Metrics:                       metricsserver.Options{BindAddress: metricsAddr},
 		LeaderElection:                !disableLeaderElection,
 		LeaderElectionNamespace:       namespace,
 		LeaderElectionID:              leaderElectionConfigmapName,
@@ -93,6 +93,9 @@ func run(cmd *cobra.Command, args []string) error {
 		PprofBindAddress:              pprofAddr,
 		LeaderElectionReleaseOnCancel: true,
 		Cache: cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				namespace: {},
+			},
 			ByObject: map[client.Object]cache.ByObject{
 				&olmv1alpha1.ClusterServiceVersion{}: {
 					Field: packageserverCSVFields.AsSelector(),
