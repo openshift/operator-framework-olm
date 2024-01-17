@@ -25,7 +25,8 @@ type JWTSource struct {
 }
 
 // NewJWTSource creates a new JWTSource. It blocks until the initial update
-// has been received from the Workload API.
+// has been received from the Workload API. The source should be closed when
+// no longer in use to free underlying resources.
 func NewJWTSource(ctx context.Context, options ...JWTSourceOption) (_ *JWTSource, err error) {
 	config := &jwtSourceConfig{}
 	for _, option := range options {
@@ -61,6 +62,15 @@ func (s *JWTSource) FetchJWTSVID(ctx context.Context, params jwtsvid.Params) (*j
 		return nil, err
 	}
 	return s.watcher.client.FetchJWTSVID(ctx, params)
+}
+
+// FetchJWTSVIDs fetches all JWT-SVIDs from the source with the given parameters.
+// It implements the jwtsvid.Source interface.
+func (s *JWTSource) FetchJWTSVIDs(ctx context.Context, params jwtsvid.Params) ([]*jwtsvid.SVID, error) {
+	if err := s.checkClosed(); err != nil {
+		return nil, err
+	}
+	return s.watcher.client.FetchJWTSVIDs(ctx, params)
 }
 
 // GetJWTBundleForTrustDomain returns the JWT bundle for the given trust

@@ -18,8 +18,8 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
 
       - run: |
          for dist in dist-*; do
@@ -48,12 +48,12 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # GoReleaser requires fetch-depth: 0 to correctly
           # run git describe
           fetch-depth: 0
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
       - name: "Run GoReleaser"
@@ -63,7 +63,7 @@ jobs:
           RELEASE_ARGS: release --rm-dist -f release/goreleaser.windows.yaml --skip-validate ${{ github.event_name == 'pull_request' && '--snapshot' || '' }}
 
       - run: tar -cvf dist-windows.tar dist
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: dist-windows
           path: dist-windows.tar
@@ -71,13 +71,13 @@ jobs:
   build-darwin:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # GoReleaser requires fetch-depth: 0 to correctly
           # run git describe
           fetch-depth: 0
 
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
       - name: "Run GoReleaser"
@@ -87,7 +87,7 @@ jobs:
           RELEASE_ARGS: release --rm-dist -f release/goreleaser.darwin.yaml --skip-validate ${{ github.event_name == 'pull_request' && '--snapshot' || '' }}
 
       - run: gtar -cvf dist-darwin.tar dist
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: dist-darwin
           path: dist-darwin.tar
@@ -95,13 +95,13 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # GoReleaser requires fetch-depth: 0 to correctly
           # run git describe
           fetch-depth: 0
 
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
       - name: "Install linux cross-compilers"
@@ -126,14 +126,14 @@ jobs:
 
       - name: "Login to Quay"
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
           registry: quay.io
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v3
 
       - name: "Run GoReleaser"
         run: make release
@@ -142,7 +142,7 @@ jobs:
           RELEASE_ARGS: release --rm-dist -f release/goreleaser.linux.yaml --skip-validate ${{ github.event_name == 'pull_request' && '--snapshot' || '' }}
 
       - run: tar -cvf dist-linux.tar dist
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: dist-linux
           path: dist-linux.tar
