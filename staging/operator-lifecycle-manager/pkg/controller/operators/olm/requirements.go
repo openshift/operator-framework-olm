@@ -9,16 +9,17 @@ import (
 
 	"github.com/coreos/go-semver/semver"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	listersv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/internal/alongside"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+
+	listersv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/internal/alongside"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 func (a *Operator) minKubeVersionStatus(name string, minKubeVersion string) (met bool, statuses []v1alpha1.RequirementStatus) {
@@ -312,7 +313,7 @@ func (a *Operator) permissionStatus(strategyDetailsDeployment *v1alpha1.Strategy
 				} else {
 					permissionMet, err = permissionsPreviouslyCreated[*rbacv1.Role, *rbacv1.RoleBinding](
 						perm, csv,
-						a.lister.RbacV1().RoleLister().List, a.lister.RbacV1().RoleBindingLister().List,
+						a.lister.RbacV1().RoleLister().Roles(namespace).List, a.lister.RbacV1().RoleBindingLister().RoleBindings(namespace).List,
 					)
 				}
 				if err != nil {
