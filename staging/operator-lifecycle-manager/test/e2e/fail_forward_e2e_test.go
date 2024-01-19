@@ -24,9 +24,9 @@ const (
 var _ = Describe("Fail Forward Upgrades", func() {
 
 	var (
-		ns       corev1.Namespace
-		crclient versioned.Interface
-		c        client.Client
+		generatedNamespace corev1.Namespace
+		crclient           versioned.Interface
+		c                  client.Client
 	)
 
 	BeforeEach(func() {
@@ -34,7 +34,7 @@ var _ = Describe("Fail Forward Upgrades", func() {
 		c = ctx.Ctx().Client()
 
 		By("creating the testing namespace with an OG that enabled fail forward behavior")
-		namespaceName := genName("ff-e2e-")
+		namespaceName := genName("fail-forward-e2e-")
 		og := operatorsv1.OperatorGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-operatorgroup", namespaceName),
@@ -44,12 +44,12 @@ var _ = Describe("Fail Forward Upgrades", func() {
 				UpgradeStrategy: operatorsv1.UpgradeStrategyUnsafeFailForward,
 			},
 		}
-		ns = SetupGeneratedTestNamespaceWithOperatorGroup(namespaceName, og)
+		generatedNamespace = SetupGeneratedTestNamespaceWithOperatorGroup(namespaceName, og)
 	})
 
 	AfterEach(func() {
 		By("deleting the testing namespace")
-		TeardownNamespace(ns.GetName())
+		TeardownNamespace(generatedNamespace.GetName())
 	})
 
 	When("an InstallPlan is reporting a failed state", func() {
@@ -65,18 +65,18 @@ var _ = Describe("Fail Forward Upgrades", func() {
 			Expect(err).To(BeNil())
 
 			catalogSourceName = genName("mc-ip-failed-")
-			magicCatalog = NewMagicCatalog(c, ns.GetName(), catalogSourceName, provider)
+			magicCatalog = NewMagicCatalog(c, generatedNamespace.GetName(), catalogSourceName, provider)
 			Expect(magicCatalog.DeployCatalog(context.Background())).To(BeNil())
 
 			By("creating the testing subscription")
 			subscription = &operatorsv1alpha1.Subscription{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("%s-sub", catalogSourceName),
-					Namespace: ns.GetName(),
+					Namespace: generatedNamespace.GetName(),
 				},
 				Spec: &operatorsv1alpha1.SubscriptionSpec{
 					CatalogSource:          catalogSourceName,
-					CatalogSourceNamespace: ns.GetName(),
+					CatalogSourceNamespace: generatedNamespace.GetName(),
 					Channel:                "stable",
 					Package:                "packageA",
 				},
@@ -90,7 +90,7 @@ var _ = Describe("Fail Forward Upgrades", func() {
 			originalInstallPlanRef := subscription.Status.InstallPlanRef
 
 			By("waiting for the v0.1.0 CSV to report a succeeded phase")
-			_, err = fetchCSV(crclient, subscription.Status.CurrentCSV, ns.GetName(), buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
+			_, err = fetchCSV(crclient, subscription.Status.CurrentCSV, generatedNamespace.GetName(), buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
 			Expect(err).ShouldNot(HaveOccurred())
 
 			By("updating the catalog with a broken v0.2.0 bundle image")
@@ -204,18 +204,18 @@ var _ = Describe("Fail Forward Upgrades", func() {
 			Expect(err).To(BeNil())
 
 			catalogSourceName = genName("mc-csv-failed-")
-			magicCatalog = NewMagicCatalog(c, ns.GetName(), catalogSourceName, provider)
+			magicCatalog = NewMagicCatalog(c, generatedNamespace.GetName(), catalogSourceName, provider)
 			Expect(magicCatalog.DeployCatalog(context.Background())).To(BeNil())
 
 			By("creating the testing subscription")
 			subscription = &operatorsv1alpha1.Subscription{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      fmt.Sprintf("%s-sub", catalogSourceName),
-					Namespace: ns.GetName(),
+					Namespace: generatedNamespace.GetName(),
 				},
 				Spec: &operatorsv1alpha1.SubscriptionSpec{
 					CatalogSource:          catalogSourceName,
-					CatalogSourceNamespace: ns.GetName(),
+					CatalogSourceNamespace: generatedNamespace.GetName(),
 					Channel:                "stable",
 					Package:                "packageA",
 				},
@@ -227,7 +227,7 @@ var _ = Describe("Fail Forward Upgrades", func() {
 			Expect(err).Should(BeNil())
 
 			By("waiting for the v0.1.0 CSV to report a succeeded phase")
-			_, err = fetchCSV(crclient, subscription.Status.CurrentCSV, ns.GetName(), buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
+			_, err = fetchCSV(crclient, subscription.Status.CurrentCSV, generatedNamespace.GetName(), buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
 			Expect(err).ShouldNot(HaveOccurred())
 
 			By("updating the catalog with a broken v0.2.0 csv")
@@ -243,7 +243,7 @@ var _ = Describe("Fail Forward Upgrades", func() {
 			Expect(err).Should(BeNil())
 
 			By("waiting for the bad CSV to report a failed state")
-			_, err = fetchCSV(crclient, subscription.Status.CurrentCSV, ns.GetName(), csvFailedChecker)
+			_, err = fetchCSV(crclient, subscription.Status.CurrentCSV, generatedNamespace.GetName(), csvFailedChecker)
 			Expect(err).To(BeNil())
 
 		})
