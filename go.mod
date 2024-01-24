@@ -95,8 +95,8 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
-	github.com/fatih/color v1.13.0 // indirect
-	github.com/felixge/httpsnoop v1.0.1 // indirect
+	github.com/fatih/color v1.15.0 // indirect
+	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-air/gini v1.0.4 // indirect
@@ -154,7 +154,7 @@ require (
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
@@ -231,7 +231,7 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
-	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
+	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
