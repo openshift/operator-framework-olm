@@ -672,8 +672,8 @@ github.com/morikuni/aec
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
-# github.com/onsi/ginkgo/v2 v2.13.2
-## explicit; go 1.18
+# github.com/onsi/ginkgo/v2 v2.15.0
+## explicit; go 1.20
 github.com/onsi/ginkgo/v2/config
 github.com/onsi/ginkgo/v2/formatter
 github.com/onsi/ginkgo/v2/ginkgo
@@ -690,8 +690,8 @@ github.com/onsi/ginkgo/v2/internal/interrupt_handler
 github.com/onsi/ginkgo/v2/internal/parallel_support
 github.com/onsi/ginkgo/v2/reporters
 github.com/onsi/ginkgo/v2/types
-# github.com/onsi/gomega v1.30.0
-## explicit; go 1.18
+# github.com/onsi/gomega v1.31.1
+## explicit; go 1.20
 github.com/onsi/gomega/gstruct/errors
 github.com/onsi/gomega/types
 # github.com/opencontainers/go-digest v1.0.0
