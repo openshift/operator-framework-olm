@@ -9,7 +9,6 @@ approvers:
   - oceanc80
   - grokspawn
   - tmshort
-  - ncdc
 reviewers:
   - dinhxuanvu
   - kevinrizza
@@ -21,5 +20,4 @@ reviewers:
   - oceanc80
   - grokspawn
   - tmshort
-  - ncdc
 component: "OLM"
