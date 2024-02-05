@@ -186,7 +186,7 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 		return nil, err
 	}
 
-	canFilter, err := labeller.Validate(ctx, logger, metadataClient, crClient)
+	canFilter, err := labeller.Validate(ctx, logger, metadataClient, crClient, labeller.IdentityCatalogOperator)
 	if err != nil {
 		return nil, err
 	}
@@ -539,6 +539,49 @@ func NewOperator(ctx context.Context, kubeconfigPath string, clock utilclock.Clo
 		},
 	)); err != nil {
 		return nil, err
+	}
+
+	{
+		gvr := servicesgvk
+		informer := serviceInformer.Informer()
+
+		logger := op.logger.WithFields(logrus.Fields{"gvr": gvr.String()})
+		logger.Info("registering owner reference fixer")
+
+		queue := workqueue.NewRateLimitingQueueWithConfig(workqueue.DefaultControllerRateLimiter(), workqueue.RateLimitingQueueConfig{
+			Name: gvr.String(),
+		})
+		queueInformer, err := queueinformer.NewQueueInformer(
+			ctx,
+			queueinformer.WithQueue(queue),
+			queueinformer.WithLogger(op.logger),
+			queueinformer.WithInformer(informer),
+			queueinformer.WithSyncer(queueinformer.LegacySyncHandler(func(obj interface{}) error {
+				service, ok := obj.(*corev1.Service)
+				if !ok {
+					err := fmt.Errorf("wrong type %T, expected %T: %#v", obj, new(*corev1.Service), obj)
+					logger.WithError(err).Error("casting failed")
+					return fmt.Errorf("casting failed: %w", err)
+				}
+
+				deduped := deduplicateOwnerReferences(service.OwnerReferences)
+				if len(deduped) != len(service.OwnerReferences) {
+					localCopy := service.DeepCopy()
+					localCopy.OwnerReferences = deduped
+					if _, err := op.opClient.KubernetesInterface().CoreV1().Services(service.Namespace).Update(ctx, localCopy, metav1.UpdateOptions{}); err != nil {
+						return err
+					}
+				}
+				return nil
+			}).ToSyncer()),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := op.RegisterQueueInformer(queueInformer); err != nil {
+			return nil, err
+		}
 	}
 
 	// Wire Pods for CatalogSource
@@ -1393,16 +1436,14 @@ func (o *Operator) syncResolvingNamespace(obj interface{}) error {
 	}
 
 	// Make sure that we no longer indicate unpacking progress
-	subs = o.setSubsCond(subs, v1alpha1.SubscriptionCondition{
-		Type:   v1alpha1.SubscriptionBundleUnpacking,
-		Status: corev1.ConditionFalse,
-	})
+	o.removeSubsCond(subs, v1alpha1.SubscriptionBundleUnpacking)
 
 	// Remove BundleUnpackFailed condition from subscriptions
 	o.removeSubsCond(subs, v1alpha1.SubscriptionBundleUnpackFailed)
 
 	// Remove resolutionfailed condition from subscriptions
 	o.removeSubsCond(subs, v1alpha1.SubscriptionResolutionFailed)
+
 	newSub := true
 	for _, updatedSub := range updatedSubs {
 		updatedSub.Status.RemoveConditions(v1alpha1.SubscriptionResolutionFailed)
@@ -1679,13 +1720,9 @@ func (o *Operator) setSubsCond(subs []*v1alpha1.Subscription, cond v1alpha1.Subs
 	return subList
 }
 
-// removeSubsCond will remove the condition to the subscription if it exists
-// Only return the list of updated subscriptions
-func (o *Operator) removeSubsCond(subs []*v1alpha1.Subscription, condType v1alpha1.SubscriptionConditionType) []*v1alpha1.Subscription {
-	var (
-		lastUpdated = o.now()
-	)
-	var subList []*v1alpha1.Subscription
+// removeSubsCond removes the given condition from all of the subscriptions in the input
+func (o *Operator) removeSubsCond(subs []*v1alpha1.Subscription, condType v1alpha1.SubscriptionConditionType) {
+	lastUpdated := o.now()
 	for _, sub := range subs {
 		cond := sub.Status.GetCondition(condType)
 		// if status is ConditionUnknown, the condition doesn't exist. Just skip
@@ -1694,9 +1731,7 @@ func (o *Operator) removeSubsCond(subs []*v1alpha1.Subscription, condType v1alph
 		}
 		sub.Status.LastUpdated = lastUpdated
 		sub.Status.RemoveConditions(condType)
-		subList = append(subList, sub)
 	}
-	return subList
 }
 
 func (o *Operator) updateSubscriptionStatuses(subs []*v1alpha1.Subscription) ([]*v1alpha1.Subscription, error) {
@@ -2859,4 +2894,8 @@ func (o *Operator) apiresourceFromGVK(gvk schema.GroupVersionKind) (metav1.APIRe
 	}
 	logger.Info("couldn't find GVK in api discovery")
 	return metav1.APIResource{}, olmerrors.GroupVersionKindNotFoundError{Group: gvk.Group, Version: gvk.Version, Kind: gvk.Kind}
+}
+
+func deduplicateOwnerReferences(refs []metav1.OwnerReference) []metav1.OwnerReference {
+	return sets.New(refs...).UnsortedList()
 }
