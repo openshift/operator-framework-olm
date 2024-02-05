@@ -2672,7 +2672,7 @@ properties:
 				if err != nil {
 					return err
 				}
-				if cond := fetched.Status.GetCondition(v1alpha1.SubscriptionBundleUnpacking); cond.Status != corev1.ConditionFalse {
+				if cond := fetched.Status.GetCondition(v1alpha1.SubscriptionBundleUnpacking); cond.Status != corev1.ConditionUnknown {
 					return fmt.Errorf("subscription condition %s has unexpected value %s, expected %s", v1alpha1.SubscriptionBundleUnpacking, cond.Status, corev1.ConditionFalse)
 				}
 				if cond := fetched.Status.GetCondition(v1alpha1.SubscriptionBundleUnpackFailed); cond.Status != corev1.ConditionUnknown {
