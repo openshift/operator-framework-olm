@@ -5,6 +5,10 @@ metadata:
   labels:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: "v1.24"
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: "v1.24"
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: "v1.24"
     openshift.io/scc: ""
     openshift.io/cluster-monitoring: "true"
   annotations:
@@ -21,6 +25,10 @@ metadata:
   labels:
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/enforce-version: "v1.24"
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: "v1.24"
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: "v1.24"
     openshift.io/scc: ""
   annotations:
     openshift.io/node-selector: ""
