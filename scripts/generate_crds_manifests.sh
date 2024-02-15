@@ -73,10 +73,12 @@ add_ibm_managed_cloud_annotations() {
    for f in "${manifests_dir}"/*.yaml; do
       if [[ ! "$(basename "${f}")" =~ .*\.deployment\..* ]]; then
          ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
+         ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/hypershift']' true
       else
          g="${f/%.yaml/.ibm-cloud-managed.yaml}"
          cp "${f}" "${g}"
          ${YQ} w -d'*' --inplace --style=double "$g" 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
+         ${YQ} w -d'*' --inplace --style=double "$g" 'metadata.annotations['include.release.openshift.io/hypershift']' true
          ${YQ} w -d'*' --inplace --style=double "$g" 'metadata.annotations['capability.openshift.io/name']' OperatorLifecycleManager
          ${YQ} d -d'*' --inplace "$g" 'spec.template.spec.nodeSelector."node-role.kubernetes.io/master"'
       fi
@@ -285,6 +287,7 @@ kind: ConfigMap
 metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
     release.openshift.io/create-only: "true"
   name: collect-profiles-config
@@ -300,6 +303,7 @@ kind: Role
 metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
@@ -316,6 +320,7 @@ kind: RoleBinding
 metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
@@ -333,6 +338,7 @@ kind: ServiceAccount
 metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
@@ -344,6 +350,7 @@ kind: Secret
 metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
     release.openshift.io/create-only: "true"
     openshift.io/owning-component: "Operator Framework / operator-lifecycle-manager"
@@ -361,6 +368,7 @@ kind: CronJob
 metadata:
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
