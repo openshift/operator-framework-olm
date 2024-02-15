@@ -6,6 +6,7 @@ metadata:
   labels:
     app: olm-operator
   annotations:
+    include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     capability.openshift.io/name: "OperatorLifecycleManager"
 spec:
