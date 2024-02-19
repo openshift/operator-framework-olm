@@ -955,6 +955,11 @@ func (o *Operator) syncResolvingNamespace(obj interface{}) error {
 		return err
 	}
 
+	minUnpackRetryInterval, err := bundle.OperatorGroupBundleUnpackRetryInterval(ogLister)
+	if err != nil {
+		return err
+	}
+
 	// TODO: parallel
 	maxGeneration := 0
 	subscriptionUpdated := false
@@ -1050,7 +1055,7 @@ func (o *Operator) syncResolvingNamespace(obj interface{}) error {
 		logger.Debug("unpacking bundles")
 
 		var unpacked bool
-		unpacked, steps, bundleLookups, err = o.unpackBundles(namespace, steps, bundleLookups, unpackTimeout)
+		unpacked, steps, bundleLookups, err = o.unpackBundles(namespace, steps, bundleLookups, unpackTimeout, minUnpackRetryInterval)
 		if err != nil {
 			// If the error was fatal capture and fail
 			if olmerrors.IsFatal(err) {
@@ -1505,7 +1510,7 @@ type UnpackedBundleReference struct {
 	Properties             string `json:"properties"`
 }
 
-func (o *Operator) unpackBundles(namespace string, installPlanSteps []*v1alpha1.Step, bundleLookups []v1alpha1.BundleLookup, unpackTimeout time.Duration) (bool, []*v1alpha1.Step, []v1alpha1.BundleLookup, error) {
+func (o *Operator) unpackBundles(namespace string, installPlanSteps []*v1alpha1.Step, bundleLookups []v1alpha1.BundleLookup, unpackTimeout, unpackRetryInterval time.Duration) (bool, []*v1alpha1.Step, []v1alpha1.BundleLookup, error) {
 	unpacked := true
 
 	outBundleLookups := make([]v1alpha1.BundleLookup, len(bundleLookups))
@@ -1520,7 +1525,7 @@ func (o *Operator) unpackBundles(namespace string, installPlanSteps []*v1alpha1.
 	var errs []error
 	for i := 0; i < len(outBundleLookups); i++ {
 		lookup := outBundleLookups[i]
-		res, err := o.bundleUnpacker.UnpackBundle(&lookup, unpackTimeout)
+		res, err := o.bundleUnpacker.UnpackBundle(&lookup, unpackTimeout, unpackRetryInterval)
 		if err != nil {
 			errs = append(errs, err)
 			continue

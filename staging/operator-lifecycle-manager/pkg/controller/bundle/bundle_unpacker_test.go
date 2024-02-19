@@ -208,6 +208,7 @@ func TestConfigMapUnpacker(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      pathHash,
 							Namespace: "ns-a",
+							Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: pathHash},
 							OwnerReferences: []metav1.OwnerReference{
 								{
 									APIVersion:         "v1",
@@ -437,6 +438,7 @@ func TestConfigMapUnpacker(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      digestHash,
 							Namespace: "ns-a",
+							Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: digestHash},
 							OwnerReferences: []metav1.OwnerReference{
 								{
 									APIVersion:         "v1",
@@ -705,6 +707,7 @@ func TestConfigMapUnpacker(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      digestHash,
 							Namespace: "ns-a",
+							Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: digestHash},
 							OwnerReferences: []metav1.OwnerReference{
 								{
 									APIVersion:         "v1",
@@ -967,6 +970,7 @@ func TestConfigMapUnpacker(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      pathHash,
 							Namespace: "ns-a",
+							Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: pathHash},
 							OwnerReferences: []metav1.OwnerReference{
 								{
 									APIVersion:         "v1",
@@ -1199,6 +1203,7 @@ func TestConfigMapUnpacker(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      pathHash,
 							Namespace: "ns-a",
+							Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: pathHash},
 							OwnerReferences: []metav1.OwnerReference{
 								{
 									APIVersion:         "v1",
@@ -1442,6 +1447,7 @@ func TestConfigMapUnpacker(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      pathHash,
 							Namespace: "ns-a",
+							Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: pathHash},
 							OwnerReferences: []metav1.OwnerReference{
 								{
 									APIVersion:         "v1",
@@ -1654,7 +1660,7 @@ func TestConfigMapUnpacker(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			res, err := unpacker.UnpackBundle(tt.args.lookup, tt.args.annotationTimeout)
+			res, err := unpacker.UnpackBundle(tt.args.lookup, tt.args.annotationTimeout, 0)
 			require.Equal(t, tt.expected.err, err)
 
 			if tt.expected.res == nil {
@@ -1818,5 +1824,215 @@ func TestOperatorGroupBundleUnpackTimeout(t *testing.T) {
 			assert.Equal(t, tc.expectedTimeout, timeout)
 			assert.Equal(t, tc.expectedError, err)
 		})
+	}
+}
+
+func TestOperatorGroupBundleUnpackRetryInterval(t *testing.T) {
+	nsName := "fake-ns"
+
+	for _, tc := range []struct {
+		name            string
+		operatorGroups  []*operatorsv1.OperatorGroup
+		expectedTimeout time.Duration
+		expectedError   error
+	}{
+		{
+			name:            "No operator groups exist",
+			expectedTimeout: 0,
+			expectedError:   errors.New("found 0 operatorGroups, expected 1"),
+		},
+		{
+			name: "Multiple operator groups exist",
+			operatorGroups: []*operatorsv1.OperatorGroup{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       operatorsv1.OperatorGroupKind,
+						APIVersion: operatorsv1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "og1",
+						Namespace: nsName,
+					},
+				},
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       operatorsv1.OperatorGroupKind,
+						APIVersion: operatorsv1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "og2",
+						Namespace: nsName,
+					},
+				},
+			},
+			expectedTimeout: 0,
+			expectedError:   errors.New("found 2 operatorGroups, expected 1"),
+		},
+		{
+			name: "One operator group exists with valid unpack retry annotation",
+			operatorGroups: []*operatorsv1.OperatorGroup{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       operatorsv1.OperatorGroupKind,
+						APIVersion: operatorsv1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "og",
+						Namespace:   nsName,
+						Annotations: map[string]string{BundleUnpackRetryMinimumIntervalAnnotationKey: "1m"},
+					},
+				},
+			},
+			expectedTimeout: 1 * time.Minute,
+			expectedError:   nil,
+		},
+		{
+			name: "One operator group exists with no unpack retry annotation",
+			operatorGroups: []*operatorsv1.OperatorGroup{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       operatorsv1.OperatorGroupKind,
+						APIVersion: operatorsv1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "og",
+						Namespace: nsName,
+					},
+				},
+			},
+			expectedTimeout: 0,
+			expectedError:   nil,
+		},
+		{
+			name: "One operator group exists with invalid unpack retry annotation",
+			operatorGroups: []*operatorsv1.OperatorGroup{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       operatorsv1.OperatorGroupKind,
+						APIVersion: operatorsv1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "og",
+						Namespace:   nsName,
+						Annotations: map[string]string{BundleUnpackRetryMinimumIntervalAnnotationKey: "invalid"},
+					},
+				},
+			},
+			expectedTimeout: 0,
+			expectedError:   fmt.Errorf("failed to parse unpack retry annotation(operatorframework.io/bundle-unpack-min-retry-interval: invalid): %w", errors.New("time: invalid duration \"invalid\"")),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ogIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
+			ogLister := v1listers.NewOperatorGroupLister(ogIndexer).OperatorGroups(nsName)
+
+			for _, og := range tc.operatorGroups {
+				err := ogIndexer.Add(og)
+				assert.NoError(t, err)
+			}
+
+			timeout, err := OperatorGroupBundleUnpackRetryInterval(ogLister)
+
+			assert.Equal(t, tc.expectedTimeout, timeout)
+			assert.Equal(t, tc.expectedError, err)
+		})
+	}
+}
+
+func TestSortUnpackJobs(t *testing.T) {
+	// if there is a non-failed job, it should be first
+	// otherwise, the latest job should be first
+	//first n-1 jobs and oldest job are preserved
+	testJob := func(name string, failed bool, ts int64) *batchv1.Job {
+		conditions := []batchv1.JobCondition{}
+		if failed {
+			conditions = append(conditions, batchv1.JobCondition{
+				Type:               batchv1.JobFailed,
+				Status:             corev1.ConditionTrue,
+				LastTransitionTime: metav1.Time{Time: time.Unix(ts, 0)},
+			})
+		}
+		return &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   name,
+				Labels: map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: "test"},
+			},
+			Status: batchv1.JobStatus{
+				Conditions: conditions,
+			},
+		}
+	}
+	failedJobs := []*batchv1.Job{
+		testJob("f-1", true, 1),
+		testJob("f-2", true, 2),
+		testJob("f-3", true, 3),
+		testJob("f-4", true, 4),
+		testJob("f-5", true, 5),
+	}
+	nonFailedJob := testJob("s-1", false, 1)
+	for _, tc := range []struct {
+		name             string
+		jobs             []*batchv1.Job
+		maxRetained      int
+		expectedLatest   *batchv1.Job
+		expectedToDelete []*batchv1.Job
+	}{
+		{
+			name:        "no job history",
+			maxRetained: 0,
+			jobs: []*batchv1.Job{
+				failedJobs[1],
+				failedJobs[2],
+				failedJobs[0],
+			},
+			expectedLatest: failedJobs[2],
+			expectedToDelete: []*batchv1.Job{
+				failedJobs[1],
+				failedJobs[0],
+			},
+		}, {
+			name:        "empty job list",
+			maxRetained: 1,
+		}, {
+			name:        "retain oldest",
+			maxRetained: 1,
+			jobs: []*batchv1.Job{
+				failedJobs[2],
+				failedJobs[0],
+				failedJobs[1],
+			},
+			expectedToDelete: []*batchv1.Job{
+				failedJobs[1],
+			},
+			expectedLatest: failedJobs[2],
+		}, {
+			name:        "multiple old jobs",
+			maxRetained: 2,
+			jobs: []*batchv1.Job{
+				failedJobs[1],
+				failedJobs[0],
+				failedJobs[2],
+				failedJobs[3],
+				failedJobs[4],
+			},
+			expectedLatest: failedJobs[4],
+			expectedToDelete: []*batchv1.Job{
+				failedJobs[1],
+				failedJobs[2],
+			},
+		}, {
+			name:        "select non-failed as latest",
+			maxRetained: 3,
+			jobs: []*batchv1.Job{
+				failedJobs[0],
+				failedJobs[1],
+				nonFailedJob,
+			},
+			expectedLatest: nonFailedJob,
+		},
+	} {
+		latest, toDelete := sortUnpackJobs(tc.jobs, tc.maxRetained)
+		assert.Equal(t, tc.expectedLatest, latest)
+		assert.ElementsMatch(t, tc.expectedToDelete, toDelete)
 	}
 }
