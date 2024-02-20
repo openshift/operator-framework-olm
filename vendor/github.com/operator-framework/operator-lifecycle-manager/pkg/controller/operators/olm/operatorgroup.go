@@ -489,6 +489,18 @@ func (a *Operator) ensureRBACInTargetNamespace(csv *v1alpha1.ClusterServiceVersi
 
 	logger := a.logger.WithField("opgroup", operatorGroup.GetName()).WithField("csv", csv.GetName())
 
+	// get an up-to-date csv from the cache
+	csv, err = a.lister.OperatorsV1alpha1().ClusterServiceVersionLister().ClusterServiceVersions(csv.GetNamespace()).Get(csv.GetName())
+	if apierrors.IsNotFound(err) {
+		logger.Info("CSV has beeen deleted - not processing RBAC")
+		return nil
+	} else if err != nil {
+		logger.Info("Error getting latest version of CSV")
+		return err
+	} else if !csv.DeletionTimestamp.IsZero() {
+		logger.Info("CSV is being deleted - not processing RBAC")
+		return nil
+	}
 	// if OperatorGroup is global (all namespaces) we generate cluster roles / cluster role bindings instead
 	if len(targetNamespaces) == 1 && targetNamespaces[0] == corev1.NamespaceAll {
 		logger.Debug("opgroup is global")

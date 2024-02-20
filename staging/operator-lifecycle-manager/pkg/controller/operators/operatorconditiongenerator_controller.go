@@ -203,6 +203,9 @@ func (r *OperatorConditionGeneratorReconciler) processFinalizer(ctx context.Cont
 		return nil, false
 	}
 
+	log.Info("started finalizer")
+	defer log.Info("completed finalizer")
+
 	// CSV is being deleted and the finalizer still present; do any clean up
 	ownerSelector := ownerutil.CSVOwnerSelector(csv)
 	listOptions := client.ListOptions{

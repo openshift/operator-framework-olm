@@ -1093,6 +1093,9 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		"phase":     clusterServiceVersion.Status.Phase,
 	})
 
+	logger.Debug("start deleting CSV")
+	defer logger.Debug("end deleting CSV")
+
 	metrics.DeleteCSVMetric(clusterServiceVersion)
 
 	if clusterServiceVersion.IsCopied() {
@@ -1291,7 +1294,21 @@ func (a *Operator) syncClusterServiceVersion(obj interface{}) (syncError error) 
 		"namespace": clusterServiceVersion.GetNamespace(),
 		"phase":     clusterServiceVersion.Status.Phase,
 	})
-	logger.Debug("syncing CSV")
+	logger.Debug("start syncing CSV")
+	defer logger.Debug("end syncing CSV")
+
+	// get an up-to-date clusterServiceVersion from the cache
+	clusterServiceVersion, err := a.lister.OperatorsV1alpha1().ClusterServiceVersionLister().ClusterServiceVersions(clusterServiceVersion.GetNamespace()).Get(clusterServiceVersion.GetName())
+	if apierrors.IsNotFound(err) {
+		logger.Info("CSV has beeen deleted")
+		return nil
+	} else if err != nil {
+		logger.Info("Error getting latest version of CSV")
+		return err
+	} else if !clusterServiceVersion.DeletionTimestamp.IsZero() {
+		logger.Info("CSV is being deleted")
+		return nil
+	}
 
 	if a.csvNotification != nil {
 		a.csvNotification.OnAddOrUpdate(clusterServiceVersion)
