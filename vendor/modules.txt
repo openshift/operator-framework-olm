@@ -698,7 +698,7 @@ github.com/onsi/gomega/types
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
 github.com/opencontainers/go-digest/digestset
-# github.com/opencontainers/image-spec v1.1.0-rc5
+# github.com/opencontainers/image-spec v1.1.0-rc6
 ## explicit; go 1.18
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
@@ -721,7 +721,7 @@ github.com/openshift/client-go/config/informers/externalversions/config
 github.com/openshift/client-go/config/informers/externalversions/config/v1
 github.com/openshift/client-go/config/informers/externalversions/internalinterfaces
 github.com/openshift/client-go/config/listers/config/v1
-# github.com/operator-framework/api v0.21.0 => ./staging/api
+# github.com/operator-framework/api v0.22.0 => ./staging/api
 ## explicit; go 1.21
 github.com/operator-framework/api/crds
 github.com/operator-framework/api/pkg/constraints
