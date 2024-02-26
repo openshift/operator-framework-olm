@@ -1389,6 +1389,16 @@ func (a *Operator) syncClusterServiceVersion(obj interface{}) (syncError error) 
 	logger.Debug("start syncing CSV")
 	defer logger.Debug("end syncing CSV")
 
+	// get an up-to-date clusterServiceVersion from the cache
+	clusterServiceVersion, err := a.lister.OperatorsV1alpha1().ClusterServiceVersionLister().ClusterServiceVersions(clusterServiceVersion.GetNamespace()).Get(clusterServiceVersion.GetName())
+	if apierrors.IsNotFound(err) {
+		logger.Info("CSV has beeen deleted")
+		return nil
+	} else if err != nil {
+		logger.Info("Error getting latest version of CSV")
+		return err
+	}
+
 	if err, ok := a.processFinalizer(clusterServiceVersion, logger); !ok {
 		return err
 	}
