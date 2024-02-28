@@ -134,6 +134,7 @@ spec:
     metadata:
       annotations:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        openshift.io/required-scc: restricted-v2
       labels:
         app: package-server-manager
     spec:
@@ -373,6 +374,7 @@ spec:
         metadata:
           annotations:
             target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+            openshift.io/required-scc: restricted-v2
         spec:
           securityContext:
             runAsNonRoot: true
