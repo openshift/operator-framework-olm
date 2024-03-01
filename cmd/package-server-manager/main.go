@@ -11,6 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -80,6 +83,9 @@ func run(cmd *cobra.Command, args []string) error {
 	le := leaderelection.GetLeaderElectionConfig(setupLog, restConfig, !disableLeaderElection)
 
 	packageserverCSVFields := fields.Set{"metadata.name": name}
+	serviceaccountFields := fields.Set{"metadata.name": "olm-operator-serviceaccount"}
+	clusterroleFields := fields.Set{"metadata.name": "system:controller:operator-lifecycle-manager"}
+	clusterrolebindingFields := fields.Set{"metadata.name": "olm-operator-binding-openshift-operator-lifecycle-manager"}
 	mgr, err := ctrl.NewManager(restConfig, manager.Options{
 		Scheme:                        setupScheme(),
 		Metrics:                       metricsserver.Options{BindAddress: metricsAddr},
@@ -99,6 +105,15 @@ func run(cmd *cobra.Command, args []string) error {
 			ByObject: map[client.Object]cache.ByObject{
 				&olmv1alpha1.ClusterServiceVersion{}: {
 					Field: packageserverCSVFields.AsSelector(),
+				},
+				&corev1.ServiceAccount{}: {
+					Field: serviceaccountFields.AsSelector(),
+				},
+				&rbacv1.ClusterRole{}: {
+					Field: clusterroleFields.AsSelector(),
+				},
+				&rbacv1.ClusterRoleBinding{}: {
+					Field: clusterrolebindingFields.AsSelector(),
 				},
 			},
 		},
