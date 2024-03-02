@@ -27,6 +27,8 @@ import (
 	"github.com/openshift/operator-framework-olm/pkg/manifests"
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -67,6 +69,10 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	log.Info("handling current request", "request", req.String())
 	defer log.Info("finished request reconciliation")
 
+	if err := ensureRBAC(r.Client, ctx, r.Namespace, log); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	var infra configv1.Infrastructure
 	if err := r.Client.Get(ctx, types.NamespacedName{Name: infrastructureName}, &infra); err != nil {
 		return ctrl.Result{}, err
@@ -100,6 +106,21 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func ensureRBAC(client client.Client, ctx context.Context, namespace string, log logr.Logger) error {
+	log.Info("checking to see if required RBAC exists")
+	if err := client.Get(ctx, types.NamespacedName{Name: "olm-operator-serviceaccount", Namespace: namespace}, &corev1.ServiceAccount{}); err != nil {
+		return fmt.Errorf("could not get service account:%v", err)
+	}
+	if err := client.Get(ctx, types.NamespacedName{Name: "system:controller:operator-lifecycle-manager"}, &rbacv1.ClusterRole{}); err != nil {
+		return fmt.Errorf("could not get ClusterRole:% v", err)
+	}
+	if err := client.Get(ctx, types.NamespacedName{Name: "olm-operator-binding-openshift-operator-lifecycle-manager"}, &rbacv1.ClusterRoleBinding{}); err != nil {
+		return fmt.Errorf("could not get ClusterRoleBinding: %v", err)
+	}
+	log.Info("confimed required RBAC exists")
+	return nil
 }
 
 func reconcileCSV(log logr.Logger, image string, interval string, csv *olmv1alpha1.ClusterServiceVersion, highAvailabilityMode bool) error {
