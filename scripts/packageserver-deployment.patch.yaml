@@ -21,6 +21,7 @@
   value:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/hypershift: "true"
 - command: update
   path: spec.install.spec.deployments[0].spec.template.spec.affinity
   value:
