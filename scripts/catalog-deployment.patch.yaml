@@ -1,6 +1,8 @@
 - command: update
-  path: spec.template.metadata.annotations."target.workload.openshift.io/management"
-  value: '{"effect": "PreferredDuringScheduling"}'
+  path: spec.template.metadata.annotations
+  value:
+    target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+    openshift.io/required-scc: restricted-v2
 - command: update
   path: spec.template.spec.priorityClassName
   value: system-cluster-critical
