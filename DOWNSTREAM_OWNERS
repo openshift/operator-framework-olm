@@ -2,22 +2,22 @@ approvers:
   - dinhxuanvu
   - kevinrizza
   - anik120
-  - awgreene
   - ankitathomas
   - joelanford
   - perdasilva
   - oceanc80
   - grokspawn
   - tmshort
+  - m1kola
 reviewers:
   - dinhxuanvu
   - kevinrizza
   - anik120
-  - awgreene
   - ankitathomas
   - joelanford
   - perdasilva
   - oceanc80
   - grokspawn
   - tmshort
+  - m1kola
 component: "OLM"
