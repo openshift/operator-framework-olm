@@ -47,22 +47,31 @@ func (r *manifestResolver) ManifestForStep(step *v1alpha1.Step) (string, error) 
 	}
 
 	log := r.logger.WithFields(logrus.Fields{"resolving": step.Resolving, "step": step.Resource.Name})
-	log.WithField("ref", ref).Debug("step is a reference to configmap")
+	log.WithField("ref", ref).Info("WWWWWW step is a reference to configmap")
 
 	usteps, err := r.unpackedStepsForBundle(step.Resolving, ref)
 	if err != nil {
 		return "", err
 	}
 
-	log.Debugf("checking cache for unpacked step")
+	log.Info("checking cache for unpacked step")
+	log.WithField("manifest", manifest).Info("WWWWWW current manifest")
 	// need to find the real manifest from the unpacked steps
 	for _, u := range usteps {
+		log.Info("WWWWWW u.Name", u.Name)
+		log.Info("WWWWWW step.Resource.Name", step.Resource.Name)
+		log.Info("WWWWWW u.Kind", u.Kind)
+		log.Info("WWWWWW step.Resource.Kind", step.Resource.Kind)
+		log.Info("WWWWWW u.Version", u.Version)
+		log.Info("WWWWWW step.Resource.Version", step.Resource.Version)
+		log.Info("WWWWWW u.Group", u.Group)
+		log.Info("WWWWWW step.Resource.Group", step.Resource.Group)
 		if u.Name == step.Resource.Name &&
 			u.Kind == step.Resource.Kind &&
 			u.Version == step.Resource.Version &&
 			u.Group == step.Resource.Group {
 			manifest = u.Manifest
-			log.WithField("manifest", manifest).Debug("step replaced with unpacked value")
+			log.WithField("manifest", manifest).Info("WWWWWW step replaced with unpacked value")
 			break
 		}
 	}
@@ -75,8 +84,10 @@ func (r *manifestResolver) ManifestForStep(step *v1alpha1.Step) (string, error) 
 func (r *manifestResolver) unpackedStepsForBundle(bundleName string, ref *UnpackedBundleReference) ([]v1alpha1.StepResource, error) {
 	usteps, ok := r.unpackedSteps[bundleName]
 	if ok {
+		r.logger.Info("WWWWWW bundleName", bundleName)
 		return usteps, nil
 	}
+	r.logger.Info("WWWWWW new bundleName: ", bundleName)
 	cm, err := r.configMapLister.ConfigMaps(ref.Namespace).Get(ref.Name)
 	if err != nil {
 		return nil, errorwrap.Wrapf(err, "error finding unpacked bundle configmap for ref %v", *ref)
