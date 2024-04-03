@@ -10,7 +10,7 @@ require (
 	github.com/go-logr/logr v1.4.1
 	github.com/golang/mock v1.6.0
 	github.com/googleapis/gnostic v0.5.5
-	github.com/grpc-ecosystem/grpc-health-probe v0.4.24
+	github.com/grpc-ecosystem/grpc-health-probe v0.4.25
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.8.1
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.17.3
@@ -197,7 +197,7 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spiffe/go-spiffe/v2 v2.1.6 // indirect
+	github.com/spiffe/go-spiffe/v2 v2.1.7 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
