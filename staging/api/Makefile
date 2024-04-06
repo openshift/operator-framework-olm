@@ -82,7 +82,7 @@ TEST_PKGS:=$(shell go list ./...)
 test-unit: ## Run the unit tests
 	$(Q)go test -count=1 -short ${TEST_PKGS}
 
-verify: manifests generate format
+verify: manifests generate format tidy
 	git diff --exit-code
 
 ################
@@ -101,7 +101,7 @@ CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 YQ ?= $(LOCALBIN)/yq
 
 ## Tool Versions
-CONTROLLER_TOOLS_VERSION ?= v0.9.0
+CONTROLLER_TOOLS_VERSION ?= v0.14.0
 YQ_VERSION ?= v4.28.1
 
 .PHONY: controller-gen
