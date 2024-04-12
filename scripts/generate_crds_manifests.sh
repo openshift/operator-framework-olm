@@ -168,7 +168,7 @@ spec:
               memory: 20Mi
               cpu: 10m
           terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
+          terminationMessagePolicy: FallbackToLogsOnError
           volumeMounts:
           - mountPath: /etc/tls/private
             name: package-server-manager-serving-cert
@@ -416,6 +416,7 @@ spec:
               requests:
                 cpu: 10m
                 memory: 80Mi
+            terminationMessagePolicy: FallbackToLogsOnError
           volumes:
           - name: config-volume
             configMap:
