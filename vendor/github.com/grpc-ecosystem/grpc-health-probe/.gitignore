@@ -1,3 +1,5 @@
+.vscode
+
 # ignore "go build" output
 grpc_health_probe
 grpc-health-probe
@@ -15,3 +17,6 @@ out/
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+# goreleaser artefacts
+dist/
