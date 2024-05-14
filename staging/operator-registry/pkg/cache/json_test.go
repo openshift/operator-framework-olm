@@ -8,14 +8,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/operator-framework/operator-registry/pkg/lib/log"
 )
 
 func TestJSON_StableDigest(t *testing.T) {
 	cacheDir := t.TempDir()
-	c := NewJSON(cacheDir)
+	c := &cache{backend: newJSONBackend(cacheDir), log: log.Null()}
 	require.NoError(t, c.Build(context.Background(), validFS))
 
-	actualDigest, err := c.existingDigest()
+	actualDigest, err := c.backend.GetDigest(context.Background())
 	require.NoError(t, err)
 
 	// NOTE: The entire purpose of this test is to ensure that we don't change the cache
@@ -94,7 +96,7 @@ func TestJSON_CheckIntegrity(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			cacheDir := t.TempDir()
-			c := NewJSON(cacheDir)
+			c := &cache{backend: newJSONBackend(cacheDir), log: log.Null()}
 
 			if tc.build {
 				require.NoError(t, c.Build(context.Background(), tc.fbcFS))
@@ -102,7 +104,7 @@ func TestJSON_CheckIntegrity(t *testing.T) {
 			if tc.mod != nil {
 				require.NoError(t, tc.mod(&tc, cacheDir))
 			}
-			tc.expect(t, c.CheckIntegrity(tc.fbcFS))
+			tc.expect(t, c.CheckIntegrity(context.Background(), tc.fbcFS))
 		})
 	}
 }
