@@ -826,7 +826,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/vers
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
 # github.com/operator-framework/operator-registry v1.43.1 => ./staging/operator-registry
-## explicit; go 1.22
+## explicit; go 1.22.0
 github.com/operator-framework/operator-registry/alpha/action
 github.com/operator-framework/operator-registry/alpha/declcfg
 github.com/operator-framework/operator-registry/alpha/model
@@ -1728,8 +1728,8 @@ k8s.io/apiserver/plugin/pkg/audit/webhook
 k8s.io/apiserver/plugin/pkg/authenticator/token/webhook
 k8s.io/apiserver/plugin/pkg/authorizer/webhook
 k8s.io/apiserver/plugin/pkg/authorizer/webhook/metrics
-# k8s.io/cli-runtime v0.29.3
-## explicit; go 1.21
+# k8s.io/cli-runtime v0.30.0
+## explicit; go 1.22.0
 k8s.io/cli-runtime/pkg/genericclioptions
 k8s.io/cli-runtime/pkg/genericiooptions
 k8s.io/cli-runtime/pkg/printers
@@ -2203,8 +2203,8 @@ k8s.io/kube-openapi/pkg/validation/spec
 k8s.io/kube-openapi/pkg/validation/strfmt
 k8s.io/kube-openapi/pkg/validation/strfmt/bson
 k8s.io/kube-openapi/pkg/validation/validate
-# k8s.io/kubectl v0.29.3
-## explicit; go 1.21
+# k8s.io/kubectl v0.30.0
+## explicit; go 1.22.0
 k8s.io/kubectl/pkg/cmd/get
 k8s.io/kubectl/pkg/cmd/util
 k8s.io/kubectl/pkg/rawhttp
@@ -2222,7 +2222,6 @@ k8s.io/utils/buffer
 k8s.io/utils/clock
 k8s.io/utils/clock/testing
 k8s.io/utils/exec
-k8s.io/utils/integer
 k8s.io/utils/internal/third_party/forked/golang/golang-lru
 k8s.io/utils/internal/third_party/forked/golang/net
 k8s.io/utils/lru
