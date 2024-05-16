@@ -523,8 +523,8 @@ func (co *SubResourceCreateOptions) ApplyOptions(opts []SubResourceCreateOption)
 	return co
 }
 
-// ApplyToSubResourceCreate applies the the configuration on the given create options.
-func (co *SubResourceCreateOptions) ApplyToSubResourceCreate(o *SubResourceCreateOptions) {
+// ApplyToSubresourceCreate applies the the configuration on the given create options.
+func (co *SubResourceCreateOptions) ApplyToSubresourceCreate(o *SubResourceCreateOptions) {
 	co.CreateOptions.ApplyToCreate(&co.CreateOptions)
 }
 
