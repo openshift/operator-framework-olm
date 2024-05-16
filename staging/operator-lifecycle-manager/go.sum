@@ -490,8 +490,6 @@ github.com/openshift/client-go v0.0.0-20221019143426-16aed247da5c h1:CV76yFOTXmq
 github.com/openshift/client-go v0.0.0-20221019143426-16aed247da5c/go.mod h1:lFMO8mLHXWFzSdYvGNo8ivF9SfF6zInA8ZGw4phRnUE=
 github.com/operator-framework/api v0.23.0 h1:kHymOwcHBpBVujT49SKOCd4EVG7Odwj4wl3NbOR2LLA=
 github.com/operator-framework/api v0.23.0/go.mod h1:oKcFOz+Xc1UhMi2Pzcp6qsO7wjS4r+yP7EQprQBXrfM=
-github.com/operator-framework/operator-registry v1.41.0 h1:MFLrMIce1biq6Gd0gsDnjpvYMXwDjoM7I5YdtvUYOLw=
-github.com/operator-framework/operator-registry v1.41.0/go.mod h1:hvOar2ikD/BhyG+I6gGHe85cdqup7NV5b8LkP18H7wU=
 github.com/otiai10/copy v1.14.0 h1:dCI/t1iTdYGtkvCuBG2BgR6KZa83PTclw4U5n2wAllU=
 github.com/otiai10/copy v1.14.0/go.mod h1:ECfuL02W+/FkTWZWgQqXPWZgW9oeKCSQ5qVfSc4qc4w=
 github.com/otiai10/mint v1.5.1 h1:XaPLeE+9vGbuyEHem1JNk3bYc7KKqyI/na0/mLd/Kks=
