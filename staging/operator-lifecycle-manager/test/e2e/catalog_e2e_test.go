@@ -1453,7 +1453,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 						CatalogSource:          catalogSourceName,
 						CatalogSourceNamespace: generatedNamespace.GetName(),
 						Channel:                "stable",
-						Package:                "packageA",
+						Package:                "test-package",
 					},
 				}
 				Expect(c.Create(context.Background(), subscription)).To(BeNil())
