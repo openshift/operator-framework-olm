@@ -25,14 +25,14 @@ require (
 	google.golang.org/protobuf v1.34.1
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.14.4
-	k8s.io/api v0.29.3
-	k8s.io/apimachinery v0.29.3
-	k8s.io/client-go v0.29.3
-	k8s.io/code-generator v0.29.3
-	k8s.io/kube-openapi v0.0.0-20240221221325-2ac9dc51f3f1
+	k8s.io/api v0.30.0
+	k8s.io/apimachinery v0.30.0
+	k8s.io/client-go v0.30.0
+	k8s.io/code-generator v0.30.0
+	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
-	sigs.k8s.io/controller-runtime v0.17.3
-	sigs.k8s.io/controller-tools v0.8.0
+	sigs.k8s.io/controller-runtime v0.18.0
+	sigs.k8s.io/controller-tools v0.15.0
 )
 
 // pin to v1.18.0 until k8s.io/component-base updates its prometheus dependencies
@@ -94,9 +94,9 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.2 // indirect
 	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
-	github.com/evanphx/json-patch/v5 v5.8.0 // indirect
+	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
-	github.com/fatih/color v1.15.0 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fvbommel/sortorder v1.1.0 // indirect
@@ -113,7 +113,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.4 // indirect
 	github.com/go-openapi/swag v0.22.10 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/gobuffalo/flect v0.2.3 // indirect
+	github.com/gobuffalo/flect v1.0.2 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-yaml v1.11.0 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
@@ -122,7 +122,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
-	github.com/google/cel-go v0.17.7 // indirect
+	github.com/google/cel-go v0.17.8 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
@@ -248,14 +248,14 @@ require (
 	gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.29.3 // indirect
-	k8s.io/apiserver v0.29.3 // indirect
+	k8s.io/apiextensions-apiserver v0.30.0 // indirect
+	k8s.io/apiserver v0.30.0 // indirect
 	k8s.io/cli-runtime v0.29.3 // indirect
-	k8s.io/component-base v0.29.3 // indirect
-	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
+	k8s.io/component-base v0.30.0 // indirect
+	k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
-	k8s.io/kms v0.29.3 // indirect
+	k8s.io/kms v0.30.0 // indirect
 	k8s.io/kube-aggregator v0.29.3 // indirect
 	k8s.io/kubectl v0.29.3 // indirect
 	oras.land/oras-go v1.2.5 // indirect
