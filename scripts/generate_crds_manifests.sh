@@ -35,7 +35,7 @@ fi
 
 cp -R "${ROOT_DIR}/staging/operator-lifecycle-manager/deploy/chart/" "${chartdir}"
 cp "${ROOT_DIR}"/values*.yaml "${tmpdir}"
-ln -snf $(realpath --relative-to ${tmpdir} ${ROOT_DIR}/staging/api/pkg/operators/) ${crdsrcdir}
+cp -R "${ROOT_DIR}/staging/api/pkg/operators/" ${crdsrcdir}
 rm -rf ./manifests/* ${crddir}/*
 
 trap "rm -rf ${tmpdir}" EXIT
