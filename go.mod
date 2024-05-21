@@ -256,7 +256,7 @@ require (
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kms v0.30.1 // indirect
-	k8s.io/kube-aggregator v0.29.3 // indirect
+	k8s.io/kube-aggregator v0.30.0 // indirect
 	k8s.io/kubectl v0.29.3 // indirect
 	oras.land/oras-go v1.2.5 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.29.0 // indirect
