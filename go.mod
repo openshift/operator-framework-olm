@@ -96,7 +96,7 @@ require (
 	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
-	github.com/fatih/color v1.16.0 // indirect
+	github.com/fatih/color v1.17.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fvbommel/sortorder v1.1.0 // indirect
@@ -149,7 +149,7 @@ require (
 	github.com/joelanford/ignore v0.0.0-20210607151042-0d25dc18b62d // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kisielk/errcheck v1.5.0 // indirect
+	github.com/kisielk/errcheck v1.7.0 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
@@ -235,7 +235,7 @@ require (
 	golang.org/x/term v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.20.0 // indirect
+	golang.org/x/tools v0.21.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
