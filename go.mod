@@ -35,6 +35,19 @@ require (
 	sigs.k8s.io/controller-tools v0.15.0
 )
 
+// pin to v1.18.0 until k8s.io/component-base updates its prometheus dependencies
+// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/3283
+replace (
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0
+	github.com/prometheus/common => github.com/prometheus/common v0.47.0
+)
+
+// latest gRPC library causes changes in the way the CatalogSource connection status behaves
+// previously it would reach READY - but now seems to stay on IDLE unless there is data going down the pipe
+// this is breaking many CatalogSource related tests
+// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/3284
+replace google.golang.org/grpc => google.golang.org/grpc v1.63.2
+
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
@@ -103,7 +116,7 @@ require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gobuffalo/flect v1.0.2 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/goccy/go-yaml v1.8.1 // indirect
+	github.com/goccy/go-yaml v1.11.0 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-migrate/migrate/v4 v4.17.1 // indirect
@@ -225,7 +238,7 @@ require (
 	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.20.0 // indirect
-	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
+	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
