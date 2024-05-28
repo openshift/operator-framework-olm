@@ -8,11 +8,126 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.3.0/0.28.0] - 2021-12-10
+
+### ⚠️ Notice ⚠️
+
+We have updated the project minimum supported Go version to 1.16
+
+### Changed
+
+- `otelhttptrace.NewClientTrace` now uses `TracerProvider` from the parent context if one exists and none was set with `WithTracerProvider` (#874)
+
+### Fixed
+
+- The `"go.opentelemetry.io/contrib/detector/aws/ecs".Detector` no longer errors if not running in ECS. (#1428)
+- `go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux`
+  does not require instrumented HTTP handlers to call `Write` nor
+  `WriteHeader` anymore. (#1443)
+
+## [1.2.0/0.27.0] - 2021-11-15
+
+### Changed
+
+- Update dependency on the `go.opentelemetry.io/otel` project to `v1.2.0`.
+- `go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-lambda-go/otellambda/xrayconfig`
+  updated to ensure access to the `TracerProvider`.
+  - A `NewTracerProvider()` function is available to construct a recommended
+    `TracerProvider` configuration.
+  - `AllRecommendedOptions()` has been renamed to `WithRecommendedOptions()`
+    and takes a `TracerProvider` as an argument.
+  - `EventToCarrier()` and `Propagator()` are now `WithEventToCarrier()` and
+    `WithPropagator()` to reflect that they return `Option` implementations.
+
+## [1.1.1/0.26.1] - 2021-11-04
+
+### Changed
+
+- The `Transport`, `Handler`, and HTTP client convenience wrappers in the `go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp` package now use the `TracerProvider` from the parent context if one exists and none was explicitly set when configuring the instrumentation. (#873)
+- Semantic conventions now use `go.opentelemetry.io/otel/semconv/v1.7.0"`. (#1385)
+
+## [1.1.0/0.26.0] - 2021-10-28
+
+Update dependency on the `go.opentelemetry.io/otel` project to `v1.1.0`.
+
+### Added
+
+- Add instrumentation for the `github.com/aws/aws-lambda-go` package. (#983)
+- Add resource detector for AWS Lambda. (#983)
+- Add `WithTracerProvider` option for `otelhttptrace.NewClientTrace`. (#1128)
+- Add optional AWS X-Ray configuration module for AWS Lambda Instrumentation. (#984)
+
+### Fixed
+
+- The `go.opentelemetry.io/contrib/propagators/ot` propagator returns the words `true` or `false` for the `ot-tracer-sampled` header instead of numerical `0` and `1`. (#1358)
+
+## [1.0.0/0.25.0] - 2021-10-06
+
+- Resource detectors and propagators (with the exception of `go.
+  opentelemetry.io/contrib/propagators/opencensus`) are now stable and
+  released at v1.0.0.
+- Update dependency on the `go.opentelemetry.io/otel` project to `v1.0.1`.
+- Update dependency on `go.opentelemetry.io/otel/metric` to `v0.24.0`.
+
+## [0.24.0] - 2021-09-21
+
+- Update dependency on the `go.opentelemetry.io/otel` project to `v1.0.0`.
+
+## [0.23.0] - 2021-09-08
+
+### Added
+
+- Add `WithoutSubSpans`, `WithRedactedHeaders`, `WithoutHeaders`, and `WithInsecureHeaders` options for `otelhttptrace.NewClientTrace`. (#879)
+
+### Changed
+
+- Split `go.opentelemetry.io/contrib/propagators` module into `b3`, `jaeger`, `ot` modules. (#985)
+- `otelmongodb` span attributes, name and span status now conform to specification. (#769)
+- Migrated EC2 resource detector support from root module `go.opentelemetry.io/contrib/detectors/aws` to a separate EC2 resource detector module `go.opentelemetry.io/contrib/detectors/aws/ec2` (#1017)
+- Add `cloud.provider` and `cloud.platform` to AWS detectors. (#1043)
+- `otelhttptrace.NewClientTrace` now redacts known sensitive headers by default. (#879)
+
+### Fixed
+
+- Fix span not marked as error in `otelhttp.Transport` when `RoundTrip` fails with an error. (#950)
+
+## [0.22.0] - 2021-07-26
+
+### Added
+
+- Add the `zpages` span processor. (#894)
+
+### Changed
+
+- The `b3.B3` type has been removed.
+  `b3.New()` and `b3.WithInjectEncoding(encoding)` are added to replace it. (#868)
+
+### Fixed
+
+- Fix deadlocks and race conditions in `otelsarama.WrapAsyncProducer`.
+  The `messaging.message_id` and `messaging.kafka.partition` attributes are now not set if a message was not processed. (#754) (#755) (#881)
+- Fix `otelsarama.WrapAsyncProducer` so that the messages from the `Errors` channel contain the original `Metadata`. (#754)
+
+## [0.21.0] - 2021-06-18
+
+### Fixed
+
+- Dockerfile based examples for `otelgin` and `otelmacaron`. (#767)
+
+### Changed
+
+- Supported minimum version of Go bumped from 1.14 to 1.15. (#787)
+- EKS Resource Detector now use the Kubernetes Go client to obtain the ConfigMap. (#813)
+
+### Removed
+
+- Remove service name from `otelmongodb` configuration and span attributes. (#763)
+
 ## [0.20.0] - 2021-04-23
 
 ### Changed
 
-- The `go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo` instrumentation now accepts a `WithCommandAttributeDisabled`, 
+- The `go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo` instrumentation now accepts a `WithCommandAttributeDisabled`,
    so the caller can specify whether to opt-out of tracing the mongo command. (#712)
 - Upgrade to v0.20.0 of `go.opentelemetry.io/otel`. (#758)
 - The B3 and Jaeger propagators now store their debug or deferred state in the context.Context instead of the SpanContext. (#758)
@@ -22,6 +137,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 
 - Upgrade to v0.19.0 of `go.opentelemetry.io/otel`.
+- Fix Span names created in HTTP Instrumentation package to conform with guidelines. (#757)
 
 ## [0.18.0] - 2021-03-04
 
@@ -120,10 +236,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [0.12.0] - 2020-09-25
 
-### Changed
-
-- Replace `WithTracer` with `WithTracerProvider` in the `go.opentelemetry.io/contrib/instrumentation/gopkg.in/macaron.v1/otelmacaron` instrumentation. (#374)
-
 ### Added
 
 - Benchmark tests for the gRPC instrumentation. (#296)
@@ -154,6 +266,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - `github.com/astaxie/beego` -> `github.com/astaxie/beego/otelbeego`
   - `gopkg.in/macaron.v1` -> `gopkg.in/macaron.v1/otelmacaron`
 - Rename `OTelBeegoHandler` to `Handler` in the `go.opentelemetry.io/contrib/instrumentation/github.com/astaxie/beego/otelbeego` package. (#359)
+- Replace `WithTracer` with `WithTracerProvider` in the `go.opentelemetry.io/contrib/instrumentation/gopkg.in/macaron.v1/otelmacaron` instrumentation. (#374)
 
 ## [0.11.0] - 2020-08-25
 
@@ -299,7 +412,16 @@ First official tagged release of `contrib` repository.
 - Prefix support for dogstatsd (#34)
 - Update Go Runtime package to use batch observer (#44)
 
-[Unreleased]: https://github.com/open-telemetry/opentelemetry-go-contrib/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/open-telemetry/opentelemetry-go-contrib/compare/v1.3.0...HEAD
+[1.3.0/0.28.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v1.3.0
+[1.2.0/0.27.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v1.2.0
+[1.1.1/0.26.1]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v1.1.1
+[1.1.0/0.26.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v1.1.0
+[1.0.0/0.25.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v1.0.0
+[0.24.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v0.24.0
+[0.23.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v0.23.0
+[0.22.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v0.22.0
+[0.21.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v0.21.0
 [0.20.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v0.20.0
 [0.19.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v0.19.0
 [0.18.0]: https://github.com/open-telemetry/opentelemetry-go-contrib/releases/tag/v0.18.0
