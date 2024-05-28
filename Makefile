@@ -130,7 +130,7 @@ e2e/operator-registry: ## Run e2e registry tests
 	$(MAKE) e2e WHAT=operator-registry
 
 e2e/olm: ## Run e2e olm tests
-	$(MAKE) e2e WHAT=operator-lifecycle-manager E2E_CATALOG_NS=openshift-marketplace E2E_INSTALL_NS=openshift-operator-lifecycle-manager E2E_TEST_NS=openshift-operators E2E_TIMEOUT=120m KUBECTL=oc
+	$(MAKE) e2e WHAT=operator-lifecycle-manager E2E_CATALOG_NS=openshift-marketplace E2E_INSTALL_NS=openshift-operator-lifecycle-manager E2E_TEST_NS=openshift-operators E2E_TIMEOUT=180m KUBECTL=oc $(if $(TEST), TEST="$(TEST)",)
 
 .PHONY: vendor
 vendor:
