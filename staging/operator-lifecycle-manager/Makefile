@@ -136,7 +136,8 @@ E2E_TIMEOUT ?= 90m
 E2E_TEST_NS ?= operators
 E2E_INSTALL_NS ?= operator-lifecycle-manager
 E2E_CATALOG_NS ?= $(E2E_INSTALL_NS)
-GINKGO_OPTS += -v -randomize-suites -race -trace --show-node-events
+E2E_FLAKE_ATTEMPTS ?= 0
+GINKGO_OPTS += -v -randomize-suites -race -trace --show-node-events --flake-attempts=$(E2E_FLAKE_ATTEMPTS) $(if $(E2E_SEED),-seed '$(E2E_SEED)') $(if $(TEST),-focus '$(TEST)',) $(if $(SKIP), -skip '$(SKIP)')
 e2e:
 	$(GINKGO) -timeout $(E2E_TIMEOUT) $(GINKGO_OPTS) ./test/e2e -- -namespace=$(E2E_TEST_NS) -olmNamespace=$(E2E_INSTALL_NS) -catalogNamespace=$(E2E_CATALOG_NS) $(E2E_OPTS)
 
@@ -188,10 +189,6 @@ e2e-bare: setup-bare
 e2e-local-docker:
 	. ./scripts/build_local.sh
 	. ./scripts/run_e2e_docker.sh $(TEST)
-
-vendor:
-	go mod tidy
-	go mod vendor
 
 container:
 	docker build -t $(IMAGE_REPO):$(IMAGE_TAG) .
