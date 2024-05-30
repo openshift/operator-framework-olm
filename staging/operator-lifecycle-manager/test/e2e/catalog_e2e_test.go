@@ -823,7 +823,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 
 		By("Create an image based catalog source from public Quay image using a unique tag as identifier")
 		var registryURL string
-		var registryAuth string
+		var registryAuthSecretName string
 		if local {
 			By("Creating a local registry to use")
 			registryURL, err = createDockerRegistry(c, generatedNamespace.GetName())
@@ -839,7 +839,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		} else {
 			registryURL = fmt.Sprintf("%s/%s", openshiftregistryFQDN, generatedNamespace.GetName())
 			By("Using the OpenShift registry at " + registryURL)
-			registryAuth, err = openshiftRegistryAuth(c, generatedNamespace.GetName())
+			registryAuthSecretName, err = getRegistryAuthSecretName(c, generatedNamespace.GetName())
 			Expect(err).NotTo(HaveOccurred(), "error getting openshift registry authentication: %s", err)
 		}
 
@@ -856,8 +856,8 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 			Expect(err).NotTo(HaveOccurred(), "error copying old registry file: %s", err)
 		} else {
 			By("creating a skopoeo Pod to do the copying")
-			skopeoArgs := skopeoCopyCmd(testImage, tag, catsrcImage, "old", registryAuth)
-			err = createSkopeoPod(c, skopeoArgs, generatedNamespace.GetName())
+			skopeoArgs := skopeoCopyCmd(testImage, tag, catsrcImage, "old", registryAuthSecretName)
+			err = createSkopeoPod(c, skopeoArgs, generatedNamespace.GetName(), registryAuthSecretName)
 			Expect(err).NotTo(HaveOccurred(), "error creating skopeo pod: %s", err)
 
 			By("waiting for the skopeo pod to exit successfully")
@@ -951,8 +951,8 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 			Expect(err).NotTo(HaveOccurred(), "error copying new registry file: %s", err)
 		} else {
 			By("creating a skopoeo Pod to do the copying")
-			skopeoArgs := skopeoCopyCmd(testImage, tag, catsrcImage, "new", registryAuth)
-			err = createSkopeoPod(c, skopeoArgs, generatedNamespace.GetName())
+			skopeoArgs := skopeoCopyCmd(testImage, tag, catsrcImage, "new", registryAuthSecretName)
+			err = createSkopeoPod(c, skopeoArgs, generatedNamespace.GetName(), registryAuthSecretName)
 			Expect(err).NotTo(HaveOccurred(), "error creating skopeo pod: %s", err)
 
 			By("waiting for the skopeo pod to exit successfully")
