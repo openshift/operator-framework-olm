@@ -2609,14 +2609,23 @@ var _ = Describe("Subscription", func() {
 					),
 				)
 
+				By("waiting for the subscription to have v0.3.0 installed without a bundle deprecated condition")
+				sub, err = fetchSubscription(crc, generatedNamespace.GetName(), subName,
+					subscriptionHasCondition(
+						operatorsv1alpha1.SubscriptionBundleDeprecated,
+						corev1.ConditionUnknown,
+						"",
+						"",
+					),
+				)
+				Expect(err).Should(BeNil())
+
 				By("checking for the deprecated conditions")
 				By(`Operator is deprecated at only Package and Channel levels`)
 				packageCondition := sub.Status.GetCondition(operatorsv1alpha1.SubscriptionPackageDeprecated)
 				Expect(packageCondition.Status).To(Equal(corev1.ConditionTrue))
 				channelCondition := sub.Status.GetCondition(operatorsv1alpha1.SubscriptionChannelDeprecated)
 				Expect(channelCondition.Status).To(Equal(corev1.ConditionTrue))
-				bundleCondition = sub.Status.GetCondition(operatorsv1alpha1.SubscriptionBundleDeprecated)
-				Expect(bundleCondition.Status).To(Equal(corev1.ConditionUnknown))
 
 				By("verifying that a roll-up condition is present not containing bundle deprecation condition")
 				By(`Roll-up condition should be present and contain deprecation messages from Package and Channel levels`)
