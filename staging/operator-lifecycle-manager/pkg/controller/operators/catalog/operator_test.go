@@ -13,6 +13,10 @@ import (
 	"testing/quick"
 	"time"
 
+	"k8s.io/utils/ptr"
+
+	controllerclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 
 	"github.com/sirupsen/logrus"
@@ -59,7 +63,6 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/fakes"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clientfake"
-	controllerclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -251,8 +254,10 @@ func TestSyncInstallPlanUnhappy(t *testing.T) {
 			testName:      "HasSteps/NoOperatorGroup",
 			err:           fmt.Errorf("attenuated service account query failed - no operator group found that is managing this namespace"),
 			expectedPhase: v1alpha1.InstallPlanPhaseInstalling,
-			expectedCondition: &v1alpha1.InstallPlanCondition{Type: v1alpha1.InstallPlanInstalled, Status: corev1.ConditionFalse, Reason: v1alpha1.InstallPlanReasonInstallCheckFailed,
-				Message: "no operator group found that is managing this namespace"},
+			expectedCondition: &v1alpha1.InstallPlanCondition{
+				Type: v1alpha1.InstallPlanInstalled, Status: corev1.ConditionFalse, Reason: v1alpha1.InstallPlanReasonInstallCheckFailed,
+				Message: "no operator group found that is managing this namespace",
+			},
 			in: ipWithSteps,
 		},
 		{
@@ -261,8 +266,10 @@ func TestSyncInstallPlanUnhappy(t *testing.T) {
 			err:           fmt.Errorf("attenuated service account query failed - more than one operator group(s) are managing this namespace count=2"),
 			expectedPhase: v1alpha1.InstallPlanPhaseInstalling,
 			in:            ipWithSteps,
-			expectedCondition: &v1alpha1.InstallPlanCondition{Type: v1alpha1.InstallPlanInstalled, Status: corev1.ConditionFalse, Reason: v1alpha1.InstallPlanReasonInstallCheckFailed,
-				Message: "more than one operator group(s) are managing this namespace count=2"},
+			expectedCondition: &v1alpha1.InstallPlanCondition{
+				Type: v1alpha1.InstallPlanInstalled, Status: corev1.ConditionFalse, Reason: v1alpha1.InstallPlanReasonInstallCheckFailed,
+				Message: "more than one operator group(s) are managing this namespace count=2",
+			},
 			clientObjs: []runtime.Object{
 				operatorGroup("og1", "sa", namespace,
 					&corev1.ObjectReference{
@@ -283,8 +290,10 @@ func TestSyncInstallPlanUnhappy(t *testing.T) {
 			testName:      "HasSteps/NonExistentServiceAccount",
 			err:           fmt.Errorf("attenuated service account query failed - please make sure the service account exists. sa=sa1 operatorgroup=ns/og"),
 			expectedPhase: v1alpha1.InstallPlanPhaseInstalling,
-			expectedCondition: &v1alpha1.InstallPlanCondition{Type: v1alpha1.InstallPlanInstalled, Status: corev1.ConditionFalse, Reason: v1alpha1.InstallPlanReasonInstallCheckFailed,
-				Message: "please make sure the service account exists. sa=sa1 operatorgroup=ns/og"},
+			expectedCondition: &v1alpha1.InstallPlanCondition{
+				Type: v1alpha1.InstallPlanInstalled, Status: corev1.ConditionFalse, Reason: v1alpha1.InstallPlanReasonInstallCheckFailed,
+				Message: "please make sure the service account exists. sa=sa1 operatorgroup=ns/og",
+			},
 			in: ipWithSteps,
 			clientObjs: []runtime.Object{
 				operatorGroup("og", "sa1", namespace, nil),
@@ -838,6 +847,160 @@ func withStatus(catalogSource v1alpha1.CatalogSource, status v1alpha1.CatalogSou
 	return copy
 }
 
+func TestSyncCatalogSourcesSecurityPolicy(t *testing.T) {
+	assertLegacySecurityPolicy := func(t *testing.T, pod *corev1.Pod) {
+		require.Nil(t, pod.Spec.SecurityContext)
+		require.Equal(t, &corev1.SecurityContext{
+			ReadOnlyRootFilesystem: ptr.To(false),
+		}, pod.Spec.Containers[0].SecurityContext)
+	}
+
+	assertRestrictedPolicy := func(t *testing.T, pod *corev1.Pod) {
+		require.Equal(t, &corev1.PodSecurityContext{
+			SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+			RunAsNonRoot:   ptr.To(true),
+			RunAsUser:      ptr.To(int64(1001)),
+		}, pod.Spec.SecurityContext)
+		require.Equal(t, &corev1.SecurityContext{
+			ReadOnlyRootFilesystem:   ptr.To(false),
+			AllowPrivilegeEscalation: ptr.To(false),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		}, pod.Spec.Containers[0].SecurityContext)
+	}
+
+	clockFake := utilclocktesting.NewFakeClock(time.Date(2018, time.January, 26, 20, 40, 0, 0, time.UTC))
+	tests := []struct {
+		testName      string
+		namespace     *corev1.Namespace
+		catalogSource *v1alpha1.CatalogSource
+		check         func(*testing.T, *corev1.Pod)
+	}{
+		{
+			testName: "UnlabeledNamespace/NoUserPreference/LegacySecurityPolicy",
+			namespace: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cool-namespace",
+				},
+			},
+			catalogSource: &v1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cool-catalog",
+					Namespace: "cool-namespace",
+					UID:       types.UID("catalog-uid"),
+				},
+				Spec: v1alpha1.CatalogSourceSpec{
+					Image:      "catalog-image",
+					SourceType: v1alpha1.SourceTypeGrpc,
+				},
+			},
+			check: assertLegacySecurityPolicy,
+		}, {
+			testName: "UnlabeledNamespace/UserPreferenceForRestricted/RestrictedSecurityPolicy",
+			namespace: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cool-namespace",
+				},
+			},
+			catalogSource: &v1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cool-catalog",
+					Namespace: "cool-namespace",
+					UID:       types.UID("catalog-uid"),
+				},
+				Spec: v1alpha1.CatalogSourceSpec{
+					Image:      "catalog-image",
+					SourceType: v1alpha1.SourceTypeGrpc,
+					GrpcPodConfig: &v1alpha1.GrpcPodConfig{
+						SecurityContextConfig: v1alpha1.Restricted,
+					},
+				},
+			},
+			check: assertRestrictedPolicy,
+		}, {
+			testName: "LabeledNamespace/NoUserPreference/RestrictedSecurityPolicy",
+			namespace: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cool-namespace",
+					Labels: map[string]string{
+						// restricted is the default psa policy
+						"pod-security.kubernetes.io/enforce": "restricted",
+					},
+				},
+			},
+			catalogSource: &v1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cool-catalog",
+					Namespace: "cool-namespace",
+					UID:       types.UID("catalog-uid"),
+				},
+				Spec: v1alpha1.CatalogSourceSpec{
+					Image:      "catalog-image",
+					SourceType: v1alpha1.SourceTypeGrpc,
+				},
+			},
+			check: assertRestrictedPolicy,
+		}, {
+			testName: "LabeledNamespace/UserPreferenceForLegacy/LegacySecurityPolicy",
+			namespace: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cool-namespace",
+				},
+			},
+			catalogSource: &v1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cool-catalog",
+					Namespace: "cool-namespace",
+					UID:       types.UID("catalog-uid"),
+				},
+				Spec: v1alpha1.CatalogSourceSpec{
+					Image:      "catalog-image",
+					SourceType: v1alpha1.SourceTypeGrpc,
+					GrpcPodConfig: &v1alpha1.GrpcPodConfig{
+						SecurityContextConfig: v1alpha1.Legacy,
+					},
+				},
+			},
+			check: assertLegacySecurityPolicy,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			// Create existing objects
+			clientObjs := []runtime.Object{tt.catalogSource}
+
+			// Create test operator
+			ctx, cancel := context.WithCancel(context.TODO())
+			defer cancel()
+
+			op, err := NewFakeOperator(
+				ctx,
+				tt.namespace.GetName(),
+				[]string{tt.namespace.GetName()},
+				withClock(clockFake),
+				withClientObjs(clientObjs...),
+			)
+			require.NoError(t, err)
+
+			// Because NewFakeOperator creates the namespace, we need to update the namespace to match the test case
+			// before running the sync function
+			_, err = op.opClient.KubernetesInterface().CoreV1().Namespaces().Update(context.TODO(), tt.namespace, metav1.UpdateOptions{})
+			require.NoError(t, err)
+
+			// Run sync
+			err = op.syncCatalogSources(tt.catalogSource)
+			require.NoError(t, err)
+
+			pods, err := op.opClient.KubernetesInterface().CoreV1().Pods(tt.catalogSource.Namespace).List(context.TODO(), metav1.ListOptions{})
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+
+			tt.check(t, &pods.Items[0])
+		})
+	}
+}
+
 func TestSyncCatalogSources(t *testing.T) {
 	clockFake := utilclocktesting.NewFakeClock(time.Date(2018, time.January, 26, 20, 40, 0, 0, time.UTC))
 	now := metav1.NewTime(clockFake.Now())
@@ -1165,7 +1328,7 @@ func TestSyncCatalogSources(t *testing.T) {
 			if tt.expectedStatus != nil {
 				if tt.expectedStatus.GRPCConnectionState != nil {
 					updated.Status.GRPCConnectionState.LastConnectTime = now
-					// Ignore LastObservedState difference if an expected LastObservedState is no provided
+					// Ignore LastObservedState difference if an expected LastObservedState is not provided
 					if tt.expectedStatus.GRPCConnectionState.LastObservedState == "" {
 						updated.Status.GRPCConnectionState.LastObservedState = ""
 					}
@@ -1623,7 +1786,7 @@ func TestValidateV1Beta1CRDCompatibility(t *testing.T) {
 			},
 			oldCRD: unversionedCRDForV1beta1File("testdata/hivebug/crd.yaml"),
 			newCRD: unversionedCRDForV1beta1File("testdata/hivebug/crd.yaml"),
-			want:   fmt.Errorf("error validating hive.openshift.io/v1, Kind=MachinePool \"test\": updated validation is too restrictive: [[].spec.clusterDeploymentRef: Invalid value: \"null\": spec.clusterDeploymentRef in body must be of type object: \"null\", [].spec.name: Required value, [].spec.platform: Required value]"),
+			want:   validationError{fmt.Errorf("error validating hive.openshift.io/v1, Kind=MachinePool \"test\": updated validation is too restrictive: [[].spec.clusterDeploymentRef: Invalid value: \"null\": spec.clusterDeploymentRef in body must be of type object: \"null\", [].spec.name: Required value, [].spec.platform: Required value]")},
 		},
 		{
 			name: "backwards incompatible change",
@@ -1637,7 +1800,7 @@ func TestValidateV1Beta1CRDCompatibility(t *testing.T) {
 			},
 			oldCRD: unversionedCRDForV1beta1File("testdata/apiextensionsv1beta1/crd.old.yaml"),
 			newCRD: unversionedCRDForV1beta1File("testdata/apiextensionsv1beta1/crd.yaml"),
-			want:   fmt.Errorf("error validating cluster.com/v1alpha1, Kind=testcrd \"my-cr-1\": updated validation is too restrictive: [].spec.scalar: Invalid value: 2: spec.scalar in body should be greater than or equal to 3"),
+			want:   validationError{fmt.Errorf("error validating cluster.com/v1alpha1, Kind=testcrd \"my-cr-1\": updated validation is too restrictive: [].spec.scalar: Invalid value: 2: spec.scalar in body should be greater than or equal to 3")},
 		},
 		{
 			name: "unserved version",
@@ -1670,7 +1833,7 @@ func TestValidateV1Beta1CRDCompatibility(t *testing.T) {
 			},
 			oldCRD: unversionedCRDForV1beta1File("testdata/apiextensionsv1beta1/crd.no-versions-list.old.yaml"),
 			newCRD: unversionedCRDForV1beta1File("testdata/apiextensionsv1beta1/crd.no-versions-list.yaml"),
-			want:   fmt.Errorf("error validating cluster.com/v1alpha1, Kind=testcrd \"my-cr-1\": updated validation is too restrictive: [].spec.scalar: Invalid value: 2: spec.scalar in body should be greater than or equal to 3"),
+			want:   validationError{fmt.Errorf("error validating cluster.com/v1alpha1, Kind=testcrd \"my-cr-1\": updated validation is too restrictive: [].spec.scalar: Invalid value: 2: spec.scalar in body should be greater than or equal to 3")},
 		},
 	}
 	for _, tt := range tests {
@@ -1725,7 +1888,7 @@ func TestValidateV1CRDCompatibility(t *testing.T) {
 			},
 			oldCRD: unversionedCRDForV1File("testdata/apiextensionsv1/crontabs.crd.old.yaml"),
 			newCRD: unversionedCRDForV1File("testdata/apiextensionsv1/crontabs.crd.yaml"),
-			want:   fmt.Errorf("error validating stable.example.com/v2, Kind=CronTab \"my-crontab\": updated validation is too restrictive: [].spec.replicas: Invalid value: 10: spec.replicas in body should be less than or equal to 9"),
+			want:   validationError{fmt.Errorf("error validating stable.example.com/v2, Kind=CronTab \"my-crontab\": updated validation is too restrictive: [].spec.replicas: Invalid value: 10: spec.replicas in body should be less than or equal to 9")},
 		},
 		{
 			name: "cr not invalidated by unserved version",
@@ -1752,7 +1915,7 @@ func TestValidateV1CRDCompatibility(t *testing.T) {
 			},
 			oldCRD: unversionedCRDForV1File("testdata/apiextensionsv1/single-version-crd.old.yaml"),
 			newCRD: unversionedCRDForV1File("testdata/apiextensionsv1/single-version-crd.yaml"),
-			want:   fmt.Errorf("error validating cluster.com/v1alpha1, Kind=testcrd \"my-cr-1\": updated validation is too restrictive: [].spec.scalar: Invalid value: 100: spec.scalar in body should be less than or equal to 50"),
+			want:   validationError{fmt.Errorf("error validating cluster.com/v1alpha1, Kind=testcrd \"my-cr-1\": updated validation is too restrictive: [].spec.scalar: Invalid value: 100: spec.scalar in body should be less than or equal to 50")},
 		},
 	}
 	for _, tt := range tests {
@@ -2012,7 +2175,6 @@ func NewFakeOperator(ctx context.Context, namespace string, namespaces []string,
 			return nil, err
 		}
 		applier := controllerclient.NewFakeApplier(s, "testowner")
-
 		op.reconciler = reconciler.NewRegistryReconcilerFactory(lister, op.opClient, "test:pod", op.now, applier, 1001, "", "")
 	}
 
@@ -2028,7 +2190,6 @@ func NewFakeOperator(ctx context.Context, namespace string, namespaces []string,
 
 	return op, nil
 }
-
 func installPlan(name, namespace string, phase v1alpha1.InstallPlanPhase, names ...string) *v1alpha1.InstallPlan {
 	return &v1alpha1.InstallPlan{
 		ObjectMeta: metav1.ObjectMeta{
@@ -2175,7 +2336,7 @@ func pod(t *testing.T, s v1alpha1.CatalogSource) *corev1.Pod {
 			Name:      s.GetName(),
 		},
 	}
-	pod, err := reconciler.Pod(&s, "registry-server", "central-opm", "central-util", s.Spec.Image, serviceAccount, s.GetLabels(), s.GetAnnotations(), 5, 10, 1001)
+	pod, err := reconciler.Pod(&s, "registry-server", "central-opm", "central-util", s.Spec.Image, serviceAccount, s.GetLabels(), s.GetAnnotations(), 5, 10, 1001, v1alpha1.Legacy)
 	if err != nil {
 		t.Fatal(err)
 	}

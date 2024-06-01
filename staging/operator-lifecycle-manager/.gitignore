@@ -449,11 +449,9 @@ __pycache__/
 /build
 /apiserver.local.config
 e2e.namespace
-minikube.kubeconfig
 apiserver.crt
 apiserver.key
 
 !vendor/**
-test/e2e-local.image.tar
 test/e2e/.kube
 dist/
