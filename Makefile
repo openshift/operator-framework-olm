@@ -2,6 +2,9 @@ SHELL := /bin/bash
 ROOT_DIR:= $(patsubst %/,%,$(dir $(realpath $(lastword $(MAKEFILE_LIST)))))
 CONTAINER_ENGINE := docker
 
+# import tools
+include .bingo/Variables.mk
+
 OPM_VERSION := $(or $(SOURCE_GIT_TAG),$(shell git describe --always --tags HEAD))
 BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 # ART builds are performed in dist-git, with content (but not commits) copied
@@ -139,7 +142,7 @@ vendor:
 	go mod verify
 
 .PHONY: manifests
-manifests: ## Generate manifests
+manifests: $(HELM) ## Generate manifests
 	OLM_VERSION=$(OLM_VERSION) ./scripts/generate_crds_manifests.sh
 
 .PHONY: generate-manifests
