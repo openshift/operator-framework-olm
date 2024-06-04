@@ -13,7 +13,7 @@ require (
 	github.com/grpc-ecosystem/grpc-health-probe v0.4.26
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.8.1
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
-	github.com/onsi/ginkgo/v2 v2.17.3
+	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/operator-framework/api v0.23.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
