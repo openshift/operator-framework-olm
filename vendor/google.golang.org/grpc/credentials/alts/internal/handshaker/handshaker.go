@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 
-	"golang.org/x/sync/semaphore"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -35,13 +35,15 @@ import (
 	"google.golang.org/grpc/credentials/alts/internal/conn"
 	altsgrpc "google.golang.org/grpc/credentials/alts/internal/proto/grpc_gcp"
 	altspb "google.golang.org/grpc/credentials/alts/internal/proto/grpc_gcp"
-	"google.golang.org/grpc/internal/envconfig"
 )
 
 const (
 	// The maximum byte size of receive frames.
 	frameLimit              = 64 * 1024 // 64 KB
 	rekeyRecordProtocolName = "ALTSRP_GCM_AES128_REKEY"
+	// maxPendingHandshakes represents the maximum number of concurrent
+	// handshakes.
+	maxPendingHandshakes = 100
 )
 
 var (
@@ -57,9 +59,9 @@ var (
 			return conn.NewAES128GCMRekey(s, keyData)
 		},
 	}
-	// control number of concurrent created (but not closed) handshakes.
-	clientHandshakes = semaphore.NewWeighted(int64(envconfig.ALTSMaxConcurrentHandshakes))
-	serverHandshakes = semaphore.NewWeighted(int64(envconfig.ALTSMaxConcurrentHandshakes))
+	// control number of concurrent created (but not closed) handshakers.
+	mu                   sync.Mutex
+	concurrentHandshakes = int64(0)
 	// errDropped occurs when maxPendingHandshakes is reached.
 	errDropped = errors.New("maximum number of concurrent ALTS handshakes is reached")
 	// errOutOfBound occurs when the handshake service returns a consumed
@@ -73,6 +75,30 @@ func init() {
 			panic(err)
 		}
 	}
+}
+
+func acquire() bool {
+	mu.Lock()
+	// If we need n to be configurable, we can pass it as an argument.
+	n := int64(1)
+	success := maxPendingHandshakes-concurrentHandshakes >= n
+	if success {
+		concurrentHandshakes += n
+	}
+	mu.Unlock()
+	return success
+}
+
+func release() {
+	mu.Lock()
+	// If we need n to be configurable, we can pass it as an argument.
+	n := int64(1)
+	concurrentHandshakes -= n
+	if concurrentHandshakes < 0 {
+		mu.Unlock()
+		panic("bad release")
+	}
+	mu.Unlock()
 }
 
 // ClientHandshakerOptions contains the client handshaker options that can
@@ -108,7 +134,11 @@ func DefaultServerHandshakerOptions() *ServerHandshakerOptions {
 	return &ServerHandshakerOptions{}
 }
 
-// altsHandshaker is used to complete an ALTS handshake between client and
+// TODO: add support for future local and remote endpoint in both client options
+//       and server options (server options struct does not exist now. When
+//       caller can provide endpoints, it should be created.
+
+// altsHandshaker is used to complete a ALTS handshaking between client and
 // server. This handshaker talks to the ALTS handshaker service in the metadata
 // server.
 type altsHandshaker struct {
@@ -116,8 +146,6 @@ type altsHandshaker struct {
 	stream altsgrpc.HandshakerService_DoHandshakeClient
 	// the connection to the peer.
 	conn net.Conn
-	// a virtual connection to the ALTS handshaker service.
-	clientConn *grpc.ClientConn
 	// client handshake options.
 	clientOpts *ClientHandshakerOptions
 	// server handshake options.
@@ -126,52 +154,48 @@ type altsHandshaker struct {
 	side core.Side
 }
 
-// NewClientHandshaker creates a core.Handshaker that performs a client-side
-// ALTS handshake by acting as a proxy between the peer and the ALTS handshaker
+// NewClientHandshaker creates a ALTS handshaker for GCP which contains an RPC
+// stub created using the passed conn and used to talk to the ALTS Handshaker
 // service in the metadata server.
 func NewClientHandshaker(ctx context.Context, conn *grpc.ClientConn, c net.Conn, opts *ClientHandshakerOptions) (core.Handshaker, error) {
+	stream, err := altsgrpc.NewHandshakerServiceClient(conn).DoHandshake(ctx, grpc.WaitForReady(true))
+	if err != nil {
+		return nil, err
+	}
 	return &altsHandshaker{
-		stream:     nil,
+		stream:     stream,
 		conn:       c,
-		clientConn: conn,
 		clientOpts: opts,
 		side:       core.ClientSide,
 	}, nil
 }
 
-// NewServerHandshaker creates a core.Handshaker that performs a server-side
-// ALTS handshake by acting as a proxy between the peer and the ALTS handshaker
+// NewServerHandshaker creates a ALTS handshaker for GCP which contains an RPC
+// stub created using the passed conn and used to talk to the ALTS Handshaker
 // service in the metadata server.
 func NewServerHandshaker(ctx context.Context, conn *grpc.ClientConn, c net.Conn, opts *ServerHandshakerOptions) (core.Handshaker, error) {
+	stream, err := altsgrpc.NewHandshakerServiceClient(conn).DoHandshake(ctx, grpc.WaitForReady(true))
+	if err != nil {
+		return nil, err
+	}
 	return &altsHandshaker{
-		stream:     nil,
+		stream:     stream,
 		conn:       c,
-		clientConn: conn,
 		serverOpts: opts,
 		side:       core.ServerSide,
 	}, nil
 }
 
-// ClientHandshake starts and completes a client ALTS handshake for GCP. Once
+// ClientHandshake starts and completes a client ALTS handshaking for GCP. Once
 // done, ClientHandshake returns a secure connection.
 func (h *altsHandshaker) ClientHandshake(ctx context.Context) (net.Conn, credentials.AuthInfo, error) {
-	if !clientHandshakes.TryAcquire(1) {
+	if !acquire() {
 		return nil, nil, errDropped
 	}
-	defer clientHandshakes.Release(1)
+	defer release()
 
 	if h.side != core.ClientSide {
 		return nil, nil, errors.New("only handshakers created using NewClientHandshaker can perform a client handshaker")
-	}
-
-	// TODO(matthewstevenson88): Change unit tests to use public APIs so
-	// that h.stream can unconditionally be set based on h.clientConn.
-	if h.stream == nil {
-		stream, err := altsgrpc.NewHandshakerServiceClient(h.clientConn).DoHandshake(ctx)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to establish stream to ALTS handshaker service: %v", err)
-		}
-		h.stream = stream
 	}
 
 	// Create target identities from service account list.
@@ -205,26 +229,16 @@ func (h *altsHandshaker) ClientHandshake(ctx context.Context) (net.Conn, credent
 	return conn, authInfo, nil
 }
 
-// ServerHandshake starts and completes a server ALTS handshake for GCP. Once
+// ServerHandshake starts and completes a server ALTS handshaking for GCP. Once
 // done, ServerHandshake returns a secure connection.
 func (h *altsHandshaker) ServerHandshake(ctx context.Context) (net.Conn, credentials.AuthInfo, error) {
-	if !serverHandshakes.TryAcquire(1) {
+	if !acquire() {
 		return nil, nil, errDropped
 	}
-	defer serverHandshakes.Release(1)
+	defer release()
 
 	if h.side != core.ServerSide {
 		return nil, nil, errors.New("only handshakers created using NewServerHandshaker can perform a server handshaker")
-	}
-
-	// TODO(matthewstevenson88): Change unit tests to use public APIs so
-	// that h.stream can unconditionally be set based on h.clientConn.
-	if h.stream == nil {
-		stream, err := altsgrpc.NewHandshakerServiceClient(h.clientConn).DoHandshake(ctx)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to establish stream to ALTS handshaker service: %v", err)
-		}
-		h.stream = stream
 	}
 
 	p := make([]byte, frameLimit)
@@ -234,6 +248,8 @@ func (h *altsHandshaker) ServerHandshake(ctx context.Context) (net.Conn, credent
 	}
 
 	// Prepare server parameters.
+	// TODO: currently only ALTS parameters are provided. Might need to use
+	//       more options in the future.
 	params := make(map[int32]*altspb.ServerHandshakeParameters)
 	params[int32(altspb.HandshakeProtocol_ALTS)] = &altspb.ServerHandshakeParameters{
 		RecordProtocols: recordProtocols,
@@ -355,14 +371,5 @@ func (h *altsHandshaker) processUntilDone(resp *altspb.HandshakerResp, extra []b
 // Close terminates the Handshaker. It should be called when the caller obtains
 // the secure connection.
 func (h *altsHandshaker) Close() {
-	if h.stream != nil {
-		h.stream.CloseSend()
-	}
-}
-
-// ResetConcurrentHandshakeSemaphoreForTesting resets the handshake semaphores
-// to allow numberOfAllowedHandshakes concurrent handshakes each.
-func ResetConcurrentHandshakeSemaphoreForTesting(numberOfAllowedHandshakes int64) {
-	clientHandshakes = semaphore.NewWeighted(numberOfAllowedHandshakes)
-	serverHandshakes = semaphore.NewWeighted(numberOfAllowedHandshakes)
+	h.stream.CloseSend()
 }
