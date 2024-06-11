@@ -34,6 +34,14 @@ ARCH := arm64
 else
 ARCH := 386
 endif
+
+# Take operator registry tag from operator registry version in go.mod
+export OPERATOR_REGISTRY_TAG ?= $(shell go list -m github.com/operator-framework/operator-registry | cut -d" " -f2)
+
+# Pin operator registry images to the OPERATOR_REGISTRY_TAG
+export OPERATOR_REGISTRY_IMAGE ?= quay.io/operator-framework/opm:$(OPERATOR_REGISTRY_TAG)
+export CONFIGMAP_SERVER_IMAGE ?= quay.io/operator-framework/configmap-operator-registry:$(OPERATOR_REGISTRY_TAG)
+
 # Phony prerequisite for targets that rely on the go build cache to determine staleness.
 .PHONY: build test clean vendor \
 	coverage coverage-html e2e \
@@ -123,29 +131,18 @@ deploy-local:
 e2e.namespace:
 	@printf "e2e-tests-$(shell date +%s)-$$RANDOM" > e2e.namespace
 
-# useful if running e2e directly with `go test -tags=bare`
-setup-bare: clean e2e.namespace
-	. ./scripts/build_bare.sh
-	. ./scripts/package_release.sh 1.0.0 test/e2e/resources test/e2e/e2e-bare-values.yaml
-	. ./scripts/install_bare.sh $(shell cat ./e2e.namespace) test/e2e/resources
-
-E2E_NODES ?= 1
-E2E_FLAKE_ATTEMPTS ?= 1
+.PHONY: e2e
 E2E_TIMEOUT ?= 90m
-# Optionally run an individual chunk of e2e test specs.
-# Do not use this from the CLI; this is intended to be used by CI only.
-E2E_TEST_CHUNK ?= all
-E2E_TEST_NUM_CHUNKS ?= 4
-ifneq (all,$(E2E_TEST_CHUNK))
-TEST := $(shell go run ./test/e2e/split/... -chunks $(E2E_TEST_NUM_CHUNKS) -print-chunk $(E2E_TEST_CHUNK) ./test/e2e)
-endif
-E2E_OPTS ?= $(if $(E2E_SEED),-seed '$(E2E_SEED)') $(if $(SKIP), -skip '$(SKIP)') $(if $(TEST),-focus '$(TEST)') $(if $(ARTIFACT_DIR), -output-dir $(ARTIFACT_DIR) -junit-report junit_e2e.xml) -flake-attempts $(E2E_FLAKE_ATTEMPTS) -nodes $(E2E_NODES) -timeout $(E2E_TIMEOUT) -v -randomize-suites -race -trace -progress
+E2E_TEST_NS ?= operators
 E2E_INSTALL_NS ?= operator-lifecycle-manager
 E2E_CATALOG_NS ?= $(E2E_INSTALL_NS)
-E2E_TEST_NS ?= operators
-
+E2E_FLAKE_ATTEMPTS ?= 0
+GINKGO_OPTS += -v -randomize-suites -race -trace --show-node-events --flake-attempts=$(E2E_FLAKE_ATTEMPTS) $(if $(E2E_SEED),-seed '$(E2E_SEED)') $(if $(TEST),-focus '$(TEST)',) $(if $(SKIP), -skip '$(SKIP)')
 e2e:
-	$(GINKGO) $(E2E_OPTS) $(or $(run), ./test/e2e) $< -- -namespace=$(E2E_TEST_NS) -olmNamespace=$(E2E_INSTALL_NS) -catalogNamespace=$(E2E_CATALOG_NS) -dummyImage=bitnami/nginx:latest $(or $(extra_args), -kubeconfig=${KUBECONFIG})
+	$(GINKGO) -timeout $(E2E_TIMEOUT) $(GINKGO_OPTS) ./test/e2e -- -namespace=$(E2E_TEST_NS) -olmNamespace=$(E2E_INSTALL_NS) -catalogNamespace=$(E2E_CATALOG_NS) $(E2E_OPTS)
+
+.PHONY: e2e-local
+e2e-local: e2e-build kind-create deploy e2e
 
 # See workflows/e2e-tests.yml See test/e2e/README.md for details.
 .PHONY: e2e-local
@@ -161,15 +158,28 @@ e2e-local: e2e
 test/e2e/assets/chart/zz_chart.go: $(shell find deploy/chart -type f)
 	$(BINDATA) -o $@ -pkg chart -prefix deploy/chart/ $^
 
-# execute kind and helm end to end tests
-bin/e2e-local.test: FORCE test/e2e/assets/chart/zz_chart.go
-	$(GO) test -c -tags kind,helm -o $@ ./test/e2e
+.PHONY: deploy
+OLM_IMAGE := quay.io/operator-framework/olm:local
+deploy:
+	$(KIND) load docker-image $(OLM_IMAGE) --name $(KIND_CLUSTER_NAME); \
+	$(HELM) upgrade --install olm deploy/chart \
+		--set debug=true \
+		--set olm.image.ref=$(OLM_IMAGE) \
+		--set olm.image.pullPolicy=IfNotPresent \
+		--set catalog.image.ref=$(OLM_IMAGE) \
+		--set catalog.image.pullPolicy=IfNotPresent \
+		--set catalog.commandArgs=--configmapServerImage=$(CONFIGMAP_SERVER_IMAGE) \
+		--set catalog.opmImageArgs=--opmImage=$(OPERATOR_REGISTRY_IMAGE) \
+		--set package.image.ref=$(OLM_IMAGE) \
+		--set package.image.pullPolicy=IfNotPresent \
+		$(HELM_INSTALL_OPTS) \
+		--wait;
 
-# set go env and other vars, ensure that the dockerfile exists, and then build wait, cpb, and other command binaries and finally the kind image archive
-test/e2e-local.image.tar: export GOOS=linux
-test/e2e-local.image.tar: export GOARCH=386
-test/e2e-local.image.tar: build_cmd=build
-test/e2e-local.image.tar: e2e.Dockerfile bin/wait bin/cpb $(CMDS)
+.PHONY: e2e-build
+e2e-build: BUILD_TAGS="json1 e2e experimental_metrics"
+e2e-build: export GOOS=linux
+e2e-build: build_cmd=build
+e2e-build: e2e.Dockerfile bin/wait bin/cpb $(CMDS)
 	docker build -t quay.io/operator-framework/olm:local -f $< bin
 	docker save -o $@ quay.io/operator-framework/olm:local
 
@@ -179,10 +189,6 @@ e2e-bare: setup-bare
 e2e-local-docker:
 	. ./scripts/build_local.sh
 	. ./scripts/run_e2e_docker.sh $(TEST)
-
-vendor:
-	go mod tidy
-	go mod vendor
 
 container:
 	docker build -t $(IMAGE_REPO):$(IMAGE_TAG) .
@@ -230,15 +236,21 @@ verify-manifests: manifests
 
 verify: verify-codegen verify-mockgen verify-manifests
 
+.PHONY: pull-opm
+pull-opm:
+	docker pull $(OPERATOR_REGISTRY_IMAGE)
+
 # before running release, bump the version in OLM_VERSION and push to master,
 # then tag those builds in quay with the version in OLM_VERSION
 release: ver=v$(shell cat OLM_VERSION)
-release: manifests
+# pull the opm image to get the digest
+release: pull-opm manifests
 	@echo "Generating the $(ver) release"
 	docker pull $(IMAGE_REPO):$(ver)
 	$(MAKE) target=upstream ver=$(ver) quickstart=true package
 
 package: olmref=$(shell docker inspect --format='{{index .RepoDigests 0}}' $(IMAGE_REPO):$(ver))
+package: opmref=$(shell docker inspect --format='{{index .RepoDigests 0}}' $(OPERATOR_REGISTRY_IMAGE))
 package:
 ifndef target
 	$(error target is undefined)
@@ -246,9 +258,12 @@ endif
 ifndef ver
 	$(error ver is undefined)
 endif
+	@echo "Getting operator registry image"
+	docker pull $(OPERATOR_REGISTRY_IMAGE)
 	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml olm.image.ref $(olmref)
 	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml catalog.image.ref $(olmref)
 	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml package.image.ref $(olmref)
+	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml -- catalog.opmImageArgs "--opmImage=$(opmref)"
 	./scripts/package_release.sh $(ver) deploy/$(target)/manifests/$(ver) deploy/$(target)/values.yaml
 	ln -sfFn ./$(ver) deploy/$(target)/manifests/latest
 ifeq ($(quickstart), true)
