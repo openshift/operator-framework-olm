@@ -127,7 +127,9 @@ e2e/operator-registry: ## Run e2e registry tests
 	$(MAKE) e2e WHAT=operator-registry
 
 e2e/olm: ## Run e2e olm tests
-	$(MAKE) e2e WHAT=operator-lifecycle-manager E2E_CATALOG_NS=openshift-marketplace E2E_INSTALL_NS=openshift-operator-lifecycle-manager E2E_TEST_NS=openshift-operators E2E_TIMEOUT=120m KUBECTL=oc
+	# the operator-registry version is pinned to v1.39.0 - later versions are not compatible with 4.12
+	# this is important for a few tests would rely on :latest
+	$(MAKE) e2e OPERATOR_REGISTRY_TAG=v1.39.0 WHAT=operator-lifecycle-manager E2E_CATALOG_NS=openshift-marketplace E2E_INSTALL_NS=openshift-operator-lifecycle-manager E2E_TEST_NS=openshift-operators E2E_TIMEOUT=120m KUBECTL=oc
 
 .PHONY: update-plugin-deps
 update-plugin-deps:

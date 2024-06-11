@@ -29,6 +29,18 @@ GO := GO111MODULE=on GOFLAGS="$(MOD_FLAGS)" go
 GINKGO := $(GO) run github.com/onsi/ginkgo/v2/ginkgo
 BINDATA := $(GO) run github.com/go-bindata/go-bindata/v3/go-bindata
 GIT_COMMIT := $(shell git rev-parse HEAD)
+ifeq ($(shell arch), arm64) 
+ARCH := arm64
+else
+ARCH := 386
+endif
+
+# Take operator registry tag from operator registry version in go.mod
+export OPERATOR_REGISTRY_TAG ?= $(shell go list -m github.com/operator-framework/operator-registry | cut -d" " -f2)
+
+# Pin operator registry images to the OPERATOR_REGISTRY_TAG
+export OPERATOR_REGISTRY_IMAGE ?= quay.io/operator-framework/opm:$(OPERATOR_REGISTRY_TAG)
+export CONFIGMAP_SERVER_IMAGE ?= quay.io/operator-framework/configmap-operator-registry:$(OPERATOR_REGISTRY_TAG)
 
 # Phony prerequisite for targets that rely on the go build cache to determine staleness.
 .PHONY: build test clean vendor \
@@ -223,15 +235,21 @@ verify-manifests: manifests
 
 verify: verify-codegen verify-mockgen verify-manifests
 
+.PHONY: pull-opm
+pull-opm:
+	docker pull $(OPERATOR_REGISTRY_IMAGE)
+
 # before running release, bump the version in OLM_VERSION and push to master,
 # then tag those builds in quay with the version in OLM_VERSION
 release: ver=v$(shell cat OLM_VERSION)
-release: manifests
+# pull the opm image to get the digest
+release: pull-opm manifests
 	@echo "Generating the $(ver) release"
 	docker pull $(IMAGE_REPO):$(ver)
 	$(MAKE) target=upstream ver=$(ver) quickstart=true package
 
 package: olmref=$(shell docker inspect --format='{{index .RepoDigests 0}}' $(IMAGE_REPO):$(ver))
+package: opmref=$(shell docker inspect --format='{{index .RepoDigests 0}}' $(OPERATOR_REGISTRY_IMAGE))
 package:
 ifndef target
 	$(error target is undefined)
@@ -239,14 +257,18 @@ endif
 ifndef ver
 	$(error ver is undefined)
 endif
+	@echo "Getting operator registry image"
+	docker pull $(OPERATOR_REGISTRY_IMAGE)
 	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml olm.image.ref $(olmref)
 	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml catalog.image.ref $(olmref)
 	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml package.image.ref $(olmref)
+	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml -- catalog.opmImageArgs "--opmImage=$(opmref)"
 	./scripts/package_release.sh $(ver) deploy/$(target)/manifests/$(ver) deploy/$(target)/values.yaml
 	ln -sfFn ./$(ver) deploy/$(target)/manifests/latest
 ifeq ($(quickstart), true)
 	./scripts/package_quickstart.sh deploy/$(target)/manifests/$(ver) deploy/$(target)/quickstart/olm.yaml deploy/$(target)/quickstart/crds.yaml deploy/$(target)/quickstart/install.sh
 endif
+
 
 ################################
 #  OLM - Install/Uninstall/Run #
