@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"gopkg.in/go-jose/go-jose.v2/json"
+	"gopkg.in/square/go-jose.v2/json"
 )
 
 // Encrypter represents an encrypter which produces an encrypted JWE object.

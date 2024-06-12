@@ -1284,11 +1284,6 @@ google.golang.org/protobuf/types/known/structpb
 google.golang.org/protobuf/types/known/timestamppb
 google.golang.org/protobuf/types/known/wrapperspb
 google.golang.org/protobuf/types/pluginpb
-# gopkg.in/go-jose/go-jose.v2 v2.6.3
-## explicit
-gopkg.in/go-jose/go-jose.v2
-gopkg.in/go-jose/go-jose.v2/cipher
-gopkg.in/go-jose/go-jose.v2/json
 # gopkg.in/inf.v0 v0.9.1
 ## explicit
 gopkg.in/inf.v0
@@ -1301,6 +1296,8 @@ gopkg.in/op/go-logging.v1
 # gopkg.in/square/go-jose.v2 v2.6.0 => ./forks/go-jose/
 ## explicit; go 1.19
 gopkg.in/square/go-jose.v2
+gopkg.in/square/go-jose.v2/cipher
+gopkg.in/square/go-jose.v2/json
 gopkg.in/square/go-jose.v2/jwt
 # gopkg.in/warnings.v0 v0.1.2
 ## explicit
