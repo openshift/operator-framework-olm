@@ -280,6 +280,7 @@ replace (
 
 	// CVE-2024-28180: https://github.com/go-jose/go-jose/security/advisories/GHSA-c5q2-7r4c-mv6g
 	// we had to fork the go-jose v2 repo to a local directory to resolve this due to various issues
+    // this fork is equivalent to gopkg.in/go-jose/go-jose.v2@2.6.3
 	gopkg.in/square/go-jose.v2 => ./forks/go-jose/
 	// this should be removeable once https://issues.redhat.com/browse/CLOUDBLD-11068 is resolved
 	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.25.0
