@@ -351,7 +351,6 @@ var _ = Describe("Subscription", func() {
 		_, err = fetchCSV(crc, generatedNamespace.GetName(), subscription.Status.CurrentCSV, buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
 		require.NoError(GinkgoT(), err)
 	})
-
 	It("with starting CSV", func() {
 
 		crdPlural := genName("ins")
