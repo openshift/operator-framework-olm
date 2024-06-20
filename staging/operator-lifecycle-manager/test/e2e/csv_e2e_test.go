@@ -1656,7 +1656,7 @@ var _ = Describe("ClusterServiceVersion", func() {
 				<-deleted
 			}()
 
-			fetchedCSV, err := fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Should create Deployment
@@ -1697,11 +1697,15 @@ var _ = Describe("ClusterServiceVersion", func() {
 			oldCAAnnotation, ok := dep.Spec.Template.GetAnnotations()[install.OLMCAHashAnnotationKey]
 			Expect(ok).Should(BeTrue(), "expected olm sha annotation not present on existing pod template")
 
-			// Induce a cert rotation
-			Eventually(Apply(fetchedCSV, func(csv *operatorsv1alpha1.ClusterServiceVersion) error {
-				now := metav1.Now()
-				csv.Status.CertsLastUpdated = &now
-				csv.Status.CertsRotateAt = &now
+			caSecret, err := c.KubernetesInterface().CoreV1().Secrets(generatedNamespace.GetName()).Get(context.TODO(), secretName, metav1.GetOptions{})
+			Expect(err).Should(BeNil())
+
+			caPEM, certPEM, privPEM := generateExpiredCerts(install.HostnamesForService(serviceName, generatedNamespace.GetName()))
+			By(`Induce a cert rotation`)
+			Eventually(Apply(caSecret, func(caSecret *corev1.Secret) error {
+				caSecret.Data[install.OLMCAPEMKey] = caPEM
+				caSecret.Data["tls.crt"] = certPEM
+				caSecret.Data["tls.key"] = privPEM
 				return nil
 			})).Should(Succeed())
 
@@ -1735,9 +1739,9 @@ var _ = Describe("ClusterServiceVersion", func() {
 			err = c.DeleteAPIService(apiServiceName, &metav1.DeleteOptions{})
 			Expect(err).ShouldNot(HaveOccurred())
 
-			// Wait for CSV success
-			fetchedCSV, err = fetchCSV(crc, csv.GetName(), generatedNamespace.GetName(), func(csv *operatorsv1alpha1.ClusterServiceVersion) bool {
-				// Should create an APIService
+			By("Wait for CSV success")
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.GetName(), func(csv *operatorsv1alpha1.ClusterServiceVersion) bool {
+				By("Should create an APIService")
 				apiService, err := c.GetAPIService(apiServiceName)
 				if err != nil {
 					return false
