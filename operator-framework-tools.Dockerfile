@@ -1,15 +1,8 @@
-# Update when available: registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.22-openshift-4.17
-FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.21-openshift-4.17 AS builder-rhel8
+FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.22-openshift-4.17 AS builder-rhel8
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 WORKDIR /src
 COPY . .
-# Remove after updating to rhel-8-golang-1.22-openshift-4.17
-# Install golang 1.22.2
-RUN go install -mod=mod golang.org/dl/go1.22.2@latest
-RUN go1.22.2 download
-RUN ln -s /go/bin/go1.22.2 /go/bin/go
-# Now we can make registry
 RUN make build/registry cross
 
 FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.22-openshift-4.17 AS builder
@@ -21,9 +14,10 @@ RUN make build/registry cross
 
 FROM scratch 
 
+# copy a rhel-specific instance
 COPY --from=builder /src/bin/opm /tools/opm-rhel9
-COPY --from=builder /src/bin/darwin-amd64-opm /tools/darwin-amd64-opm
-COPY --from=builder /src/bin/windows-amd64-opm /tools/windows-amd64-opm
+# copy all other generated binaries, including any cross-compiled
+COPY --from=builder /src/bin/*opm /tools/
 
 # copy the dynamically-linked versions to /tools with a -rhel8 suffix
 COPY --from=builder-rhel8 /src/bin/opm /tools/opm-rhel8
