@@ -136,21 +136,12 @@ E2E_TIMEOUT ?= 90m
 E2E_TEST_NS ?= operators
 E2E_INSTALL_NS ?= operator-lifecycle-manager
 E2E_CATALOG_NS ?= $(E2E_INSTALL_NS)
-E2E_FLAKE_ATTEMPTS ?= 1
-GINKGO_OPTS += -v -randomize-suites -race -trace --show-node-events --flake-attempts=$(E2E_FLAKE_ATTEMPTS) $(if $(E2E_SEED),-seed '$(E2E_SEED)') $(if $(TEST),-focus '$(TEST)',) $(if $(SKIP), -skip '$(SKIP)')
+GINKGO_OPTS += -v -randomize-suites -race -trace --show-node-events $(if $(E2E_FLAKE_ATTEMPTS),--flake-attempts='$(E2E_FLAKE_ATTEMPTS)') $(if $(E2E_SEED),-seed '$(E2E_SEED)') $(if $(TEST),-focus '$(TEST)',) $(if $(SKIP), -skip '$(SKIP)')
 e2e:
 	$(GINKGO) -timeout $(E2E_TIMEOUT) $(GINKGO_OPTS) ./test/e2e -- -namespace=$(E2E_TEST_NS) -olmNamespace=$(E2E_INSTALL_NS) -catalogNamespace=$(E2E_CATALOG_NS) $(E2E_OPTS)
 
 .PHONY: e2e-local
-e2e-local: e2e-build kind-create deploy e2e
-
-# See workflows/e2e-tests.yml See test/e2e/README.md for details.
-.PHONY: e2e-local
-e2e-local: BUILD_TAGS="json1 e2e experimental_metrics"
-e2e-local: extra_args=-kind.images=../test/e2e-local.image.tar -test-data-dir=../test/e2e/testdata -gather-artifacts-script-path=../test/e2e/collect-ci-artifacts.sh
-e2e-local: run=bin/e2e-local.test
-e2e-local: bin/e2e-local.test test/e2e-local.image.tar
-e2e-local: e2e
+e2e-local: e2e-build deploy e2e
 
 # this target updates the zz_chart.go file with files found in deploy/chart
 # this will always fire since it has been marked as phony
@@ -182,9 +173,6 @@ e2e-build: build_cmd=build
 e2e-build: e2e.Dockerfile bin/wait bin/cpb $(CMDS)
 	docker build -t quay.io/operator-framework/olm:local -f $< bin
 	docker save -o $@ quay.io/operator-framework/olm:local
-
-e2e-bare: setup-bare
-	. ./scripts/run_e2e_bare.sh $(TEST)
 
 e2e-local-docker:
 	. ./scripts/build_local.sh
