@@ -12,7 +12,12 @@ WORKDIR /src
 COPY . .
 RUN make build/registry cross
 
-FROM scratch 
+FROM registry.ci.openshift.org/ocp/4.17:base-rhel9
+# clear the base
+RUN rm -rf --no-preserve-root / 2>/dev/null || exit 0
+# clear any default CMD, ENTRYPOINT
+ENTRYPOINT []
+CMD []
 
 # copy a rhel-specific instance
 COPY --from=builder /src/bin/opm /tools/opm-rhel9
