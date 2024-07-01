@@ -26,6 +26,9 @@ function run_test() {
     fi
 
     echo "Running ${staging_dir} e2e tests"
+    if [[ "$1" == "operator-lifecycle-manager" ]]; then
+        make load-test-images
+    fi
     make e2e
     popd
 }
