@@ -9,7 +9,6 @@ export GOFLAGS="-mod=vendor"
 
 YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
 CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
-HELM="go run helm.sh/helm/v3/cmd/helm"
 
 ver=${OLM_VERSION:-"0.0.0-dev"}
 tmpdir="$(mktemp -p . -d 2>/dev/null || mktemp -d ./tmpdir.XXXXXXX)"
@@ -36,7 +35,6 @@ fi
 cp -R "${ROOT_DIR}/staging/operator-lifecycle-manager/deploy/chart/" "${chartdir}"
 cp "${ROOT_DIR}"/values*.yaml "${tmpdir}"
 cp -R "${ROOT_DIR}/staging/api/pkg/operators/" ${crdsrcdir}
-rm -rf ./manifests/* ${crddir}/*
 
 trap "rm -rf ${tmpdir}" EXIT
 
@@ -63,9 +61,6 @@ CRC_E2E=("")
 if ! [ "${CRC_E2E_VALUES}" = "" ]; then
   CRC_E2E=(-f "${tmpdir}/${CRC_E2E_VALUES}")
 fi
-
-${HELM} template -n olm -f "${tmpdir}/values.yaml" ${CRC_E2E[@]} --include-crds --output-dir "${chartdir}" "${chartdir}"
-cp -R "${chartdir}"/olm/{templates,crds}/. "./manifests"
 
 add_ibm_managed_cloud_annotations() {
    local manifests_dir=$1

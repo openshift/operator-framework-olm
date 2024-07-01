@@ -1,3 +1,5 @@
+---
+# Source: olm/templates/0000_50_olm_00-namespace.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -5,16 +7,12 @@ metadata:
   labels:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: "v1.24"
-    openshift.io/scc: ""
-    openshift.io/cluster-monitoring: "true"
-  annotations:
-    openshift.io/node-selector: ""
-    workload.openshift.io/allowed: "management"
-    include.release.openshift.io/ibm-cloud-managed: "true"
-    include.release.openshift.io/hypershift: "true"
-    include.release.openshift.io/self-managed-high-availability: "true"
-    capability.openshift.io/name: "OperatorLifecycleManager"
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
 ---
+# Source: olm/templates/0000_50_olm_00-namespace.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -22,11 +20,7 @@ metadata:
   labels:
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/enforce-version: "v1.24"
-    openshift.io/scc: ""
-  annotations:
-    openshift.io/node-selector: ""
-    workload.openshift.io/allowed: "management"
-    include.release.openshift.io/ibm-cloud-managed: "true"
-    include.release.openshift.io/hypershift: "true"
-    include.release.openshift.io/self-managed-high-availability: "true"
-    capability.openshift.io/name: "OperatorLifecycleManager"
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
