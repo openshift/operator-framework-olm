@@ -18,7 +18,6 @@ import (
 	_ "github.com/operator-framework/api/crds" // operators.coreos.com CRD manifests
 	_ "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
 	_ "google.golang.org/protobuf/cmd/protoc-gen-go"
-	_ "helm.sh/helm/v3/cmd/helm"
 	_ "k8s.io/code-generator"
 	_ "k8s.io/kube-openapi/cmd/openapi-gen"
 )
