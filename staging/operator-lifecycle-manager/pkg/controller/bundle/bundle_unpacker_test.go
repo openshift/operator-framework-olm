@@ -1206,14 +1206,15 @@ func TestConfigMapUnpacker(t *testing.T) {
 			},
 		},
 		{
-			description: "CatalogSourcePresent/JobFailed/BundleLookupFailed/WithJobFailReason",
+			description: "CatalogSourcePresent/JobFailed/BundleLookupFailed/WithJobFailReasonNoLabel",
 			fields: fields{
 				objs: []runtime.Object{
 					&batchv1.Job{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      pathHash,
 							Namespace: "ns-a",
-							Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: pathHash},
+							//omit the "operatorframework.io/bundle-unpack-ref" label
+							Labels: map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue},
 							OwnerReferences: []metav1.OwnerReference{
 								{
 									APIVersion:         "v1",
@@ -1427,6 +1428,9 @@ func TestConfigMapUnpacker(t *testing.T) {
 				},
 			},
 			expected: expected{
+				// If job is not found due to missing "operatorframework.io/bundle-unpack-ref" label,
+				// we will get an 'AlreadyExists' error in this test when the new job is created
+				err: nil,
 				res: &BundleUnpackResult{
 					name: pathHash,
 					BundleLookup: &operatorsv1alpha1.BundleLookup{
@@ -1459,7 +1463,7 @@ func TestConfigMapUnpacker(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      pathHash,
 							Namespace: "ns-a",
-							Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: pathHash},
+							Labels:    map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue},
 							OwnerReferences: []metav1.OwnerReference{
 								{
 									APIVersion:         "v1",
