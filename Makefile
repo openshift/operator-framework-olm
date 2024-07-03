@@ -129,9 +129,16 @@ e2e:
 e2e/operator-registry: ## Run e2e registry tests
 	$(MAKE) e2e WHAT=operator-registry
 
-ARTIFACT_DIR ?= '$(ROOT_DIR)'
 e2e/olm: ## Run e2e olm tests
-	$(MAKE) e2e WHAT=operator-lifecycle-manager E2E_CATALOG_NS=openshift-marketplace E2E_INSTALL_NS=openshift-operator-lifecycle-manager E2E_TEST_NS=openshift-operators E2E_TIMEOUT=135m KUBECTL=oc E2E_OPTS="-communityOperators=quay.io/olmtest/test-catalog:v1.39.0" E2E_GINKGO_OPTS="--junit-report olm-e2e-junit.xml"
+	WHAT=operator-lifecycle-manager \
+	E2E_CATALOG_NS=openshift-marketplace \
+	E2E_INSTALL_NS=openshift-operator-lifecycle-manager \
+	E2E_TEST_NS=openshift-operators \
+	E2E_TIMEOUT=135m \
+	KUBECTL=oc \
+	E2E_GINKGO_OPTS="$(if $(ARTIFACT_DIR),--output-dir='$(ARTIFACT_DIR)') --junit-report olm-e2e-junit.xml" \
+	E2E_OPTS="-communityOperators=quay.io/olmtest/test-catalog:v1.39.0" \
+	$(MAKE) e2e
 
 .PHONY: vendor
 vendor:
