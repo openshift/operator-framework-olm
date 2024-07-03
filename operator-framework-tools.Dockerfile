@@ -29,6 +29,6 @@ USER 1001
 
 LABEL io.k8s.display-name="OpenShift Operator Framework Tools" \
       io.k8s.description="This is a non-runnable image containing binary builds of various Operator Framework tools, primarily used to publish binaries to the OpenShift mirror." \
-      maintainer="Odin Team <aos-odin@redhat.com>"
+      maintainer="Odin Team <aos-odin@redhat.com>" \
       # We're not really an operator, we're just getting some data into the release image.
       io.openshift.release.operator=true
