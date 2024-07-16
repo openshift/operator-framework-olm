@@ -6,7 +6,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/containerd/containerd v1.7.11
 	github.com/containers/common v0.57.1
-	github.com/containers/image/v5 v5.29.0
+	github.com/containers/image/v5 v5.29.4
 	github.com/distribution/distribution/v3 v3.0.0-alpha.1
 	github.com/distribution/reference v0.6.0
 	github.com/docker/cli v25.0.5+incompatible
