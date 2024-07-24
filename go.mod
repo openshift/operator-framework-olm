@@ -8,7 +8,7 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/golang/mock v1.6.0
 	github.com/googleapis/gnostic v0.5.5
-	github.com/grpc-ecosystem/grpc-health-probe v0.4.29
+	github.com/grpc-ecosystem/grpc-health-probe v0.4.30
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.8.1
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.20.0
@@ -164,7 +164,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spiffe/go-spiffe/v2 v2.2.0 // indirect
+	github.com/spiffe/go-spiffe/v2 v2.3.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/tidwall/btree v1.7.0 // indirect
