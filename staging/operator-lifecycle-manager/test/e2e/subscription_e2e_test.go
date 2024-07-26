@@ -1408,7 +1408,7 @@ var _ = Describe("Subscription", func() {
 
 	})
 
-	It("creation with dependencies", func() {
+	It("[FLAKE] creation with dependencies", func() {
 
 		kubeClient := newKubeClient()
 		crClient := newCRClient()
@@ -1702,7 +1702,7 @@ var _ = Describe("Subscription", func() {
 					}
 				})
 
-				It("choose the dependency from the right CatalogSource based on lexicographical name ordering of catalogs", func() {
+				It("[FLAKE] choose the dependency from the right CatalogSource based on lexicographical name ordering of catalogs", func() {
 					By(`ensure correct CSVs were picked`)
 					Eventually(func() ([]string, error) {
 						ip, err := crClient.OperatorsV1alpha1().InstallPlans(generatedNamespace.GetName()).Get(context.Background(), subscription.Status.InstallPlanRef.Name, metav1.GetOptions{})
@@ -2567,7 +2567,7 @@ var _ = Describe("Subscription", func() {
 				Expect(err).Should(BeNil())
 			})
 
-			It("should report only package and channel deprecation conditions when bundle is no longer deprecated", func() {
+			It("[FLAKE] should report only package and channel deprecation conditions when bundle is no longer deprecated", func() {
 				By("patching the OperatorGroup to reduce the bundle unpacking timeout")
 				ogNN := types.NamespacedName{Name: operatorGroup.GetName(), Namespace: generatedNamespace.GetName()}
 				addBundleUnpackTimeoutOGAnnotation(context.Background(), ctx.Ctx().Client(), ogNN, "5m")
