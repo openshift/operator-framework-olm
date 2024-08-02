@@ -7,8 +7,8 @@ metadata:
     app: catalog-operator
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
-    include.release.openshift.io/hypershift: "true"
     capability.openshift.io/name: "OperatorLifecycleManager"
+    include.release.openshift.io/hypershift: "true"
 spec:
   strategy:
     type: Recreate

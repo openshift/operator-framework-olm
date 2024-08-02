@@ -73,12 +73,10 @@ add_ibm_managed_cloud_annotations() {
    for f in "${manifests_dir}"/*.yaml; do
       if [[ ! "$(basename "${f}")" =~ .*\.deployment\..* ]]; then
          ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
-         ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/hypershift']' true
       else
          g="${f/%.yaml/.ibm-cloud-managed.yaml}"
          cp "${f}" "${g}"
          ${YQ} w -d'*' --inplace --style=double "$g" 'metadata.annotations['include.release.openshift.io/ibm-cloud-managed']' true
-         ${YQ} w -d'*' --inplace --style=double "$g" 'metadata.annotations['include.release.openshift.io/hypershift']' true
          ${YQ} w -d'*' --inplace --style=double "$g" 'metadata.annotations['capability.openshift.io/name']' OperatorLifecycleManager
          ${YQ} d -d'*' --inplace "$g" 'spec.template.spec.nodeSelector."node-role.kubernetes.io/master"'
       fi
@@ -496,6 +494,13 @@ subjects:
 EOF
 
 add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"
+
+hypershift_manifests_dir="${ROOT_DIR}/manifests"
+for f in $(find "${hypershift_manifests_dir}" -type f -name "*.yaml"); do
+   if [[ ! "$f" =~ ".deployment.yaml" ]] && [[ ! "$(basename "${f}")" =~ "psm-operator" ]]; then
+      ${YQ} w -d'*' --inplace --style=double "$f" 'metadata.annotations['include.release.openshift.io/hypershift']' true
+   fi
+done
 
 find "${ROOT_DIR}/manifests" -type f -exec $SED -i "/^#/d" {} \;
 find "${ROOT_DIR}/manifests" -type f -exec $SED -i "1{/---/d}" {} \;
