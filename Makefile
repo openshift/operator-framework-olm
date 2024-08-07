@@ -136,7 +136,7 @@ e2e/olm: ## Run e2e olm tests
 	E2E_TEST_NS=openshift-operators \
 	E2E_TIMEOUT=135m \
 	KUBECTL=oc \
-	E2E_GINKGO_OPTS="$(if $(ARTIFACT_DIR),--output-dir='$(ARTIFACT_DIR)') --junit-report olm-e2e-junit.xml" \
+	E2E_GINKGO_OPTS="$(if $(ARTIFACT_DIR),--output-dir='$(ARTIFACT_DIR)') --junit-report junit_e2e.xml" \
 	$(MAKE) e2e
 
 .PHONY: vendor
