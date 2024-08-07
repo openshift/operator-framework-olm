@@ -8,9 +8,9 @@ metadata:
     role: alert-rules
   annotations:
     include.release.openshift.io/ibm-cloud-managed: "true"
-    include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
     capability.openshift.io/name: "OperatorLifecycleManager"
+    include.release.openshift.io/hypershift: "true"
 spec:
   groups:
     - name: olm.csv_abnormal.rules
