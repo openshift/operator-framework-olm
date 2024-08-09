@@ -7,9 +7,12 @@ set -o pipefail
 ROOT_DIR=$(dirname "${BASH_SOURCE[0]}")/..
 export GOFLAGS="-mod=vendor"
 
+# HELM comes from bingo, see Makefile include and .bingo dir for specifics
+echo "Current working directory: $(pwd)"
+source .bingo/variables.env
+
 YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
 CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
-HELM="go run helm.sh/helm/v3/cmd/helm"
 
 ver=${OLM_VERSION:-"0.0.0-dev"}
 tmpdir="$(mktemp -p . -d 2>/dev/null || mktemp -d ./tmpdir.XXXXXXX)"
