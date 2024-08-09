@@ -8,7 +8,6 @@ ROOT_DIR=$(dirname "${BASH_SOURCE[0]}")/..
 export GOFLAGS="-mod=vendor"
 
 # HELM comes from bingo, see Makefile include and .bingo dir for specifics
-echo "Current working directory: $(pwd)"
 source .bingo/variables.env
 
 YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
