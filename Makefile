@@ -185,6 +185,7 @@ verify-commits:
 
 # Update scripts/sync_pop_candidate.sh if anything is changed in this recipe
 .PHONY: verify
+verify: $(HELM)
 verify:
 	@echo "Checking for unstaged root vendor changes"
 	$(MAKE) verify-vendor
