@@ -9,6 +9,11 @@ export GOFLAGS="-mod=vendor"
 
 # HELM comes from bingo, see Makefile include and .bingo dir for specifics
 source .bingo/variables.env
+#debugging, remove after
+echo "Go Version: $(go version || echo 'Go is not installed')"
+echo "GOPATH: ${GOPATH:-'GOPATH is not set'}"
+echo "GOROOT: ${GOROOT:-'GOROOT is not set'}"
+echo "GOBIN: ${GOBIN:-'GOBIN is not set'}"
 
 YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
 CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
