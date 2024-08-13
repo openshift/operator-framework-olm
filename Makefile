@@ -1,16 +1,3 @@
-# Tools #
-
-# The tools required to build and test the project:
-# 1. .bingo/Variables.mk: tools that are orthogonal to the projects in this monorepo, e.g.
-#   - helm
-#   - yq
-
-# bingo manages the type 1 tools. If
-#  a) we don't want their dependencies affecting ours, and
-#  b) the tool's version doesn't need to track closely with OLM
-# the tool goes here
-include .bingo/Variables.mk
-
 SHELL := /bin/bash
 ROOT_DIR:= $(patsubst %/,%,$(dir $(realpath $(lastword $(MAKEFILE_LIST)))))
 CONTAINER_ENGINE := docker
@@ -48,6 +35,19 @@ REGISTRY_CMDS  := $(addprefix bin/, $(shell ls staging/operator-registry/cmd | g
 
 # Default image tag for build/olm-container and build/registry-container
 IMG ?= test:test
+
+# Tools #
+
+# The tools required to build and test the project:
+# 1. .bingo/Variables.mk: tools that are orthogonal to the projects in this monorepo, e.g.
+#   - helm
+#   - yq
+
+# bingo manages the type 1 tools. If
+#  a) we don't want their dependencies affecting ours, and
+#  b) the tool's version doesn't need to track closely with OLM
+# the tool goes here
+include .bingo/Variables.mk
 
 # Phony prerequisite for targets that rely on the go build cache to determine staleness.
 .PHONY: FORCE
