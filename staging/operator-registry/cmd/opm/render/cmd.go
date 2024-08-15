@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/operator-framework/operator-registry/alpha/action"
+	"github.com/operator-framework/operator-registry/alpha/action/migrations"
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/cmd/opm/internal/util"
 	"github.com/operator-framework/operator-registry/pkg/sqlite"
@@ -16,8 +17,11 @@ import (
 
 func NewCmd() *cobra.Command {
 	var (
-		render action.Render
-		output string
+		render           action.Render
+		output           string
+
+		oldMigrateAllFlag bool
+		migrateLevel      string
 	)
 	cmd := &cobra.Command{
 		Use:   "render [index-image | bundle-image | sqlite-file]...",
@@ -54,6 +58,18 @@ database files.
 
 			render.Registry = reg
 
+			// if the deprecated flag was used, set the level explicitly to the last migration to perform all migrations
+			var m *migrations.Migrations
+			if oldMigrateAllFlag {
+				m, err = migrations.NewMigrations(migrations.AllMigrations)
+			} else if migrateLevel != "" {
+				m, err = migrations.NewMigrations(migrateLevel)
+			}
+			if err != nil {
+				log.Fatal(err)
+			}
+			render.Migrations = m
+
 			cfg, err := render.Run(cmd.Context())
 			if err != nil {
 				log.Fatal(err)
@@ -65,7 +81,12 @@ database files.
 		},
 	}
 	cmd.Flags().StringVarP(&output, "output", "o", "json", "Output format of the streamed file-based catalog objects (json|yaml)")
-	cmd.Flags().BoolVar(&render.Migrate, "migrate", false, "Perform migrations on the rendered FBC")
+
+	cmd.Flags().StringVar(&migrateLevel, "migrate-level", "", "Name of the last migration to run (default: none)\n"+migrations.HelpText())
+	cmd.Flags().BoolVar(&oldMigrateAllFlag, "migrate", false, "Perform all available schema migrations on the rendered FBC")
+	cmd.MarkFlagsMutuallyExclusive("migrate", "migrate-level")
+
+	cmd.Long += "\n" + sqlite.DeprecationMessage
 	return cmd
 }
 
