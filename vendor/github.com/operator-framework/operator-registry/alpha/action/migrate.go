@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/operator-framework/operator-registry/alpha/action/migrations"
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/pkg/image"
 )
@@ -13,6 +14,7 @@ import (
 type Migrate struct {
 	CatalogRef string
 	OutputDir  string
+	Migrations *migrations.Migrations
 
 	WriteFunc declcfg.WriteFunc
 	FileExt   string
@@ -29,7 +31,8 @@ func (m Migrate) Run(ctx context.Context) error {
 	}
 
 	r := Render{
-		Refs: []string{m.CatalogRef},
+		Refs:       []string{m.CatalogRef},
+		Migrations: m.Migrations,
 
 		// Only allow sqlite images and files to be migrated. Other types cannot
 		// always be migrated cleanly because they may contain file references.

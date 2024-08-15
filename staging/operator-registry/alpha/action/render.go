@@ -18,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/operator-framework/operator-registry/alpha/action/migrations"
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/alpha/property"
 	"github.com/operator-framework/operator-registry/pkg/containertools"
@@ -49,9 +50,10 @@ func (r RefType) Allowed(refType RefType) bool {
 var ErrNotAllowed = errors.New("not allowed")
 
 type Render struct {
-	Refs           []string
-	Registry       image.Registry
-	AllowedRefMask RefType
+	Refs             []string
+	Registry         image.Registry
+	AllowedRefMask   RefType
+	Migrations       *migrations.Migrations
 
 	skipSqliteDeprecationLog bool
 }
@@ -88,6 +90,10 @@ func (r Render) Run(ctx context.Context) (*declcfg.DeclarativeConfig, error) {
 			sort.Slice(b.RelatedImages, func(i, j int) bool {
 				return b.RelatedImages[i].Image < b.RelatedImages[j].Image
 			})
+		}
+
+		if err := r.migrate(cfg); err != nil {
+			return nil, fmt.Errorf("migrate: %v", err)
 		}
 
 		cfgs = append(cfgs, *cfg)
@@ -393,6 +399,14 @@ func moveBundleObjectsToEndOfPropertySlices(cfg *declcfg.DeclarativeConfig) {
 		}
 		cfg.Bundles[bi].Properties = append(others, objs...)
 	}
+}
+
+func (r Render) migrate(cfg *declcfg.DeclarativeConfig) error {
+	// If there are no migrations, do nothing.
+	if r.Migrations == nil {
+		return nil
+	}
+	return r.Migrations.Migrate(cfg)
 }
 
 func combineConfigs(cfgs []declcfg.DeclarativeConfig) *declcfg.DeclarativeConfig {
