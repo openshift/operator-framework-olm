@@ -1538,7 +1538,7 @@ k8s.io/apiserver/plugin/pkg/audit/webhook
 k8s.io/apiserver/plugin/pkg/authenticator/token/webhook
 k8s.io/apiserver/plugin/pkg/authorizer/webhook
 k8s.io/apiserver/plugin/pkg/authorizer/webhook/metrics
-# k8s.io/cli-runtime v0.30.0
+# k8s.io/cli-runtime v0.31.0
 ## explicit; go 1.22.0
 k8s.io/cli-runtime/pkg/printers
 # k8s.io/client-go v0.31.1
@@ -2009,7 +2009,7 @@ k8s.io/kube-openapi/pkg/validation/spec
 k8s.io/kube-openapi/pkg/validation/strfmt
 k8s.io/kube-openapi/pkg/validation/strfmt/bson
 k8s.io/kube-openapi/pkg/validation/validate
-# k8s.io/kubectl v0.30.0
+# k8s.io/kubectl v0.31.0
 ## explicit; go 1.22.0
 k8s.io/kubectl/pkg/util/interrupt
 k8s.io/kubectl/pkg/util/templates
