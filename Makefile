@@ -158,8 +158,13 @@ vendor:
 	go mod vendor
 	go mod verify
 
+.PHONY: bingo-update
+bingo-update: ## Update bingo tools
+	#go install github.com/bwplotka/bingo@latest
+	bingo get
+
 .PHONY: manifests
-manifests: ## Generate manifests
+manifests: bingo-update ## Generate manifests
 	OLM_VERSION=$(OLM_VERSION) ./scripts/generate_crds_manifests.sh
 
 .PHONY: generate-manifests
