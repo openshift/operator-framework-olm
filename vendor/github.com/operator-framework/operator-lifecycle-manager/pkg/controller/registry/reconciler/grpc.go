@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -256,13 +257,13 @@ func isRegistryServiceStatusValid(source *grpcCatalogSourceDecorator) bool {
 }
 
 func (c *GrpcRegistryReconciler) ensurePod(source grpcCatalogSourceDecorator, saName string, overwrite bool) error {
-	// currentLivePods refers to the currently live instances of the catalog source
-	currentLivePods := c.currentPods(source)
-	if len(currentLivePods) > 0 {
+	// currentPods refers to the current pod instances of the catalog source
+	currentPods := c.currentPods(source)
+	if len(currentPods) > 0 {
 		if !overwrite {
 			return nil
 		}
-		for _, p := range currentLivePods {
+		for _, p := range currentPods {
 			if err := c.OpClient.KubernetesInterface().CoreV1().Pods(source.GetNamespace()).Delete(context.TODO(), p.GetName(), *metav1.NewDeleteOptions(1)); err != nil && !apierrors.IsNotFound(err) {
 				return errors.Wrapf(err, "error deleting old pod: %s", p.GetName())
 			}
@@ -448,18 +449,20 @@ func (c *GrpcRegistryReconciler) removePods(pods []*corev1.Pod, namespace string
 }
 
 // CheckRegistryServer returns true if the given CatalogSource is considered healthy; false otherwise.
-func (c *GrpcRegistryReconciler) CheckRegistryServer(catalogSource *v1alpha1.CatalogSource) (healthy bool, err error) {
+func (c *GrpcRegistryReconciler) CheckRegistryServer(catalogSource *v1alpha1.CatalogSource) (bool, error) {
 	source := grpcCatalogSourceDecorator{catalogSource, c.createPodAsUser}
 	// Check on registry resources
 	// TODO: add gRPC health check
-	if len(c.currentPodsWithCorrectImageAndSpec(source, source.ServiceAccount().GetName())) < 1 ||
+	currentPods := c.currentPodsWithCorrectImageAndSpec(source, source.ServiceAccount().Name)
+	if len(currentPods) < 1 ||
 		c.currentService(source) == nil || c.currentServiceAccount(source) == nil {
-		healthy = false
-		return
+		return false, nil
 	}
-
-	healthy = true
-	return
+	podsAreLive, e := detectAndDeleteDeadPods(c.OpClient, currentPods, source.GetNamespace())
+	if e != nil {
+		return false, fmt.Errorf("error deleting dead pods: %v", e)
+	}
+	return podsAreLive, nil
 }
 
 // promoteCatalog swaps the labels on the update pod so that the update pod is now reachable by the catalog service.

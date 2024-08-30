@@ -3,9 +3,10 @@ package reconciler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
+	pkgerrors "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -13,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
@@ -284,19 +286,19 @@ func (c *ConfigMapRegistryReconciler) EnsureRegistryServer(catalogSource *v1alph
 
 	//TODO: if any of these error out, we should write a status back (possibly set RegistryServiceStatus to nil so they get recreated)
 	if err := c.ensureServiceAccount(source, overwrite); err != nil {
-		return errors.Wrapf(err, "error ensuring service account: %s", source.serviceAccountName())
+		return pkgerrors.Wrapf(err, "error ensuring service account: %s", source.serviceAccountName())
 	}
 	if err := c.ensureRole(source, overwrite); err != nil {
-		return errors.Wrapf(err, "error ensuring role: %s", source.roleName())
+		return pkgerrors.Wrapf(err, "error ensuring role: %s", source.roleName())
 	}
 	if err := c.ensureRoleBinding(source, overwrite); err != nil {
-		return errors.Wrapf(err, "error ensuring rolebinding: %s", source.RoleBinding().GetName())
+		return pkgerrors.Wrapf(err, "error ensuring rolebinding: %s", source.RoleBinding().GetName())
 	}
 	if err := c.ensurePod(source, overwritePod); err != nil {
-		return errors.Wrapf(err, "error ensuring pod: %s", source.Pod(image).GetName())
+		return pkgerrors.Wrapf(err, "error ensuring pod: %s", source.Pod(image).GetName())
 	}
 	if err := c.ensureService(source, overwrite); err != nil {
-		return errors.Wrapf(err, "error ensuring service: %s", source.Service().GetName())
+		return pkgerrors.Wrapf(err, "error ensuring service: %s", source.Service().GetName())
 	}
 
 	if overwritePod {
@@ -363,7 +365,7 @@ func (c *ConfigMapRegistryReconciler) ensurePod(source configMapCatalogSourceDec
 		}
 		for _, p := range currentPods {
 			if err := c.OpClient.KubernetesInterface().CoreV1().Pods(pod.GetNamespace()).Delete(context.TODO(), p.GetName(), *metav1.NewDeleteOptions(1)); err != nil && !apierrors.IsNotFound(err) {
-				return errors.Wrapf(err, "error deleting old pod: %s", p.GetName())
+				return pkgerrors.Wrapf(err, "error deleting old pod: %s", p.GetName())
 			}
 		}
 	}
@@ -371,7 +373,7 @@ func (c *ConfigMapRegistryReconciler) ensurePod(source configMapCatalogSourceDec
 	if err == nil {
 		return nil
 	}
-	return errors.Wrapf(err, "error creating new pod: %s", pod.GetGenerateName())
+	return pkgerrors.Wrapf(err, "error creating new pod: %s", pod.GetGenerateName())
 }
 
 func (c *ConfigMapRegistryReconciler) ensureService(source configMapCatalogSourceDecorator, overwrite bool) error {
@@ -390,16 +392,15 @@ func (c *ConfigMapRegistryReconciler) ensureService(source configMapCatalogSourc
 }
 
 // CheckRegistryServer returns true if the given CatalogSource is considered healthy; false otherwise.
-func (c *ConfigMapRegistryReconciler) CheckRegistryServer(catalogSource *v1alpha1.CatalogSource) (healthy bool, err error) {
+func (c *ConfigMapRegistryReconciler) CheckRegistryServer(catalogSource *v1alpha1.CatalogSource) (bool, error) {
 	source := configMapCatalogSourceDecorator{catalogSource, c.createPodAsUser}
-
 	image := c.Image
 	if source.Spec.SourceType == "grpc" {
 		image = source.Spec.Image
 	}
 	if image == "" {
-		err = fmt.Errorf("no image for registry")
-		return
+		err := fmt.Errorf("no image for registry")
+		return false, err
 	}
 
 	if source.Spec.SourceType == v1alpha1.SourceTypeConfigmap || source.Spec.SourceType == v1alpha1.SourceTypeInternal {
@@ -426,10 +427,59 @@ func (c *ConfigMapRegistryReconciler) CheckRegistryServer(catalogSource *v1alpha
 		c.currentRoleBinding(source) == nil ||
 		c.currentService(source) == nil ||
 		len(c.currentPods(source, c.Image)) < 1 {
-		healthy = false
-		return
+
+		return false, nil
 	}
 
-	healthy = true
-	return
+	podsAreLive, e := detectAndDeleteDeadPods(c.OpClient, c.currentPods(source, c.Image), source.GetNamespace())
+	if e != nil {
+		return false, fmt.Errorf("error deleting dead pods: %v", e)
+	}
+	return podsAreLive, nil
+}
+
+// detectAndDeleteDeadPods determines if there are registry client pods that are in the deleted state
+// but have not been removed by GC (eg the node goes down before GC can remove them), and attempts to
+// force delete the pods. If there are live registry pods remaining, it returns true, otherwise returns false.
+func detectAndDeleteDeadPods(client operatorclient.ClientInterface, pods []*corev1.Pod, sourceNamespace string) (bool, error) {
+	var forceDeletionErrs []error
+	livePodFound := false
+	for _, pod := range pods {
+		if !isPodDead(pod) {
+			livePodFound = true
+			continue
+		}
+		if err := client.KubernetesInterface().CoreV1().Pods(sourceNamespace).Delete(context.TODO(), pod.GetName(), metav1.DeleteOptions{
+			GracePeriodSeconds: ptr.To[int64](0),
+		}); err != nil && !apierrors.IsNotFound(err) {
+			forceDeletionErrs = append(forceDeletionErrs, err)
+		}
+	}
+	if len(forceDeletionErrs) > 0 {
+		return false, errors.Join(forceDeletionErrs...)
+	}
+	return livePodFound, nil
+}
+
+func isPodDead(pod *corev1.Pod) bool {
+	for _, check := range []func(*corev1.Pod) bool{
+		isPodDeletedByTaintManager,
+	} {
+		if check(pod) {
+			return true
+		}
+	}
+	return false
+}
+
+func isPodDeletedByTaintManager(pod *corev1.Pod) bool {
+	if pod.DeletionTimestamp == nil {
+		return false
+	}
+	for _, condition := range pod.Status.Conditions {
+		if condition.Type == corev1.DisruptionTarget && condition.Reason == "DeletionByTaintManager" && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
