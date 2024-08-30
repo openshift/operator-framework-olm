@@ -2,14 +2,18 @@ package reconciler
 
 import (
 	"context"
-	"errors"
 	"fmt"
-
 	"strings"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
+	controllerclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
+	hashutil "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/util/hash"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	pkgerrors "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -17,14 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
-
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
-	controllerclient "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
-	hashutil "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/util/hash"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 const (
@@ -343,31 +339,6 @@ func isRegistryServiceStatusValid(source *grpcCatalogSourceDecorator) (bool, err
 func (c *GrpcRegistryReconciler) ensurePod(logger *logrus.Entry, source grpcCatalogSourceDecorator, serviceAccount *corev1.ServiceAccount, overwrite bool) error {
 	// currentPods refers to the current pod instances of the catalog source
 	currentPods := c.currentPods(logger, source)
-
-	var forceDeleteErrs []error
-	// Remove dead pods from the slice without allocating a new slice
-	// See https://go.dev/wiki/SliceTricks#filtering-without-allocating
-	tmpSlice := currentPods[:0]
-	for _, pod := range currentPods {
-		if !isPodDead(pod) {
-			logger.WithFields(logrus.Fields{"pod.namespace": source.GetNamespace(), "pod.name": pod.GetName()}).Debug("pod is alive")
-			tmpSlice = append(tmpSlice, pod)
-			continue
-		}
-
-		logger.WithFields(logrus.Fields{"pod.namespace": source.GetNamespace(), "pod.name": pod.GetName()}).Info("force deleting dead pod")
-		if err := c.OpClient.KubernetesInterface().CoreV1().Pods(source.GetNamespace()).Delete(context.TODO(), pod.GetName(), metav1.DeleteOptions{
-			GracePeriodSeconds: ptr.To[int64](0),
-		}); err != nil && !apierrors.IsNotFound(err) {
-			forceDeleteErrs = append(forceDeleteErrs, pkgerrors.Wrapf(err, "error deleting old pod: %s", pod.GetName()))
-		}
-	}
-	currentPods = tmpSlice
-
-	if len(forceDeleteErrs) > 0 {
-		return errors.Join(forceDeleteErrs...)
-	}
-
 	if len(currentPods) > 0 {
 		if !overwrite {
 			return nil
@@ -624,16 +595,19 @@ func (c *GrpcRegistryReconciler) CheckRegistryServer(logger *logrus.Entry, catal
 	if err != nil {
 		return false, err
 	}
-	current, err := c.currentPodsWithCorrectImageAndSpec(logger, source, serviceAccount)
+	currentPods, err := c.currentPodsWithCorrectImageAndSpec(logger, source, serviceAccount)
 	if err != nil {
 		return false, err
 	}
-	if len(current) < 1 ||
+	if len(currentPods) < 1 ||
 		service == nil || c.currentServiceAccount(source) == nil {
 		return false, nil
 	}
-
-	return true, nil
+	podsAreLive, e := detectAndDeleteDeadPods(logger, c.OpClient, currentPods, source.GetNamespace())
+	if e != nil {
+		return false, fmt.Errorf("error deleting dead pods: %v", e)
+	}
+	return podsAreLive, nil
 }
 
 // promoteCatalog swaps the labels on the update pod so that the update pod is now reachable by the catalog service.
