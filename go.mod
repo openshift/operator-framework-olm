@@ -32,13 +32,6 @@ require (
 	sigs.k8s.io/controller-tools v0.16.1
 )
 
-// pin to v1.18.0 until k8s.io/component-base updates its prometheus dependencies
-// issue: https://github.com/operator-framework/operator-lifecycle-manager/issues/3283
-replace (
-	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0
-	github.com/prometheus/common => github.com/prometheus/common v0.47.0
-)
-
 // latest gRPC library causes changes in the way the CatalogSource connection status behaves
 // previously it would reach READY - but now seems to stay on IDLE unless there is data going down the pipe
 // this is breaking many CatalogSource related tests
