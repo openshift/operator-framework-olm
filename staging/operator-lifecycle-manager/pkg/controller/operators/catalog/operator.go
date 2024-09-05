@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/pager"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
@@ -1906,21 +1907,34 @@ func validateV1Beta1CRDCompatibility(dynamicClient dynamic.Interface, oldCRD *ap
 }
 
 func validateExistingCRs(dynamicClient dynamic.Interface, gvr schema.GroupVersionResource, newCRD *apiextensions.CustomResourceDefinition) error {
-	// make dynamic client
-	crList, err := dynamicClient.Resource(gvr).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return fmt.Errorf("error listing resources in GroupVersionResource %#v: %s", gvr, err)
-	}
-	for _, cr := range crList.Items {
+	pager := pager.New(pager.SimplePageFunc(func(opts metav1.ListOptions) (runtime.Object, error) {
+		return dynamicClient.Resource(gvr).List(context.TODO(), opts)
+	}))
+	validationFn := func(obj runtime.Object) error {
 		validator, _, err := validation.NewSchemaValidator(newCRD.Spec.Validation)
 		if err != nil {
 			return fmt.Errorf("error creating validator for schema %#v: %s", newCRD.Spec.Validation, err)
 		}
-		err = validation.ValidateCustomResource(field.NewPath(""), cr.UnstructuredContent(), validator).ToAggregate()
+		err = validation.ValidateCustomResource(field.NewPath(""), obj, validator).ToAggregate()
 		if err != nil {
-			return fmt.Errorf("error validating custom resource against new schema for %s %s/%s: %v", newCRD.Spec.Names.Kind, cr.GetNamespace(), cr.GetName(), err)
+			// lister will only provide unstructured objects as runtime.Object, so this should never fail to convert
+			// if it does, it's a programming error
+			cr := obj.(*unstructured.Unstructured)
+			var namespacedName string
+			if cr.GetNamespace() == "" {
+				namespacedName = cr.GetName()
+			} else {
+				namespacedName = fmt.Sprintf("%s/%s", cr.GetNamespace(), cr.GetName())
+			}
+			return fmt.Errorf("error validating %s %q: updated validation is too restrictive: %v", cr.GroupVersionKind(), namespacedName, err)
 		}
+		return nil
 	}
+	err := pager.EachListItem(context.Background(), metav1.ListOptions{}, validationFn)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
