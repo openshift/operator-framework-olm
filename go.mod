@@ -29,7 +29,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20240816214639-573285566f34
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 	sigs.k8s.io/controller-runtime v0.19.0
-	sigs.k8s.io/controller-tools v0.16.1
+	sigs.k8s.io/controller-tools v0.16.2
 )
 
 // latest gRPC library causes changes in the way the CatalogSource connection status behaves
