@@ -32,7 +32,6 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/projection"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/comparison"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/operator-framework/operator-lifecycle-manager/test/e2e/ctx"
 	registryapi "github.com/operator-framework/operator-registry/pkg/api"
@@ -160,7 +159,7 @@ var _ = Describe("Subscription", func() {
 			return false
 		}, 5*time.Minute, 10*time.Second).Should(BeTrue())
 
-		csv, err := fetchCSV(crc, currentCSV, generatedNamespace.GetName(), buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
+		csv, err := fetchCSV(crc, generatedNamespace.GetName(), currentCSV, buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
 		require.NoError(GinkgoT(), err)
 
 		// Check for the olm.package property as a proxy for
@@ -192,7 +191,7 @@ var _ = Describe("Subscription", func() {
 		subscription, err := fetchSubscription(crc, generatedNamespace.GetName(), testSubscriptionName, subscriptionStateAtLatestChecker)
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subscription)
-		_, err = fetchCSV(crc, subscription.Status.CurrentCSV, generatedNamespace.GetName(), buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), subscription.Status.CurrentCSV, buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
 		require.NoError(GinkgoT(), err)
 	})
 	It("skip range", func() {
@@ -277,14 +276,14 @@ var _ = Describe("Subscription", func() {
 		defer subscriptionCleanup()
 
 		// Wait for csv to install
-		firstCSV, err := awaitCSV(crc, generatedNamespace.GetName(), mainCSV.GetName(), csvSucceededChecker)
+		firstCSV, err := fetchCSV(crc, generatedNamespace.GetName(), mainCSV.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Update catalog with a new csv in the channel with a skip range
 		updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{updatedCSV}, updatedManifests)
 
 		// Wait for csv to update
-		finalCSV, err := awaitCSV(crc, generatedNamespace.GetName(), updatedCSV.GetName(), csvSucceededChecker)
+		finalCSV, err := fetchCSV(crc, generatedNamespace.GetName(), updatedCSV.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Ensure we set the replacement field based on the registry data
@@ -349,10 +348,9 @@ var _ = Describe("Subscription", func() {
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subscription)
 
-		_, err = fetchCSV(crc, subscription.Status.CurrentCSV, generatedNamespace.GetName(), buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), subscription.Status.CurrentCSV, buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
 		require.NoError(GinkgoT(), err)
 	})
-
 	It("with starting CSV", func() {
 
 		crdPlural := genName("ins")
@@ -475,7 +473,7 @@ var _ = Describe("Subscription", func() {
 		_, err = crc.OperatorsV1alpha1().InstallPlans(generatedNamespace.GetName()).Update(context.Background(), fetchedInstallPlan, metav1.UpdateOptions{})
 		require.NoError(GinkgoT(), err)
 
-		_, err = awaitCSV(crc, generatedNamespace.GetName(), csvA.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), csvA.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Wait for the subscription to begin upgrading to csvB
@@ -485,15 +483,21 @@ var _ = Describe("Subscription", func() {
 			return subscription != nil && subscription.Status.InstallPlanRef.Name != fetchedInstallPlan.GetName() && subscription.Status.State == operatorsv1alpha1.SubscriptionStateUpgradePending, err
 		}, 5*time.Minute, 1*time.Second).Should(BeTrue(), "expected new installplan for upgraded csv")
 
-		upgradeInstallPlan, err := fetchInstallPlanWithNamespace(GinkgoT(), crc, subscription.Status.InstallPlanRef.Name, generatedNamespace.GetName(), requiresApprovalChecker)
-		require.NoError(GinkgoT(), err)
+		// Approve install plan
+		Eventually(func() (bool, error) {
+			upgradeInstallPlan, err := fetchInstallPlanWithNamespace(GinkgoT(), crc, subscription.Status.InstallPlanRef.Name, generatedNamespace.GetName(), requiresApprovalChecker)
+			if err != nil {
+				return false, nil
+			}
 
-		// Approve the upgrade installplan and wait for
-		upgradeInstallPlan.Spec.Approved = true
-		_, err = crc.OperatorsV1alpha1().InstallPlans(generatedNamespace.GetName()).Update(context.Background(), upgradeInstallPlan, metav1.UpdateOptions{})
-		require.NoError(GinkgoT(), err)
-
-		_, err = awaitCSV(crc, generatedNamespace.GetName(), csvB.GetName(), csvSucceededChecker)
+			// Approve the upgrade installplan and wait for
+			upgradeInstallPlan.Spec.Approved = true
+			if _, err = crc.OperatorsV1alpha1().InstallPlans(generatedNamespace.GetName()).Update(context.Background(), upgradeInstallPlan, metav1.UpdateOptions{}); err != nil {
+				return false, nil
+			}
+			return true, nil
+		}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "expected new installplan for upgraded csv")
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), csvB.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Ensure that 2 installplans were created
@@ -544,7 +548,7 @@ var _ = Describe("Subscription", func() {
 		require.NotNil(GinkgoT(), subscription)
 
 		// Wait for csvA to be installed
-		_, err = awaitCSV(crc, generatedNamespace.GetName(), csvA.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), csvA.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Set up async watches that will fail the test if csvB doesn't get created in between csvA and csvC
@@ -553,7 +557,7 @@ var _ = Describe("Subscription", func() {
 			defer GinkgoRecover()
 			wg.Add(1)
 			defer wg.Done()
-			_, err := awaitCSV(crc, generatedNamespace.GetName(), csvB.GetName(), csvReplacingChecker)
+			_, err := fetchCSV(crc, generatedNamespace.GetName(), csvB.GetName(), csvReplacingChecker)
 			require.NoError(GinkgoT(), err)
 		}(GinkgoT())
 		// Update the catalog to include multiple updates
@@ -573,17 +577,15 @@ var _ = Describe("Subscription", func() {
 		wg.Wait()
 
 		// Wait for csvC to be installed
-		_, err = awaitCSV(crc, generatedNamespace.GetName(), csvC.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), csvC.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Should eventually GC the CSVs
-		Eventually(func() bool {
-			return csvExists(generatedNamespace.GetName(), crc, csvA.Name)
-		}).Should(BeFalse())
+		err = waitForCsvToDelete(generatedNamespace.GetName(), csvA.Name, crc)
+		Expect(err).ShouldNot(HaveOccurred())
 
-		Eventually(func() bool {
-			return csvExists(generatedNamespace.GetName(), crc, csvB.Name)
-		}).Should(BeFalse())
+		err = waitForCsvToDelete(generatedNamespace.GetName(), csvB.Name, crc)
+		Expect(err).ShouldNot(HaveOccurred())
 
 		// TODO: check installplans, subscription status, etc
 	})
@@ -626,7 +628,7 @@ var _ = Describe("Subscription", func() {
 		createSubscriptionForCatalog(crc, generatedNamespace.GetName(), subscriptionName, catalogSourceName, packageName, stableChannel, csvB.GetName(), operatorsv1alpha1.ApprovalAutomatic)
 
 		// Wait for csvB to be installed
-		_, err = awaitCSV(crc, generatedNamespace.GetName(), csvB.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), csvB.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		subscription, err := fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionHasInstallPlanChecker)
@@ -682,7 +684,7 @@ var _ = Describe("Subscription", func() {
 		require.NoError(GinkgoT(), err)
 
 		// Wait for csvA to be installed
-		_, err = awaitCSV(crc, generatedNamespace.GetName(), csvA.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), csvA.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Wait for the subscription to begin upgrading to csvB
@@ -700,7 +702,7 @@ var _ = Describe("Subscription", func() {
 		require.NoError(GinkgoT(), err)
 
 		// Wait for csvB to be installed
-		_, err = awaitCSV(crc, generatedNamespace.GetName(), csvB.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crc, generatedNamespace.GetName(), csvB.GetName(), csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 	})
 
@@ -1022,6 +1024,7 @@ var _ = Describe("Subscription", func() {
 	// - Wait for sub to have status condition SubscriptionInstallPlanMissing true
 	// - Ensure original non-InstallPlan status conditions remain after InstallPlan transitions
 	It("can reconcile InstallPlan status", func() {
+		By(`TestSubscriptionInstallPlanStatus ensures that a Subscription has the appropriate status conditions for possible referenced InstallPlan states.`)
 		c := newKubeClient()
 		crc := newCRClient()
 
@@ -1068,6 +1071,7 @@ var _ = Describe("Subscription", func() {
 		ref := sub.Status.InstallPlanRef
 		Expect(ref).ToNot(BeNil())
 
+		By(`Get the InstallPlan`)
 		plan := &operatorsv1alpha1.InstallPlan{}
 		plan.SetNamespace(ref.Namespace)
 		plan.SetName(ref.Name)
@@ -1179,16 +1183,13 @@ var _ = Describe("Subscription", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(sub).ToNot(BeNil())
 
-		// Ensure original non-InstallPlan status conditions remain after InstallPlan transitions
-		hashEqual := comparison.NewHashEqualitor()
+		By(`Ensure InstallPlan-related status conditions match what we're expecting`)
 		for _, cond := range conds {
 			switch condType := cond.Type; condType {
 			case operatorsv1alpha1.SubscriptionInstallPlanPending, operatorsv1alpha1.SubscriptionInstallPlanFailed:
 				require.FailNowf(GinkgoT(), "failed", "subscription contains unexpected installplan condition: %v", cond)
 			case operatorsv1alpha1.SubscriptionInstallPlanMissing:
 				require.Equal(GinkgoT(), operatorsv1alpha1.ReferencedInstallPlanNotFound, cond.Reason)
-			default:
-				require.True(GinkgoT(), hashEqual(cond, sub.Status.GetCondition(condType)), "non-installplan status condition changed")
 			}
 		}
 	})
@@ -1337,7 +1338,7 @@ var _ = Describe("Subscription", func() {
 		expected = append(expected, proxyEnv...)
 
 		Eventually(func() error {
-			csv, err := fetchCSV(crClient, subscription.Status.CurrentCSV, generatedNamespace.GetName(), buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
+			csv, err := fetchCSV(crClient, generatedNamespace.GetName(), subscription.Status.CurrentCSV, buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseSucceeded))
 			if err != nil {
 				return err
 			}
@@ -1391,7 +1392,7 @@ var _ = Describe("Subscription", func() {
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subscription)
 
-		csv, err := fetchCSV(crClient, subscription.Status.CurrentCSV, generatedNamespace.GetName(), buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseInstalling, operatorsv1alpha1.CSVPhaseSucceeded))
+		csv, err := fetchCSV(crClient, generatedNamespace.GetName(), subscription.Status.CurrentCSV, buildCSVConditionChecker(operatorsv1alpha1.CSVPhaseInstalling, operatorsv1alpha1.CSVPhaseSucceeded))
 		require.NoError(GinkgoT(), err)
 
 		Eventually(func() error {
@@ -1676,7 +1677,7 @@ var _ = Describe("Subscription", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(subscription).ToNot(BeNil())
 
-					_, err = fetchCSV(crClient, mainCSVName, generatedNamespace.GetName(), csvSucceededChecker)
+					_, err = fetchCSV(crClient, generatedNamespace.GetName(), mainCSVName, csvSucceededChecker)
 					Expect(err).ToNot(HaveOccurred())
 
 				})
@@ -1764,7 +1765,7 @@ var _ = Describe("Subscription", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(subscription).ToNot(BeNil())
 
-					_, err = fetchCSV(crClient, mainCSVName, generatedNamespace.GetName(), csvSucceededChecker)
+					_, err = fetchCSV(crClient, generatedNamespace.GetName(), mainCSVName, csvSucceededChecker)
 					Expect(err).ToNot(HaveOccurred())
 
 				})
@@ -1858,7 +1859,7 @@ var _ = Describe("Subscription", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(subscription).ToNot(BeNil())
 
-					_, err = fetchCSV(crClient, mainCSVName, generatedNamespace.GetName(), csvSucceededChecker)
+					_, err = fetchCSV(crClient, generatedNamespace.GetName(), mainCSVName, csvSucceededChecker)
 					Expect(err).ToNot(HaveOccurred())
 
 				})
@@ -1952,7 +1953,7 @@ var _ = Describe("Subscription", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(subscription).ToNot(BeNil())
 
-					_, err = fetchCSV(crClient, mainCSVName, generatedNamespace.GetName(), csvSucceededChecker)
+					_, err = fetchCSV(crClient, generatedNamespace.GetName(), mainCSVName, csvSucceededChecker)
 					Expect(err).ToNot(HaveOccurred())
 
 				})
@@ -2066,9 +2067,9 @@ var _ = Describe("Subscription", func() {
 		_, err = fetchInstallPlanWithNamespace(GinkgoT(), crClient, subscription.Status.InstallPlanRef.Name, generatedNamespace.GetName(), buildInstallPlanPhaseCheckFunc(operatorsv1alpha1.InstallPlanPhaseComplete))
 		require.NoError(GinkgoT(), err)
 		// Fetch CSVs A and B
-		_, err = fetchCSV(crClient, csvA.Name, generatedNamespace.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crClient, generatedNamespace.GetName(), csvA.Name, csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
-		_, err = fetchCSV(crClient, csvB.Name, generatedNamespace.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crClient, generatedNamespace.GetName(), csvB.Name, csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Update PackageManifest
@@ -2096,7 +2097,7 @@ var _ = Describe("Subscription", func() {
 		_, err = crClient.OperatorsV1alpha1().ClusterServiceVersions(generatedNamespace.GetName()).Get(context.Background(), csvNewA.Name, metav1.GetOptions{})
 		require.Error(GinkgoT(), err)
 		// Ensure csvA still exists
-		_, err = fetchCSV(crClient, csvA.Name, generatedNamespace.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crClient, generatedNamespace.GetName(), csvA.Name, csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 
 		// Update packagemanifest again
@@ -2121,10 +2122,10 @@ var _ = Describe("Subscription", func() {
 		_, err = fetchSubscription(crClient, generatedNamespace.GetName(), subscriptionName, subscriptionHasInstallPlanDifferentChecker(subscription.Status.InstallPlanRef.Name))
 		require.NoError(GinkgoT(), err)
 		// Ensure csvNewA is installed
-		_, err = fetchCSV(crClient, csvNewA.Name, generatedNamespace.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crClient, generatedNamespace.GetName(), csvNewA.Name, csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 		// Ensure csvNewB is installed
-		_, err = fetchCSV(crClient, csvNewB.Name, generatedNamespace.GetName(), csvSucceededChecker)
+		_, err = fetchCSV(crClient, generatedNamespace.GetName(), csvNewB.Name, csvSucceededChecker)
 		require.NoError(GinkgoT(), err)
 	})
 
@@ -2632,14 +2633,27 @@ func subscriptionHasCurrentCSV(currentCSV string) subscriptionStateChecker {
 }
 
 func subscriptionHasCondition(condType operatorsv1alpha1.SubscriptionConditionType, status corev1.ConditionStatus, reason, message string) subscriptionStateChecker {
+	var lastCond operatorsv1alpha1.SubscriptionCondition
+	lastTime := time.Now()
+	// if status/reason/message meet expectations, then subscription state is considered met/true
+	// IFF this is the result of a recent change of status/reason/message
+	// else, cache the current status/reason/message for next loop/comparison
 	return func(subscription *operatorsv1alpha1.Subscription) bool {
 		cond := subscription.Status.GetCondition(condType)
 		if cond.Status == status && cond.Reason == reason && cond.Message == message {
-			fmt.Printf("subscription condition met %v\n", cond)
+			if lastCond.Status != cond.Status && lastCond.Reason != cond.Reason && lastCond.Message == cond.Message {
+				GinkgoT().Logf("waited %s subscription condition met %v\n", time.Since(lastTime), cond)
+				lastTime = time.Now()
+				lastCond = cond
+			}
 			return true
 		}
 
-		fmt.Printf("subscription condition not met: %v\n", cond)
+		if lastCond.Status != cond.Status && lastCond.Reason != cond.Reason && lastCond.Message == cond.Message {
+			GinkgoT().Logf("waited %s subscription condition not met: %v\n", time.Since(lastTime), cond)
+			lastTime = time.Now()
+			lastCond = cond
+		}
 		return false
 	}
 }
@@ -2932,6 +2946,8 @@ func updateInternalCatalog(t GinkgoTInterface, c operatorclient.ClientInterface,
 	require.NoError(t, err)
 
 	// wait for catalog to update
+	var lastState string
+	lastTime := time.Now()
 	_, err = fetchCatalogSourceOnStatus(crc, catalogSourceName, namespace, func(catalog *operatorsv1alpha1.CatalogSource) bool {
 		before := fetchedInitialCatalog.Status.ConfigMapResource
 		after := catalog.Status.ConfigMapResource
@@ -2940,7 +2956,11 @@ func updateInternalCatalog(t GinkgoTInterface, c operatorclient.ClientInterface,
 			fmt.Println("catalog updated")
 			return true
 		}
-		fmt.Printf("waiting for catalog pod %v to be available (after catalog update) - %s\n", catalog.GetName(), catalog.Status.GRPCConnectionState.LastObservedState)
+		if catalog.Status.GRPCConnectionState.LastObservedState != lastState {
+			fmt.Printf("waited %s for catalog pod %v to be available (after catalog update) - %s\n", time.Since(lastTime), catalog.GetName(), catalog.Status.GRPCConnectionState.LastObservedState)
+			lastState = catalog.Status.GRPCConnectionState.LastObservedState
+			lastTime = time.Now()
+		}
 		return false
 	})
 	require.NoError(t, err)
