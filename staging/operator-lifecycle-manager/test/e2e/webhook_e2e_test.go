@@ -2,7 +2,14 @@ package e2e
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"fmt"
+	"math"
+	"math/big"
 	"strings"
 	"time"
 
@@ -21,6 +28,7 @@ import (
 	v1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/certs"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 )
@@ -97,7 +105,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			_, err = fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
 			Expect(err).Should(BeNil())
 
 			actualWebhook, err := getWebhookWithGenerateName(c, webhook.GenerateName)
@@ -139,7 +147,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			_, err = fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
 			Expect(err).Should(BeNil())
 
 			actualWebhook, err := getWebhookWithGenerateName(c, webhook.GenerateName)
@@ -194,7 +202,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			_, err = fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
 			Expect(err).Should(BeNil())
 
 			// Get the existing secret
@@ -216,7 +224,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			}).Should(BeTrue(), "Unable to set CSV phase to Pending")
 
 			// Wait for webhook-operator to succeed
-			_, err = awaitCSV(crc, generatedNamespace.GetName(), csv.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.GetName(), csvSucceededChecker)
 			require.NoError(GinkgoT(), err)
 
 			// Get the updated secret
@@ -243,7 +251,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			_, err = fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvFailedChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvFailedChecker)
 			Expect(err).Should(BeNil())
 		})
 		It("Fails if the webhooks intercepts all resources", func() {
@@ -273,7 +281,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			failedCSV, err := fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvFailedChecker)
+			failedCSV, err := fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvFailedChecker)
 			Expect(err).Should(BeNil())
 			Expect(failedCSV.Status.Message).Should(Equal("webhook rules cannot include all groups"))
 		})
@@ -304,7 +312,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			failedCSV, err := fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvFailedChecker)
+			failedCSV, err := fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvFailedChecker)
 			Expect(err).Should(BeNil())
 			Expect(failedCSV.Status.Message).Should(Equal("webhook rules cannot include the OLM group"))
 		})
@@ -335,7 +343,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			failedCSV, err := fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvFailedChecker)
+			failedCSV, err := fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvFailedChecker)
 			Expect(err).Should(BeNil())
 			Expect(failedCSV.Status.Message).Should(Equal("webhook rules cannot include MutatingWebhookConfiguration or ValidatingWebhookConfiguration resources"))
 		})
@@ -368,7 +376,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			_, err = fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
 			Expect(err).Should(BeNil())
 		})
 		It("Can be installed and upgraded successfully", func() {
@@ -400,7 +408,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			Expect(err).Should(BeNil())
 			// cleanup by upgrade
 
-			_, err = fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
 			Expect(err).Should(BeNil())
 
 			_, err = getWebhookWithGenerateName(c, webhook.GenerateName)
@@ -415,16 +423,15 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			_, err = fetchCSV(crc, csv.GetName(), generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.GetName(), csvSucceededChecker)
 			Expect(err).Should(BeNil())
 
 			_, err = getWebhookWithGenerateName(c, webhook.GenerateName)
 			Expect(err).Should(BeNil())
 
 			// Make sure old resources are cleaned up.
-			Eventually(func() bool {
-				return csvExists(generatedNamespace.GetName(), crc, csv.Spec.Replaces)
-			}).Should(BeFalse())
+			err = waitForCsvToDelete(generatedNamespace.GetName(), csv.Spec.Replaces, crc)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			// Wait until previous webhook is cleaned up
 			Eventually(func() (bool, error) {
@@ -456,7 +463,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			fetchedCSV, err := fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
 			Expect(err).Should(BeNil())
 
 			actualWebhook, err := getWebhookWithGenerateName(c, webhook.GenerateName)
@@ -472,15 +479,19 @@ var _ = Describe("CSVs with a Webhook", func() {
 			oldCAAnnotation, ok := dep.Spec.Template.GetAnnotations()[install.OLMCAHashAnnotationKey]
 			Expect(ok).Should(BeTrue())
 
-			// Induce a cert rotation
-			Eventually(Apply(fetchedCSV, func(csv *operatorsv1alpha1.ClusterServiceVersion) error {
-				now := metav1.Now()
-				csv.Status.CertsLastUpdated = &now
-				csv.Status.CertsRotateAt = &now
+			caSecret, err := c.KubernetesInterface().CoreV1().Secrets(generatedNamespace.GetName()).Get(context.TODO(), install.SecretName(install.ServiceName(dep.Name)), metav1.GetOptions{})
+			Expect(err).Should(BeNil())
+
+			caPEM, certPEM, privPEM := generateExpiredCerts(install.HostnamesForService(install.ServiceName(dep.Name), generatedNamespace.GetName()))
+			By(`Induce a cert rotation`)
+			Eventually(Apply(caSecret, func(caSecret *corev1.Secret) error {
+				caSecret.Data[install.OLMCAPEMKey] = caPEM
+				caSecret.Data["tls.crt"] = certPEM
+				caSecret.Data["tls.key"] = privPEM
 				return nil
 			})).Should(Succeed())
 
-			_, err = fetchCSV(crc, csv.Name, generatedNamespace.GetName(), func(csv *operatorsv1alpha1.ClusterServiceVersion) bool {
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, func(csv *operatorsv1alpha1.ClusterServiceVersion) bool {
 				// Should create deployment
 				dep, err = c.GetDeployment(generatedNamespace.GetName(), csv.Spec.WebhookDefinitions[0].DeploymentName)
 				if err != nil {
@@ -542,7 +553,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			_, err = fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
 			Expect(err).Should(BeNil())
 			actualWebhook, err := getWebhookWithGenerateName(c, webhook.GenerateName)
 			Expect(err).Should(BeNil())
@@ -606,7 +617,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 		defer cleanupCSV()
 
 		Eventually(func() (err error) {
-			_, err = fetchCSV(crc, csv.Name, namespace1.Name, csvSucceededChecker)
+			_, err = fetchCSV(crc, namespace1.Name, csv.Name, csvSucceededChecker)
 			return
 		}).Should(Succeed())
 
@@ -618,7 +629,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 		defer cleanupCSV()
 
 		Eventually(func() (err error) {
-			_, err = fetchCSV(crc, csv.Name, namespace2.Name, csvSucceededChecker)
+			_, err = fetchCSV(crc, namespace2.Name, csv.Name, csvSucceededChecker)
 			return
 		}).Should(Succeed())
 
@@ -690,8 +701,11 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupSubscription := createSubscriptionForCatalog(crc, source.GetNamespace(), subscriptionName, source.GetName(), packageName, channelName, "", operatorsv1alpha1.ApprovalAutomatic)
 			defer cleanupSubscription()
 
+			_, err = fetchSubscription(crc, source.GetNamespace(), subscriptionName, subscriptionHasInstallPlanChecker)
+			require.NoError(GinkgoT(), err)
+
 			// Wait for webhook-operator v2 csv to succeed
-			csv, err := awaitCSV(crc, source.GetNamespace(), csvName, csvSucceededChecker)
+			csv, err := fetchCSV(crc, source.GetNamespace(), csvName, csvSucceededChecker)
 			require.NoError(GinkgoT(), err)
 
 			cleanupCSV = buildCSVCleanupFunc(c, crc, *csv, source.GetNamespace(), true, true)
@@ -852,7 +866,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			_, err = fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
 			Expect(err).Should(BeNil())
 			actualWebhook, err := getWebhookWithGenerateName(c, webhook.GenerateName)
 			Expect(err).Should(BeNil())
@@ -915,7 +929,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			cleanupCSV, err = createCSV(c, crc, csv, generatedNamespace.GetName(), false, false)
 			Expect(err).Should(BeNil())
 
-			_, err = fetchCSV(crc, csv.Name, generatedNamespace.GetName(), csvSucceededChecker)
+			_, err = fetchCSV(crc, generatedNamespace.GetName(), csv.Name, csvSucceededChecker)
 			Expect(err).Should(BeNil())
 			actualWebhook, err := getWebhookWithGenerateName(c, webhook.GenerateName)
 			Expect(err).Should(BeNil())
@@ -1166,4 +1180,71 @@ func newV1CRD(plural string) apiextensionsv1.CustomResourceDefinition {
 	}
 
 	return crd
+}
+
+func generateExpiredCerts(hosts []string) ([]byte, []byte, []byte) {
+	caSerial, err := rand.Int(rand.Reader, new(big.Int).SetInt64(math.MaxInt64))
+	Expect(err).Should(BeNil())
+
+	caDetails := &x509.Certificate{
+		SerialNumber: caSerial,
+		Subject: pkix.Name{
+			CommonName:   fmt.Sprintf("olm-selfsigned-%x", caSerial),
+			Organization: []string{install.Organization},
+		},
+		NotBefore:             time.Now().Add(-5 * time.Minute),
+		NotAfter:              time.Now().Add(-5 * time.Minute),
+		IsCA:                  true,
+		KeyUsage:              x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+
+	caKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	Expect(err).Should(BeNil())
+
+	caRaw, err := x509.CreateCertificate(rand.Reader, caDetails, caDetails, &caKey.PublicKey, caKey)
+	Expect(err).Should(BeNil())
+
+	caCert, err := x509.ParseCertificate(caRaw)
+	Expect(err).Should(BeNil())
+
+	caPEM, _, err := (&certs.KeyPair{
+		Cert: caCert,
+		Priv: caKey,
+	}).ToPEM()
+	Expect(err).Should(BeNil())
+
+	serial, err := rand.Int(rand.Reader, new(big.Int).SetInt64(math.MaxInt64))
+	Expect(err).Should(BeNil())
+
+	certDetails := &x509.Certificate{
+		SerialNumber: serial,
+		Subject: pkix.Name{
+			CommonName:   hosts[0],
+			Organization: []string{install.Organization},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now(),
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		DNSNames:              hosts,
+	}
+
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	Expect(err).Should(BeNil())
+
+	publicKey := &privateKey.PublicKey
+	certRaw, err := x509.CreateCertificate(rand.Reader, certDetails, caCert, publicKey, caKey)
+	Expect(err).Should(BeNil())
+
+	cert, err := x509.ParseCertificate(certRaw)
+	Expect(err).Should(BeNil())
+
+	certPEM, privPEM, err := (&certs.KeyPair{
+		Cert: cert,
+		Priv: privateKey,
+	}).ToPEM()
+	Expect(err).Should(BeNil())
+
+	return caPEM, certPEM, privPEM
 }
