@@ -762,7 +762,6 @@ github.com/operator-framework/operator-registry/pkg/lib/certs
 github.com/operator-framework/operator-registry/pkg/lib/config
 github.com/operator-framework/operator-registry/pkg/lib/dns
 github.com/operator-framework/operator-registry/pkg/lib/encoding
-github.com/operator-framework/operator-registry/pkg/lib/graceful
 github.com/operator-framework/operator-registry/pkg/lib/indexer
 github.com/operator-framework/operator-registry/pkg/lib/log
 github.com/operator-framework/operator-registry/pkg/lib/registry
