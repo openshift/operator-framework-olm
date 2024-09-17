@@ -832,6 +832,7 @@ github.com/operator-framework/operator-lifecycle-manager/util/cpb
 # github.com/operator-framework/operator-registry v1.39.0 => ./staging/operator-registry
 ## explicit; go 1.21
 github.com/operator-framework/operator-registry/alpha/action
+github.com/operator-framework/operator-registry/alpha/action/migrations
 github.com/operator-framework/operator-registry/alpha/declcfg
 github.com/operator-framework/operator-registry/alpha/model
 github.com/operator-framework/operator-registry/alpha/property

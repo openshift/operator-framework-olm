@@ -13,6 +13,7 @@ import (
 
 	"sigs.k8s.io/yaml"
 
+	"github.com/operator-framework/operator-registry/alpha/action/migrations"
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	basictemplate "github.com/operator-framework/operator-registry/alpha/template/basic"
 	semvertemplate "github.com/operator-framework/operator-registry/alpha/template/semver"
@@ -79,6 +80,12 @@ func (bb *BasicBuilder) Build(ctx context.Context, reg image.Registry, dir strin
 	}
 
 	b := basictemplate.Template{Registry: reg}
+	migrations, err := migrations.NewMigrations(migrations.AllMigrations)
+	if err != nil {
+		return fmt.Errorf("error creating migrations: %v", err)
+	}
+	b.Migrations = migrations
+
 	reader, err := os.Open(basicConfig.Input)
 	if err != nil {
 		if os.IsNotExist(err) && bb.builderCfg.ContributionPath != "" {
@@ -160,6 +167,11 @@ func (sb *SemverBuilder) Build(ctx context.Context, reg image.Registry, dir stri
 	defer reader.Close()
 
 	s := semvertemplate.Template{Registry: reg, Data: reader}
+	migrations, err := migrations.NewMigrations(migrations.AllMigrations)
+	if err != nil {
+		return fmt.Errorf("error creating migrations: %v", err)
+	}
+	s.Migrations = migrations
 
 	dcfg, err := s.Render(ctx)
 	if err != nil {

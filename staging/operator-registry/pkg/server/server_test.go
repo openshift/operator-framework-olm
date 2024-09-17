@@ -32,11 +32,11 @@ const (
 	dbAddress = "localhost" + dbPort
 	dbName    = "test.db"
 
-	jsonCachePort    = ":50053"
-	jsonCacheAddress = "localhost" + jsonCachePort
+	cachePort    = ":50053"
+	cacheAddress = "localhost" + cachePort
 
-	jsonDeprecationCachePort    = ":50054"
-	jsonDeprecationCacheAddress = "localhost" + jsonDeprecationCachePort
+	deprecationCachePort    = ":50054"
+	deprecationCacheAddress = "localhost" + deprecationCachePort
 )
 
 func createDBStore(dbPath string) *sqlite.SQLQuerier {
@@ -146,7 +146,7 @@ func TestMain(m *testing.M) {
 		}
 	}()
 	go func() {
-		lis, err := net.Listen("tcp", jsonCachePort)
+		lis, err := net.Listen("tcp", cachePort)
 		if err != nil {
 			logrus.Fatalf("failed to listen: %v", err)
 		}
@@ -155,7 +155,7 @@ func TestMain(m *testing.M) {
 		}
 	}()
 	go func() {
-		lis, err := net.Listen("tcp", jsonDeprecationCacheAddress)
+		lis, err := net.Listen("tcp", deprecationCacheAddress)
 		if err != nil {
 			logrus.Fatalf("failed to listen: %v", err)
 		}
@@ -186,8 +186,8 @@ func TestListPackages(t *testing.T) {
 	)
 
 	t.Run("Sqlite", testListPackages(dbAddress, listPackagesExpected))
-	t.Run("FBCJsonCache", testListPackages(jsonCacheAddress, listPackagesExpected))
-	t.Run("FBCJsonCacheWithDeprecations", testListPackages(jsonDeprecationCacheAddress, listPackagesExpectedDep))
+	t.Run("FBCJsonCache", testListPackages(cacheAddress, listPackagesExpected))
+	t.Run("FBCJsonCacheWithDeprecations", testListPackages(deprecationCacheAddress, listPackagesExpectedDep))
 }
 
 func testListPackages(addr string, expected []string) func(*testing.T) {
@@ -262,8 +262,8 @@ func TestGetPackage(t *testing.T) {
 		}
 	)
 	t.Run("Sqlite", testGetPackage(dbAddress, getPackageExpected))
-	t.Run("FBCJsonCache", testGetPackage(jsonCacheAddress, getPackageExpected))
-	t.Run("FBCJsonCacheWithDeprecations", testGetPackage(jsonDeprecationCacheAddress, getPackageExpectedDep))
+	t.Run("FBCJsonCache", testGetPackage(cacheAddress, getPackageExpected))
+	t.Run("FBCJsonCacheWithDeprecations", testGetPackage(deprecationCacheAddress, getPackageExpectedDep))
 }
 
 func testGetPackage(addr string, expected *api.Package) func(*testing.T) {
@@ -314,8 +314,8 @@ func TestGetBundle(t *testing.T) {
 		}
 	)
 	t.Run("Sqlite", testGetBundle(dbAddress, etcdoperator_v0_9_2("alpha", false, false, includeManifestsAll)))
-	t.Run("FBCJsonCache", testGetBundle(jsonCacheAddress, etcdoperator_v0_9_2("alpha", false, true, includeManifestsCSVOnly)))
-	t.Run("FBCJsonCacheWithDeprecations", testGetBundle(jsonDeprecationCacheAddress, cockroachBundle))
+	t.Run("FBCCache", testGetBundle(cacheAddress, etcdoperator_v0_9_2("alpha", false, true, includeManifestsAll)))
+	t.Run("FBCCacheWithDeprecations", testGetBundle(deprecationCacheAddress, cockroachBundle))
 }
 
 func testGetBundle(addr string, expected *api.Bundle) func(*testing.T) {
@@ -338,7 +338,7 @@ func TestGetBundleForChannel(t *testing.T) {
 			CsvJson: b.CsvJson + "\n",
 		}))
 	}
-	t.Run("FBCJsonCache", testGetBundleForChannel(jsonCacheAddress, etcdoperator_v0_9_2("alpha", false, true, includeManifestsCSVOnly)))
+	t.Run("FBCCache", testGetBundleForChannel(cacheAddress, etcdoperator_v0_9_2("alpha", false, true, includeManifestsAll)))
 }
 
 func testGetBundleForChannel(addr string, expected *api.Bundle) func(*testing.T) {
@@ -386,8 +386,8 @@ func TestGetChannelEntriesThatReplace(t *testing.T) {
 	)
 
 	t.Run("Sqlite", testGetChannelEntriesThatReplace(dbAddress, getChannelEntriesThatReplaceExpected))
-	t.Run("FBCJsonCache", testGetChannelEntriesThatReplace(jsonCacheAddress, getChannelEntriesThatReplaceExpected))
-	t.Run("FBCJsonCacheWithDeprecations", testGetChannelEntriesThatReplace(jsonDeprecationCacheAddress, getChannelEntriesThatReplaceExpectedDep))
+	t.Run("FBCJsonCache", testGetChannelEntriesThatReplace(cacheAddress, getChannelEntriesThatReplaceExpected))
+	t.Run("FBCJsonCacheWithDeprecations", testGetChannelEntriesThatReplace(deprecationCacheAddress, getChannelEntriesThatReplaceExpectedDep))
 }
 
 func testGetChannelEntriesThatReplace(addr string, expected []*api.ChannelEntry) func(*testing.T) {
@@ -443,7 +443,7 @@ func testGetChannelEntriesThatReplace(addr string, expected []*api.ChannelEntry)
 
 func TestGetBundleThatReplaces(t *testing.T) {
 	t.Run("Sqlite", testGetBundleThatReplaces(dbAddress, etcdoperator_v0_9_2("alpha", false, false, includeManifestsAll)))
-	t.Run("FBCJsonCache", testGetBundleThatReplaces(jsonCacheAddress, etcdoperator_v0_9_2("alpha", false, true, includeManifestsCSVOnly)))
+	t.Run("FBCCache", testGetBundleThatReplaces(cacheAddress, etcdoperator_v0_9_2("alpha", false, true, includeManifestsAll)))
 }
 
 func testGetBundleThatReplaces(addr string, expected *api.Bundle) func(*testing.T) {
@@ -459,7 +459,7 @@ func testGetBundleThatReplaces(addr string, expected *api.Bundle) func(*testing.
 
 func TestGetBundleThatReplacesSynthetic(t *testing.T) {
 	t.Run("Sqlite", testGetBundleThatReplacesSynthetic(dbAddress, etcdoperator_v0_9_2("alpha", false, false, includeManifestsAll)))
-	t.Run("FBCJsonCache", testGetBundleThatReplacesSynthetic(jsonCacheAddress, etcdoperator_v0_9_2("alpha", false, true, includeManifestsCSVOnly)))
+	t.Run("FBCCache", testGetBundleThatReplacesSynthetic(cacheAddress, etcdoperator_v0_9_2("alpha", false, true, includeManifestsAll)))
 }
 
 func testGetBundleThatReplacesSynthetic(addr string, expected *api.Bundle) func(*testing.T) {
@@ -476,7 +476,7 @@ func testGetBundleThatReplacesSynthetic(addr string, expected *api.Bundle) func(
 
 func TestGetChannelEntriesThatProvide(t *testing.T) {
 	t.Run("Sqlite", testGetChannelEntriesThatProvide(dbAddress))
-	t.Run("FBCJsonCache", testGetChannelEntriesThatProvide(jsonCacheAddress))
+	t.Run("FBCJsonCache", testGetChannelEntriesThatProvide(cacheAddress))
 }
 
 func testGetChannelEntriesThatProvide(addr string) func(t *testing.T) {
@@ -593,7 +593,7 @@ func testGetChannelEntriesThatProvide(addr string) func(t *testing.T) {
 
 func TestGetLatestChannelEntriesThatProvide(t *testing.T) {
 	t.Run("Sqlite", testGetLatestChannelEntriesThatProvide(dbAddress))
-	t.Run("FBCJsonCache", testGetLatestChannelEntriesThatProvide(jsonCacheAddress))
+	t.Run("FBCJsonCache", testGetLatestChannelEntriesThatProvide(cacheAddress))
 }
 
 func testGetLatestChannelEntriesThatProvide(addr string) func(t *testing.T) {
@@ -669,7 +669,7 @@ func testGetLatestChannelEntriesThatProvide(addr string) func(t *testing.T) {
 
 func TestGetDefaultBundleThatProvides(t *testing.T) {
 	t.Run("Sqlite", testGetDefaultBundleThatProvides(dbAddress, etcdoperator_v0_9_2("alpha", false, false, includeManifestsAll)))
-	t.Run("FBCJsonCache", testGetDefaultBundleThatProvides(jsonCacheAddress, etcdoperator_v0_9_2("alpha", false, true, includeManifestsCSVOnly)))
+	t.Run("FBCCache", testGetDefaultBundleThatProvides(cacheAddress, etcdoperator_v0_9_2("alpha", false, true, includeManifestsAll)))
 }
 
 func testGetDefaultBundleThatProvides(addr string, expected *api.Bundle) func(*testing.T) {
@@ -687,7 +687,7 @@ func TestListBundles(t *testing.T) {
 	t.Run("Sqlite", testListBundles(dbAddress,
 		etcdoperator_v0_9_2("alpha", true, false, includeManifestsNone),
 		etcdoperator_v0_9_2("stable", true, false, includeManifestsNone)))
-	t.Run("FBCJsonCache", testListBundles(jsonCacheAddress,
+	t.Run("FBCJsonCache", testListBundles(cacheAddress,
 		etcdoperator_v0_9_2("alpha", true, true, includeManifestsNone),
 		etcdoperator_v0_9_2("stable", true, true, includeManifestsNone)))
 }
