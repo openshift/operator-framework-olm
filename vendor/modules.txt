@@ -434,7 +434,7 @@ github.com/grpc-ecosystem/go-grpc-prometheus
 github.com/grpc-ecosystem/grpc-gateway/v2/internal/httprule
 github.com/grpc-ecosystem/grpc-gateway/v2/runtime
 github.com/grpc-ecosystem/grpc-gateway/v2/utilities
-# github.com/grpc-ecosystem/grpc-health-probe v0.4.32
+# github.com/grpc-ecosystem/grpc-health-probe v0.4.34
 ## explicit; go 1.22
 github.com/grpc-ecosystem/grpc-health-probe
 # github.com/h2non/filetype v1.1.3
