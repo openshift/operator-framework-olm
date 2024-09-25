@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/operator-framework/operator-registry/alpha/action/migrations"
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/alpha/template/basic"
 	"github.com/operator-framework/operator-registry/cmd/opm/internal/util"
@@ -15,8 +16,9 @@ import (
 
 func newBasicTemplateCmd() *cobra.Command {
 	var (
-		template basic.Template
-		output   string
+		template     basic.Template
+		output       string
+		migrateLevel string
 	)
 	cmd := &cobra.Command{
 		Use: "basic basic-template-file",
@@ -59,6 +61,14 @@ When FILE is '-' or not provided, the template is read from standard input`,
 
 			template.Registry = reg
 
+			if migrateLevel != "" {
+				m, err := migrations.NewMigrations(migrateLevel)
+				if err != nil {
+					log.Fatal(err)
+				}
+				template.Migrations = m
+			}
+
 			// only taking first file argument
 			cfg, err := template.Render(cmd.Context(), data)
 			if err != nil {
@@ -71,5 +81,7 @@ When FILE is '-' or not provided, the template is read from standard input`,
 		},
 	}
 	cmd.Flags().StringVarP(&output, "output", "o", "json", "Output format (json|yaml)")
+	cmd.Flags().StringVar(&migrateLevel, "migrate-level", "", "Name of the last migration to run (default: none)\n"+migrations.HelpText())
+
 	return cmd
 }
