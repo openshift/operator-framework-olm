@@ -3,7 +3,7 @@
 ##             GoReleaser to build and push multi-arch images for opm
 ##
 
-FROM golang:1.19-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 RUN apk update && apk add ca-certificates
 COPY ["nsswitch.conf", "/etc/nsswitch.conf"]
@@ -14,7 +14,7 @@ WORKDIR /build
 
 COPY . .
 RUN make static
-RUN GRPC_HEALTH_PROBE_VERSION=v0.4.11 && \
+RUN GRPC_HEALTH_PROBE_VERSION=v0.4.28 && \
     wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-$(go env GOARCH) && \
     chmod +x /bin/grpc_health_probe
 
