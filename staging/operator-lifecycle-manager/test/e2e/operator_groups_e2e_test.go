@@ -13,7 +13,7 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -163,7 +163,7 @@ var _ = Describe("Operator Group", func() {
 		deploymentName := genName("operator-deployment")
 		namedStrategy := newNginxInstallStrategy(deploymentName, permissions, nil)
 
-		aCSV := newCSV(csvName, opGroupNamespace, "", semver.MustParse("0.0.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, &namedStrategy)
+		aCSV := newCSV(csvName, opGroupNamespace, "", semver.MustParse("0.0.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, &namedStrategy)
 		createdCSV, err := crc.OperatorsV1alpha1().ClusterServiceVersions(opGroupNamespace).Create(context.TODO(), &aCSV, metav1.CreateOptions{})
 		require.NoError(GinkgoT(), err)
 
@@ -454,10 +454,14 @@ var _ = Describe("Operator Group", func() {
 			require.NoError(GinkgoT(), crc.OperatorsV1().OperatorGroups(nsA).Delete(context.TODO(), groupA.GetName(), metav1.DeleteOptions{}))
 		}()
 
-		// Generate csvA in namespaceA with all installmodes supported
-		crd := newCRD(genName("a"))
-		namedStrategy := newNginxInstallStrategy(genName("dep-"), nil, nil)
-		csvA := newCSV("nginx-a", nsA, "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, &namedStrategy)
+		crdAName := genName("a")
+		strategyName := genName("dep-")
+		csvAName := "nginx-a"
+		GinkgoT().Logf("Generate csv (%s/%s) with crd %s and with all installmodes supported: %s", nsA, csvAName, crdAName, strategyName)
+		crd := newCRD(crdAName)
+		namedStrategy := newNginxInstallStrategy(strategyName, nil, nil)
+		csvA := newCSV(csvAName, nsA, "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, &namedStrategy)
+
 		_, err = crc.OperatorsV1alpha1().ClusterServiceVersions(nsA).Create(context.TODO(), &csvA, metav1.CreateOptions{})
 		require.NoError(GinkgoT(), err)
 		defer func() {
@@ -649,7 +653,7 @@ var _ = Describe("Operator Group", func() {
 		// Generate csvA in namespaceA with no supported InstallModes
 		crd := newCRD(genName("b"))
 		namedStrategy := newNginxInstallStrategy(genName("dep-"), nil, nil)
-		csv := newCSV("nginx-a", nsA, "", semver.MustParse("0.1.0"), nil, []apiextensions.CustomResourceDefinition{crd}, &namedStrategy)
+		csv := newCSV("nginx-a", nsA, "", semver.MustParse("0.1.0"), nil, []apiextensionsv1.CustomResourceDefinition{crd}, &namedStrategy)
 		csvA := &csv
 		csvA.Spec.InstallModes = []v1alpha1.InstallMode{
 			{
@@ -875,9 +879,9 @@ var _ = Describe("Operator Group", func() {
 		kvgA := fmt.Sprintf("%s.%s.%s", crdA.Spec.Names.Kind, crdA.Spec.Versions[0].Name, crdA.Spec.Group)
 		kvgB := fmt.Sprintf("%s.%s.%s", crdB.Spec.Names.Kind, crdB.Spec.Versions[0].Name, crdB.Spec.Group)
 		kvgD := fmt.Sprintf("%s.%s.%s", crdD.Spec.Names.Kind, crdD.Spec.Versions[0].Name, crdD.Spec.Group)
-		csvA := newCSV(pkgAStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdA}, nil, &strategyA)
-		csvB := newCSV(pkgBStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdA, crdB}, nil, &strategyB)
-		csvD := newCSV(pkgDStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdD}, nil, &strategyD)
+		csvA := newCSV(pkgAStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crdA}, nil, &strategyA)
+		csvB := newCSV(pkgBStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crdA, crdB}, nil, &strategyB)
+		csvD := newCSV(pkgDStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crdD}, nil, &strategyD)
 
 		// Create namespaces
 		nsA, nsB, nsC, nsD, nsE := genName("a-"), genName("b-"), genName("c-"), genName("d-"), genName("e-")
@@ -920,15 +924,15 @@ var _ = Describe("Operator Group", func() {
 		}
 
 		catalog := genName("catalog-")
-		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalog, nsA, manifests, []apiextensions.CustomResourceDefinition{crdA, crdD, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB, csvD})
+		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalog, nsA, manifests, []apiextensionsv1.CustomResourceDefinition{crdA, crdD, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB, csvD})
 		defer cleanupCatalogSource()
 		_, err := fetchCatalogSourceOnStatus(crc, catalog, nsA, catalogSourceRegistryPodSynced)
 		require.NoError(GinkgoT(), err)
-		_, cleanupCatalogSource = createInternalCatalogSource(c, crc, catalog, nsB, manifests, []apiextensions.CustomResourceDefinition{crdA, crdD, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB, csvD})
+		_, cleanupCatalogSource = createInternalCatalogSource(c, crc, catalog, nsB, manifests, []apiextensionsv1.CustomResourceDefinition{crdA, crdD, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB, csvD})
 		defer cleanupCatalogSource()
 		_, err = fetchCatalogSourceOnStatus(crc, catalog, nsB, catalogSourceRegistryPodSynced)
 		require.NoError(GinkgoT(), err)
-		_, cleanupCatalogSource = createInternalCatalogSource(c, crc, catalog, nsD, manifests, []apiextensions.CustomResourceDefinition{crdA, crdD, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB, csvD})
+		_, cleanupCatalogSource = createInternalCatalogSource(c, crc, catalog, nsD, manifests, []apiextensionsv1.CustomResourceDefinition{crdA, crdD, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB, csvD})
 		defer cleanupCatalogSource()
 		_, err = fetchCatalogSourceOnStatus(crc, catalog, nsD, catalogSourceRegistryPodSynced)
 		require.NoError(GinkgoT(), err)
@@ -1148,8 +1152,8 @@ var _ = Describe("Operator Group", func() {
 		crdB := newCRD(genName(pkgB))
 		kvgA := fmt.Sprintf("%s.%s.%s", crdA.Spec.Names.Kind, crdA.Spec.Versions[0].Name, crdA.Spec.Group)
 		kvgB := fmt.Sprintf("%s.%s.%s", crdB.Spec.Names.Kind, crdB.Spec.Versions[0].Name, crdB.Spec.Group)
-		csvA := newCSV(pkgAStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdA}, nil, &strategyA)
-		csvB := newCSV(pkgBStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crdB}, nil, &strategyB)
+		csvA := newCSV(pkgAStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crdA}, nil, &strategyA)
+		csvB := newCSV(pkgBStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crdB}, nil, &strategyB)
 
 		// Create namespaces
 		nsA, nsB, nsC, nsD := genName("a-"), genName("b-"), genName("c-"), genName("d-")
@@ -1187,11 +1191,11 @@ var _ = Describe("Operator Group", func() {
 
 		// Create catalog in namespaceB and namespaceC
 		catalog := genName("catalog-")
-		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalog, nsB, manifests, []apiextensions.CustomResourceDefinition{crdA, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB})
+		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalog, nsB, manifests, []apiextensionsv1.CustomResourceDefinition{crdA, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB})
 		defer cleanupCatalogSource()
 		_, err := fetchCatalogSourceOnStatus(crc, catalog, nsB, catalogSourceRegistryPodSynced)
 		require.NoError(GinkgoT(), err)
-		_, cleanupCatalogSource = createInternalCatalogSource(c, crc, catalog, nsC, manifests, []apiextensions.CustomResourceDefinition{crdA, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB})
+		_, cleanupCatalogSource = createInternalCatalogSource(c, crc, catalog, nsC, manifests, []apiextensionsv1.CustomResourceDefinition{crdA, crdB}, []v1alpha1.ClusterServiceVersion{csvA, csvB})
 		defer cleanupCatalogSource()
 		_, err = fetchCatalogSourceOnStatus(crc, catalog, nsC, catalogSourceRegistryPodSynced)
 		require.NoError(GinkgoT(), err)
@@ -1422,7 +1426,7 @@ var _ = Describe("Operator Group", func() {
 		deploymentName := genName("operator-deployment")
 		namedStrategy := newNginxInstallStrategy(deploymentName, permissions, nil)
 
-		aCSV := newCSV(csvName, opGroupNamespace, "", semver.MustParse("0.0.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, &namedStrategy)
+		aCSV := newCSV(csvName, opGroupNamespace, "", semver.MustParse("0.0.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, &namedStrategy)
 
 		// Use the It spec name as label after stripping whitespaces
 		aCSV.Labels = map[string]string{"label": K8sSafeCurrentTestDescription()}
@@ -1615,7 +1619,7 @@ var _ = Describe("Operator Group", func() {
 		deploymentName := genName("operator-deployment")
 		namedStrategy := newNginxInstallStrategy(deploymentName, nil, nil)
 
-		aCSV := newCSV(csvName, newNamespaceName, "", semver.MustParse("0.0.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, &namedStrategy)
+		aCSV := newCSV(csvName, newNamespaceName, "", semver.MustParse("0.0.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, &namedStrategy)
 		createdCSV, err := crc.OperatorsV1alpha1().ClusterServiceVersions(newNamespaceName).Create(context.TODO(), &aCSV, metav1.CreateOptions{})
 		require.NoError(GinkgoT(), err)
 
@@ -1751,7 +1755,7 @@ var _ = Describe("Operator Group", func() {
 		deploymentName := genName("operator-deployment")
 		namedStrategy := newNginxInstallStrategy(deploymentName, nil, nil)
 
-		aCSV := newCSV(csvName, newNamespaceName, "", semver.MustParse("0.0.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, &namedStrategy)
+		aCSV := newCSV(csvName, newNamespaceName, "", semver.MustParse("0.0.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, &namedStrategy)
 		createdCSV, err := crc.OperatorsV1alpha1().ClusterServiceVersions(newNamespaceName).Create(context.TODO(), &aCSV, metav1.CreateOptions{})
 		require.NoError(GinkgoT(), err)
 
@@ -1901,7 +1905,7 @@ var _ = Describe("Operator Group", func() {
 		deploymentName := genName("operator-deployment")
 		namedStrategy := newNginxInstallStrategy(deploymentName, permissions, nil)
 
-		aCSV := newCSV(csvName, opGroupNamespace, "", semver.MustParse("0.0.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, &namedStrategy)
+		aCSV := newCSV(csvName, opGroupNamespace, "", semver.MustParse("0.0.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, &namedStrategy)
 
 		// Use the It spec name as label after stripping whitespaces
 		aCSV.Labels = map[string]string{"label": K8sSafeCurrentTestDescription()}
