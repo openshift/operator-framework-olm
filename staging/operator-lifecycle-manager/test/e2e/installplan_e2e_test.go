@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -22,7 +21,6 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,7 +30,6 @@ import (
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -693,8 +690,8 @@ var _ = Describe("Install Plan", func() {
 		stableChannel := "stable"
 
 		dependentCRD := newCRD(genName("ins-"))
-		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensions.CustomResourceDefinition{dependentCRD}, nil)
-		dependentCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{dependentCRD}, nil, nil)
+		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil)
+		dependentCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil, nil)
 
 		defer func() {
 			require.NoError(GinkgoT(), crc.OperatorsV1alpha1().Subscriptions(generatedNamespace.GetName()).DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{}))
@@ -733,7 +730,7 @@ var _ = Describe("Install Plan", func() {
 
 		// Create the catalog sources
 		require.NotEqual(GinkgoT(), "", generatedNamespace.GetName())
-		_, cleanupDependentCatalogSource := createInternalCatalogSource(c, crc, dependentCatalogName, generatedNamespace.GetName(), dependentManifests, []apiextensions.CustomResourceDefinition{dependentCRD}, []operatorsv1alpha1.ClusterServiceVersion{dependentCSV})
+		_, cleanupDependentCatalogSource := createInternalCatalogSource(c, crc, dependentCatalogName, generatedNamespace.GetName(), dependentManifests, []apiextensionsv1.CustomResourceDefinition{dependentCRD}, []operatorsv1alpha1.ClusterServiceVersion{dependentCSV})
 		defer cleanupDependentCatalogSource()
 
 		// Attempt to get the catalog source before creating install plan
@@ -818,7 +815,7 @@ var _ = Describe("Install Plan", func() {
 		require.NoError(GinkgoT(), err)
 
 		// Update dependent subscription in catalog and wait for csv to update
-		updatedDependentCSV := newCSV(dependentPackageStable+"-v2", generatedNamespace.GetName(), dependentPackageStable, semver.MustParse("0.1.1"), []apiextensions.CustomResourceDefinition{dependentCRD}, nil, nil)
+		updatedDependentCSV := newCSV(dependentPackageStable+"-v2", generatedNamespace.GetName(), dependentPackageStable, semver.MustParse("0.1.1"), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil, nil)
 		dependentManifests = []registry.PackageManifest{
 			{
 				PackageName: dependentPackageName,
@@ -829,7 +826,7 @@ var _ = Describe("Install Plan", func() {
 			},
 		}
 
-		updateInternalCatalog(GinkgoT(), c, crc, dependentCatalogName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{dependentCRD}, []operatorsv1alpha1.ClusterServiceVersion{dependentCSV, updatedDependentCSV}, dependentManifests)
+		updateInternalCatalog(GinkgoT(), c, crc, dependentCatalogName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, []operatorsv1alpha1.ClusterServiceVersion{dependentCSV, updatedDependentCSV}, dependentManifests)
 
 		// Wait for subscription to update
 		updatedDepSubscription, err := fetchSubscription(crc, generatedNamespace.GetName(), strings.Join([]string{dependentPackageStable, dependentCatalogName, generatedNamespace.GetName()}, "-"), subscriptionHasCurrentCSV(updatedDependentCSV.GetName()))
@@ -885,10 +882,10 @@ var _ = Describe("Install Plan", func() {
 			dependentCRD := newCRD(genName("ins-"))
 
 			// Create new CSVs
-			mainStableCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{mainCRD}, []apiextensions.CustomResourceDefinition{dependentCRD}, nil)
-			mainBetaCSV := newCSV(mainPackageBeta, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{mainCRD}, []apiextensions.CustomResourceDefinition{dependentCRD}, nil)
-			dependentStableCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{dependentCRD}, nil, nil)
-			dependentBetaCSV := newCSV(dependentPackageBeta, generatedNamespace.GetName(), dependentPackageStable, semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{dependentCRD}, nil, nil)
+			mainStableCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil)
+			mainBetaCSV := newCSV(mainPackageBeta, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil)
+			dependentStableCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil, nil)
+			dependentBetaCSV := newCSV(dependentPackageBeta, generatedNamespace.GetName(), dependentPackageStable, semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil, nil)
 
 			// Defer CRD clean up
 			defer func() {
@@ -906,7 +903,7 @@ var _ = Describe("Install Plan", func() {
 
 			// Create the catalog source
 			mainCatalogSourceName := genName("mock-ocs-main-" + strings.ToLower(K8sSafeCurrentTestDescription()) + "-")
-			_, cleanupCatalogSource := createInternalCatalogSource(c, crc, mainCatalogSourceName, generatedNamespace.GetName(), mainManifests, []apiextensions.CustomResourceDefinition{dependentCRD, mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{dependentBetaCSV, dependentStableCSV, mainStableCSV, mainBetaCSV})
+			_, cleanupCatalogSource := createInternalCatalogSource(c, crc, mainCatalogSourceName, generatedNamespace.GetName(), mainManifests, []apiextensionsv1.CustomResourceDefinition{dependentCRD, mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{dependentBetaCSV, dependentStableCSV, mainStableCSV, mainBetaCSV})
 			defer cleanupCatalogSource()
 
 			// Attempt to get the catalog source before creating install plan(s)
@@ -982,9 +979,9 @@ var _ = Describe("Install Plan", func() {
 		type schemaPayload struct {
 			name            string
 			expectedPhase   operatorsv1alpha1.InstallPlanPhase
-			oldCRD          *apiextensions.CustomResourceDefinition
-			intermediateCRD *apiextensions.CustomResourceDefinition
-			newCRD          *apiextensions.CustomResourceDefinition
+			oldCRD          *apiextensionsv1.CustomResourceDefinition
+			intermediateCRD *apiextensionsv1.CustomResourceDefinition
+			newCRD          *apiextensionsv1.CustomResourceDefinition
 		}
 
 		var min float64 = 2
@@ -998,21 +995,21 @@ var _ = Describe("Install Plan", func() {
 			Entry("all existing versions are present, different (backwards compatible) schema", schemaPayload{
 				name:          "all existing versions are present, different (backwards compatible) schema",
 				expectedPhase: operatorsv1alpha1.InstallPlanPhaseComplete,
-				oldCRD: func() *apiextensions.CustomResourceDefinition {
+				oldCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					oldCRD := newCRD(mainCRDPlural + "a")
-					oldCRD.Spec.Versions = []apiextensions.CustomResourceDefinitionVersion{
+					oldCRD.Spec.Versions = []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type: "object",
-									Properties: map[string]apiextensions.JSONSchemaProps{
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
 										"spec": {
 											Type:        "object",
 											Description: "Spec of a test object.",
-											Properties: map[string]apiextensions.JSONSchemaProps{
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
 												"scalar": {
 													Type:        "number",
 													Description: "Scalar value that should have a min and max.",
@@ -1028,21 +1025,21 @@ var _ = Describe("Install Plan", func() {
 					}
 					return &oldCRD
 				}(),
-				newCRD: func() *apiextensions.CustomResourceDefinition {
+				newCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					newCRD := newCRD(mainCRDPlural + "a")
-					newCRD.Spec.Versions = []apiextensions.CustomResourceDefinitionVersion{
+					newCRD.Spec.Versions = []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: false,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type: "object",
-									Properties: map[string]apiextensions.JSONSchemaProps{
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
 										"spec": {
 											Type:        "object",
 											Description: "Spec of a test object.",
-											Properties: map[string]apiextensions.JSONSchemaProps{
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
 												"scalar": {
 													Type:        "number",
 													Description: "Scalar value that should have a min and max.",
@@ -1059,14 +1056,14 @@ var _ = Describe("Install Plan", func() {
 							Name:    "v1alpha2",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type: "object",
-									Properties: map[string]apiextensions.JSONSchemaProps{
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
 										"spec": {
 											Type:        "object",
 											Description: "Spec of a test object.",
-											Properties: map[string]apiextensions.JSONSchemaProps{
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
 												"scalar": {
 													Type:        "number",
 													Description: "Scalar value that should have a min and max.",
@@ -1085,21 +1082,21 @@ var _ = Describe("Install Plan", func() {
 			}),
 			Entry("all existing versions are present, different (backwards incompatible) schema", schemaPayload{name: "all existing versions are present, different (backwards incompatible) schema",
 				expectedPhase: operatorsv1alpha1.InstallPlanPhaseFailed,
-				oldCRD: func() *apiextensions.CustomResourceDefinition {
+				oldCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					oldCRD := newCRD(mainCRDPlural + "b")
-					oldCRD.Spec.Versions = []apiextensions.CustomResourceDefinitionVersion{
+					oldCRD.Spec.Versions = []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type: "object",
-									Properties: map[string]apiextensions.JSONSchemaProps{
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
 										"spec": {
 											Type:        "object",
 											Description: "Spec of a test object.",
-											Properties: map[string]apiextensions.JSONSchemaProps{
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
 												"scalar": {
 													Type:        "number",
 													Description: "Scalar value that should have a min and max.",
@@ -1113,21 +1110,21 @@ var _ = Describe("Install Plan", func() {
 					}
 					return &oldCRD
 				}(),
-				newCRD: func() *apiextensions.CustomResourceDefinition {
+				newCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					newCRD := newCRD(mainCRDPlural + "b")
-					newCRD.Spec.Versions = []apiextensions.CustomResourceDefinitionVersion{
+					newCRD.Spec.Versions = []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type: "object",
-									Properties: map[string]apiextensions.JSONSchemaProps{
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
 										"spec": {
 											Type:        "object",
 											Description: "Spec of a test object.",
-											Properties: map[string]apiextensions.JSONSchemaProps{
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
 												"scalar": {
 													Type:        "number",
 													Description: "Scalar value that should have a min and max.",
@@ -1146,15 +1143,15 @@ var _ = Describe("Install Plan", func() {
 			}),
 			Entry("missing existing versions in new CRD", schemaPayload{name: "missing existing versions in new CRD",
 				expectedPhase: operatorsv1alpha1.InstallPlanPhaseComplete,
-				oldCRD: func() *apiextensions.CustomResourceDefinition {
+				oldCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					oldCRD := newCRD(mainCRDPlural + "c")
-					oldCRD.Spec.Versions = []apiextensions.CustomResourceDefinitionVersion{
+					oldCRD.Spec.Versions = []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
@@ -1164,8 +1161,8 @@ var _ = Describe("Install Plan", func() {
 							Name:    "v1alpha2",
 							Served:  true,
 							Storage: false,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
@@ -1174,21 +1171,21 @@ var _ = Describe("Install Plan", func() {
 					}
 					return &oldCRD
 				}(),
-				newCRD: func() *apiextensions.CustomResourceDefinition {
+				newCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					newCRD := newCRD(mainCRDPlural + "c")
-					newCRD.Spec.Versions = []apiextensions.CustomResourceDefinitionVersion{
+					newCRD.Spec.Versions = []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type: "object",
-									Properties: map[string]apiextensions.JSONSchemaProps{
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
 										"spec": {
 											Type:        "object",
 											Description: "Spec of a test object.",
-											Properties: map[string]apiextensions.JSONSchemaProps{
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
 												"scalar": {
 													Type:        "number",
 													Description: "Scalar value that should have a min and max.",
@@ -1205,14 +1202,14 @@ var _ = Describe("Install Plan", func() {
 							Name:    "v1",
 							Served:  true,
 							Storage: false,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type: "object",
-									Properties: map[string]apiextensions.JSONSchemaProps{
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
 										"spec": {
 											Type:        "object",
 											Description: "Spec of a test object.",
-											Properties: map[string]apiextensions.JSONSchemaProps{
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
 												"scalar": {
 													Type:        "number",
 													Description: "Scalar value that should have a min and max.",
@@ -1230,25 +1227,25 @@ var _ = Describe("Install Plan", func() {
 				}()}),
 			Entry("existing version is present in new CRD (deprecated field)", schemaPayload{name: "existing version is present in new CRD (deprecated field)",
 				expectedPhase: operatorsv1alpha1.InstallPlanPhaseComplete,
-				oldCRD: func() *apiextensions.CustomResourceDefinition {
+				oldCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					oldCRD := newCRD(mainCRDPlural + "d")
 					return &oldCRD
 				}(),
-				newCRD: func() *apiextensions.CustomResourceDefinition {
+				newCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					newCRD := newCRD(mainCRDPlural + "d")
-					newCRD.Spec.Versions = []apiextensions.CustomResourceDefinitionVersion{
+					newCRD.Spec.Versions = []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type: "object",
-									Properties: map[string]apiextensions.JSONSchemaProps{
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
 										"spec": {
 											Type:        "object",
 											Description: "Spec of a test object.",
-											Properties: map[string]apiextensions.JSONSchemaProps{
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
 												"scalar": {
 													Type:        "number",
 													Description: "Scalar value that should have a min and max.",
@@ -1265,8 +1262,8 @@ var _ = Describe("Install Plan", func() {
 							Name:    "v1alpha3",
 							Served:  false,
 							Storage: false,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{Type: "object"},
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{Type: "object"},
 							},
 						},
 					}
@@ -1296,8 +1293,8 @@ var _ = Describe("Install Plan", func() {
 			}
 
 			// Create new CSVs
-			mainStableCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{*tt.oldCRD}, nil, nil)
-			mainBetaCSV := newCSV(mainPackageBeta, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{*tt.oldCRD}, nil, nil)
+			mainStableCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{*tt.oldCRD}, nil, nil)
+			mainBetaCSV := newCSV(mainPackageBeta, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{*tt.oldCRD}, nil, nil)
 
 			// Defer CRD clean up
 			defer func() {
@@ -1331,7 +1328,7 @@ var _ = Describe("Install Plan", func() {
 
 			// Create the catalog source
 			mainCatalogSourceName := genName("mock-ocs-main-")
-			_, cleanupCatalogSource := createInternalCatalogSource(c, crc, mainCatalogSourceName, generatedNamespace.GetName(), mainManifests, []apiextensions.CustomResourceDefinition{*tt.oldCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainStableCSV, mainBetaCSV})
+			_, cleanupCatalogSource := createInternalCatalogSource(c, crc, mainCatalogSourceName, generatedNamespace.GetName(), mainManifests, []apiextensionsv1.CustomResourceDefinition{*tt.oldCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainStableCSV, mainBetaCSV})
 			defer cleanupCatalogSource()
 
 			// Attempt to get the catalog source before creating install plan(s)
@@ -1383,7 +1380,7 @@ var _ = Describe("Install Plan", func() {
 			require.NoError(GinkgoT(), err)
 			defer cleanupCR()
 
-			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogSourceName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{*tt.newCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainStableCSV, mainBetaCSV}, mainManifests)
+			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogSourceName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{*tt.newCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainStableCSV, mainBetaCSV}, mainManifests)
 
 			// Attempt to get the catalog source before creating install plan(s)
 			_, err = fetchCatalogSourceOnStatus(crc, mainCatalogSourceName, generatedNamespace.GetName(), catalogSourceRegistryPodSynced)
@@ -1432,9 +1429,9 @@ var _ = Describe("Install Plan", func() {
 		type schemaPayload struct {
 			name            string
 			expectedPhase   operatorsv1alpha1.InstallPlanPhase
-			oldCRD          *apiextensions.CustomResourceDefinition
-			intermediateCRD *apiextensions.CustomResourceDefinition
-			newCRD          *apiextensions.CustomResourceDefinition
+			oldCRD          *apiextensionsv1.CustomResourceDefinition
+			intermediateCRD *apiextensionsv1.CustomResourceDefinition
+			newCRD          *apiextensionsv1.CustomResourceDefinition
 		}
 
 		// excluded: new CRD, same version, same schema - won't trigger a CRD update
@@ -1443,15 +1440,15 @@ var _ = Describe("Install Plan", func() {
 			Entry("upgrade CRD with deprecated version", schemaPayload{
 				name:          "upgrade CRD with deprecated version",
 				expectedPhase: operatorsv1alpha1.InstallPlanPhaseComplete,
-				oldCRD: func() *apiextensions.CustomResourceDefinition {
+				oldCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					oldCRD := newCRD(mainCRDPlural)
-					oldCRD.Spec.Versions = []apiextensions.CustomResourceDefinitionVersion{
+					oldCRD.Spec.Versions = []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
@@ -1460,15 +1457,15 @@ var _ = Describe("Install Plan", func() {
 					}
 					return &oldCRD
 				}(),
-				intermediateCRD: func() *apiextensions.CustomResourceDefinition {
+				intermediateCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					intermediateCRD := newCRD(mainCRDPlural)
-					intermediateCRD.Spec.Versions = []apiextensions.CustomResourceDefinitionVersion{
+					intermediateCRD.Spec.Versions = []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha2",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
@@ -1478,8 +1475,8 @@ var _ = Describe("Install Plan", func() {
 							Name:    "v1alpha1",
 							Served:  false,
 							Storage: false,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
@@ -1488,15 +1485,15 @@ var _ = Describe("Install Plan", func() {
 					}
 					return &intermediateCRD
 				}(),
-				newCRD: func() *apiextensions.CustomResourceDefinition {
+				newCRD: func() *apiextensionsv1.CustomResourceDefinition {
 					newCRD := newCRD(mainCRDPlural)
-					newCRD.Spec.Versions = []apiextensions.CustomResourceDefinitionVersion{
+					newCRD.Spec.Versions = []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha2",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
@@ -1506,8 +1503,8 @@ var _ = Describe("Install Plan", func() {
 							Name:    "v1beta1",
 							Served:  true,
 							Storage: false,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
@@ -1517,8 +1514,8 @@ var _ = Describe("Install Plan", func() {
 							Name:    "v1alpha1",
 							Served:  false,
 							Storage: false,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
@@ -1551,9 +1548,9 @@ var _ = Describe("Install Plan", func() {
 			}
 
 			// Create new CSVs
-			mainStableCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{*tt.oldCRD}, nil, nil)
-			mainBetaCSV := newCSV(mainPackageBeta, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{*tt.intermediateCRD}, nil, nil)
-			mainDeltaCSV := newCSV(mainPackageDelta, generatedNamespace.GetName(), mainPackageBeta, semver.MustParse("0.3.0"), []apiextensions.CustomResourceDefinition{*tt.newCRD}, nil, nil)
+			mainStableCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{*tt.oldCRD}, nil, nil)
+			mainBetaCSV := newCSV(mainPackageBeta, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{*tt.intermediateCRD}, nil, nil)
+			mainDeltaCSV := newCSV(mainPackageDelta, generatedNamespace.GetName(), mainPackageBeta, semver.MustParse("0.3.0"), []apiextensionsv1.CustomResourceDefinition{*tt.newCRD}, nil, nil)
 
 			// Defer CRD clean up
 			defer func() {
@@ -1579,7 +1576,7 @@ var _ = Describe("Install Plan", func() {
 
 			// Create the catalog source
 			mainCatalogSourceName := genName("mock-ocs-main-")
-			_, cleanupCatalogSource := createInternalCatalogSource(c, crc, mainCatalogSourceName, generatedNamespace.GetName(), mainManifests, []apiextensions.CustomResourceDefinition{*tt.oldCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainStableCSV})
+			_, cleanupCatalogSource := createInternalCatalogSource(c, crc, mainCatalogSourceName, generatedNamespace.GetName(), mainManifests, []apiextensionsv1.CustomResourceDefinition{*tt.oldCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainStableCSV})
 			defer cleanupCatalogSource()
 
 			// Attempt to get the catalog source before creating install plan(s)
@@ -1622,7 +1619,7 @@ var _ = Describe("Install Plan", func() {
 				},
 			}
 
-			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogSourceName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{*tt.intermediateCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainStableCSV, mainBetaCSV}, mainManifests)
+			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogSourceName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{*tt.intermediateCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainStableCSV, mainBetaCSV}, mainManifests)
 			// Attempt to get the catalog source before creating install plan(s)
 			_, err = fetchCatalogSourceOnStatus(crc, mainCatalogSourceName, generatedNamespace.GetName(), catalogSourceRegistryPodSynced)
 			require.NoError(GinkgoT(), err)
@@ -1662,7 +1659,7 @@ var _ = Describe("Install Plan", func() {
 				},
 			}
 
-			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogSourceName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{*tt.newCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainStableCSV, mainBetaCSV, mainDeltaCSV}, mainManifests)
+			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogSourceName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{*tt.newCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainStableCSV, mainBetaCSV, mainDeltaCSV}, mainManifests)
 			// Attempt to get the catalog source before creating install plan(s)
 			_, err = fetchCatalogSourceOnStatus(crc, mainCatalogSourceName, generatedNamespace.GetName(), catalogSourceRegistryPodSynced)
 			require.NoError(GinkgoT(), err)
@@ -1716,32 +1713,32 @@ var _ = Describe("Install Plan", func() {
 			stableChannel := "stable"
 			crdPlural := genName("ins-amplify-")
 			crdName := crdPlural + ".cluster.com"
-			mainCRD := apiextensions.CustomResourceDefinition{
+			mainCRD := apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: crdName,
 				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Group: "cluster.com",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
+					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
 							},
 						},
 					},
-					Names: apiextensions.CustomResourceDefinitionNames{
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
 						Plural:   crdPlural,
 						Singular: crdPlural,
 						Kind:     crdPlural,
 						ListKind: "list" + crdPlural,
 					},
-					Scope: apiextensions.NamespaceScoped,
+					Scope: apiextensionsv1.NamespaceScoped,
 				},
 			}
 
@@ -1794,7 +1791,7 @@ var _ = Describe("Install Plan", func() {
 				}).Should(Succeed())
 			}()
 
-			_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensions.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
+			_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensionsv1.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
 			defer cleanupMainCatalogSource()
 
 			// Attempt to get the catalog source before creating install plan
@@ -1861,7 +1858,7 @@ var _ = Describe("Install Plan", func() {
 
 			// Create the catalog sources
 			updatedNamedStrategy := newNginxInstallStrategy(genName("dep-"), updatedPermissions, updatedClusterPermissions)
-			updatedCSV := newCSV(mainPackageStable+"-next", generatedNamespace.GetName(), mainCSV.GetName(), semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, &updatedNamedStrategy)
+			updatedCSV := newCSV(mainPackageStable+"-next", generatedNamespace.GetName(), mainCSV.GetName(), semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, &updatedNamedStrategy)
 			updatedManifests := []registry.PackageManifest{
 				{
 					PackageName: mainPackageName,
@@ -1873,7 +1870,7 @@ var _ = Describe("Install Plan", func() {
 			}
 
 			// Update catalog with updated CSV with more permissions
-			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV, updatedCSV}, updatedManifests)
+			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV, updatedCSV}, updatedManifests)
 
 			_, err = fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionHasInstallPlanDifferentChecker(fetchedInstallPlan.GetName()))
 			require.NoError(GinkgoT(), err)
@@ -1903,32 +1900,32 @@ var _ = Describe("Install Plan", func() {
 			stableChannel := "stable"
 			crdPlural := genName("ins-attenuate-")
 			crdName := crdPlural + ".cluster.com"
-			mainCRD := apiextensions.CustomResourceDefinition{
+			mainCRD := apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: crdName,
 				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Group: "cluster.com",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
+					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
 							},
 						},
 					},
-					Names: apiextensions.CustomResourceDefinitionNames{
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
 						Plural:   crdPlural,
 						Singular: crdPlural,
 						Kind:     crdPlural,
 						ListKind: "list" + crdPlural,
 					},
-					Scope: apiextensions.NamespaceScoped,
+					Scope: apiextensionsv1.NamespaceScoped,
 				},
 			}
 
@@ -1992,7 +1989,7 @@ var _ = Describe("Install Plan", func() {
 				}).Should(Succeed())
 			}()
 
-			_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensions.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
+			_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensionsv1.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
 			defer cleanupMainCatalogSource()
 
 			// Attempt to get the catalog source before creating install plan
@@ -2052,7 +2049,7 @@ var _ = Describe("Install Plan", func() {
 
 			// Create the catalog sources
 			updatedNamedStrategy := newNginxInstallStrategy(genName("dep-"), updatedPermissions, updatedClusterPermissions)
-			updatedCSV := newCSV(mainPackageStable+"-next", generatedNamespace.GetName(), mainCSV.GetName(), semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, &updatedNamedStrategy)
+			updatedCSV := newCSV(mainPackageStable+"-next", generatedNamespace.GetName(), mainCSV.GetName(), semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, &updatedNamedStrategy)
 			updatedManifests := []registry.PackageManifest{
 				{
 					PackageName: mainPackageName,
@@ -2064,7 +2061,7 @@ var _ = Describe("Install Plan", func() {
 			}
 
 			// Update catalog with updated CSV with more permissions
-			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV, updatedCSV}, updatedManifests)
+			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV, updatedCSV}, updatedManifests)
 
 			// Wait for subscription to update its status
 			_, err = fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionHasInstallPlanDifferentChecker(fetchedInstallPlan.GetName()))
@@ -2128,32 +2125,32 @@ var _ = Describe("Install Plan", func() {
 			stableChannel := "stable"
 			crdPlural := genName("ins-amplify-")
 			crdName := crdPlural + ".cluster.com"
-			mainCRD := apiextensions.CustomResourceDefinition{
+			mainCRD := apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: crdName,
 				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Group: "cluster.com",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
+					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
 							},
 						},
 					},
-					Names: apiextensions.CustomResourceDefinitionNames{
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
 						Plural:   crdPlural,
 						Singular: crdPlural,
 						Kind:     crdPlural,
 						ListKind: "list" + crdPlural,
 					},
-					Scope: apiextensions.NamespaceScoped,
+					Scope: apiextensionsv1.NamespaceScoped,
 				},
 			}
 
@@ -2208,7 +2205,7 @@ var _ = Describe("Install Plan", func() {
 				}).Should(Succeed())
 			}()
 
-			_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensions.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
+			_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensionsv1.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
 			defer cleanupMainCatalogSource()
 
 			// Attempt to get the catalog source before creating install plan
@@ -2298,7 +2295,7 @@ var _ = Describe("Install Plan", func() {
 
 			// Create the catalog sources
 			// Updated csv has the same deployment strategy as main
-			updatedCSV := newCSV(mainPackageStable+"-next", generatedNamespace.GetName(), mainCSV.GetName(), semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, &mainNamedStrategy)
+			updatedCSV := newCSV(mainPackageStable+"-next", generatedNamespace.GetName(), mainCSV.GetName(), semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, &mainNamedStrategy)
 			updatedManifests := []registry.PackageManifest{
 				{
 					PackageName: mainPackageName,
@@ -2310,7 +2307,7 @@ var _ = Describe("Install Plan", func() {
 			}
 
 			// Update catalog with updated CSV with more permissions
-			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV, updatedCSV}, updatedManifests)
+			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV, updatedCSV}, updatedManifests)
 
 			_, err = fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionHasInstallPlanDifferentChecker(fetchedInstallPlan.GetName()))
 			require.NoError(GinkgoT(), err)
@@ -2348,48 +2345,48 @@ var _ = Describe("Install Plan", func() {
 
 			crdPlural := genName("ins-update-")
 			crdName := crdPlural + ".cluster.com"
-			mainCRD := apiextensions.CustomResourceDefinition{
+			mainCRD := apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: crdName,
 				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Group: "cluster.com",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
+					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
 							},
 						},
 					},
-					Names: apiextensions.CustomResourceDefinitionNames{
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
 						Plural:   crdPlural,
 						Singular: crdPlural,
 						Kind:     crdPlural,
 						ListKind: "list" + crdPlural,
 					},
-					Scope: apiextensions.NamespaceScoped,
+					Scope: apiextensionsv1.NamespaceScoped,
 				},
 			}
 
-			updatedCRD := apiextensions.CustomResourceDefinition{
+			updatedCRD := apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: crdName,
 				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Group: "cluster.com",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
+					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
@@ -2399,26 +2396,26 @@ var _ = Describe("Install Plan", func() {
 							Name:    "v1alpha2",
 							Served:  true,
 							Storage: false,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
 							},
 						},
 					},
-					Names: apiextensions.CustomResourceDefinitionNames{
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
 						Plural:   crdPlural,
 						Singular: crdPlural,
 						Kind:     crdPlural,
 						ListKind: "list" + crdPlural,
 					},
-					Scope: apiextensions.NamespaceScoped,
+					Scope: apiextensionsv1.NamespaceScoped,
 				},
 			}
 
-			mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, nil)
-			betaCSV := newCSV(mainPackageBeta, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{updatedCRD}, nil, nil)
+			mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, nil)
+			betaCSV := newCSV(mainPackageBeta, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{updatedCRD}, nil, nil)
 
 			// Defer CRD clean up
 			defer func() {
@@ -2448,7 +2445,7 @@ var _ = Describe("Install Plan", func() {
 			}
 
 			// Create the catalog sources
-			_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensions.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
+			_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensionsv1.CustomResourceDefinition{mainCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
 			defer cleanupMainCatalogSource()
 
 			// Attempt to get the catalog source before creating install plan
@@ -2493,7 +2490,7 @@ var _ = Describe("Install Plan", func() {
 				},
 			}
 
-			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{updatedCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV, betaCSV}, mainManifests)
+			updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{updatedCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV, betaCSV}, mainManifests)
 			// Wait for subscription to update
 			updatedSubscription, err := fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionHasInstallPlanDifferentChecker(fetchedInstallPlan.GetName()))
 			require.NoError(GinkgoT(), err)
@@ -2547,48 +2544,48 @@ var _ = Describe("Install Plan", func() {
 
 			crdPlural := genName("ins-update2-")
 			crdName := crdPlural + ".cluster.com"
-			mainCRD := apiextensions.CustomResourceDefinition{
+			mainCRD := apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: crdName,
 				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Group: "cluster.com",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
+					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
 							},
 						},
 					},
-					Names: apiextensions.CustomResourceDefinitionNames{
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
 						Plural:   crdPlural,
 						Singular: crdPlural,
 						Kind:     crdPlural,
 						ListKind: "list" + crdPlural,
 					},
-					Scope: apiextensions.NamespaceScoped,
+					Scope: apiextensionsv1.NamespaceScoped,
 				},
 			}
 
-			updatedCRD := apiextensions.CustomResourceDefinition{
+			updatedCRD := apiextensionsv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: crdName,
 				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Group: "cluster.com",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
+					Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 						{
 							Name:    "v1alpha1",
 							Served:  true,
 							Storage: true,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
@@ -2598,21 +2595,21 @@ var _ = Describe("Install Plan", func() {
 							Name:    "v1alpha2",
 							Served:  true,
 							Storage: false,
-							Schema: &apiextensions.CustomResourceValidation{
-								OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+							Schema: &apiextensionsv1.CustomResourceValidation{
+								OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 									Type:        "object",
 									Description: "my crd schema",
 								},
 							},
 						},
 					},
-					Names: apiextensions.CustomResourceDefinitionNames{
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
 						Plural:   crdPlural,
 						Singular: crdPlural,
 						Kind:     crdPlural,
 						ListKind: "list" + crdPlural,
 					},
-					Scope: apiextensions.NamespaceScoped,
+					Scope: apiextensionsv1.NamespaceScoped,
 				},
 			}
 
@@ -2647,7 +2644,7 @@ var _ = Describe("Install Plan", func() {
 			}
 
 			// Create the catalog sources
-			_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensions.CustomResourceDefinition{updatedCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
+			_, cleanupMainCatalogSource := createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), mainManifests, []apiextensionsv1.CustomResourceDefinition{updatedCRD}, []operatorsv1alpha1.ClusterServiceVersion{mainCSV})
 			defer cleanupMainCatalogSource()
 
 			// Attempt to get the catalog source before creating install plan
@@ -2781,7 +2778,7 @@ var _ = Describe("Install Plan", func() {
 		namedStrategy := newNginxInstallStrategy(genName("dep-"), permissions, clusterPermissions)
 
 		// Create new CSVs
-		stableCSV := newCSV(stableCSVName, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, &namedStrategy)
+		stableCSV := newCSV(stableCSVName, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, &namedStrategy)
 
 		defer func() {
 			require.NoError(GinkgoT(), crc.OperatorsV1alpha1().Subscriptions(generatedNamespace.GetName()).DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{}))
@@ -2789,17 +2786,20 @@ var _ = Describe("Install Plan", func() {
 
 		// Create CatalogSource
 		mainCatalogSourceName := genName("nginx-catalog")
-		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, mainCatalogSourceName, generatedNamespace.GetName(), manifests, []apiextensions.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{stableCSV})
+		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, mainCatalogSourceName, generatedNamespace.GetName(), manifests, []apiextensionsv1.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{stableCSV})
 		defer cleanupCatalogSource()
 
 		// Attempt to get CatalogSource
 		_, err := fetchCatalogSourceOnStatus(crc, mainCatalogSourceName, generatedNamespace.GetName(), catalogSourceRegistryPodSynced)
 		require.NoError(GinkgoT(), err)
 
+		By("Creating a Subscription")
 		subscriptionName := genName("sub-nginx-")
-		subscriptionCleanup := createSubscriptionForCatalog(crc, generatedNamespace.GetName(), subscriptionName, mainCatalogSourceName, packageName, stableChannel, "", operatorsv1alpha1.ApprovalAutomatic)
-		defer subscriptionCleanup()
+		// Subscription is explitly deleted as part of the test to avoid CSV being recreated,
+		// so ignore cleanup function
+		_ = createSubscriptionForCatalog(crc, generatedNamespace.GetName(), subscriptionName, mainCatalogSourceName, packageName, stableChannel, "", operatorsv1alpha1.ApprovalAutomatic)
 
+		By("Attempt to get Subscription")
 		subscription, err := fetchSubscription(crc, generatedNamespace.GetName(), subscriptionName, subscriptionHasInstallPlanChecker)
 		require.NoError(GinkgoT(), err)
 		require.NotNil(GinkgoT(), subscription)
@@ -2871,92 +2871,63 @@ var _ = Describe("Install Plan", func() {
 		// Should have removed every matching step
 		require.Equal(GinkgoT(), 0, len(expectedSteps), "Actual resource steps do not match expected: %#v", expectedSteps)
 
-		// the test from here out verifies created RBAC is removed after CSV deletion
-		createdClusterRoles, err := c.KubernetesInterface().RbacV1().ClusterRoles().List(context.Background(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v=%v", ownerutil.OwnerKey, stableCSVName)})
-		createdClusterRoleNames := map[string]struct{}{}
-		for _, role := range createdClusterRoles.Items {
-			createdClusterRoleNames[role.GetName()] = struct{}{}
-			GinkgoT().Logf("Monitoring cluster role %v", role.GetName())
-		}
+		By(fmt.Sprintf("Explicitly deleting subscription %s/%s", generatedNamespace.GetName(), subscriptionName))
+		err = crc.OperatorsV1alpha1().Subscriptions(generatedNamespace.GetName()).Delete(context.Background(), subscriptionName, metav1.DeleteOptions{})
+		By("Looking for no error OR IsNotFound error")
+		require.NoError(GinkgoT(), client.IgnoreNotFound(err))
 
-		createdClusterRoleBindings, err := c.KubernetesInterface().RbacV1().ClusterRoleBindings().List(context.Background(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v=%v", ownerutil.OwnerKey, stableCSVName)})
-		createdClusterRoleBindingNames := map[string]struct{}{}
-		for _, binding := range createdClusterRoleBindings.Items {
-			createdClusterRoleBindingNames[binding.GetName()] = struct{}{}
-			GinkgoT().Logf("Monitoring cluster role binding %v", binding.GetName())
-		}
+		By("Waiting for the Subscription to delete")
+		err = waitForSubscriptionToDelete(generatedNamespace.GetName(), subscriptionName, crc)
+		require.NoError(GinkgoT(), client.IgnoreNotFound(err))
 
-		crWatcher, err := c.KubernetesInterface().RbacV1().ClusterRoles().Watch(context.Background(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v=%v", ownerutil.OwnerKey, stableCSVName)})
-		require.NoError(GinkgoT(), err)
-		crbWatcher, err := c.KubernetesInterface().RbacV1().ClusterRoleBindings().Watch(context.Background(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v=%v", ownerutil.OwnerKey, stableCSVName)})
-		require.NoError(GinkgoT(), err)
+		By(fmt.Sprintf("Explicitly deleting csv %s/%s", generatedNamespace.GetName(), stableCSVName))
+		err = crc.OperatorsV1alpha1().ClusterServiceVersions(generatedNamespace.GetName()).Delete(context.Background(), stableCSVName, metav1.DeleteOptions{})
+		By("Looking for no error OR IsNotFound error")
+		require.NoError(GinkgoT(), client.IgnoreNotFound(err))
+		By("Waiting for the CSV to delete")
+		err = waitForCsvToDelete(generatedNamespace.GetName(), stableCSVName, crc)
+		require.NoError(GinkgoT(), client.IgnoreNotFound(err))
 
-		done := make(chan struct{})
-		errExit := make(chan error)
-		go func() {
-			defer GinkgoRecover()
-			for {
-				select {
-				case evt, ok := <-crWatcher.ResultChan():
-					if !ok {
-						errExit <- errors.New("cr watch channel closed unexpectedly")
-						return
-					}
-					if evt.Type == watch.Deleted {
-						cr, ok := evt.Object.(*rbacv1.ClusterRole)
-						if !ok {
-							continue
-						}
-						delete(createdClusterRoleNames, cr.GetName())
-						if len(createdClusterRoleNames) == 0 && len(createdClusterRoleBindingNames) == 0 {
-							done <- struct{}{}
-							return
-						}
-					}
-				case evt, ok := <-crbWatcher.ResultChan():
-					if !ok {
-						errExit <- errors.New("crb watch channel closed unexpectedly")
-						return
-					}
-					if evt.Type == watch.Deleted {
-						crb, ok := evt.Object.(*rbacv1.ClusterRoleBinding)
-						if !ok {
-							continue
-						}
-						delete(createdClusterRoleBindingNames, crb.GetName())
-						if len(createdClusterRoleNames) == 0 && len(createdClusterRoleBindingNames) == 0 {
-							done <- struct{}{}
-							return
-						}
-					}
-				case <-time.After(pollDuration):
-					done <- struct{}{}
-					return
+		nCrs := 0
+		nCrbs := 0
+		By("Waiting for CRBs and CRs and SAs to delete")
+		Eventually(func() bool {
+
+			crbs, err := c.KubernetesInterface().RbacV1().ClusterRoleBindings().List(context.Background(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v=%v", ownerutil.OwnerKey, stableCSVName)})
+			if err != nil {
+				GinkgoT().Logf("error getting crbs: %v", err)
+				return false
+			}
+			if n := len(crbs.Items); n != 0 {
+				if n != nCrbs {
+					GinkgoT().Logf("CRBs remaining:  %v", n)
+					nCrbs = n
 				}
+				return false
 			}
-		}()
-		GinkgoT().Logf("Deleting CSV '%v' in namespace %v", stableCSVName, generatedNamespace.GetName())
-		require.NoError(GinkgoT(), crc.OperatorsV1alpha1().ClusterServiceVersions(generatedNamespace.GetName()).DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{}))
-		select {
-		case <-done:
-			break
-		case err := <-errExit:
-			GinkgoT().Fatal(err)
-		}
 
-		require.Emptyf(GinkgoT(), createdClusterRoleNames, "unexpected cluster role remain: %v", createdClusterRoleNames)
-		require.Emptyf(GinkgoT(), createdClusterRoleBindingNames, "unexpected cluster role binding remain: %v", createdClusterRoleBindingNames)
+			crs, err := c.KubernetesInterface().RbacV1().ClusterRoles().List(context.Background(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v=%v", ownerutil.OwnerKey, stableCSVName)})
+			if err != nil {
+				GinkgoT().Logf("error getting crs: %v", err)
+				return false
+			}
+			if n := len(crs.Items); n != 0 {
+				if n != nCrs {
+					GinkgoT().Logf("CRs remaining: %v", n)
+					nCrs = n
+				}
+				return false
+			}
 
-		Eventually(func() error {
-			_, err := c.GetServiceAccount(generatedNamespace.GetName(), serviceAccountName)
-			if err == nil {
-				return fmt.Errorf("The %v/%v ServiceAccount should have been deleted", generatedNamespace.GetName(), serviceAccountName)
+			_, err = c.KubernetesInterface().CoreV1().ServiceAccounts(generatedNamespace.GetName()).Get(context.Background(), serviceAccountName, metav1.GetOptions{})
+			if client.IgnoreNotFound(err) != nil {
+				GinkgoT().Logf("error getting sa %s/%s: %v", generatedNamespace.GetName(), serviceAccountName, err)
+				return false
 			}
-			if !apierrors.IsNotFound(err) {
-				return err
-			}
-			return nil
-		}, timeout, interval).Should(BeNil())
+
+			return true
+		}, pollDuration*2, pollInterval).Should(BeTrue())
+		By("Cleaning up the test")
 	})
 
 	It("CRD validation", func() {
@@ -2969,25 +2940,25 @@ var _ = Describe("Install Plan", func() {
 		var max float64 = 256
 
 		// Create CRD with offending property
-		crd := apiextensions.CustomResourceDefinition{
+		crd := apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: crdName,
 			},
-			Spec: apiextensions.CustomResourceDefinitionSpec{
+			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: "cluster.com",
-				Versions: []apiextensions.CustomResourceDefinitionVersion{
+				Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 					{
 						Name:    "v1alpha1",
 						Served:  true,
 						Storage: true,
-						Schema: &apiextensions.CustomResourceValidation{
-							OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+						Schema: &apiextensionsv1.CustomResourceValidation{
+							OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 								Type: "object",
-								Properties: map[string]apiextensions.JSONSchemaProps{
+								Properties: map[string]apiextensionsv1.JSONSchemaProps{
 									"spec": {
 										Type:        "object",
 										Description: "Spec of a test object.",
-										Properties: map[string]apiextensions.JSONSchemaProps{
+										Properties: map[string]apiextensionsv1.JSONSchemaProps{
 											"scalar": {
 												Type:        "number",
 												Description: "Scalar value that should have a min and max.",
@@ -3001,13 +2972,13 @@ var _ = Describe("Install Plan", func() {
 						},
 					},
 				},
-				Names: apiextensions.CustomResourceDefinitionNames{
+				Names: apiextensionsv1.CustomResourceDefinitionNames{
 					Plural:   crdPlural,
 					Singular: crdPlural,
 					Kind:     crdPlural,
 					ListKind: "list" + crdPlural,
 				},
-				Scope: apiextensions.NamespaceScoped,
+				Scope: apiextensionsv1.NamespaceScoped,
 			},
 		}
 
@@ -3022,7 +2993,7 @@ var _ = Describe("Install Plan", func() {
 		packageName := genName("nginx-")
 		stableChannel := "stable"
 		packageNameStable := packageName + "-" + stableChannel
-		csv := newCSV(packageNameStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+		csv := newCSV(packageNameStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 
 		// Create PackageManifests
 		manifests := []registry.PackageManifest{
@@ -3037,7 +3008,7 @@ var _ = Describe("Install Plan", func() {
 
 		// Create the CatalogSource
 		catalogSourceName := genName("mock-nginx-")
-		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalogSourceName, generatedNamespace.GetName(), manifests, []apiextensions.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csv})
+		_, cleanupCatalogSource := createInternalCatalogSource(c, crc, catalogSourceName, generatedNamespace.GetName(), manifests, []apiextensionsv1.CustomResourceDefinition{crd}, []operatorsv1alpha1.ClusterServiceVersion{csv})
 		defer cleanupCatalogSource()
 
 		// Attempt to get the catalog source before creating install plan
@@ -3171,8 +3142,8 @@ var _ = Describe("Install Plan", func() {
 		stableChannel := "stable"
 
 		dependentCRD := newCRD(genName("ins-"))
-		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensions.CustomResourceDefinition{dependentCRD}, nil)
-		dependentCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{dependentCRD}, nil, nil)
+		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil)
+		dependentCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil, nil)
 
 		defer func() {
 			require.NoError(GinkgoT(), crc.OperatorsV1alpha1().Subscriptions(generatedNamespace.GetName()).DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{}))
@@ -3210,7 +3181,7 @@ var _ = Describe("Install Plan", func() {
 		}()
 
 		// Create the dependent catalog source
-		_, cleanupDependentCatalogSource := createInternalCatalogSource(c, crc, dependentCatalogName, generatedNamespace.GetName(), dependentManifests, []apiextensions.CustomResourceDefinition{dependentCRD}, []operatorsv1alpha1.ClusterServiceVersion{dependentCSV})
+		_, cleanupDependentCatalogSource := createInternalCatalogSource(c, crc, dependentCatalogName, generatedNamespace.GetName(), dependentManifests, []apiextensionsv1.CustomResourceDefinition{dependentCRD}, []operatorsv1alpha1.ClusterServiceVersion{dependentCSV})
 		defer cleanupDependentCatalogSource()
 
 		// Attempt to get the catalog source before creating install plan
@@ -4271,40 +4242,40 @@ func newNginxInstallStrategy(name string, permissions []operatorsv1alpha1.Strate
 	return namedStrategy
 }
 
-func newCRD(plural string) apiextensions.CustomResourceDefinition {
-	crd := apiextensions.CustomResourceDefinition{
+func newCRD(plural string) apiextensionsv1.CustomResourceDefinition {
+	crd := apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: plural + ".cluster.com",
 		},
-		Spec: apiextensions.CustomResourceDefinitionSpec{
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Group: "cluster.com",
-			Versions: []apiextensions.CustomResourceDefinitionVersion{
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 				{
 					Name:    "v1alpha1",
 					Served:  true,
 					Storage: true,
-					Schema: &apiextensions.CustomResourceValidation{
-						OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+					Schema: &apiextensionsv1.CustomResourceValidation{
+						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
 							Type:        "object",
 							Description: "my crd schema",
 						},
 					},
 				},
 			},
-			Names: apiextensions.CustomResourceDefinitionNames{
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural:   plural,
 				Singular: plural,
 				Kind:     plural,
 				ListKind: plural + "list",
 			},
-			Scope: apiextensions.NamespaceScoped,
+			Scope: apiextensionsv1.NamespaceScoped,
 		},
 	}
 
 	return crd
 }
 
-func newCSV(name, namespace, replaces string, version semver.Version, owned []apiextensions.CustomResourceDefinition, required []apiextensions.CustomResourceDefinition, namedStrategy *operatorsv1alpha1.NamedInstallStrategy) operatorsv1alpha1.ClusterServiceVersion {
+func newCSV(name, namespace, replaces string, version semver.Version, owned []apiextensionsv1.CustomResourceDefinition, required []apiextensionsv1.CustomResourceDefinition, namedStrategy *operatorsv1alpha1.NamedInstallStrategy) operatorsv1alpha1.ClusterServiceVersion {
 	csvType = metav1.TypeMeta{
 		Kind:       operatorsv1alpha1.ClusterServiceVersionKind,
 		APIVersion: operatorsv1alpha1.SchemeGroupVersion.String(),
