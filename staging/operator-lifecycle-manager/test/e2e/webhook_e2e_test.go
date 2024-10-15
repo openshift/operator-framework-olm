@@ -834,14 +834,14 @@ var _ = Describe("CSVs with a Webhook", func() {
 			// create CRD (crdA)
 			crdAPlural := genName("mockcrda")
 			crdA := newV1CRD(crdAPlural)
-			cleanupCRD, er := createV1CRD(c, crdA)
+			cleanupCRD, er := createCRD(c, crdA)
 			require.NoError(GinkgoT(), er)
 			defer cleanupCRD()
 
 			// create another CRD (crdB)
 			crdBPlural := genName("mockcrdb")
 			crdB := newV1CRD(crdBPlural)
-			cleanupCRD2, er := createV1CRD(c, crdB)
+			cleanupCRD2, er := createCRD(c, crdB)
 			require.NoError(GinkgoT(), er)
 			defer cleanupCRD2()
 
@@ -903,7 +903,7 @@ var _ = Describe("CSVs with a Webhook", func() {
 			// create CRD (crdA)
 			crdAPlural := genName("mockcrda")
 			crdA := newV1CRD(crdAPlural)
-			cleanupCRD, er := createV1CRD(c, crdA)
+			cleanupCRD, er := createCRD(c, crdA)
 			require.NoError(GinkgoT(), er)
 			defer cleanupCRD()
 
