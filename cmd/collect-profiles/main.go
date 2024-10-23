@@ -149,10 +149,10 @@ func newCmd() *cobra.Command {
 			if tlsCert, err = verifyCertAndKey(certPath, keyPath); err != nil {
 				logrus.Infof("error verifying provided cert and key: %v", err)
 				logrus.Info("generating a new cert and key")
-				if tlsCert, err = populateServingCert(cmd.Context(), cfg.Client); err != nil {
-					return err
-				}
-				// Continue with new certificate/keypair
+
+				// Skip the rest of the process. The certificate needs some
+				// time to propagate to the server in the olm-operator pod.
+				return populateServingCert(cmd.Context(), cfg.Client)
 			}
 
 			httpClient := &http.Client{
@@ -330,30 +330,21 @@ func requestURLBody(httpClient *http.Client, u *url.URL) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func populateServingCert(ctx context.Context, client client.Client) (*tls.Certificate, error) {
+func populateServingCert(ctx context.Context, client client.Client) error {
 	secret := &corev1.Secret{}
 	err := client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: pprofSecretName}, secret)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	certPEMBytes, privKeyPEMBytes, err := generateCertAndKey()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	secret.Data[corev1.TLSCertKey] = certPEMBytes
 	secret.Data[corev1.TLSPrivateKeyKey] = privKeyPEMBytes
-
-	if err = client.Update(ctx, secret); err != nil {
-		return nil, err
-	}
-	// Create tlsCert for client use
-	tlsCert, err := tls.X509KeyPair(certPEMBytes, privKeyPEMBytes)
-	if err != nil {
-		return nil, err
-	}
-	return &tlsCert, nil
+	return client.Update(ctx, secret)
 }
 
 func generateCertAndKey() ([]byte, []byte, error) {
