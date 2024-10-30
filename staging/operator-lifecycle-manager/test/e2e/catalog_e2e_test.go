@@ -14,6 +14,7 @@ import (
 
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -22,7 +23,6 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -89,7 +89,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		}
 
 		crd := newCRD(genName("ins-"))
-		csv := newCSV(packageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+		csv := newCSV(packageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 
 		defer func() {
 			Eventually(func() error {
@@ -101,7 +101,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		}()
 
 		catalogSourceName := genName("mock-ocs-")
-		_, cleanupSource := createInternalCatalogSource(c, crc, catalogSourceName, generatedNamespace.GetName(), manifests, []apiextensions.CustomResourceDefinition{crd}, []v1alpha1.ClusterServiceVersion{csv})
+		_, cleanupSource := createInternalCatalogSource(c, crc, catalogSourceName, generatedNamespace.GetName(), manifests, []apiextensionsv1.CustomResourceDefinition{crd}, []v1alpha1.ClusterServiceVersion{csv})
 		defer cleanupSource()
 
 		// ensure the mock catalog exists and has been synced by the catalog operator
@@ -143,8 +143,8 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		stableChannel := "stable"
 
 		mainCRD := newCRD(genName("ins-"))
-		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, nil)
-		replacementCSV := newCSV(mainPackageReplacement, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, nil)
+		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, nil)
+		replacementCSV := newCSV(mainPackageReplacement, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), []apiextensionsv1.CustomResourceDefinition{mainCRD}, nil, nil)
 
 		defer func() {
 			Eventually(func() error {
@@ -172,7 +172,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		}
 
 		// Create the initial catalog source
-		cs, cleanup := createInternalCatalogSource(c, crc, mainCatalogName, globalCatalogNamespace, mainManifests, []apiextensions.CustomResourceDefinition{mainCRD}, []v1alpha1.ClusterServiceVersion{mainCSV})
+		cs, cleanup := createInternalCatalogSource(c, crc, mainCatalogName, globalCatalogNamespace, mainManifests, []apiextensionsv1.CustomResourceDefinition{mainCRD}, []v1alpha1.ClusterServiceVersion{mainCSV})
 		defer cleanup()
 
 		// Attempt to get the catalog source before creating install plan
@@ -225,7 +225,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		}
 
 		// Update catalog configmap
-		updateInternalCatalog(GinkgoT(), c, crc, cs.GetName(), cs.GetNamespace(), []apiextensions.CustomResourceDefinition{mainCRD}, []v1alpha1.ClusterServiceVersion{mainCSV, replacementCSV}, mainManifests)
+		updateInternalCatalog(GinkgoT(), c, crc, cs.GetName(), cs.GetNamespace(), []apiextensionsv1.CustomResourceDefinition{mainCRD}, []v1alpha1.ClusterServiceVersion{mainCSV, replacementCSV}, mainManifests)
 
 		// Get updated catalogsource
 		fetchedUpdatedCatalog, err := fetchCatalogSourceOnStatus(crc, cs.GetName(), cs.GetNamespace(), catalogSourceRegistryPodSynced)
@@ -252,8 +252,8 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		stableChannel := "stable"
 
 		dependentCRD := newCRD(genName("ins-"))
-		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensions.CustomResourceDefinition{dependentCRD}, nil)
-		dependentCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{dependentCRD}, nil, nil)
+		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil)
+		dependentCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil, nil)
 
 		defer func() {
 			Eventually(func() error {
@@ -307,7 +307,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		Expect(initialPods.Items).To(HaveLen(1))
 
 		// Update catalog configmap
-		updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensions.CustomResourceDefinition{dependentCRD}, []v1alpha1.ClusterServiceVersion{mainCSV, dependentCSV}, append(mainManifests, dependentManifests...))
+		updateInternalCatalog(GinkgoT(), c, crc, mainCatalogName, generatedNamespace.GetName(), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, []v1alpha1.ClusterServiceVersion{mainCSV, dependentCSV}, append(mainManifests, dependentManifests...))
 
 		fetchedUpdatedCatalog, err := fetchCatalogSourceOnStatus(crc, mainCatalogName, generatedNamespace.GetName(), func(catalog *v1alpha1.CatalogSource) bool {
 			before := fetchedInitialCatalog.Status.ConfigMapResource
@@ -385,8 +385,8 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		stableChannel := "stable"
 
 		dependentCRD := newCRD(genName("ins-"))
-		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensions.CustomResourceDefinition{dependentCRD}, nil)
-		dependentCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{dependentCRD}, nil, nil)
+		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil)
+		dependentCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil, nil)
 
 		defer func() {
 			Eventually(func() error {
@@ -442,7 +442,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		cleanupSource()
 
 		// create a catalog with the same name
-		createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), append(mainManifests, dependentManifests...), []apiextensions.CustomResourceDefinition{dependentCRD}, []v1alpha1.ClusterServiceVersion{mainCSV, dependentCSV})
+		createInternalCatalogSource(c, crc, mainCatalogName, generatedNamespace.GetName(), append(mainManifests, dependentManifests...), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, []v1alpha1.ClusterServiceVersion{mainCSV, dependentCSV})
 
 		// Create Subscription
 		subscriptionName := genName("sub-")
@@ -478,9 +478,9 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		stableChannel := "stable"
 
 		dependentCRD := newCRD(genName("ins-"))
-		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensions.CustomResourceDefinition{dependentCRD}, nil)
-		replacementCSV := newCSV(mainPackageReplacement, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), nil, []apiextensions.CustomResourceDefinition{dependentCRD}, nil)
-		dependentCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{dependentCRD}, nil, nil)
+		mainCSV := newCSV(mainPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), nil, []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil)
+		replacementCSV := newCSV(mainPackageReplacement, generatedNamespace.GetName(), mainPackageStable, semver.MustParse("0.2.0"), nil, []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil)
+		dependentCSV := newCSV(dependentPackageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, nil, nil)
 
 		defer func() {
 			Eventually(func() error {
@@ -532,8 +532,8 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		}
 
 		// Create ConfigMap CatalogSources
-		createInternalCatalogSource(c, crc, mainSourceName, generatedNamespace.GetName(), append(mainManifests, dependentManifests...), []apiextensions.CustomResourceDefinition{dependentCRD}, []v1alpha1.ClusterServiceVersion{mainCSV, dependentCSV})
-		createInternalCatalogSource(c, crc, replacementSourceName, generatedNamespace.GetName(), append(replacementManifests, dependentManifests...), []apiextensions.CustomResourceDefinition{dependentCRD}, []v1alpha1.ClusterServiceVersion{replacementCSV, mainCSV, dependentCSV})
+		createInternalCatalogSource(c, crc, mainSourceName, generatedNamespace.GetName(), append(mainManifests, dependentManifests...), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, []v1alpha1.ClusterServiceVersion{mainCSV, dependentCSV})
+		createInternalCatalogSource(c, crc, replacementSourceName, generatedNamespace.GetName(), append(replacementManifests, dependentManifests...), []apiextensionsv1.CustomResourceDefinition{dependentCRD}, []v1alpha1.ClusterServiceVersion{replacementCSV, mainCSV, dependentCSV})
 
 		// Wait for ConfigMap CatalogSources to be ready
 		mainSource, err := fetchCatalogSourceOnStatus(crc, mainSourceName, generatedNamespace.GetName(), catalogSourceRegistryPodSynced)
@@ -626,7 +626,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 		stableChannel := "stable"
 		sourceName := genName("catalog-")
 		crd := newCRD(genName("ins-"))
-		csv := newCSV(packageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, nil)
+		csv := newCSV(packageStable, generatedNamespace.GetName(), "", semver.MustParse("0.1.0"), []apiextensionsv1.CustomResourceDefinition{crd}, nil, nil)
 		manifests := []registry.PackageManifest{
 			{
 				PackageName: packageName,
@@ -646,7 +646,7 @@ var _ = Describe("Starting CatalogSource e2e tests", func() {
 			}).Should(Succeed())
 		}()
 
-		_, cleanupSource := createInternalCatalogSource(c, crc, sourceName, generatedNamespace.GetName(), manifests, []apiextensions.CustomResourceDefinition{crd}, []v1alpha1.ClusterServiceVersion{csv})
+		_, cleanupSource := createInternalCatalogSource(c, crc, sourceName, generatedNamespace.GetName(), manifests, []apiextensionsv1.CustomResourceDefinition{crd}, []v1alpha1.ClusterServiceVersion{csv})
 		defer cleanupSource()
 
 		// Wait for a new registry pod to be created
