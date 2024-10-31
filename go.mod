@@ -24,12 +24,12 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.31.2
 	k8s.io/apimachinery v0.31.2
-	k8s.io/client-go v0.31.1
-	k8s.io/code-generator v0.31.1
+	k8s.io/client-go v0.31.2
+	k8s.io/code-generator v0.31.2
 	k8s.io/kube-openapi v0.0.0-20240816214639-573285566f34
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 	sigs.k8s.io/controller-runtime v0.19.0
-	sigs.k8s.io/controller-tools v0.16.3
+	sigs.k8s.io/controller-tools v0.16.5
 )
 
 // latest gRPC library causes changes in the way the CatalogSource connection status behaves
@@ -79,7 +79,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/evanphx/json-patch v5.9.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
-	github.com/fatih/color v1.17.0 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
@@ -94,7 +94,7 @@ require (
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/gobuffalo/flect v1.0.2 // indirect
+	github.com/gobuffalo/flect v1.0.3 // indirect
 	github.com/goccy/go-yaml v1.11.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-migrate/migrate/v4 v4.17.1 // indirect
@@ -191,7 +191,7 @@ require (
 	golang.org/x/term v0.25.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
-	golang.org/x/tools v0.25.0 // indirect
+	golang.org/x/tools v0.26.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
@@ -204,14 +204,14 @@ require (
 	gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.31.1 // indirect
-	k8s.io/apiserver v0.31.1 // indirect
+	k8s.io/apiextensions-apiserver v0.31.2 // indirect
+	k8s.io/apiserver v0.31.2 // indirect
 	k8s.io/cli-runtime v0.31.0 // indirect
-	k8s.io/component-base v0.31.1 // indirect
+	k8s.io/component-base v0.31.2 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240812201722-3b05ca7b6e59 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kms v0.31.1 // indirect
+	k8s.io/kms v0.31.2 // indirect
 	k8s.io/kube-aggregator v0.31.1 // indirect
 	k8s.io/kubectl v0.31.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.30.3 // indirect
