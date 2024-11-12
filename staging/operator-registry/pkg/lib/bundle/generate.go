@@ -335,7 +335,7 @@ func GenerateDockerfile(mediaType, manifests, metadata, copyManifestDir, copyMet
 	relativeMetadataDirectory = filepath.ToSlash(relativeMetadataDirectory)
 
 	// FROM
-	fileContent += "FROM scratch\n\n"
+	fileContent += "FROM registry.access.redhat.com/ubi9:latest\n\n"
 
 	// LABEL
 	fileContent += fmt.Sprintf("LABEL %s=%s\n", MediatypeLabel, mediaType)
