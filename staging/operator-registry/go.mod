@@ -5,23 +5,23 @@ go 1.22.5
 require (
 	github.com/akrylysov/pogreb v0.10.2
 	github.com/blang/semver/v4 v4.0.0
-	github.com/containerd/containerd v1.7.21
-	github.com/containers/common v0.60.2
+	github.com/containerd/containerd v1.7.22
+	github.com/containers/common v0.60.4
 	github.com/containers/image/v5 v5.32.2
 	github.com/distribution/distribution/v3 v3.0.0-beta.1
 	github.com/distribution/reference v0.6.0
-	github.com/docker/cli v27.2.0+incompatible
-	github.com/golang-migrate/migrate/v4 v4.17.1
+	github.com/docker/cli v27.3.1+incompatible
+	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
-	github.com/grpc-ecosystem/grpc-health-probe v0.4.32
+	github.com/grpc-ecosystem/grpc-health-probe v0.4.34
 	github.com/h2non/filetype v1.1.3
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c
 	github.com/joelanford/ignore v0.1.0
-	github.com/mattn/go-sqlite3 v1.14.23
-	github.com/maxbrunsfeld/counterfeiter/v6 v6.8.1
+	github.com/mattn/go-sqlite3 v1.14.24
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.9.0
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
 	github.com/opencontainers/go-digest v1.0.0
@@ -38,18 +38,18 @@ require (
 	go.etcd.io/bbolt v1.3.11
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 	golang.org/x/mod v0.21.0
-	golang.org/x/net v0.29.0
+	golang.org/x/net v0.30.0
 	golang.org/x/sync v0.8.0
-	golang.org/x/sys v0.25.0
-	golang.org/x/text v0.18.0
-	google.golang.org/grpc v1.66.0
+	golang.org/x/sys v0.26.0
+	golang.org/x/text v0.19.0
+	google.golang.org/grpc v1.67.1
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.35.1
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.31.0
-	k8s.io/apiextensions-apiserver v0.31.0
-	k8s.io/apimachinery v0.31.0
-	k8s.io/client-go v0.31.0
+	k8s.io/api v0.31.1
+	k8s.io/apiextensions-apiserver v0.31.1
+	k8s.io/apimachinery v0.31.1
+	k8s.io/client-go v0.31.1
 	k8s.io/kubectl v0.31.0
 	sigs.k8s.io/controller-runtime v0.19.0
 	sigs.k8s.io/kind v0.24.0
@@ -85,7 +85,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v27.1.1+incompatible // indirect
+	github.com/docker/docker v27.2.0+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.2 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
@@ -158,36 +158,36 @@ require (
 	github.com/zeebo/errs v1.3.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/exporters/autoexport v0.46.1 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
-	go.opentelemetry.io/otel v1.28.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
+	go.opentelemetry.io/otel v1.29.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.44.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.44.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.28.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.29.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.21.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.44.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.44.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.21.0 // indirect
-	go.opentelemetry.io/otel/metric v1.28.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
+	go.opentelemetry.io/otel/metric v1.29.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.29.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect
-	go.opentelemetry.io/otel/trace v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.29.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
+	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
-	golang.org/x/term v0.24.0 // indirect
+	golang.org/x/term v0.25.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.24.0 // indirect
+	golang.org/x/tools v0.25.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240604185151-ef581f913117 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240814211410-ddb44dafa142 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.31.0 // indirect
+	k8s.io/apiserver v0.31.1 // indirect
 	k8s.io/cli-runtime v0.31.0 // indirect
-	k8s.io/component-base v0.31.0 // indirect
+	k8s.io/component-base v0.31.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
