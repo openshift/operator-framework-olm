@@ -8,7 +8,7 @@ require (
 	github.com/coreos/go-semver v0.3.1
 	github.com/distribution/reference v0.6.0
 	github.com/evanphx/json-patch v5.9.0+incompatible
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-air/gini v1.0.4
 	github.com/go-logr/logr v1.4.2
@@ -19,7 +19,7 @@ require (
 	github.com/mitchellh/hashstructure v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onsi/ginkgo/v2 v2.21.0
-	github.com/onsi/gomega v1.34.2
+	github.com/onsi/gomega v1.35.1
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a
 	github.com/operator-framework/api v0.27.0
@@ -28,7 +28,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.60.0
+	github.com/prometheus/common v0.60.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
