@@ -2243,43 +2243,22 @@ func validateExistingCRs(dynamicClient dynamic.Interface, gr schema.GroupResourc
 		}
 		gvr := schema.GroupVersionResource{Group: gr.Group, Version: version, Resource: gr.Resource}
 
-		results := make(map[string]*unstructured.Unstructured)
-
-		crList, err := dynamicClient.Resource(gvr).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			return fmt.Errorf("error listing resources in GroupVersionResource %#v: %s", gvr, err)
-		}
-		for _, cr := range crList.Items {
-			var namespacedName string
-			if cr.GetNamespace() == "" {
-				namespacedName = cr.GetName()
-			} else {
-				namespacedName = fmt.Sprintf("%s/%s", cr.GetNamespace(), cr.GetName())
-			}
-			if err := validation.ValidateCustomResource(field.NewPath(""), &cr, validator).ToAggregate(); err != nil {
-				return validationError{fmt.Errorf("blocking lister: error validating %s %q: updated validation is too restrictive: %v", cr.GroupVersionKind(), namespacedName, err)}
-			}
-			results[namespacedName] = &cr
-		}
-
 		pager := pager.New(pager.SimplePageFunc(func(opts metav1.ListOptions) (runtime.Object, error) {
 			return dynamicClient.Resource(gvr).List(context.TODO(), opts)
 		}))
 		validationFn := func(obj runtime.Object) error {
-			err = validation.ValidateCustomResource(field.NewPath(""), obj, validator).ToAggregate()
+			// lister will only provide unstructured objects as runtime.Object, so this should never fail to convert
+			// if it does, it's a programming error
+			cr := obj.(*unstructured.Unstructured)
+			err = validation.ValidateCustomResource(field.NewPath(""), cr, validator).ToAggregate()
 			if err != nil {
-				// lister will only provide unstructured objects as runtime.Object, so this should never fail to convert
-				// if it does, it's a programming error
-				cr := obj.(*unstructured.Unstructured)
 				var namespacedName string
 				if cr.GetNamespace() == "" {
 					namespacedName = cr.GetName()
 				} else {
 					namespacedName = fmt.Sprintf("%s/%s", cr.GetNamespace(), cr.GetName())
 				}
-				return validationError{fmt.Errorf("error validating %s %q: simple list succeeded where paginated failed:\nsimple:\n%#v\npaginated:\n%#v\n %v",
-					gvr, namespacedName, results[namespacedName], obj, err)}
-				// return validationError{fmt.Errorf("error validating %s %q: updated validation is too restrictive: %v", cr.GroupVersionKind(), namespacedName, err)}
+				return validationError{fmt.Errorf("error validating %s %q: updated validation is too restrictive: %v", cr.GroupVersionKind(), namespacedName, err)}
 			}
 			return nil
 		}
