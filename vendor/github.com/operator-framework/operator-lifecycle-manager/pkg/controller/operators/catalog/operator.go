@@ -2258,7 +2258,7 @@ func validateExistingCRs(dynamicClient dynamic.Interface, gr schema.GroupResourc
 				} else {
 					namespacedName = fmt.Sprintf("%s/%s", cr.GetNamespace(), cr.GetName())
 				}
-				return validationError{fmt.Errorf("error validating %s %q: updated validation is too restrictive: %v", cr.GroupVersionKind(), namespacedName, err)}
+				return validationError{fmt.Errorf("JEK: error validating %s %q: updated validation is too restrictive: %v", cr.GroupVersionKind(), namespacedName, err)}
 			}
 			return nil
 		}
