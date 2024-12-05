@@ -2250,7 +2250,7 @@ func validateExistingCRs(dynamicClient dynamic.Interface, gr schema.GroupResourc
 			// lister will only provide unstructured objects as runtime.Object, so this should never fail to convert
 			// if it does, it's a programming error
 			cr := obj.(*unstructured.Unstructured)
-			err = validation.ValidateCustomResource(field.NewPath(""), cr, validator).ToAggregate()
+			err = validation.ValidateCustomResource(field.NewPath(""), *cr, validator).ToAggregate()
 			if err != nil {
 				var namespacedName string
 				if cr.GetNamespace() == "" {
