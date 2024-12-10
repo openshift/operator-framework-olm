@@ -15,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
+	rbacv1ac "k8s.io/client-go/applyconfigurations/rbac/v1"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/wrappers"
@@ -152,7 +154,6 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 		{
 			name: "adds certs to deployment spec",
 			mockExternal: func(mockOpClient *operatorclientmocks.MockClientInterface, fakeLister *operatorlisterfakes.FakeOperatorLister, namespace string, args args) {
-				mockOpClient.EXPECT().DeleteService(namespace, "test-service", &metav1.DeleteOptions{}).Return(nil)
 				service := corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test-service",
@@ -165,7 +166,23 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 						Selector: selector(t, "test=label").MatchLabels,
 					},
 				}
-				mockOpClient.EXPECT().CreateService(&service).Return(&service, nil)
+
+				portsApplyConfig := []*corev1ac.ServicePortApplyConfiguration{}
+				for _, p := range args.ports {
+					ac := corev1ac.ServicePort().
+						WithName(p.Name).
+						WithPort(p.Port).
+						WithTargetPort(p.TargetPort)
+					portsApplyConfig = append(portsApplyConfig, ac)
+				}
+
+				svcApplyConfig := corev1ac.Service(service.Name, service.Namespace).
+					WithSpec(corev1ac.ServiceSpec().
+						WithPorts(portsApplyConfig...).
+						WithSelector(selector(t, "test=label").MatchLabels)).
+					WithOwnerReferences(ownerutil.NonBlockingOwnerApplyConfiguration(&v1alpha1.ClusterServiceVersion{}))
+
+				mockOpClient.EXPECT().ApplyService(svcApplyConfig, metav1.ApplyOptions{Force: true, FieldManager: "olm.install"}).Return(&service, nil)
 
 				hosts := []string{
 					fmt.Sprintf("%s.%s", service.GetName(), namespace),
@@ -250,7 +267,22 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 					},
 				}
 
-				mockOpClient.EXPECT().UpdateClusterRoleBinding(authDelegatorClusterRoleBinding).Return(authDelegatorClusterRoleBinding, nil)
+				crbLabels := map[string]string{}
+				for key, val := range ownerutil.OwnerLabel(ownerutil.Owner(&v1alpha1.ClusterServiceVersion{}), owner.GetObjectKind().GroupVersionKind().Kind) {
+					crbLabels[key] = val
+				}
+				crbApplyConfig := rbacv1ac.ClusterRoleBinding(service.GetName() + "-system:auth-delegator").
+					WithSubjects(rbacv1ac.Subject().
+						WithKind("ServiceAccount").
+						WithAPIGroup("").
+						WithName(args.depSpec.Template.Spec.ServiceAccountName).
+						WithNamespace("")). // Empty owner with no namespace
+					WithRoleRef(rbacv1ac.RoleRef().
+						WithAPIGroup("rbac.authorization.k8s.io").
+						WithKind("ClusterRole").
+						WithName("system:auth-delegator")).
+					WithLabels(crbLabels)
+				mockOpClient.EXPECT().ApplyClusterRoleBinding(crbApplyConfig, metav1.ApplyOptions{Force: true, FieldManager: "olm.install"}).Return(authDelegatorClusterRoleBinding, nil)
 
 				authReaderRoleBinding := &rbacv1.RoleBinding{
 					Subjects: []rbacv1.Subject{
@@ -375,7 +407,6 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 		{
 			name: "doesn't add duplicate service ownerrefs",
 			mockExternal: func(mockOpClient *operatorclientmocks.MockClientInterface, fakeLister *operatorlisterfakes.FakeOperatorLister, namespace string, args args) {
-				mockOpClient.EXPECT().DeleteService(namespace, "test-service", &metav1.DeleteOptions{}).Return(nil)
 				service := corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-service",
@@ -389,7 +420,22 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 						Selector: selector(t, "test=label").MatchLabels,
 					},
 				}
-				mockOpClient.EXPECT().CreateService(&service).Return(&service, nil)
+				portsApplyConfig := []*corev1ac.ServicePortApplyConfiguration{}
+				for _, p := range args.ports {
+					ac := corev1ac.ServicePort().
+						WithName(p.Name).
+						WithPort(p.Port).
+						WithTargetPort(p.TargetPort)
+					portsApplyConfig = append(portsApplyConfig, ac)
+				}
+
+				svcApplyConfig := corev1ac.Service(service.Name, service.Namespace).
+					WithSpec(corev1ac.ServiceSpec().
+						WithPorts(portsApplyConfig...).
+						WithSelector(selector(t, "test=label").MatchLabels)).
+					WithOwnerReferences(ownerutil.NonBlockingOwnerApplyConfiguration(owner))
+
+				mockOpClient.EXPECT().ApplyService(svcApplyConfig, metav1.ApplyOptions{Force: true, FieldManager: "olm.install"}).Return(&service, nil)
 
 				hosts := []string{
 					fmt.Sprintf("%s.%s", service.GetName(), namespace),
@@ -474,7 +520,23 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 					},
 				}
 
-				mockOpClient.EXPECT().UpdateClusterRoleBinding(authDelegatorClusterRoleBinding).Return(authDelegatorClusterRoleBinding, nil)
+				crbLabels := map[string]string{}
+				for key, val := range ownerutil.OwnerLabel(owner, owner.GetObjectKind().GroupVersionKind().Kind) {
+					crbLabels[key] = val
+				}
+				crbApplyConfig := rbacv1ac.ClusterRoleBinding(service.GetName() + "-system:auth-delegator").
+					WithSubjects(rbacv1ac.Subject().
+						WithKind("ServiceAccount").
+						WithAPIGroup("").
+						WithName("test-sa").
+						WithNamespace(namespace)).
+					WithRoleRef(rbacv1ac.RoleRef().
+						WithAPIGroup("rbac.authorization.k8s.io").
+						WithKind("ClusterRole").
+						WithName("system:auth-delegator")).
+					WithLabels(crbLabels)
+
+				mockOpClient.EXPECT().ApplyClusterRoleBinding(crbApplyConfig, metav1.ApplyOptions{Force: true, FieldManager: "olm.install"}).Return(authDelegatorClusterRoleBinding, nil)
 
 				authReaderRoleBinding := &rbacv1.RoleBinding{
 					Subjects: []rbacv1.Subject{
@@ -591,9 +653,8 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 			},
 		},
 		{
-			name: "labels an unlabelled secret if present",
+			name: "labels an unlabelled secret if present; creates Service and ClusterRoleBinding if not existing",
 			mockExternal: func(mockOpClient *operatorclientmocks.MockClientInterface, fakeLister *operatorlisterfakes.FakeOperatorLister, namespace string, args args) {
-				mockOpClient.EXPECT().DeleteService(namespace, "test-service", &metav1.DeleteOptions{}).Return(nil)
 				service := corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test-service",
@@ -606,7 +667,23 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 						Selector: selector(t, "test=label").MatchLabels,
 					},
 				}
-				mockOpClient.EXPECT().CreateService(&service).Return(&service, nil)
+
+				portsApplyConfig := []*corev1ac.ServicePortApplyConfiguration{}
+				for _, p := range args.ports {
+					ac := corev1ac.ServicePort().
+						WithName(p.Name).
+						WithPort(p.Port).
+						WithTargetPort(p.TargetPort)
+					portsApplyConfig = append(portsApplyConfig, ac)
+				}
+
+				svcApplyConfig := corev1ac.Service(service.Name, service.Namespace).
+					WithSpec(corev1ac.ServiceSpec().
+						WithPorts(portsApplyConfig...).
+						WithSelector(selector(t, "test=label").MatchLabels)).
+					WithOwnerReferences(ownerutil.NonBlockingOwnerApplyConfiguration(&v1alpha1.ClusterServiceVersion{}))
+
+				mockOpClient.EXPECT().ApplyService(svcApplyConfig, metav1.ApplyOptions{Force: true, FieldManager: "olm.install"}).Return(&service, nil)
 
 				hosts := []string{
 					fmt.Sprintf("%s.%s", service.GetName(), namespace),
@@ -700,8 +777,22 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 						Name:     "system:auth-delegator",
 					},
 				}
+				crbLabels := map[string]string{}
+				for key, val := range ownerutil.OwnerLabel(ownerutil.Owner(&v1alpha1.ClusterServiceVersion{}), owner.GetObjectKind().GroupVersionKind().Kind) {
+					crbLabels[key] = val
+				}
+				crbApplyConfig := rbacv1ac.ClusterRoleBinding(service.GetName() + "-system:auth-delegator").
+					WithSubjects(rbacv1ac.Subject().WithKind("ServiceAccount").
+						WithAPIGroup("").
+						WithName("test-sa").
+						WithNamespace(namespace)).
+					WithRoleRef(rbacv1ac.RoleRef().
+						WithAPIGroup("rbac.authorization.k8s.io").
+						WithKind("ClusterRole").
+						WithName("system:auth-delegator")).
+					WithLabels(crbLabels)
 
-				mockOpClient.EXPECT().UpdateClusterRoleBinding(authDelegatorClusterRoleBinding).Return(authDelegatorClusterRoleBinding, nil)
+				mockOpClient.EXPECT().ApplyClusterRoleBinding(crbApplyConfig, metav1.ApplyOptions{Force: true, FieldManager: "olm.install"}).Return(authDelegatorClusterRoleBinding, nil)
 
 				authReaderRoleBinding := &rbacv1.RoleBinding{
 					Subjects: []rbacv1.Subject{
@@ -724,13 +815,7 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 				mockOpClient.EXPECT().UpdateRoleBinding(authReaderRoleBinding).Return(authReaderRoleBinding, nil)
 			},
 			state: fakeState{
-				existingService: &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						OwnerReferences: []metav1.OwnerReference{
-							ownerutil.NonBlockingOwner(&v1alpha1.ClusterServiceVersion{}),
-						},
-					},
-				},
+				existingService: nil,
 				// unlabelled secret won't be in cache
 				getSecretError: errors.NewNotFound(schema.GroupResource{
 					Group:    "",
@@ -742,9 +827,7 @@ func TestInstallCertRequirementsForDeployment(t *testing.T) {
 				existingRoleBinding: &rbacv1.RoleBinding{
 					ObjectMeta: metav1.ObjectMeta{},
 				},
-				existingClusterRoleBinding: &rbacv1.ClusterRoleBinding{
-					ObjectMeta: metav1.ObjectMeta{},
-				},
+				existingClusterRoleBinding: nil,
 			},
 			fields: fields{
 				owner:                  &v1alpha1.ClusterServiceVersion{},
