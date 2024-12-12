@@ -8,7 +8,6 @@ approvers:
   - oceanc80
   - grokspawn
   - tmshort
-  - m1kola
 reviewers:
   - dinhxuanvu
   - kevinrizza
@@ -19,5 +18,4 @@ reviewers:
   - oceanc80
   - grokspawn
   - tmshort
-  - m1kola
 component: "OLM"
