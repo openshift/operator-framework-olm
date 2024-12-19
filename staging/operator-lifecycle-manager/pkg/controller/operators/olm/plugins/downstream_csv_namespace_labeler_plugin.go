@@ -63,9 +63,11 @@ func NewCsvNamespaceLabelerPluginFunc(ctx context.Context, config OperatorConfig
 
 	plugin.namespaceLister = listerv1.NewNamespaceLister(namespaceInformer.GetIndexer())
 
-	namespaceQueue := workqueue.NewNamedRateLimitingQueue(
-		workqueue.DefaultControllerRateLimiter(),
-		"csv-ns-labeler-plugin-ns-queue",
+	namespaceQueue := workqueue.NewTypedRateLimitingQueueWithConfig[kubestate.ResourceEvent](
+		workqueue.DefaultTypedControllerRateLimiter[kubestate.ResourceEvent](),
+		workqueue.TypedRateLimitingQueueConfig[kubestate.ResourceEvent]{
+			Name: "csv-ns-labeler-plugin-ns-queue",
+		},
 	)
 	namespaceQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
@@ -91,10 +93,13 @@ func NewCsvNamespaceLabelerPluginFunc(ctx context.Context, config OperatorConfig
 
 		nonCopiedCsvInformer := hostOperator.Informers()[namespace].CSVInformer.Informer()
 
-		nonCopiedCsvQueue := workqueue.NewNamedRateLimitingQueue(
-			workqueue.DefaultControllerRateLimiter(),
-			fmt.Sprintf("%s/csv-ns-labeler-plugin-csv-queue", namespace),
+		nonCopiedCsvQueue := workqueue.NewTypedRateLimitingQueueWithConfig[kubestate.ResourceEvent](
+			workqueue.DefaultTypedControllerRateLimiter[kubestate.ResourceEvent](),
+			workqueue.TypedRateLimitingQueueConfig[kubestate.ResourceEvent]{
+				Name: "%s/csv-ns-labeler-plugin-csv-queue",
+			},
 		)
+
 		nonCopiedCsvQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
 			queueinformer.WithInformer(nonCopiedCsvInformer),

@@ -273,8 +273,8 @@ func (o *operator) processNextWorkItem(ctx context.Context, loop *QueueInformer)
 	logger := o.logger.WithField("item", item)
 	logger.WithField("queue-length", queue.Len()).Trace("popped queue")
 
-	event, ok := item.(kubestate.ResourceEvent)
-	if !ok || event.Type() != kubestate.ResourceDeleted {
+	var syncErr error
+	if item.Type() != kubestate.ResourceDeleted {
 		// Get the key
 		key, keyable := loop.key(item)
 		if !keyable {
@@ -287,7 +287,7 @@ func (o *operator) processNextWorkItem(ctx context.Context, loop *QueueInformer)
 
 		var resource interface{}
 		if loop.indexer == nil {
-			resource = event.Resource()
+			resource = item.Resource()
 		} else {
 			// Get the current cached version of the resource
 			var exists bool
@@ -304,26 +304,22 @@ func (o *operator) processNextWorkItem(ctx context.Context, loop *QueueInformer)
 				return true
 			}
 		}
-
-		if !ok {
-			event = kubestate.NewResourceEvent(kubestate.ResourceUpdated, resource)
-		} else {
-			event = kubestate.NewResourceEvent(event.Type(), resource)
-		}
+		syncErr = loop.Sync(ctx, kubestate.NewResourceEvent(item.Type(), resource))
+	} else {
+		syncErr = loop.Sync(ctx, item)
 	}
 
 	// Sync and requeue on error (throw out failed deletion syncs)
-	err := loop.Sync(ctx, event)
-	if requeues := queue.NumRequeues(item); err != nil && requeues < 8 && event.Type() != kubestate.ResourceDeleted {
+	if requeues := queue.NumRequeues(item); syncErr != nil && requeues < 8 && item.Type() != kubestate.ResourceDeleted {
 		logger.WithField("requeues", requeues).Trace("requeuing with rate limiting")
-		utilruntime.HandleError(errors.Wrap(err, fmt.Sprintf("sync %q failed", item)))
+		utilruntime.HandleError(errors.Wrap(syncErr, fmt.Sprintf("sync %q failed", item)))
 		queue.AddRateLimited(item)
 		return true
 	}
 	queue.Forget(item)
 
 	select {
-	case o.syncCh <- err:
+	case o.syncCh <- syncErr:
 	default:
 	}
 
