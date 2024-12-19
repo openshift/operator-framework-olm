@@ -14,7 +14,7 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/stretchr/testify/assert"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -55,7 +55,6 @@ func init() {
 }
 
 func NewFakeCSVNamespaceLabelerPlugin(t *testing.T, options ...fakeClientOption) (*csvNamespaceLabelerPlugin, context.CancelFunc) {
-
 	resyncPeriod := 5 * time.Minute
 	clientOptions := &fakeClientOptions{}
 	for _, applyOption := range options {
@@ -74,7 +73,7 @@ func NewFakeCSVNamespaceLabelerPlugin(t *testing.T, options ...fakeClientOption)
 	nonCopiedCsvInformer := operatorsInformerFactory.Operators().V1alpha1().ClusterServiceVersions().Informer()
 
 	t.Log("starting informers")
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, ctxCancel := context.WithCancel(context.TODO())
 	stopCtx := make(chan struct{})
 	go func() {
 		<-ctx.Done()
@@ -103,7 +102,7 @@ func NewFakeCSVNamespaceLabelerPlugin(t *testing.T, options ...fakeClientOption)
 		nonCopiedCsvListerMap: map[string]listerv1alpha1.ClusterServiceVersionLister{
 			metav1.NamespaceAll: listerv1alpha1.NewClusterServiceVersionLister(nonCopiedCsvInformer.GetIndexer()),
 		},
-	}, cancel
+	}, ctxCancel
 }
 
 func NewCsvInNamespace(namespace string) *v1alpha1.ClusterServiceVersion {
@@ -123,15 +122,15 @@ func NewCopiedCsvInNamespace(namespace string) *v1alpha1.ClusterServiceVersion {
 	return csv
 }
 
-func NewNamespace(name string) *v1.Namespace {
-	return &v1.Namespace{
+func NewNamespace(name string) *corev1.Namespace {
+	return &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 	}
 }
 
-func NewLabeledNamespace(name string, labelValue string) *v1.Namespace {
+func NewLabeledNamespace(name string, labelValue string) *corev1.Namespace {
 	ns := NewNamespace(name)
 	ns.SetLabels(map[string]string{
 		NamespaceLabelSyncerLabelKey: labelValue,
@@ -247,7 +246,7 @@ func Test_SyncFailsIfEventResourceIsNotCSV(t *testing.T) {
 	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t)
 	defer shutdown()
 
-	event := kubestate.NewResourceEvent(kubestate.ResourceAdded, v1.ConfigMap{})
+	event := kubestate.NewResourceEvent(kubestate.ResourceAdded, corev1.ConfigMap{})
 	assert.Error(t, plugin.Sync(context.Background(), event))
 }
 
@@ -268,7 +267,7 @@ func Test_SyncFailsIfCSVCannotBeUpdated(t *testing.T) {
 
 	event := kubestate.NewResourceEvent(kubestate.ResourceAdded, NewCsvInNamespace(namespace))
 	updateNsError := func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, &v1.Namespace{}, errors.New("error updating namespace")
+		return true, &corev1.Namespace{}, errors.New("error updating namespace")
 	}
 	plugin.kubeClient.KubernetesInterface().CoreV1().(*v1fake.FakeCoreV1).PrependReactor("update", "namespaces", updateNsError)
 	assert.Error(t, plugin.Sync(context.Background(), event))
