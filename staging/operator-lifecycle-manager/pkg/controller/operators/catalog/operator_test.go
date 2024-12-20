@@ -1616,6 +1616,18 @@ func TestValidateExistingCRs(t *testing.T) {
 			newCRD: unversionedCRDForV1beta1File("testdata/hivebug/crd.yaml"),
 			want:   fmt.Errorf("error validating hive.openshift.io/v1, Kind=MachinePool \"test\": updated validation is too restrictive: [[].spec.clusterDeploymentRef: Invalid value: \"null\": spec.clusterDeploymentRef in body must be of type object: \"null\", [].spec.name: Required value, [].spec.platform: Required value]"),
 		},
+		{
+			name: "crd with incorrect comparison",
+			existingObjects: []runtime.Object{
+				unstructuredForFile("testdata/postgrestolerations/pgadmin.cr.yaml"),
+			},
+			gvr: schema.GroupVersionResource{
+				Group:    "postgres-operator.crunchydata.com",
+				Version:  "v1beta1",
+				Resource: "pgadmins",
+			},
+			newCRD: unversionedCRDForV1beta1File("testdata/postgrestolerations/crd.yaml"),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

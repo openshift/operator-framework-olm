@@ -1918,15 +1918,15 @@ func validateExistingCRs(dynamicClient dynamic.Interface, gvr schema.GroupVersio
 		return dynamicClient.Resource(gvr).List(context.TODO(), opts)
 	}))
 	validationFn := func(obj runtime.Object) error {
+		// lister will only provide unstructured objects as runtime.Object, so this should never fail to convert
+		// if it does, it's a programming error
+		cr := obj.(*unstructured.Unstructured)
 		validator, _, err := validation.NewSchemaValidator(newCRD.Spec.Validation)
 		if err != nil {
 			return fmt.Errorf("error creating validator for schema %#v: %s", newCRD.Spec.Validation, err)
 		}
-		err = validation.ValidateCustomResource(field.NewPath(""), obj, validator).ToAggregate()
+		err = validation.ValidateCustomResource(field.NewPath(""), cr.UnstructuredContent(), validator).ToAggregate()
 		if err != nil {
-			// lister will only provide unstructured objects as runtime.Object, so this should never fail to convert
-			// if it does, it's a programming error
-			cr := obj.(*unstructured.Unstructured)
 			var namespacedName string
 			if cr.GetNamespace() == "" {
 				namespacedName = cr.GetName()
