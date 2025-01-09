@@ -11,7 +11,6 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/fake"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/informers/externalversions"
 	listerv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -139,28 +138,13 @@ func NewLabeledNamespace(name string, labelValue string) *v1.Namespace {
 	return ns
 }
 
-func Test_SyncIgnoresDeletionEvent(t *testing.T) {
-	// Sync ignores deletion events
-	namespace := "test-namespace"
-	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(NewNamespace(namespace)))
-	defer shutdown()
-
-	event := kubestate.NewResourceEvent(kubestate.ResourceDeleted, NewCsvInNamespace(namespace))
-	assert.Nil(t, plugin.Sync(context.Background(), event))
-
-	ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.NotContains(t, ns.GetLabels(), NamespaceLabelSyncerLabelKey)
-}
-
 func Test_SyncIgnoresCopiedCsvs(t *testing.T) {
 	// Sync ignores copied csvs
 	namespace := "openshift-test"
 	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(NewNamespace(namespace)))
 	defer shutdown()
 
-	event := kubestate.NewResourceEvent(kubestate.ResourceAdded, NewCopiedCsvInNamespace(namespace))
-	assert.Nil(t, plugin.Sync(context.Background(), event))
+	assert.Nil(t, plugin.Sync(context.Background(), NewCopiedCsvInNamespace(namespace)))
 
 	ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -173,8 +157,7 @@ func Test_SyncIgnoresNonOpenshiftNamespaces(t *testing.T) {
 	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(NewNamespace(namespace)))
 	defer shutdown()
 
-	event := kubestate.NewResourceEvent(kubestate.ResourceAdded, NewCopiedCsvInNamespace(namespace))
-	assert.Nil(t, plugin.Sync(context.Background(), event))
+	assert.Nil(t, plugin.Sync(context.Background(), NewCopiedCsvInNamespace(namespace)))
 
 	ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -187,16 +170,14 @@ func Test_SyncIgnoresPayloadOpenshiftNamespacesExceptOperators(t *testing.T) {
 	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(NewNamespace("openshift-monitoring"), NewNamespace("openshift-operators")))
 	defer shutdown()
 
-	event := kubestate.NewResourceEvent(kubestate.ResourceAdded, NewCsvInNamespace("openshift-monitoring"))
-	assert.Nil(t, plugin.Sync(context.Background(), event))
+	assert.Nil(t, plugin.Sync(context.Background(), NewCsvInNamespace("openshift-monitoring")))
 
 	ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), "openshift-monitoring", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.NotContains(t, ns.GetLabels(), NamespaceLabelSyncerLabelKey)
 
 	// openshift-operators sync -> label added
-	event = kubestate.NewResourceEvent(kubestate.ResourceAdded, NewCsvInNamespace("openshift-operators"))
-	assert.Nil(t, plugin.Sync(context.Background(), event))
+	assert.Nil(t, plugin.Sync(context.Background(), NewCsvInNamespace("openshift-operators")))
 	ns, err = plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), "openshift-operators", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, "true", ns.GetLabels()[NamespaceLabelSyncerLabelKey])
@@ -212,8 +193,7 @@ func Test_SyncIgnoresAlreadyLabeledNonPayloadOpenshiftNamespaces(t *testing.T) {
 			plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(NewLabeledNamespace(namespace, labelValue)))
 			defer shutdown()
 
-			event := kubestate.NewResourceEvent(kubestate.ResourceUpdated, NewCsvInNamespace(namespace))
-			assert.Nil(t, plugin.Sync(context.Background(), event))
+			assert.Nil(t, plugin.Sync(context.Background(), NewCsvInNamespace(namespace)))
 
 			ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
 			assert.NoError(t, err)
@@ -223,23 +203,17 @@ func Test_SyncIgnoresAlreadyLabeledNonPayloadOpenshiftNamespaces(t *testing.T) {
 }
 
 func Test_SyncLabelsNonPayloadUnlabeledOpenshiftNamespaces(t *testing.T) {
-	// Sync will label non-labeled non-payload openshift- namespaces independent of event type (except deletion, tested separately)
-	eventTypes := []kubestate.ResourceEventType{kubestate.ResourceUpdated, kubestate.ResourceAdded}
+	// Sync will label non-labeled non-payload openshift- namespaces
 	namespace := "openshift-test"
 
-	for _, eventType := range eventTypes {
-		func() {
-			plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(NewNamespace(namespace)))
-			defer shutdown()
+	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(NewNamespace(namespace)))
+	defer shutdown()
 
-			event := kubestate.NewResourceEvent(eventType, NewCsvInNamespace(namespace))
-			assert.Nil(t, plugin.Sync(context.Background(), event))
+	assert.Nil(t, plugin.Sync(context.Background(), NewCsvInNamespace(namespace)))
 
-			ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
-			assert.NoError(t, err)
-			assert.Contains(t, ns.GetLabels(), NamespaceLabelSyncerLabelKey)
-		}()
-	}
+	ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Contains(t, ns.GetLabels(), NamespaceLabelSyncerLabelKey)
 }
 
 func Test_SyncFailsIfEventResourceIsNotCSV(t *testing.T) {
@@ -247,8 +221,7 @@ func Test_SyncFailsIfEventResourceIsNotCSV(t *testing.T) {
 	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t)
 	defer shutdown()
 
-	event := kubestate.NewResourceEvent(kubestate.ResourceAdded, v1.ConfigMap{})
-	assert.Error(t, plugin.Sync(context.Background(), event))
+	assert.Error(t, plugin.Sync(context.Background(), &v1.ConfigMap{}))
 }
 
 func Test_SyncFailsIfNamespaceNotFound(t *testing.T) {
@@ -256,8 +229,7 @@ func Test_SyncFailsIfNamespaceNotFound(t *testing.T) {
 	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t)
 	defer shutdown()
 
-	event := kubestate.NewResourceEvent(kubestate.ResourceAdded, NewCsvInNamespace("openshift-test"))
-	assert.Error(t, plugin.Sync(context.Background(), event))
+	assert.Error(t, plugin.Sync(context.Background(), NewCsvInNamespace("openshift-test")))
 }
 
 func Test_SyncFailsIfCSVCannotBeUpdated(t *testing.T) {
@@ -266,12 +238,11 @@ func Test_SyncFailsIfCSVCannotBeUpdated(t *testing.T) {
 	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(NewNamespace(namespace)))
 	defer shutdown()
 
-	event := kubestate.NewResourceEvent(kubestate.ResourceAdded, NewCsvInNamespace(namespace))
 	updateNsError := func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &v1.Namespace{}, errors.New("error updating namespace")
 	}
 	plugin.kubeClient.KubernetesInterface().CoreV1().(*v1fake.FakeCoreV1).PrependReactor("update", "namespaces", updateNsError)
-	assert.Error(t, plugin.Sync(context.Background(), event))
+	assert.Error(t, plugin.Sync(context.Background(), NewCsvInNamespace(namespace)))
 }
 
 func Test_SyncLabelsNamespaceWithCSV(t *testing.T) {
@@ -283,8 +254,7 @@ func Test_SyncLabelsNamespaceWithCSV(t *testing.T) {
 	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(namespace), withExtendedResources(csv))
 	defer shutdown()
 
-	event := kubestate.NewResourceEvent(kubestate.ResourceUpdated, namespace)
-	assert.NoError(t, plugin.Sync(context.Background(), event))
+	assert.NoError(t, plugin.Sync(context.Background(), namespace))
 
 	ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), namespace.GetName(), metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -299,8 +269,7 @@ func Test_SyncDoesNotLabelNamespaceWithoutCSVs(t *testing.T) {
 	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(namespace))
 	defer shutdown()
 
-	event := kubestate.NewResourceEvent(kubestate.ResourceUpdated, namespace)
-	assert.NoError(t, plugin.Sync(context.Background(), event))
+	assert.NoError(t, plugin.Sync(context.Background(), namespace))
 
 	ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), namespace.GetName(), metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -316,8 +285,7 @@ func Test_SyncDoesNotLabelNamespacesWithCopiedCSVs(t *testing.T) {
 	plugin, shutdown := NewFakeCSVNamespaceLabelerPlugin(t, withK8sResources(namespace), withExtendedResources(csv))
 	defer shutdown()
 
-	event := kubestate.NewResourceEvent(kubestate.ResourceUpdated, namespace)
-	assert.NoError(t, plugin.Sync(context.Background(), event))
+	assert.NoError(t, plugin.Sync(context.Background(), namespace))
 
 	ns, err := plugin.kubeClient.KubernetesInterface().CoreV1().Namespaces().Get(context.Background(), namespace.GetName(), metav1.GetOptions{})
 	assert.NoError(t, err)
