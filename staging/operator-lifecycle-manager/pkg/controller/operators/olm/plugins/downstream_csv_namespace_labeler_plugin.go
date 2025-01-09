@@ -3,12 +3,12 @@ package plugins
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
 	listerv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer"
 	"github.com/sirupsen/logrus"
@@ -63,10 +63,11 @@ func NewCsvNamespaceLabelerPluginFunc(ctx context.Context, config OperatorConfig
 
 	plugin.namespaceLister = listerv1.NewNamespaceLister(namespaceInformer.GetIndexer())
 
-	namespaceQueue := workqueue.NewNamedRateLimitingQueue(
+	namespaceQueue := workqueue.NewRateLimitingQueueWithConfig(
 		workqueue.DefaultControllerRateLimiter(),
-		"csv-ns-labeler-plugin-ns-queue",
-	)
+		workqueue.RateLimitingQueueConfig{
+			Name: "csv-ns-labeler-plugin-ns-queue",
+		})
 	namespaceQueueInformer, err := queueinformer.NewQueueInformer(
 		ctx,
 		queueinformer.WithInformer(namespaceInformer),
@@ -91,10 +92,12 @@ func NewCsvNamespaceLabelerPluginFunc(ctx context.Context, config OperatorConfig
 
 		nonCopiedCsvInformer := hostOperator.Informers()[namespace].CSVInformer.Informer()
 
-		nonCopiedCsvQueue := workqueue.NewNamedRateLimitingQueue(
+		nonCopiedCsvQueue := workqueue.NewRateLimitingQueueWithConfig(
 			workqueue.DefaultControllerRateLimiter(),
-			fmt.Sprintf("%s/csv-ns-labeler-plugin-csv-queue", namespace),
-		)
+			workqueue.RateLimitingQueueConfig{
+				Name: fmt.Sprintf("%s/csv-ns-labeler-plugin-csv-queue", namespace),
+			})
+
 		nonCopiedCsvQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
 			queueinformer.WithInformer(nonCopiedCsvInformer),
@@ -121,17 +124,12 @@ func (p *csvNamespaceLabelerPlugin) Shutdown() error {
 	return nil
 }
 
-func (p *csvNamespaceLabelerPlugin) Sync(ctx context.Context, event kubestate.ResourceEvent) error {
-	// only act on csv added and updated events
-	if event.Type() != kubestate.ResourceAdded && event.Type() != kubestate.ResourceUpdated {
-		return nil
-	}
-
+func (p *csvNamespaceLabelerPlugin) Sync(ctx context.Context, obj client.Object) error {
 	var namespace *v1.Namespace
 	var err error
 
 	// get namespace from the event resource
-	switch eventResource := event.Resource().(type) {
+	switch eventResource := obj.(type) {
 
 	// handle csv events
 	case *v1alpha1.ClusterServiceVersion:
