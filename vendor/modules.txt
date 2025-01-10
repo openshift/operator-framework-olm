@@ -480,7 +480,7 @@ github.com/josharian/intern
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
-# github.com/kisielk/errcheck v1.7.0
+# github.com/kisielk/errcheck v1.8.0
 ## explicit; go 1.18
 github.com/kisielk/errcheck
 github.com/kisielk/errcheck/errcheck
@@ -991,7 +991,7 @@ golang.org/x/crypto/salsa20/salsa
 golang.org/x/exp/constraints
 golang.org/x/exp/maps
 golang.org/x/exp/slices
-# golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
+# golang.org/x/lint v0.0.0-20241112194109-818c5a804067
 ## explicit; go 1.11
 golang.org/x/lint
 golang.org/x/lint/golint
