@@ -291,11 +291,11 @@ github.com/go-git/gcfg
 github.com/go-git/gcfg/scanner
 github.com/go-git/gcfg/token
 github.com/go-git/gcfg/types
-# github.com/go-git/go-billy/v5 v5.5.0
-## explicit; go 1.19
+# github.com/go-git/go-billy/v5 v5.6.1
+## explicit; go 1.21
 github.com/go-git/go-billy/v5
-# github.com/go-git/go-git/v5 v5.11.0
-## explicit; go 1.19
+# github.com/go-git/go-git/v5 v5.13.1
+## explicit; go 1.21
 github.com/go-git/go-git/v5/internal/path_util
 github.com/go-git/go-git/v5/plumbing/format/config
 github.com/go-git/go-git/v5/plumbing/format/gitignore
@@ -471,7 +471,7 @@ github.com/itchyny/timefmt-go
 # github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 ## explicit
 github.com/jbenet/go-context/io
-# github.com/joelanford/ignore v0.1.0
+# github.com/joelanford/ignore v0.1.1
 ## explicit; go 1.21
 github.com/joelanford/ignore
 # github.com/josharian/intern v1.0.0
