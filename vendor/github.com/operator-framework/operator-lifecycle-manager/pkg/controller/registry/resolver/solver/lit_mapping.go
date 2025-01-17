@@ -7,6 +7,8 @@ import (
 	"github.com/go-air/gini/inter"
 	"github.com/go-air/gini/logic"
 	"github.com/go-air/gini/z"
+
+	"golang.org/x/exp/slices"
 )
 
 type DuplicateIdentifier Identifier
@@ -203,5 +205,17 @@ func (d *litMapping) Conflicts(g inter.Assumable) []AppliedConstraint {
 			as = append(as, a)
 		}
 	}
+	slices.SortFunc(as, func(a, b AppliedConstraint) int {
+		return strCmp(a.String(), b.String())
+	})
 	return as
+}
+
+func strCmp(str1, str2 string) int {
+	if str1 < str2 {
+		return -1
+	} else if str1 > str2 {
+		return 1
+	}
+	return 0
 }
