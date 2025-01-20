@@ -3,7 +3,6 @@ package plugins
 import (
 	"context"
 	"fmt"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -12,11 +11,12 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer"
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	listerv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const NamespaceLabelSyncerLabelKey = "security.openshift.io/scc.podSecurityLabelSync"
@@ -42,7 +42,6 @@ type csvNamespaceLabelerPlugin struct {
 }
 
 func NewCsvNamespaceLabelerPluginFunc(ctx context.Context, config OperatorConfig, hostOperator HostOperator) (OperatorPlugin, error) {
-
 	if hostOperator == nil {
 		return nil, fmt.Errorf("cannot initialize plugin: operator undefined")
 	}
@@ -125,12 +124,11 @@ func (p *csvNamespaceLabelerPlugin) Shutdown() error {
 }
 
 func (p *csvNamespaceLabelerPlugin) Sync(ctx context.Context, obj client.Object) error {
-	var namespace *v1.Namespace
+	var namespace *corev1.Namespace
 	var err error
 
 	// get namespace from the event resource
 	switch eventResource := obj.(type) {
-
 	// handle csv events
 	case *v1alpha1.ClusterServiceVersion:
 		// ignore copied csvs and namespaces that should be ignored
@@ -144,7 +142,7 @@ func (p *csvNamespaceLabelerPlugin) Sync(ctx context.Context, obj client.Object)
 		}
 
 	// handle namespace events
-	case *v1.Namespace:
+	case *corev1.Namespace:
 		// ignore namespaces that should be ignored and ones that are already labeled
 		if ignoreNamespace(eventResource.GetName()) || hasLabelSyncerLabel(eventResource) {
 			return nil
@@ -177,7 +175,7 @@ func (p *csvNamespaceLabelerPlugin) Sync(ctx context.Context, obj client.Object)
 	return nil
 }
 
-func (p *csvNamespaceLabelerPlugin) getNamespace(namespace string) (*v1.Namespace, error) {
+func (p *csvNamespaceLabelerPlugin) getNamespace(namespace string) (*corev1.Namespace, error) {
 	ns, err := p.namespaceLister.Get(namespace)
 	if err != nil {
 		return nil, err
@@ -220,7 +218,7 @@ func ignoreNamespace(namespace string) bool {
 	return !hasOpenshiftPrefix(namespace) || IsNamespacePSALabelSyncExemptedInVendoredOCPVersion(namespace)
 }
 
-func applyLabelSyncerLabel(ctx context.Context, kubeClient operatorclient.ClientInterface, namespace *v1.Namespace) error {
+func applyLabelSyncerLabel(ctx context.Context, kubeClient operatorclient.ClientInterface, namespace *corev1.Namespace) error {
 	if _, ok := namespace.GetLabels()[NamespaceLabelSyncerLabelKey]; !ok {
 		nsCopy := namespace.DeepCopy()
 		if nsCopy.GetLabels() == nil {
@@ -234,7 +232,7 @@ func applyLabelSyncerLabel(ctx context.Context, kubeClient operatorclient.Client
 	return nil
 }
 
-func hasLabelSyncerLabel(namespace *v1.Namespace) bool {
+func hasLabelSyncerLabel(namespace *corev1.Namespace) bool {
 	_, ok := namespace.GetLabels()[NamespaceLabelSyncerLabelKey]
 	return ok
 }
