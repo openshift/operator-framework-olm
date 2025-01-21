@@ -281,36 +281,41 @@ func (o *operator) processNextWorkItem(ctx context.Context, loop *QueueInformer)
 	logger := o.logger.WithField("item", item)
 	logger.WithField("queue-length", queue.Len()).Trace("popped queue")
 
-	typedItem, ok := item.(types.NamespacedName)
-	if !ok {
-		panic(fmt.Sprintf("item %T is not a NamespacedName", item))
-	}
-	key := keyForNamespacedName(typedItem)
-	logger = logger.WithField("cache-key", key)
+	var obj client.Object
+	switch typedItem := item.(type) {
+	case types.NamespacedName:
+		key := keyForNamespacedName(typedItem)
+		logger = logger.WithField("cache-key", key)
 
-	// Get the current cached version of the resource
-	var exists bool
-	var err error
-	resource, exists, err := loop.indexer.GetByKey(key)
-	if err != nil {
-		logger.WithError(err).Error("cache get failed")
-		queue.Forget(item)
-		return true
-	}
-	if !exists {
-		logger.WithField("existing-cache-keys", loop.indexer.ListKeys()).Debug("cache get failed, key not in cache")
-		queue.Forget(item)
-		return true
-	}
-	obj, ok := resource.(client.Object)
-	if !ok {
-		logger.Warn("cached object is not a kubernetes resource (client.Object)")
-		queue.Forget(item)
-		return true
+		// Get the current cached version of the resource
+		var exists bool
+		var err error
+		resource, exists, err := loop.indexer.GetByKey(key)
+		if err != nil {
+			logger.WithError(err).Error("cache get failed")
+			queue.Forget(item)
+			return true
+		}
+		if !exists {
+			logger.WithField("existing-cache-keys", loop.indexer.ListKeys()).Debug("cache get failed, key not in cache")
+			queue.Forget(item)
+			return true
+		}
+		var ok bool
+		obj, ok = resource.(client.Object)
+		if !ok {
+			logger.Warn("cached object is not a kubernetes resource (client.Object)")
+			queue.Forget(item)
+			return true
+		}
+	case client.Object:
+		obj = typedItem
+	default:
+		panic(fmt.Sprintf("unexpected item type %T", item))
 	}
 
 	// Sync and requeue on error
-	err = loop.Sync(ctx, obj)
+	err := loop.Sync(ctx, obj)
 	if requeues := queue.NumRequeues(item); err != nil && requeues < 8 {
 		logger.WithField("requeues", requeues).Trace("requeuing with rate limiting")
 		utilruntime.HandleError(errors.Wrap(err, fmt.Sprintf("sync %q failed", item)))

@@ -51,8 +51,6 @@ func (c *queueInformerConfig) validateQueueInformer() (err error) {
 		err = newInvalidConfigError("nil logger")
 	case config.queue == nil:
 		err = newInvalidConfigError("nil queue")
-	case config.indexer == nil:
-		err = newInvalidConfigError("nil indexer")
 	case config.syncer == nil:
 		err = newInvalidConfigError("nil syncer")
 	}

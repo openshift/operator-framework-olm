@@ -2,6 +2,7 @@ package queueinformer
 
 import (
 	"fmt"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
 	"k8s.io/apimachinery/pkg/types"
 	"sync"
 	"time"
@@ -37,6 +38,14 @@ func (r *ResourceQueueSet) Set(key string, queue workqueue.RateLimitingInterface
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	r.queueSet[key] = queue
+}
+
+// RequeueObject requeues a client object
+func (r *ResourceQueueSet) RequeueObject(obj client.Object) error {
+	if queue, ok := r.queueSet[obj.GetNamespace()]; ok {
+		queue.Add(obj)
+	}
+	return nil
 }
 
 // Requeue requeues the resource in the set with the given name and namespace

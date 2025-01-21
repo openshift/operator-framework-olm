@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/controller-runtime/client"
 	"strings"
 	"time"
 
@@ -896,7 +897,7 @@ func (a *Operator) syncObject(obj interface{}) (syncError error) {
 		} else {
 			switch metaObj.(type) {
 			case *rbacv1.ClusterRole, *rbacv1.ClusterRoleBinding, *admissionregistrationv1.MutatingWebhookConfiguration, *admissionregistrationv1.ValidatingWebhookConfiguration:
-				if syncError = a.objGCQueueSet.Requeue(metaObj.GetNamespace(), metaObj.GetName()); syncError != nil {
+				if syncError = a.objGCQueueSet.RequeueObject(metaObj.(client.Object)); syncError != nil {
 					logger.WithError(syncError).Warnf("failed to requeue gc event: %s/%s", metaObj.GetNamespace(), metaObj.GetName())
 				}
 				return
@@ -1163,7 +1164,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		logger.WithError(err).Warn("cannot list cluster role bindings")
 	}
 	for _, crb := range crbs {
-		if err := a.objGCQueueSet.Requeue(crb.GetNamespace(), crb.GetName()); err != nil {
+		if err := a.objGCQueueSet.RequeueObject(crb); err != nil {
 			logger.WithError(err).Warnf("failed to requeue gc event: %v", crb)
 		}
 	}
@@ -1173,7 +1174,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 		logger.WithError(err).Warn("cannot list cluster roles")
 	}
 	for _, cr := range crs {
-		if err := a.objGCQueueSet.Requeue(cr.GetNamespace(), cr.GetName()); err != nil {
+		if err := a.objGCQueueSet.RequeueObject(cr); err != nil {
 			logger.WithError(err).Warnf("failed to requeue gc event: %v", cr)
 		}
 	}
@@ -1185,7 +1186,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 	}
 	for _, webhook := range mWebhooks.Items {
 		w := webhook
-		if err := a.objGCQueueSet.Requeue(w.GetNamespace(), w.GetName()); err != nil {
+		if err := a.objGCQueueSet.RequeueObject(&w); err != nil {
 			logger.WithError(err).Warnf("failed to requeue gc event: %v", webhook)
 		}
 	}
@@ -1196,7 +1197,7 @@ func (a *Operator) handleClusterServiceVersionDeletion(obj interface{}) {
 	}
 	for _, webhook := range vWebhooks.Items {
 		w := webhook
-		if err := a.objGCQueueSet.Requeue(w.GetNamespace(), w.GetName()); err != nil {
+		if err := a.objGCQueueSet.RequeueObject(&w); err != nil {
 			logger.WithError(err).Warnf("failed to requeue gc event: %v", webhook)
 		}
 	}
