@@ -8,7 +8,7 @@ func init() {
 	operatorPlugInFactoryFuncs = plugins.OperatorPlugInFactoryMap{
 		// labels unlabeled non-payload openshift-* csv namespaces with
 		// security.openshift.io/scc.podSecurityLabelSync: true
-		CsvLabelerPluginId: plugins.NewCsvNamespaceLabelerPluginFunc,
+		CsvLabelerPluginID: plugins.NewCsvNamespaceLabelerPluginFunc,
 	}
 }
 
