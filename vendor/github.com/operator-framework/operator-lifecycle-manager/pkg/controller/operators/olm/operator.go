@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	appsv1applyconfigurations "k8s.io/client-go/applyconfigurations/apps/v1"
@@ -191,17 +192,26 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 	}
 
 	op := &Operator{
-		Operator:                     queueOperator,
-		clock:                        config.clock,
-		logger:                       config.logger,
-		opClient:                     config.operatorClient,
-		client:                       config.externalClient,
-		ogQueueSet:                   queueinformer.NewEmptyResourceQueueSet(),
-		csvQueueSet:                  queueinformer.NewEmptyResourceQueueSet(),
-		olmConfigQueue:               workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "olmConfig"),
-		csvCopyQueueSet:              queueinformer.NewEmptyResourceQueueSet(),
-		copiedCSVGCQueueSet:          queueinformer.NewEmptyResourceQueueSet(),
-		apiServiceQueue:              workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "apiservice"),
+		Operator:    queueOperator,
+		clock:       config.clock,
+		logger:      config.logger,
+		opClient:    config.operatorClient,
+		client:      config.externalClient,
+		ogQueueSet:  queueinformer.NewEmptyResourceQueueSet(),
+		csvQueueSet: queueinformer.NewEmptyResourceQueueSet(),
+		olmConfigQueue: workqueue.NewRateLimitingQueueWithConfig(
+			workqueue.DefaultControllerRateLimiter(),
+			workqueue.RateLimitingQueueConfig{
+				Name: "olmConfig",
+			}),
+
+		csvCopyQueueSet:     queueinformer.NewEmptyResourceQueueSet(),
+		copiedCSVGCQueueSet: queueinformer.NewEmptyResourceQueueSet(),
+		apiServiceQueue: workqueue.NewRateLimitingQueueWithConfig(
+			workqueue.DefaultControllerRateLimiter(),
+			workqueue.RateLimitingQueueConfig{
+				Name: "apiservice",
+			}),
 		resolver:                     config.strategyResolver,
 		apiReconciler:                config.apiReconciler,
 		lister:                       lister,
@@ -223,7 +233,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 
 	informersByNamespace := map[string]*plugins.Informers{}
 	// Set up syncing for namespace-scoped resources
-	k8sSyncer := queueinformer.LegacySyncHandler(op.syncObject).ToSyncerWithDelete(op.handleDeletion)
+	k8sSyncer := queueinformer.LegacySyncHandler(op.syncObject).ToSyncer()
 	for _, namespace := range config.watchedNamespaces {
 		informersByNamespace[namespace] = &plugins.Informers{}
 		// Wire CSVs
@@ -237,7 +247,11 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		).Operators().V1alpha1().ClusterServiceVersions()
 		informersByNamespace[namespace].CSVInformer = csvInformer
 		op.lister.OperatorsV1alpha1().RegisterClusterServiceVersionLister(namespace, csvInformer.Lister())
-		csvQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), fmt.Sprintf("%s/csv", namespace))
+		csvQueue := workqueue.NewRateLimitingQueueWithConfig(
+			workqueue.DefaultControllerRateLimiter(),
+			workqueue.RateLimitingQueueConfig{
+				Name: fmt.Sprintf("%s/csv", namespace),
+			})
 		op.csvQueueSet.Set(namespace, csvQueue)
 		csvQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -245,7 +259,8 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithQueue(csvQueue),
 			queueinformer.WithInformer(csvInformer.Informer()),
-			queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncClusterServiceVersion).ToSyncerWithDelete(op.handleClusterServiceVersionDeletion)),
+			queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncClusterServiceVersion).ToSyncer()),
+			queueinformer.WithDeletionHandler(op.handleClusterServiceVersionDeletion),
 		)
 		if err != nil {
 			return nil, err
@@ -260,7 +275,9 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		op.csvIndexers[namespace] = csvIndexer
 
 		// Register separate queue for copying csvs
-		csvCopyQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), fmt.Sprintf("%s/csv-copy", namespace))
+		csvCopyQueue := workqueue.NewRateLimitingQueueWithConfig(workqueue.DefaultControllerRateLimiter(), workqueue.RateLimitingQueueConfig{
+			Name: fmt.Sprintf("%s/csv-copy", namespace),
+		})
 		op.csvCopyQueueSet.Set(namespace, csvCopyQueue)
 		csvCopyQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -294,7 +311,11 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		informersByNamespace[namespace].CopiedCSVLister = op.copiedCSVLister
 
 		// Register separate queue for gcing copied csvs
-		copiedCSVGCQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), fmt.Sprintf("%s/csv-gc", namespace))
+		copiedCSVGCQueue := workqueue.NewRateLimitingQueueWithConfig(
+			workqueue.DefaultControllerRateLimiter(),
+			workqueue.RateLimitingQueueConfig{
+				Name: fmt.Sprintf("%s/csv-gc", namespace),
+			})
 		op.copiedCSVGCQueueSet.Set(namespace, copiedCSVGCQueue)
 		copiedCSVGCQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
@@ -316,14 +337,19 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		operatorGroupInformer := extInformerFactory.Operators().V1().OperatorGroups()
 		informersByNamespace[namespace].OperatorGroupInformer = operatorGroupInformer
 		op.lister.OperatorsV1().RegisterOperatorGroupLister(namespace, operatorGroupInformer.Lister())
-		ogQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), fmt.Sprintf("%s/og", namespace))
+		ogQueue := workqueue.NewRateLimitingQueueWithConfig(
+			workqueue.DefaultControllerRateLimiter(),
+			workqueue.RateLimitingQueueConfig{
+				Name: fmt.Sprintf("%s/og", namespace),
+			})
 		op.ogQueueSet.Set(namespace, ogQueue)
 		operatorGroupQueueInformer, err := queueinformer.NewQueueInformer(
 			ctx,
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithQueue(ogQueue),
 			queueinformer.WithInformer(operatorGroupInformer.Informer()),
-			queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncOperatorGroups).ToSyncerWithDelete(op.operatorGroupDeleted)),
+			queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncOperatorGroups).ToSyncer()),
+			queueinformer.WithDeletionHandler(op.operatorGroupDeleted),
 		)
 		if err != nil {
 			return nil, err
@@ -341,6 +367,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithInformer(opConditionInformer.Informer()),
 			queueinformer.WithSyncer(k8sSyncer),
+			queueinformer.WithDeletionHandler(op.handleDeletion),
 		)
 		if err != nil {
 			return nil, err
@@ -356,7 +383,8 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			ctx,
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithInformer(subInformer.Informer()),
-			queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncSubscription).ToSyncerWithDelete(op.syncSubscriptionDeleted)),
+			queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncSubscription).ToSyncer()),
+			queueinformer.WithDeletionHandler(op.syncSubscriptionDeleted),
 		)
 		if err != nil {
 			return nil, err
@@ -385,6 +413,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithInformer(depInformer.Informer()),
 			queueinformer.WithSyncer(k8sSyncer),
+			queueinformer.WithDeletionHandler(op.handleDeletion),
 		)
 		if err != nil {
 			return nil, err
@@ -402,6 +431,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithInformer(roleInformer.Informer()),
 			queueinformer.WithSyncer(k8sSyncer),
+			queueinformer.WithDeletionHandler(op.handleDeletion),
 		)
 		if err != nil {
 			return nil, err
@@ -418,6 +448,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithInformer(roleBindingInformer.Informer()),
 			queueinformer.WithSyncer(k8sSyncer),
+			queueinformer.WithDeletionHandler(op.handleDeletion),
 		)
 		if err != nil {
 			return nil, err
@@ -437,6 +468,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithInformer(secretInformer.Informer()),
 			queueinformer.WithSyncer(k8sSyncer),
+			queueinformer.WithDeletionHandler(op.handleDeletion),
 		)
 		if err != nil {
 			return nil, err
@@ -454,6 +486,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithInformer(serviceInformer.Informer()),
 			queueinformer.WithSyncer(k8sSyncer),
+			queueinformer.WithDeletionHandler(op.handleDeletion),
 		)
 		if err != nil {
 			return nil, err
@@ -471,6 +504,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithInformer(serviceAccountInformer.Informer()),
 			queueinformer.WithSyncer(k8sSyncer),
+			queueinformer.WithDeletionHandler(op.handleDeletion),
 		)
 		if err != nil {
 			return nil, err
@@ -588,6 +622,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		queueinformer.WithLogger(op.logger),
 		queueinformer.WithInformer(clusterRoleInformer.Informer()),
 		queueinformer.WithSyncer(k8sSyncer),
+		queueinformer.WithDeletionHandler(op.handleDeletion),
 	)
 	if err != nil {
 		return nil, err
@@ -633,6 +668,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		queueinformer.WithLogger(op.logger),
 		queueinformer.WithInformer(clusterRoleBindingInformer.Informer()),
 		queueinformer.WithSyncer(k8sSyncer),
+		queueinformer.WithDeletionHandler(op.handleDeletion),
 	)
 	if err != nil {
 		return nil, err
@@ -675,7 +711,11 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 	namespaceInformer := informers.NewSharedInformerFactory(op.opClient.KubernetesInterface(), config.resyncPeriod()).Core().V1().Namespaces()
 	informersByNamespace[metav1.NamespaceAll].NamespaceInformer = namespaceInformer
 	op.lister.CoreV1().RegisterNamespaceLister(namespaceInformer.Lister())
-	op.nsQueueSet = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "resolver")
+	op.nsQueueSet = workqueue.NewRateLimitingQueueWithConfig(
+		workqueue.DefaultControllerRateLimiter(),
+		workqueue.RateLimitingQueueConfig{
+			Name: "resolver",
+		})
 	namespaceInformer.Informer().AddEventHandler(
 		&cache.ResourceEventHandlerFuncs{
 			DeleteFunc: op.namespaceAddedOrRemoved,
@@ -705,7 +745,8 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		queueinformer.WithLogger(op.logger),
 		queueinformer.WithQueue(op.apiServiceQueue),
 		queueinformer.WithInformer(apiServiceInformer.Informer()),
-		queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncAPIService).ToSyncerWithDelete(op.handleDeletion)),
+		queueinformer.WithSyncer(queueinformer.LegacySyncHandler(op.syncAPIService).ToSyncer()),
+		queueinformer.WithDeletionHandler(op.handleDeletion),
 	)
 	if err != nil {
 		return nil, err
@@ -734,6 +775,7 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 		queueinformer.WithLogger(op.logger),
 		queueinformer.WithInformer(crdInformer),
 		queueinformer.WithSyncer(k8sSyncer),
+		queueinformer.WithDeletionHandler(op.handleDeletion),
 	)
 	if err != nil {
 		return nil, err
@@ -767,7 +809,8 @@ func newOperatorWithConfig(ctx context.Context, config *operatorConfig) (*Operat
 			ctx,
 			queueinformer.WithLogger(op.logger),
 			queueinformer.WithInformer(proxyInformer.Informer()),
-			queueinformer.WithSyncer(queueinformer.LegacySyncHandler(proxySyncer.SyncProxy).ToSyncerWithDelete(proxySyncer.HandleProxyDelete)),
+			queueinformer.WithSyncer(queueinformer.LegacySyncHandler(proxySyncer.SyncProxy).ToSyncer()),
+			queueinformer.WithDeletionHandler(proxySyncer.HandleProxyDelete),
 		)
 		if err != nil {
 			return nil, err
@@ -1640,7 +1683,8 @@ func (a *Operator) syncCopyCSV(obj interface{}) (syncError error) {
 	}
 
 	if err == nil {
-		go a.olmConfigQueue.AddAfter(olmConfig, time.Second*5)
+		key := types.NamespacedName{Namespace: olmConfig.GetNamespace(), Name: olmConfig.GetName()}
+		go a.olmConfigQueue.AddAfter(key, time.Second*5)
 	}
 
 	logger := a.logger.WithFields(logrus.Fields{
@@ -2731,7 +2775,7 @@ func (a *Operator) requeueCSVsByLabelSet(logger *logrus.Entry, labelSets ...labe
 	}
 
 	for _, key := range keys {
-		if err := a.csvQueueSet.RequeueByKey(key); err != nil {
+		if err := a.csvQueueSet.Requeue(key.Namespace, key.Name); err != nil {
 			logger.WithError(err).Debug("cannot requeue requiring/providing csv")
 		} else {
 			logger.WithField("key", key).Debug("csv successfully requeued on crd change")
