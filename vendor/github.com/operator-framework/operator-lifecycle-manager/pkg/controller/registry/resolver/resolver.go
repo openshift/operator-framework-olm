@@ -17,6 +17,8 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver"
 	"github.com/operator-framework/operator-registry/pkg/api"
 	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
+
+	"golang.org/x/exp/slices"
 )
 
 // constraintProvider knows how to provide solver constraints for a given cache entry.
@@ -29,15 +31,15 @@ type constraintProvider interface {
 }
 
 type Resolver struct {
-	cache                     *cache.Cache
+	cache                     cache.OperatorCacheProvider
 	log                       logrus.FieldLogger
 	pc                        *predicateConverter
 	systemConstraintsProvider constraintProvider
 }
 
-func NewDefaultResolver(rcp cache.SourceProvider, sourcePriorityProvider cache.SourcePriorityProvider, logger logrus.FieldLogger) *Resolver {
+func NewDefaultResolver(cacheProvider cache.OperatorCacheProvider, logger logrus.FieldLogger) *Resolver {
 	return &Resolver{
-		cache: cache.New(rcp, cache.WithLogger(logger), cache.WithSourcePriorityProvider(sourcePriorityProvider)),
+		cache: cacheProvider,
 		log:   logger,
 		pc: &predicateConverter{
 			celEnv: constraints.NewCelEnvironment(),
@@ -513,11 +515,13 @@ func (r *Resolver) addInvariants(namespacedCache cache.MultiCatalogOperatorFinde
 	}
 
 	for gvk, is := range gvkConflictToVariable {
+		slices.Sort(is)
 		s := NewSingleAPIProviderVariable(gvk.Group, gvk.Version, gvk.Kind, is)
 		variables[s.Identifier()] = s
 	}
 
 	for pkg, is := range packageConflictToVariable {
+		slices.Sort(is)
 		s := NewSinglePackageInstanceVariable(pkg, is)
 		variables[s.Identifier()] = s
 	}
