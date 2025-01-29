@@ -153,7 +153,8 @@ require (
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a // indirect
-	github.com/otiai10/copy v1.14.0 // indirect
+	github.com/otiai10/copy v1.14.1 // indirect
+	github.com/otiai10/mint v1.6.3 // indirect
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
