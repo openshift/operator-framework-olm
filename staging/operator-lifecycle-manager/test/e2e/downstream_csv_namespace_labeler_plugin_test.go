@@ -32,7 +32,7 @@ var _ = Describe("CSV Namespace Labeler Plugin", func() {
 	})
 
 	It("should not label non openshift- namespaces", func() {
-		if !olm.IsPluginEnabled(olm.CsvLabelerPluginId) {
+		if !olm.IsPluginEnabled(olm.CsvLabelerPluginID) {
 			Skip("csv labeler plugin is disabled")
 		}
 
@@ -51,7 +51,7 @@ var _ = Describe("CSV Namespace Labeler Plugin", func() {
 	})
 
 	It("should label a non-payload openshift- namespace", func() {
-		if !olm.IsPluginEnabled(olm.CsvLabelerPluginId) {
+		if !olm.IsPluginEnabled(olm.CsvLabelerPluginID) {
 			Skip("csv labeler plugin is disabled")
 		}
 
@@ -70,7 +70,7 @@ var _ = Describe("CSV Namespace Labeler Plugin", func() {
 	})
 
 	It("should relabel a non-payload openshift- namespace containing csvs if the label is deleted", func() {
-		if !olm.IsPluginEnabled(olm.CsvLabelerPluginId) {
+		if !olm.IsPluginEnabled(olm.CsvLabelerPluginID) {
 			Skip("csv labeler plugin is disabled")
 		}
 

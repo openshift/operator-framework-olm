@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const CsvLabelerPluginId plugins.PluginID = "csv-labeler-plugin"
+const CsvLabelerPluginID plugins.PluginID = "csv-labeler-plugin"
 const labelSyncerLabelKey = ""
 
 func NewCSVLabelSyncerLabeler(client operatorclient.ClientInterface, logger *logrus.Logger) *CSVLabelSyncerLabeler {
