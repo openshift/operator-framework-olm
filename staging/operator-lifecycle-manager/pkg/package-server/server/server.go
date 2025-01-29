@@ -238,9 +238,13 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 	}
 
 	op := &Operator{
-		Operator:       queueOperator,
-		olmConfigQueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "olmConfig"),
-		options:        o,
+		Operator: queueOperator,
+		olmConfigQueue: workqueue.NewRateLimitingQueueWithConfig(
+			workqueue.DefaultControllerRateLimiter(),
+			workqueue.RateLimitingQueueConfig{
+				Name: "olmConfig",
+			}),
+		options: o,
 	}
 
 	olmConfigInformer := olminformers.NewSharedInformerFactoryWithOptions(crClient, 0).Operators().V1().OLMConfigs()
