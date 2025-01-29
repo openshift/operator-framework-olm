@@ -69,7 +69,7 @@ func newRootCmd() *cobra.Command {
 	cmd.Flags().StringVar(&o.writeStatusName, "writeStatusName", defaultOperatorName, "ClusterOperator name in which to write status, set to \"\" to disable.")
 	cmd.Flags().BoolVar(&o.setWorkloadUserID, "set-workload-user-id", false, "set user ID for all workloads (registry pods/bundle unpack jobs to default 1001")
 
-	cmd.Flags().BoolVar(&o.debug, "debug", false, "use debug log level")
+	cmd.Flags().BoolVar(&o.debug, "debug", true, "use debug log level")
 	cmd.Flags().BoolVar(&o.version, "version", false, "displays the olm version")
 	cmd.Flags().BoolVar(&o.profiling, "profiling", false, "deprecated")
 	cmd.Flags().MarkDeprecated("profiling", "profiling is now enabled by default")
