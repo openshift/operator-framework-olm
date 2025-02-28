@@ -102,13 +102,19 @@ image-upstream:
 	docker build -f upstream-example.Dockerfile .
 
 .PHONY: lint
-lint:
-	find . -type f -name '*.go' ! -name '*.pb.go' -print0 | xargs -0 goimports -w
+#lint:
+#	find . -type f -name '*.go' ! -name '*.pb.go' -print0 | xargs -0 goimports -w
+lint: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run $(GOLANGCI_LINT_ARGS)
+
+.PHONY: fix-lint
+fix-lint: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run --fix $(GOLANGCI_LINT_ARGS)
 
 .PHONY: bingo-upgrade
 bingo-upgrade: $(BINGO) #EXHELP Upgrade tools
-	@for pkg in $$($(BINGO) list | awk '{ print $$1 }' | tail -n +3); do \
-		echo "Upgrading $$pkg to latest..."; \
+	@for pkg in $$($(BINGO) list | awk '{ print $$3 }' | tail -n +3 | sed 's/@.*//'); do \
+		echo -e "Upgrading \033[35m$$pkg\033[0m to latest..."; \
 		$(BINGO) get "$$pkg@latest"; \
 	done
 
