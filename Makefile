@@ -148,6 +148,16 @@ vendor:
 .PHONY: manifests
 manifests: ## Generate manifests
 	OLM_VERSION=$(OLM_VERSION) ./scripts/generate_crds_manifests.sh
+	$(MAKE) update-k8s-manifests
+
+# Minor Kubernetes version to build against derived from the client-go dependency version
+KUBE_MINOR ?= $(shell go list -m k8s.io/client-go | cut -d" " -f2 | sed 's/^v0\.\([[:digit:]]\{1,\}\)\.[[:digit:]]\{1,\}$$/1.\1/')
+
+.PHONY: update-k8s-manifests # HELP Update pod security versions in manifests with Kubernetes version
+update-k8s-manifests:
+	find manifests microshift-manifests -type f -name '*.yaml' -exec \
+	sed -i.bak -E 's/(pod-security.kubernetes.io\/[a-zA-Z-]+-version:).*/\1 "v$(KUBE_MINOR)"/g' {} +;
+	find manifests microshift-manifests -type f -name '*.yaml.bak' -delete
 
 .PHONY: generate-manifests
 generate-manifests: OLM_VERSION=0.0.1-snapshot
