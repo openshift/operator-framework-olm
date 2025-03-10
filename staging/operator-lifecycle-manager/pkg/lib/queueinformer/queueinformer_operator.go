@@ -279,6 +279,10 @@ func (o *operator) processNextWorkItem(ctx context.Context, loop *QueueInformer)
 	defer queue.Done(item)
 
 	logger := o.logger.WithField("item", item)
+	logger.Infof("processing queue item - start")
+	defer func() {
+		logger.Infof("processing queue item - end")
+	}()
 	logger.WithField("queue-length", queue.Len()).Trace("popped queue")
 
 	typedItem, ok := item.(types.NamespacedName)

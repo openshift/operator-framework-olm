@@ -55,7 +55,7 @@ var (
 		"writePackageServerStatusName", defaultPackageServerStatusName, "ClusterOperator name in which to write status for package API server, set to \"\" to disable.")
 
 	debug = pflag.Bool(
-		"debug", false, "use debug log level")
+		"debug", true, "use debug log level")
 
 	version = pflag.Bool("version", false, "displays olm version")
 
