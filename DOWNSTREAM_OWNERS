@@ -1,21 +1,10 @@
+# administrators of this repo are controlled via GitHub teams, not this file
+
 approvers:
-  - dinhxuanvu
-  - kevinrizza
-  - anik120
-  - ankitathomas
-  - joelanford
-  - perdasilva
-  - oceanc80
-  - grokspawn
-  - tmshort
+- operator-framework-approvers
+
 reviewers:
-  - dinhxuanvu
-  - kevinrizza
-  - anik120
-  - ankitathomas
-  - joelanford
-  - perdasilva
-  - oceanc80
-  - grokspawn
-  - tmshort
+- operator-framework-approvers
+- operator-framework-reviewers
+
 component: "OLM"
