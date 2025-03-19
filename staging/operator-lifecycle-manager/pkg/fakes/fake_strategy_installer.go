@@ -303,16 +303,15 @@ func (fake *FakeStrategyInstaller) ShouldRotateCerts(arg1 install.Strategy) (boo
 	fake.shouldRotateCertsArgsForCall = append(fake.shouldRotateCertsArgsForCall, struct {
 		arg1 install.Strategy
 	}{arg1})
-	stub := fake.ShouldRotateCertsStub
-	fakeReturns := fake.shouldRotateCertsReturns
 	fake.recordInvocation("ShouldRotateCerts", []interface{}{arg1})
 	fake.shouldRotateCertsMutex.Unlock()
-	if stub != nil {
-		return stub(arg1)
+	if fake.ShouldRotateCertsStub != nil {
+		return fake.ShouldRotateCertsStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
+	fakeReturns := fake.shouldRotateCertsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
