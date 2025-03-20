@@ -3,12 +3,12 @@ rbacApiVersion: rbac.authorization.k8s.io
 namespace: openshift-operator-lifecycle-manager
 namespace_psa: 
   enforceLevel: restricted
-  enforceVersion: '"v1.24"'
+  enforceVersion: latest
 catalog_namespace: openshift-marketplace
 operator_namespace: openshift-operators
 operator_namespace_psa: 
   enforceLevel: privileged
-  enforceVersion: '"v1.24"'
+  enforceVersion: latest
 imagestream: true
 writeStatusName: operator-lifecycle-manager
 writeStatusNameCatalog: operator-lifecycle-manager-catalog
