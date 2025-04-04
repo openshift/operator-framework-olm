@@ -1,8 +1,6 @@
 module github.com/openshift/operator-framework-olm
 
-go 1.23.6
-
-toolchain go1.23.7
+go 1.23.7
 
 require (
 	github.com/blang/semver/v4 v4.0.0
