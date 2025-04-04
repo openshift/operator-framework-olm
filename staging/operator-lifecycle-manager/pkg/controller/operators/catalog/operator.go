@@ -1753,35 +1753,29 @@ func (o *Operator) updateSubscriptionStatuses(subs []*v1alpha1.Subscription) ([]
 	var (
 		errs       []error
 		mu         sync.Mutex
-		wg         sync.WaitGroup
 		getOpts    = metav1.GetOptions{}
 		updateOpts = metav1.UpdateOptions{}
 	)
 
 	for _, sub := range subs {
-		wg.Add(1)
-		go func(sub *v1alpha1.Subscription) {
-			defer wg.Done()
-
-			update := func() error {
-				// Update the status of the latest revision
-				latest, err := o.client.OperatorsV1alpha1().Subscriptions(sub.GetNamespace()).Get(context.TODO(), sub.GetName(), getOpts)
-				if err != nil {
-					return err
-				}
-				latest.Status = sub.Status
-				*sub = *latest
-				_, err = o.client.OperatorsV1alpha1().Subscriptions(sub.Namespace).UpdateStatus(context.TODO(), latest, updateOpts)
+		update := func() error {
+			// Update the status of the latest revision
+			latest, err := o.client.OperatorsV1alpha1().Subscriptions(sub.GetNamespace()).Get(context.TODO(), sub.GetName(), getOpts)
+			if err != nil {
 				return err
 			}
-			if err := retry.RetryOnConflict(retry.DefaultRetry, update); err != nil {
-				mu.Lock()
-				defer mu.Unlock()
-				errs = append(errs, err)
-			}
-		}(sub)
+			latest.Status = sub.Status
+			*sub = *latest
+			_, err = o.client.OperatorsV1alpha1().Subscriptions(sub.Namespace).UpdateStatus(context.TODO(), latest, updateOpts)
+			return err
+		}
+		if err := retry.RetryOnConflict(retry.DefaultRetry, update); err != nil {
+			mu.Lock()
+			defer mu.Unlock()
+			errs = append(errs, err)
+		}
 	}
-	wg.Wait()
+
 	return subs, utilerrors.NewAggregate(errs)
 }
 
