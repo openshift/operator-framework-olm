@@ -19,7 +19,7 @@ GIT_COMMIT := $(if $(SOURCE_GIT_COMMIT),$(SOURCE_GIT_COMMIT),$(shell git rev-par
 OLM_VERSION := $(or $(OS_GIT_VERSION),0.0.0-$(GIT_COMMIT))
 
 GO_BUILD_OPTS := -mod=vendor
-GO_BUILD_TAGS := -tags "json1"
+GO_BUILD_TAGS := -tags "json1,containers_image_openpgp"
 
 GO_PKG := github.com/operator-framework
 REGISTRY_PKG := $(GO_PKG)/operator-registry
