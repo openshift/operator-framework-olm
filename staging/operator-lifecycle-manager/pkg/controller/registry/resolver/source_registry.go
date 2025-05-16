@@ -152,6 +152,7 @@ func (s *registrySource) Snapshot(ctx context.Context) (*cache.Snapshot, error) 
 	// or embed the information into Bundle.
 	packages := make(map[string]*api.Package)
 
+	s.logger.Printf("JEK >>>>> Listing packages for %#v", s.key)
 	it, err := s.client.ListBundles(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list bundles: %w", err)

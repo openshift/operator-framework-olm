@@ -289,6 +289,7 @@ func (p *RegistryProvider) refreshCache(ctx context.Context, client *registryCli
 		"source": key,
 	})
 
+	logger.Warnf("JEK >>>>> refreshing cache via ListBundles for %#v", key)
 	bundleStream, err := client.ListBundles(ctx, &api.ListBundlesRequest{})
 	if err != nil {
 		logger.WithField("err", err.Error()).Warnf("error getting bundle stream")
