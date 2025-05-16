@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -147,6 +148,9 @@ func (s *registrySource) Snapshot(ctx context.Context) (*cache.Snapshot, error) 
 	// -- may need to either add a new API to fetch all at once,
 	// or embed the information into Bundle.
 	packages := make(map[string]*api.Package)
+
+	s.logger.Printf("JEK >>>>> Listing packages for %#v", s.key)
+	debug.PrintStack()
 
 	it, err := s.client.ListBundles(ctx)
 	if err != nil {
