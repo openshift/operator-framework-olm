@@ -116,6 +116,43 @@ spec:
       name: quay.io/openshift/origin-kube-rbac-proxy:latest
 EOF
 
+cat << EOF > manifests/0000_50_olm_06-psm-operator.networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: package-server-manager
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+    include.release.openshift.io/hypershift: "true"
+spec:
+  podSelector:
+    matchLabels:
+      app: package-server-manager
+  ingress:
+    - ports:
+        - port: 8443
+          protocol: TCP
+  egress:
+    - ports:
+        - port: 6443
+          protocol: TCP
+    - ports:
+        - port: dns-tcp
+          protocol: TCP
+        - port: dns
+          protocol: UDP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+  policyTypes:
+    - Ingress
+    - Egress
+EOF
+
 cat << EOF > manifests/0000_50_olm_06-psm-operator.deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -562,3 +599,24 @@ ${SED} -i '/- --writeStatusName/,+3d' ${ROOT_DIR}/microshift-manifests/0000_50_o
 
 # Replace the namespace openshift, as it doesn't exist on microshift, in the rbac file
 ${SED} -i 's/  namespace: openshift/  namespace: openshift-operator-lifecycle-manager/g' ${ROOT_DIR}/microshift-manifests/0000_50_olm_15-csv-viewer.rbac.yaml
+
+# Remove packageserver network policy
+yaml_file="${ROOT_DIR}/microshift-manifests/0000_50_olm_01-networkpolicies.yaml"
+filtered_yaml="${ROOT_DIR}/microshift-manifests/0000_50_olm_01-networkpolicies.yaml.filtered"
+
+# loop through each NetworkPolicy definition in the input multi-document yaml
+rm -f "${filtered_yaml}"
+doc_count=$(${YQ} r -l "$yaml_file")
+for (( i=0; i<doc_count; i++ )); do
+    current_doc=$(${YQ} r -d "$i" "$yaml_file")
+    resource_name="$(echo "$current_doc" | ${YQ} r - metadata.name)"
+    resource_kind="$(echo "$current_doc" | ${YQ} r - kind)"
+    # filter out the packageserver network policy
+    if [[ "${resource_kind}" != "NetworkPolicy" || "${resource_name}" != "packageserver" ]]; then
+        echo "---" >> "${filtered_yaml}"
+        echo "${current_doc}" >> "${filtered_yaml}"
+    fi
+done
+
+# replace input with output
+mv "${filtered_yaml}" "${yaml_file}"
