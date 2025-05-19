@@ -1069,6 +1069,7 @@ func SetupGeneratedTestNamespaceWithOperatorGroup(name string, og operatorsv1.Op
 	ns := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
+			Labels: map[string]string{},
 		},
 	}
 	Eventually(func() error {
