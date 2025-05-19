@@ -104,3 +104,15 @@ package:
 monitoring:
   enabled: true
   namespace: openshift-monitoring
+
+networkPolicy:
+  dns:
+    ports:
+      - protocol: TCP
+        port: dns-tcp
+      - protocol: UDP
+        port: dns
+    to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: openshift-dns
