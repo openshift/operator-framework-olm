@@ -400,6 +400,52 @@ data:
   tls.key: ""
 EOF
 
+cat << EOF > manifests/0000_50_olm_07-collect-profiles.networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: collect-profiles
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+    include.release.openshift.io/hypershift: "true"
+spec:
+  podSelector:
+    matchLabels:
+      app: olm-collect-profiles
+  egress:
+    - ports:
+        - port: 8443
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              name: openshift-operator-lifecycle-manager
+        - podSelector:
+            matchLabels:
+              app: olm-operator
+        - podSelector:
+            matchLabels:
+              app: catalog-operator
+    - ports:
+        - port: 6443
+          protocol: TCP
+    - ports:
+        - port: dns-tcp
+          protocol: TCP
+        - port: dns
+          protocol: UDP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+  policyTypes:
+    - Egress
+    - Ingress
+EOF
+
 cat << EOF > manifests/0000_50_olm_07-collect-profiles.cronjob.yaml
 apiVersion: batch/v1
 kind: CronJob
@@ -409,6 +455,8 @@ metadata:
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
   name: collect-profiles
+  labels:
+    app: olm-collect-profiles
   namespace: openshift-operator-lifecycle-manager
 spec:
   schedule: "*/15 * * * *"
@@ -420,6 +468,8 @@ spec:
           annotations:
             target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
             openshift.io/required-scc: restricted-v2
+          labels:
+            app: olm-collect-profiles
         spec:
           securityContext:
             runAsNonRoot: true
