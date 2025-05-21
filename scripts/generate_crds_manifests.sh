@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# generate_crds_manifests: regenerate downstream OLM manifests for Openshift and Microshift
+# resource manifests in the manifests/ and microshift-manifests/ are deleted and recreated
+# some downstream only manifests e.g. for collect-profiles, and package-server-manager, are created
+# inline by this script. Upstream manifests are also mutated for downstream concerns through the application
+# of patches, or some other kind of manipulation. The values.yaml at the root of this repository is also used
+# to mutate upstream manifests for the downstream.
+
 set -o errexit
 set -o nounset
 set -o pipefail
