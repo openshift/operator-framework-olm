@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# generate_crds_manifests: regenerate downstream OLM manifests for Openshift and Microshift
+# resource manifests in the manifests/ and microshift-manifests/ are deleted and recreated
+# some downstream only manifests e.g. for collect-profiles, and package-server-manager, are created
+# inline by this script. Upstream manifests are also mutated for downstream concerns through the application
+# of patches, or some other kind of manipulation. The values.yaml at the root of this repository is also used
+# to mutate upstream manifests for the downstream.
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -88,12 +95,12 @@ add_ibm_managed_cloud_annotations() {
 }
 
 ${YQ} merge --inplace -d'*' manifests/0000_50_olm_00-namespace.yaml scripts/namespaces.patch.yaml
-${YQ} merge --inplace --arrays=append -d'1' manifests/0000_50_olm_01-olm-operator.serviceaccount.yaml scripts/olm-service.patch.yaml
+${YQ} merge --inplace --arrays=append -d'1' manifests/0000_50_olm_[0-9][0-9]*-olm-operator.serviceaccount.yaml scripts/olm-service.patch.yaml
 ${YQ} merge --inplace -d'0' manifests/0000_50_olm_00-namespace.yaml scripts/monitoring-namespace.patch.yaml
 ${YQ} write --inplace -s scripts/olm-deployment.patch.yaml manifests/0000_50_olm_07-olm-operator.deployment.yaml
 ${YQ} write --inplace -s scripts/catalog-deployment.patch.yaml manifests/0000_50_olm_08-catalog-operator.deployment.yaml
 ${YQ} write --inplace -s scripts/packageserver-deployment.patch.yaml manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml
-${YQ} merge --inplace manifests/0000_50_olm_02-olmconfig.yaml scripts/cluster-olmconfig.patch.yaml
+${YQ} merge --inplace manifests/0000_50_olm_[0-9][0-9]*-olmconfig.yaml scripts/cluster-olmconfig.patch.yaml
 mv manifests/0000_50_olm_15-packageserver.clusterserviceversion.yaml pkg/manifests/csv.yaml
 cp scripts/packageserver-pdb.yaml manifests/0000_50_olm_00-packageserver.pdb.yaml
 
@@ -114,6 +121,43 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-kube-rbac-proxy:latest
+EOF
+
+cat << EOF > manifests/0000_50_olm_06-psm-operator.networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: package-server-manager
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+    include.release.openshift.io/hypershift: "true"
+spec:
+  podSelector:
+    matchLabels:
+      app: package-server-manager
+  ingress:
+    - ports:
+        - port: 8443
+          protocol: TCP
+  egress:
+    - ports:
+        - port: 6443
+          protocol: TCP
+    - ports:
+        - port: dns-tcp
+          protocol: TCP
+        - port: dns
+          protocol: UDP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+  policyTypes:
+    - Ingress
+    - Egress
 EOF
 
 cat << EOF > manifests/0000_50_olm_06-psm-operator.deployment.yaml
@@ -363,6 +407,52 @@ data:
   tls.key: ""
 EOF
 
+cat << EOF > manifests/0000_50_olm_07-collect-profiles.networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: collect-profiles
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+    include.release.openshift.io/hypershift: "true"
+spec:
+  podSelector:
+    matchLabels:
+      app: olm-collect-profiles
+  egress:
+    - ports:
+        - port: 8443
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              name: openshift-operator-lifecycle-manager
+        - podSelector:
+            matchLabels:
+              app: olm-operator
+        - podSelector:
+            matchLabels:
+              app: catalog-operator
+    - ports:
+        - port: 6443
+          protocol: TCP
+    - ports:
+        - port: dns-tcp
+          protocol: TCP
+        - port: dns
+          protocol: UDP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+  policyTypes:
+    - Egress
+    - Ingress
+EOF
+
 cat << EOF > manifests/0000_50_olm_07-collect-profiles.cronjob.yaml
 apiVersion: batch/v1
 kind: CronJob
@@ -372,6 +462,8 @@ metadata:
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
   name: collect-profiles
+  labels:
+    app: olm-collect-profiles
   namespace: openshift-operator-lifecycle-manager
 spec:
   schedule: "*/15 * * * *"
@@ -383,6 +475,8 @@ spec:
           annotations:
             target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
             openshift.io/required-scc: restricted-v2
+          labels:
+            app: olm-collect-profiles
         spec:
           securityContext:
             runAsNonRoot: true
@@ -562,3 +656,24 @@ ${SED} -i '/- --writeStatusName/,+3d' ${ROOT_DIR}/microshift-manifests/0000_50_o
 
 # Replace the namespace openshift, as it doesn't exist on microshift, in the rbac file
 ${SED} -i 's/  namespace: openshift/  namespace: openshift-operator-lifecycle-manager/g' ${ROOT_DIR}/microshift-manifests/0000_50_olm_15-csv-viewer.rbac.yaml
+
+# Remove packageserver network policy
+yaml_file="${ROOT_DIR}/microshift-manifests/0000_50_olm_01-networkpolicies.yaml"
+filtered_yaml="${ROOT_DIR}/microshift-manifests/0000_50_olm_01-networkpolicies.yaml.filtered"
+
+# loop through each NetworkPolicy definition in the input multi-document yaml
+rm -f "${filtered_yaml}"
+doc_count=$(${YQ} r -l "$yaml_file")
+for (( i=0; i<doc_count; i++ )); do
+    current_doc=$(${YQ} r -d "$i" "$yaml_file")
+    resource_name="$(echo "$current_doc" | ${YQ} r - metadata.name)"
+    resource_kind="$(echo "$current_doc" | ${YQ} r - kind)"
+    # filter out the packageserver network policy
+    if [[ "${resource_kind}" != "NetworkPolicy" || "${resource_name}" != "packageserver" ]]; then
+        echo "---" >> "${filtered_yaml}"
+        echo "${current_doc}" >> "${filtered_yaml}"
+    fi
+done
+
+# replace input with output
+mv "${filtered_yaml}" "${yaml_file}"

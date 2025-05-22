@@ -25,6 +25,7 @@ import (
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -888,7 +889,6 @@ func TestSyncCatalogSourcesSecurityPolicy(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "cool-catalog",
 					Namespace: "cool-namespace",
-					UID:       types.UID("catalog-uid"),
 				},
 				Spec: v1alpha1.CatalogSourceSpec{
 					Image:      "catalog-image",
@@ -907,7 +907,6 @@ func TestSyncCatalogSourcesSecurityPolicy(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "cool-catalog",
 					Namespace: "cool-namespace",
-					UID:       types.UID("catalog-uid"),
 				},
 				Spec: v1alpha1.CatalogSourceSpec{
 					Image:      "catalog-image",
@@ -933,7 +932,6 @@ func TestSyncCatalogSourcesSecurityPolicy(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "cool-catalog",
 					Namespace: "cool-namespace",
-					UID:       types.UID("catalog-uid"),
 				},
 				Spec: v1alpha1.CatalogSourceSpec{
 					Image:      "catalog-image",
@@ -952,7 +950,6 @@ func TestSyncCatalogSourcesSecurityPolicy(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "cool-catalog",
 					Namespace: "cool-namespace",
-					UID:       types.UID("catalog-uid"),
 				},
 				Spec: v1alpha1.CatalogSourceSpec{
 					Image:      "catalog-image",
@@ -1005,23 +1002,32 @@ func TestSyncCatalogSources(t *testing.T) {
 	clockFake := utilclocktesting.NewFakeClock(time.Date(2018, time.January, 26, 20, 40, 0, 0, time.UTC))
 	now := metav1.NewTime(clockFake.Now())
 
-	configmapCatalog := &v1alpha1.CatalogSource{
+	internalCatalog := &v1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cool-catalog",
 			Namespace: "cool-namespace",
-			UID:       types.UID("catalog-uid"),
 		},
 		Spec: v1alpha1.CatalogSourceSpec{
 			ConfigMap:  "cool-configmap",
 			SourceType: v1alpha1.SourceTypeInternal,
 		},
 	}
+	configMapCatalog := &v1alpha1.CatalogSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cool-catalog",
+			Namespace: "cool-namespace",
+		},
+		Spec: v1alpha1.CatalogSourceSpec{
+			ConfigMap:  "cool-configmap",
+			SourceType: v1alpha1.SourceTypeConfigmap,
+		},
+	}
 	grpcCatalog := &v1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cool-catalog",
 			Namespace: "cool-namespace",
-			UID:       types.UID("catalog-uid"),
-			Labels:    map[string]string{"olm.catalogSource": "cool-catalog"},
+
+			Labels: map[string]string{"olm.catalogSource": "cool-catalog"},
 		},
 		Spec: v1alpha1.CatalogSourceSpec{
 			Image:      "catalog-image",
@@ -1046,7 +1052,6 @@ func TestSyncCatalogSources(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "cool-catalog",
 					Namespace: "cool-namespace",
-					UID:       types.UID("catalog-uid"),
 				},
 				Spec: v1alpha1.CatalogSourceSpec{
 					SourceType: "nope",
@@ -1060,13 +1065,12 @@ func TestSyncCatalogSources(t *testing.T) {
 		{
 			testName:      "CatalogSourceWithBackingConfigMap",
 			namespace:     "cool-namespace",
-			catalogSource: configmapCatalog,
+			catalogSource: internalCatalog,
 			k8sObjs: []runtime.Object{
 				&corev1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "cool-configmap",
 						Namespace:       "cool-namespace",
-						UID:             types.UID("configmap-uid"),
 						ResourceVersion: "resource-version",
 					},
 					Data: fakeConfigMapData(),
@@ -1076,7 +1080,6 @@ func TestSyncCatalogSources(t *testing.T) {
 				ConfigMapResource: &v1alpha1.ConfigMapResourceReference{
 					Name:            "cool-configmap",
 					Namespace:       "cool-namespace",
-					UID:             types.UID("configmap-uid"),
 					ResourceVersion: "resource-version",
 					LastUpdateTime:  now,
 				},
@@ -1091,7 +1094,6 @@ func TestSyncCatalogSources(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "cool-catalog",
 					Namespace: "cool-namespace",
-					UID:       types.UID("catalog-uid"),
 				},
 				Spec: v1alpha1.CatalogSourceSpec{
 					ConfigMap:  "cool-configmap",
@@ -1101,7 +1103,6 @@ func TestSyncCatalogSources(t *testing.T) {
 					ConfigMapResource: &v1alpha1.ConfigMapResourceReference{
 						Name:            "cool-configmap",
 						Namespace:       "cool-namespace",
-						UID:             types.UID("configmap-uid"),
 						ResourceVersion: "resource-version",
 						LastUpdateTime:  now,
 					},
@@ -1113,7 +1114,6 @@ func TestSyncCatalogSources(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:            "cool-configmap",
 						Namespace:       "cool-namespace",
-						UID:             types.UID("configmap-uid"),
 						ResourceVersion: "resource-version",
 					},
 					Data: fakeConfigMapData(),
@@ -1123,7 +1123,6 @@ func TestSyncCatalogSources(t *testing.T) {
 				ConfigMapResource: &v1alpha1.ConfigMapResourceReference{
 					Name:            "cool-configmap",
 					Namespace:       "cool-namespace",
-					UID:             types.UID("configmap-uid"),
 					ResourceVersion: "resource-version",
 					LastUpdateTime:  now,
 				},
@@ -1140,7 +1139,7 @@ func TestSyncCatalogSources(t *testing.T) {
 		{
 			testName:      "CatalogSourceWithMissingConfigMap",
 			namespace:     "cool-namespace",
-			catalogSource: configmapCatalog,
+			catalogSource: internalCatalog,
 			k8sObjs: []runtime.Object{
 				&corev1.ConfigMap{},
 			},
@@ -1174,8 +1173,8 @@ func TestSyncCatalogSources(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "cool-catalog",
 						Namespace: "cool-namespace",
-						UID:       types.UID("catalog-uid"),
-						Labels:    map[string]string{"olm.catalogSource": "cool-catalog"},
+
+						Labels: map[string]string{"olm.catalogSource": "cool-catalog"},
 					},
 					Spec: v1alpha1.CatalogSourceSpec{
 						Image:      "old-image",
@@ -1198,14 +1197,27 @@ func TestSyncCatalogSources(t *testing.T) {
 			},
 		},
 		{
+			testName:      "CatalogSourceWithGrpcType/CreatesNetworkPolicyResources",
+			namespace:     "cool-namespace",
+			catalogSource: grpcCatalog,
+			expectedObjs: []runtime.Object{
+				grpcServerNetworkPolicy(grpcCatalog, map[string]string{
+					reconciler.CatalogSourceLabelKey: grpcCatalog.GetName(),
+					install.OLMManagedLabelKey:       install.OLMManagedLabelValue,
+				}),
+				unpackBundlesNetworkPolicy(grpcCatalog),
+			},
+			expectedError: nil,
+		},
+		{
 			testName:  "CatalogSourceWithGrpcType/EnsuresImageOrAddressIsSet",
 			namespace: "cool-namespace",
 			catalogSource: &v1alpha1.CatalogSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "invalid-spec-catalog",
 					Namespace: "cool-namespace",
-					UID:       types.UID("catalog-uid"),
-					Labels:    map[string]string{"olm.catalogSource": "invalid-spec-catalog"},
+
+					Labels: map[string]string{"olm.catalogSource": "invalid-spec-catalog"},
 				},
 				Spec: v1alpha1.CatalogSourceSpec{
 					SourceType: v1alpha1.SourceTypeGrpc,
@@ -1224,8 +1236,8 @@ func TestSyncCatalogSources(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "invalid-spec-catalog",
 					Namespace: "cool-namespace",
-					UID:       types.UID("catalog-uid"),
-					Labels:    map[string]string{"olm.catalogSource": "invalid-spec-catalog"},
+
+					Labels: map[string]string{"olm.catalogSource": "invalid-spec-catalog"},
 				},
 				Spec: v1alpha1.CatalogSourceSpec{
 					SourceType: v1alpha1.SourceTypeInternal,
@@ -1238,14 +1250,45 @@ func TestSyncCatalogSources(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			testName:  "CatalogSourceWithInternalType/CreatesNetworkPolicyResources",
+			namespace: "cool-namespace",
+			catalogSource: withStatus(*internalCatalog, v1alpha1.CatalogSourceStatus{
+				ConfigMapResource: &v1alpha1.ConfigMapResourceReference{
+					Name:            "cool-configmap",
+					Namespace:       "cool-namespace",
+					ResourceVersion: "resource-version",
+					LastUpdateTime:  now,
+				},
+				RegistryServiceStatus: nil,
+			}),
+			k8sObjs: []runtime.Object{
+				&corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cool-configmap",
+						Namespace:       "cool-namespace",
+						ResourceVersion: "resource-version",
+					},
+					Data: fakeConfigMapData(),
+				},
+			},
+			expectedObjs: []runtime.Object{
+				grpcServerNetworkPolicy(internalCatalog, map[string]string{
+					reconciler.CatalogSourceLabelKey: internalCatalog.GetName(),
+					install.OLMManagedLabelKey:       install.OLMManagedLabelValue,
+				}),
+				unpackBundlesNetworkPolicy(internalCatalog),
+			},
+			expectedError: nil,
+		},
+		{
 			testName:  "CatalogSourceWithConfigMapType/EnsuresConfigMapIsSet",
 			namespace: "cool-namespace",
 			catalogSource: &v1alpha1.CatalogSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "invalid-spec-catalog",
 					Namespace: "cool-namespace",
-					UID:       types.UID("catalog-uid"),
-					Labels:    map[string]string{"olm.catalogSource": "invalid-spec-catalog"},
+
+					Labels: map[string]string{"olm.catalogSource": "invalid-spec-catalog"},
 				},
 				Spec: v1alpha1.CatalogSourceSpec{
 					SourceType: v1alpha1.SourceTypeConfigmap,
@@ -1254,6 +1297,37 @@ func TestSyncCatalogSources(t *testing.T) {
 			expectedStatus: &v1alpha1.CatalogSourceStatus{
 				Message: fmt.Sprintf("configmap name unset: must be set for sourcetype: %s", v1alpha1.SourceTypeConfigmap),
 				Reason:  v1alpha1.CatalogSourceSpecInvalidError,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:  "CatalogSourceWithConfigMapType/CreatesNetworkPolicyResources",
+			namespace: "cool-namespace",
+			catalogSource: withStatus(*configMapCatalog, v1alpha1.CatalogSourceStatus{
+				ConfigMapResource: &v1alpha1.ConfigMapResourceReference{
+					Name:            "cool-configmap",
+					Namespace:       "cool-namespace",
+					ResourceVersion: "resource-version",
+					LastUpdateTime:  now,
+				},
+				RegistryServiceStatus: nil,
+			}),
+			k8sObjs: []runtime.Object{
+				&corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "cool-configmap",
+						Namespace:       "cool-namespace",
+						ResourceVersion: "resource-version",
+					},
+					Data: fakeConfigMapData(),
+				},
+			},
+			expectedObjs: []runtime.Object{
+				grpcServerNetworkPolicy(configMapCatalog, map[string]string{
+					reconciler.CatalogSourceLabelKey: configMapCatalog.GetName(),
+					install.OLMManagedLabelKey:       install.OLMManagedLabelValue,
+				}),
+				unpackBundlesNetworkPolicy(configMapCatalog),
 			},
 			expectedError: nil,
 		},
@@ -1276,6 +1350,11 @@ func TestSyncCatalogSources(t *testing.T) {
 				pod(t, *grpcCatalog),
 				service(grpcCatalog.GetName(), grpcCatalog.GetNamespace()),
 				serviceAccount(grpcCatalog.GetName(), grpcCatalog.GetNamespace(), "", objectReference("init secret")),
+				grpcServerNetworkPolicy(grpcCatalog, map[string]string{
+					reconciler.CatalogSourceLabelKey: grpcCatalog.GetName(),
+					install.OLMManagedLabelKey:       install.OLMManagedLabelValue,
+				}),
+				unpackBundlesNetworkPolicy(grpcCatalog),
 			},
 			existingSources: []sourceAddress{
 				{
@@ -2128,7 +2207,17 @@ func NewFakeOperator(ctx context.Context, namespace string, namespaces []string,
 	serviceInformer := factory.Core().V1().Services()
 	podInformer := factory.Core().V1().Pods()
 	configMapInformer := factory.Core().V1().ConfigMaps()
-	sharedInformers = append(sharedInformers, roleInformer.Informer(), roleBindingInformer.Informer(), serviceAccountInformer.Informer(), serviceInformer.Informer(), podInformer.Informer(), configMapInformer.Informer())
+	networkPolicyInformer := factory.Networking().V1().NetworkPolicies()
+
+	sharedInformers = append(sharedInformers,
+		roleInformer.Informer(),
+		roleBindingInformer.Informer(),
+		serviceAccountInformer.Informer(),
+		serviceInformer.Informer(),
+		podInformer.Informer(),
+		configMapInformer.Informer(),
+		networkPolicyInformer.Informer(),
+	)
 
 	lister.RbacV1().RegisterRoleLister(metav1.NamespaceAll, roleInformer.Lister())
 	lister.RbacV1().RegisterRoleBindingLister(metav1.NamespaceAll, roleBindingInformer.Lister())
@@ -2136,6 +2225,7 @@ func NewFakeOperator(ctx context.Context, namespace string, namespaces []string,
 	lister.CoreV1().RegisterServiceLister(metav1.NamespaceAll, serviceInformer.Lister())
 	lister.CoreV1().RegisterPodLister(metav1.NamespaceAll, podInformer.Lister())
 	lister.CoreV1().RegisterConfigMapLister(metav1.NamespaceAll, configMapInformer.Lister())
+	lister.NetworkingV1().RegisterNetworkPolicyLister(metav1.NamespaceAll, networkPolicyInformer.Lister())
 	logger := logrus.New()
 
 	// Create the new operator
@@ -2317,6 +2407,13 @@ func configMap(name, namespace string) *corev1.ConfigMap {
 		TypeMeta:   metav1.TypeMeta{Kind: configMapKind},
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace, Labels: map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue}},
 	}
+}
+
+func grpcServerNetworkPolicy(catSrc *v1alpha1.CatalogSource, matchLabels map[string]string) *networkingv1.NetworkPolicy {
+	return reconciler.DesiredGRPCServerNetworkPolicy(catSrc, matchLabels)
+}
+func unpackBundlesNetworkPolicy(catSrc *v1alpha1.CatalogSource) *networkingv1.NetworkPolicy {
+	return reconciler.DesiredUnpackBundlesNetworkPolicy(catSrc)
 }
 
 func objectReference(name string) *corev1.ObjectReference {
