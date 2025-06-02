@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"runtime/debug"
-
 	"github.com/blang/semver/v4"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/pkg/api"
@@ -290,9 +288,6 @@ func (p *RegistryProvider) refreshCache(ctx context.Context, client *registryCli
 		"action": "refresh cache",
 		"source": key,
 	})
-
-	logger.Warnf("JEK >>>>> refreshing cache via ListBundles for %#v", key)
-	debug.PrintStack()
 
 	bundleStream, err := client.ListBundles(ctx, &api.ListBundlesRequest{})
 	if err != nil {

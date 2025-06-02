@@ -83,7 +83,7 @@ func SourceProviderFromRegistryClientProvider(rcp RegistryClientProvider, catsrc
 		catsrcLister: catsrcLister,
 		invalidator: &sourceInvalidator{
 			validChans: make(map[cache.SourceKey]chan struct{}),
-			ttl:        5 * time.Minute,
+			ttl:        30 * time.Minute,
 		},
 	}
 }
