@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -76,6 +75,8 @@ type RegistrySourceProvider struct {
 	invalidator  *sourceInvalidator
 }
 
+const defaultCacheLifetime time.Duration = 30 * time.Minute
+
 func SourceProviderFromRegistryClientProvider(rcp RegistryClientProvider, catsrcLister v1alpha1listers.CatalogSourceLister, logger logrus.StdLogger) *RegistrySourceProvider {
 	return &RegistrySourceProvider{
 		rcp:          rcp,
@@ -83,7 +84,7 @@ func SourceProviderFromRegistryClientProvider(rcp RegistryClientProvider, catsrc
 		catsrcLister: catsrcLister,
 		invalidator: &sourceInvalidator{
 			validChans: make(map[cache.SourceKey]chan struct{}),
-			ttl:        30 * time.Minute,
+			ttl:        defaultCacheLifetime,
 		},
 	}
 }
@@ -152,9 +153,6 @@ func (s *registrySource) Snapshot(ctx context.Context) (*cache.Snapshot, error) 
 	// -- may need to either add a new API to fetch all at once,
 	// or embed the information into Bundle.
 	packages := make(map[string]*api.Package)
-
-	s.logger.Printf("JEK >>>>> Listing packages for %#v", s.key)
-	debug.PrintStack()
 
 	it, err := s.client.ListBundles(ctx)
 	if err != nil {
