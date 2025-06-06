@@ -336,6 +336,7 @@ func (hdr *snapshotHeader) Valid() bool {
 func (hdr *snapshotHeader) RequestSentinelActive() bool {
 	hdr.m.RLock()
 	defer hdr.m.RUnlock()
+
 	return time.Now().Before(hdr.requestSentinel)
 }
 

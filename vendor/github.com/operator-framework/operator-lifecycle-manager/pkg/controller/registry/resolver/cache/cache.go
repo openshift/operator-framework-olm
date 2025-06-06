@@ -170,7 +170,9 @@ func (c *Cache) Namespaced(namespaces ...string) MultiCatalogOperatorFinder {
 					if snapshot.Valid() {
 						result.snapshots[key] = snapshot
 					} else {
-						misses = append(misses, key)
+						if !snapshot.RequestSentinelActive() {
+							misses = append(misses, key)
+						}
 					}
 				}()
 			}
@@ -336,7 +338,10 @@ func (hdr *snapshotHeader) Valid() bool {
 func (hdr *snapshotHeader) RequestSentinelActive() bool {
 	hdr.m.RLock()
 	defer hdr.m.RUnlock()
-	return time.Now().Before(hdr.requestSentinel)
+	if hdr != nil && time.Now().Before(hdr.requestSentinel) {
+		return true
+	}
+	return false
 }
 
 type sortableSnapshots struct {
