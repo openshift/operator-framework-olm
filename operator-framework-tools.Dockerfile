@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.23-openshift-4.19 AS builder-rhel8
+FROM quay.io/openshift/ci:ocp_builder_rhel-9-golang-1.23-openshift-4.19 AS builder-rhel8
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 WORKDIR /src
