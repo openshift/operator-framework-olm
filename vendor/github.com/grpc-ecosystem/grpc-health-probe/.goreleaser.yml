@@ -20,14 +20,38 @@ builds:
   - arm64
   - ppc64le
   - s390x
+  - riscv64
   ignore:
   - {goos: "darwin", goarch: "386"}
+  - {goos: "darwin", goarch: "riscv64"}
   - {goos: "windows", goarch: "386"}
   - {goos: "windows", goarch: "arm"}
-  goarm: [6]
+  - {goos: "windows", goarch: "riscv64"}
+  goarm: ["6"]
 checksum:
   name_template: "checksums.txt"
   algorithm: sha256
 archives:
   - formats: [ binary ]
     name_template: "{{ .Binary }}-{{ .Os }}-{{ .Arch }}"
+
+kos:  # See https://goreleaser.com/customization/ko/
+  - tags:
+    - '{{.Tag}}'
+    bare: true
+    preserve_import_paths: false
+    base_image: "gcr.io/distroless/static:nonroot"
+    platforms:
+    - linux/amd64
+    - linux/arm/v7
+    - linux/arm64/v8
+    - linux/ppc64le
+    - linux/s390x
+
+release:
+  footer: |
+    **Container Image** in [{{ .Env.KO_DOCKER_REPO }}](https://{{ .Env.KO_DOCKER_REPO }}): `{{ .Env.KO_DOCKER_REPO }}:{{ .Tag }}`
+
+    **Full Changelog**: https://github.com/grpc-ecosystem/grpc-health-probe/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    **Open Source Insights**: [{{ .Tag }}](https://deps.dev/go/github.com%2Fgrpc-ecosystem%2Fgrpc-health-probe/{{ .Tag }}) (compare to [{{ .PreviousTag }}](https://deps.dev/go/github.com%2Fgrpc-ecosystem%2Fgrpc-health-probe/{{ .PreviousTag }}/compare?v2={{ .Tag }}))
