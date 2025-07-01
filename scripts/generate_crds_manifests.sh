@@ -663,7 +663,8 @@ filtered_yaml="${ROOT_DIR}/microshift-manifests/0000_50_olm_01-networkpolicies.y
 
 # loop through each NetworkPolicy definition in the input multi-document yaml
 rm -f "${filtered_yaml}"
-doc_count=$(${YQ} r -l "$yaml_file")
+
+doc_count=$(${YQ} r -d'*' -l "$yaml_file" | wc -l)
 for (( i=0; i<doc_count; i++ )); do
     current_doc=$(${YQ} r -d "$i" "$yaml_file")
     resource_name="$(echo "$current_doc" | ${YQ} r - metadata.name)"
