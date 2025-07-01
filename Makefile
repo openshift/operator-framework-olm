@@ -159,7 +159,7 @@ vendor:
 	go mod verify
 
 .PHONY: manifests
-manifests: ## Generate manifests
+manifests: $(HELM) ## Generate manifests
 	OLM_VERSION=$(OLM_VERSION) ./scripts/generate_crds_manifests.sh
 
 .PHONY: generate-manifests
