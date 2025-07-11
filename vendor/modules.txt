@@ -769,7 +769,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operator
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/catalogtemplate
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/decorators
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/internal/alongside
-github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/internal/pruning
+github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/internal/listerwatcher
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/labeller
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm/overrides
