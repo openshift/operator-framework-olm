@@ -523,37 +523,6 @@ spec:
           restartPolicy: Never
 EOF
 
-cat << EOF > manifests/0000_50_olm_11-olm-operators.configmap.removed.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: olm-operators
-  namespace: openshift-operator-lifecycle-manager
-  annotations:
-    release.openshift.io/delete: "true"
-EOF
-
-cat << EOF > manifests/0000_50_olm_12-olm-operators.catalogsource.removed.yaml
-apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
-metadata:
-  name: olm-operators
-  namespace: openshift-operator-lifecycle-manager
-  annotations:
-    release.openshift.io/delete: "true"
-
-EOF
-
-cat << EOF > manifests/0000_50_olm_14-packageserver.subscription.removed.yaml
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: packageserver
-  namespace: openshift-operator-lifecycle-manager
-  annotations:
-    release.openshift.io/delete: "true"
-EOF
-
 cat << EOF > manifests/0000_50_olm_15-csv-viewer.rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
