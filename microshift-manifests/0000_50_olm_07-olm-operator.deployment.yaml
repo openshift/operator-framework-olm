@@ -35,6 +35,8 @@ spec:
         - name: profile-collector-cert
           secret:
             secretName: pprof-cert
+        - name: tmpfs
+          emptyDir: {}
       containers:
         - name: olm-operator
           securityContext:
@@ -48,6 +50,8 @@ spec:
             - name: profile-collector-cert
               mountPath: "/profile-collector-cert"
               readOnly: true
+            - name: tmpfs
+              mountPath: /tmp
           command:
             - /bin/olm
           args:
