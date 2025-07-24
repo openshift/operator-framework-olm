@@ -202,6 +202,7 @@ spec:
           name: kube-rbac-proxy
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           ports:
@@ -220,6 +221,7 @@ spec:
         - name: package-server-manager
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           command:
