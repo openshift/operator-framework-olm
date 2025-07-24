@@ -39,6 +39,7 @@ spec:
         - name: olm-operator
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           volumeMounts:

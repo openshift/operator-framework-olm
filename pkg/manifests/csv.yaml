@@ -114,6 +114,7 @@ spec:
                   - name: packageserver
                     securityContext:
                       allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
                       capabilities:
                         drop: ["ALL"]
                     command:
