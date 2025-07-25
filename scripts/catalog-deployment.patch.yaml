@@ -15,6 +15,7 @@
   path: spec.template.spec.containers[*].securityContext
   value:
     allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
     capabilities:
       drop: ["ALL"]
 - command: update
