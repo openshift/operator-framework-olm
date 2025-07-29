@@ -183,7 +183,7 @@ require (
 	github.com/sigstore/rekor v1.3.10 // indirect
 	github.com/sigstore/sigstore v1.9.5 // indirect
 	github.com/smallstep/pkcs7 v0.2.1 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.5.0 // indirect
 	github.com/stefanberger/go-pkcs11uri v0.0.0-20230803200340-78284954bff6 // indirect
 	github.com/stoewer/go-strcase v1.3.1 // indirect
