@@ -71,9 +71,6 @@ github.com/akrylysov/pogreb/internal/hash
 # github.com/antlr4-go/antlr/v4 v4.13.1
 ## explicit; go 1.22
 github.com/antlr4-go/antlr/v4
-# github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
-## explicit; go 1.13
-github.com/asaskevich/govalidator
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
@@ -163,7 +160,7 @@ github.com/containers/common/pkg/auth
 github.com/containers/common/pkg/capabilities
 github.com/containers/common/pkg/completion
 github.com/containers/common/pkg/password
-# github.com/containers/image/v5 v5.35.0
+# github.com/containers/image/v5 v5.36.1
 ## explicit; go 1.23.3
 github.com/containers/image/v5/copy
 github.com/containers/image/v5/directory/explicitfilepath
@@ -237,8 +234,9 @@ github.com/containers/ocicrypt/keywrap/pkcs7
 github.com/containers/ocicrypt/spec
 github.com/containers/ocicrypt/utils
 github.com/containers/ocicrypt/utils/keyprovider
-# github.com/containers/storage v1.58.0
+# github.com/containers/storage v1.59.1
 ## explicit; go 1.23.0
+github.com/containers/storage/internal/rawfilelock
 github.com/containers/storage/pkg/archive
 github.com/containers/storage/pkg/chunked/compressor
 github.com/containers/storage/pkg/chunked/internal/minimal
@@ -272,7 +270,7 @@ github.com/davecgh/go-spew/spew
 # github.com/distribution/reference v0.6.0
 ## explicit; go 1.20
 github.com/distribution/reference
-# github.com/docker/cli v28.3.1+incompatible
+# github.com/docker/cli v28.3.2+incompatible
 ## explicit
 github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
@@ -364,18 +362,6 @@ github.com/go-logr/stdr
 # github.com/go-logr/zapr v1.3.0
 ## explicit; go 1.18
 github.com/go-logr/zapr
-# github.com/go-openapi/analysis v0.23.0
-## explicit; go 1.20
-github.com/go-openapi/analysis
-github.com/go-openapi/analysis/internal/debug
-github.com/go-openapi/analysis/internal/flatten/normalize
-github.com/go-openapi/analysis/internal/flatten/operations
-github.com/go-openapi/analysis/internal/flatten/replace
-github.com/go-openapi/analysis/internal/flatten/schutils
-github.com/go-openapi/analysis/internal/flatten/sortref
-# github.com/go-openapi/errors v0.22.1
-## explicit; go 1.20
-github.com/go-openapi/errors
 # github.com/go-openapi/jsonpointer v0.21.1
 ## explicit; go 1.20
 github.com/go-openapi/jsonpointer
@@ -383,24 +369,9 @@ github.com/go-openapi/jsonpointer
 ## explicit; go 1.20
 github.com/go-openapi/jsonreference
 github.com/go-openapi/jsonreference/internal
-# github.com/go-openapi/loads v0.22.0
-## explicit; go 1.20
-github.com/go-openapi/loads
-# github.com/go-openapi/runtime v0.28.0
-## explicit; go 1.20
-github.com/go-openapi/runtime
-# github.com/go-openapi/spec v0.21.0
-## explicit; go 1.20
-github.com/go-openapi/spec
-# github.com/go-openapi/strfmt v0.23.0
-## explicit; go 1.20
-github.com/go-openapi/strfmt
 # github.com/go-openapi/swag v0.23.1
 ## explicit; go 1.20
 github.com/go-openapi/swag
-# github.com/go-openapi/validate v0.24.0
-## explicit; go 1.20
-github.com/go-openapi/validate
 # github.com/go-task/slim-sprig/v3 v3.0.0
 ## explicit; go 1.20
 github.com/go-task/slim-sprig/v3
@@ -664,9 +635,6 @@ github.com/munnerz/goautoneg
 # github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f
 ## explicit
 github.com/mxk/go-flowrate/flowrate
-# github.com/oklog/ulid v1.3.1
-## explicit
-github.com/oklog/ulid
 # github.com/onsi/ginkgo/v2 v2.23.4
 ## explicit; go 1.23.0
 github.com/onsi/ginkgo/v2/config
@@ -939,9 +907,6 @@ github.com/sigstore/fulcio/pkg/certificate
 # github.com/sigstore/protobuf-specs v0.4.3
 ## explicit; go 1.22.0
 github.com/sigstore/protobuf-specs/gen/pb-go/common/v1
-# github.com/sigstore/rekor v1.3.10
-## explicit; go 1.23.0
-github.com/sigstore/rekor/pkg/generated/models
 # github.com/sigstore/sigstore v1.9.5
 ## explicit; go 1.23.0
 github.com/sigstore/sigstore/pkg/cryptoutils
@@ -1046,15 +1011,6 @@ go.etcd.io/etcd/client/v3/credentials
 go.etcd.io/etcd/client/v3/internal/endpoint
 go.etcd.io/etcd/client/v3/internal/resolver
 go.etcd.io/etcd/client/v3/kubernetes
-# go.mongodb.org/mongo-driver v1.17.4
-## explicit; go 1.18
-go.mongodb.org/mongo-driver/bson
-go.mongodb.org/mongo-driver/bson/bsoncodec
-go.mongodb.org/mongo-driver/bson/bsonoptions
-go.mongodb.org/mongo-driver/bson/bsonrw
-go.mongodb.org/mongo-driver/bson/bsontype
-go.mongodb.org/mongo-driver/bson/primitive
-go.mongodb.org/mongo-driver/x/bsonx/bsoncore
 # go.opencensus.io v0.24.0
 ## explicit; go 1.13
 go.opencensus.io
