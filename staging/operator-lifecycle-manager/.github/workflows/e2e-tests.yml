@@ -17,7 +17,7 @@ jobs:
       sha: ${{ steps.vars.outputs.sha }}
     steps:
       # checkout code and setup go
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
@@ -49,14 +49,14 @@ jobs:
       E2E_KUBECONFIG_ROOT: ${{ github.workspace }}/kubeconfigs
     steps:
       # checkout code and setup go
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
 
       # load the olm image
       - name: Load OLM Docker image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: olm-image.tar
           path: .
@@ -136,14 +136,14 @@ jobs:
       E2E_KUBECONFIG_ROOT: ${{ github.workspace }}/kubeconfigs
     steps:
       # checkout code and setup go
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
 
       # load the olm image
       - name: Load OLM Docker image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: olm-image.tar
           path: .

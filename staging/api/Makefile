@@ -12,6 +12,8 @@ endif
 REPO = github.com/operator-framework/api
 BUILD_PATH = $(REPO)/cmd/operator-verify
 PKGS = $(shell go list ./... | grep -v /vendor/)
+SPECIFIC_UNIT_TEST := $(if $(TEST),-run $(TEST),)
+SPECIFIC_SKIP_UNIT_TEST := $(if $(SKIP),-skip $(SKIP),)
 
 .PHONY: help
 help: ## Show this help screen
@@ -76,13 +78,15 @@ manifests: yq controller-gen ## Generate manifests e.g. CRD, RBAC etc
 	$(Q)go generate ./crds/...
 
 # Static tests.
-.PHONY: test test-unit verify
+.PHONY: test test-unit verify unit
 
 test: test-unit ## Run the tests
 
+unit: test-unit ## Run the tests
+
 TEST_PKGS:=$(shell go list ./...)
 test-unit: ## Run the unit tests
-	$(Q)go test -count=1 -short ${TEST_PKGS}
+	$(Q)go test -coverprofile=coverage.out -count=1 ${SPECIFIC_UNIT_TEST} ${SPECIFIC_SKIP_UNIT_TEST} ${TEST_PKGS}
 
 verify: manifests generate format tidy
 	git diff --exit-code
@@ -104,7 +108,7 @@ YQ ?= $(LOCALBIN)/yq
 KIND ?= $(LOCALBIN)/kind
 
 ## Tool Versions
-CONTROLLER_TOOLS_VERSION ?= v0.17.2
+CONTROLLER_TOOLS_VERSION ?= v0.18.0
 YQ_VERSION ?= v4.45.1
 
 # Not guaranteed to have patch releases available and node image tags are full versions (i.e v1.28.0 - no v1.28, v1.29, etc.)
