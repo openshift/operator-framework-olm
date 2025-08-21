@@ -26,7 +26,7 @@ chartdir="${tmpdir}/chart"
 crddir="${chartdir}/crds"
 crdsrcdir="${tmpdir}/operators"
 
-SED="sed"
+SED="gsed"
 if ! command -v ${SED} &> /dev/null; then
     SED="sed"
 fi
@@ -644,7 +644,8 @@ for file in ${microshift_manifests_files}; do
      continue 2
     fi
   done
-  echo "  - $(realpath --relative-to "${ROOT_DIR}/microshift-manifests" "${file}")" >> "${ROOT_DIR}/microshift-manifests/kustomization.yaml"
+  relative_path=$(python3 -c "import os.path; print(os.path.relpath('${file}', '${ROOT_DIR}/microshift-manifests'))")
+  echo "  - ${relative_path}" >> "${ROOT_DIR}/microshift-manifests/kustomization.yaml"
 done
 
 # Now we need to get rid of these args from the olm-operator deployment:
