@@ -11,7 +11,7 @@ require (
 	github.com/grpc-ecosystem/grpc-health-probe v0.4.39
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.11.3
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
-	github.com/onsi/ginkgo/v2 v2.23.4
+	github.com/onsi/ginkgo/v2 v2.24.0
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/operator-framework/api v0.33.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
@@ -22,10 +22,10 @@ require (
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.33.3
-	k8s.io/apimachinery v0.33.3
-	k8s.io/client-go v0.33.3
-	k8s.io/code-generator v0.33.3
+	k8s.io/api v0.33.4
+	k8s.io/apimachinery v0.33.4
+	k8s.io/client-go v0.33.4
+	k8s.io/code-generator v0.33.4
 	k8s.io/kube-openapi v0.0.0-20250610211856-8b98d1ed966a
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/controller-runtime v0.21.0
@@ -44,6 +44,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
+	github.com/Masterminds/semver/v3 v3.3.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/Microsoft/hcsshim v0.13.0 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
@@ -206,7 +207,7 @@ require (
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067 // indirect
-	golang.org/x/mod v0.26.0 // indirect
+	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
@@ -214,7 +215,7 @@ require (
 	golang.org/x/term v0.34.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.35.0 // indirect
+	golang.org/x/tools v0.36.0 // indirect
 	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
 	golang.org/x/xerrors v0.0.0-20240716161551-93cc26a95ae9 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
@@ -228,15 +229,15 @@ require (
 	gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.33.3 // indirect
-	k8s.io/apiserver v0.33.3 // indirect
+	k8s.io/apiextensions-apiserver v0.33.4 // indirect
+	k8s.io/apiserver v0.33.4 // indirect
 	k8s.io/cli-runtime v0.33.2 // indirect
-	k8s.io/component-base v0.33.3 // indirect
+	k8s.io/component-base v0.33.4 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kms v0.33.3 // indirect
-	k8s.io/kube-aggregator v0.33.3 // indirect
+	k8s.io/kms v0.33.4 // indirect
+	k8s.io/kube-aggregator v0.33.4 // indirect
 	k8s.io/kubectl v0.33.2 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.33.0 // indirect
