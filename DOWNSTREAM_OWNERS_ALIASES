@@ -7,17 +7,14 @@ aliases:
    - oceanc80
    - perdasilva
    - tmshort
-   - LalatenduMohanty
 
    # contributors who can review/lgtm any PRs in the repo
    operator-framework-reviewers:
    - anik120
    - ankitathomas
-   - azych
    - bentito
    - camilamacedo86
    - dtfranz
-   - gallettilance
    - grokspawn
    - joelanford
    - oceanc80
@@ -25,4 +22,3 @@ aliases:
    - rashmigottipati
    - thetechnick
    - tmshort
-   - LalatenduMohanty
