@@ -24,3 +24,93 @@
     runAsNonRoot: true
     seccompProfile:
       type: RuntimeDefault
+- command: update
+  path: spec.template.spec.containers[0].ports[0].containerPort
+  value: 9090
+- command: update
+  path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+  value: 9090
+- command: update
+  path: spec.template.spec.containers[0].livenessProbe.httpGet.scheme
+  value: HTTP
+- command: update
+  path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+  value: 9090
+- command: update
+  path: spec.template.spec.containers[0].readinessProbe.httpGet.scheme
+  value: HTTP
+- command: update
+  path: spec.template.spec.initContainers[+]
+  value:
+    name: copy-extension-apiserver-authentication
+    image: quay.io/openshift/origin-cli:latest
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -euo pipefail
+        echo "Copying extension-apiserver-authentication ConfigMap data..."
+
+        # Get the client-ca-file from kube-system/extension-apiserver-authentication
+        # This must succeed or the deployment should fail
+        CLIENT_CA_DATA=$(oc get configmap extension-apiserver-authentication -n kube-system -o jsonpath='{.data.client-ca-file}')
+
+        if [ -z "$CLIENT_CA_DATA" ]; then
+          echo "ERROR: client-ca-file is empty in kube-system/extension-apiserver-authentication ConfigMap"
+          echo "Cannot proceed without valid client CA certificate"
+          exit 1
+        fi
+
+        echo "Retrieved client CA data (${#CLIENT_CA_DATA} bytes)"
+
+        # Update our local ConfigMap with the client CA data
+        # Use --from-literal to avoid JSON escaping issues with newlines
+        oc create configmap extension-apiserver-authentication -n openshift-operator-lifecycle-manager \
+          --from-literal=client-ca-file="$CLIENT_CA_DATA" --dry-run=client -o yaml | oc apply -f -
+
+        echo "Successfully updated extension-apiserver-authentication ConfigMap"
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      capabilities:
+        drop: ["ALL"]
+- command: update
+  path: spec.template.spec.containers[+]
+  value:
+    name: kube-rbac-proxy
+    image: quay.io/openshift/origin-kube-rbac-proxy:latest
+    args:
+      - --secure-listen-address=0.0.0.0:8443
+      - --upstream=http://127.0.0.1:9090/
+      - --tls-cert-file=/etc/tls/private/tls.crt
+      - --tls-private-key-file=/etc/tls/private/tls.key
+      - --client-ca-file=/etc/tls/client/client-ca-file
+      - --logtostderr=true
+    ports:
+      - containerPort: 8443
+        name: https-metrics
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      capabilities:
+        drop: ["ALL"]
+    volumeMounts:
+      - mountPath: /etc/tls/private
+        name: catalog-operator-serving-cert
+      - mountPath: /etc/tls/client
+        name: extension-apiserver-authentication
+        readOnly: true
+- command: update
+  path: spec.template.spec.volumes[+]
+  value:
+    name: catalog-operator-serving-cert
+    secret:
+      secretName: catalog-operator-serving-cert
+- command: update
+  path: spec.template.spec.volumes[+]
+  value:
+    name: extension-apiserver-authentication
+    configMap:
+      name: extension-apiserver-authentication
