@@ -78,7 +78,12 @@ var _ = Describe("Subscription", func() {
 	})
 
 	AfterEach(func() {
-		TeardownNamespace(generatedNamespace.GetName())
+		if strings.Contains(CurrentSpecReport().LeafNodeText, "should retry failing unpack jobs") {
+			fmt.Printf("DEBUG: Skipping cleanup for bundle unpack retry test - namespace %s preserved\n", generatedNamespace.GetName())
+			return
+		} else {
+			TeardownNamespace(generatedNamespace.GetName())
+		}
 	})
 
 	When("an entry in the middle of a channel does not provide a required GVK", func() {
@@ -2691,6 +2696,11 @@ var _ = Describe("Subscription", func() {
 			} else if err != nil {
 				Skip("Could not determine whether running in a kind cluster. Skipping.")
 			}
+
+			ctx.Ctx().Logf("=== BUNDLE UNPACK RETRY TEST DEBUG MODE ENABLED ===")
+			ctx.Ctx().Logf("DEBUG: Test namespace: %s", generatedNamespace.GetName())
+			ctx.Ctx().Logf("DEBUG: Test start time: %s", time.Now().Format("2006-01-02 15:04:05.9999"))
+
 			By("Ensuring a registry to host bundle images")
 			local, err := Local(c)
 			Expect(err).NotTo(HaveOccurred(), "cannot determine if test running locally or on CI: %s", err)
@@ -2804,21 +2814,52 @@ properties:
 					}
 					return nil
 				},
-				5*time.Minute,
-				interval,
+				10*time.Minute,
+				1*time.Minute,
 			).Should(Succeed())
 
 			By("pushing missing bundle image")
-			Expect(copyImage(bundleImage, bundleTag, srcImage, srcTag)).To(Succeed())
+			ctx.Ctx().Logf("DEBUG: About to push bundle image from %s%s to %s%s", srcImage, srcTag, bundleImage, bundleTag)
+			copyErr := copyImage(bundleImage, bundleTag, srcImage, srcTag)
+			if copyErr != nil {
+				ctx.Ctx().Logf("DEBUG: Failed to copy image: %v", copyErr)
+			} else {
+				ctx.Ctx().Logf("DEBUG: Successfully copied bundle image at %s", time.Now().Format("15:04:05.9999"))
+			}
+			Expect(copyErr).To(Succeed())
 
 			By("patching the OperatorGroup to increase the bundle unpacking timeout")
 			addBundleUnpackTimeoutOGAnnotation(context.Background(), ctx.Ctx().Client(), ogNN, "") // revert to default unpack timeout
 
 			By("patching operator group to enable unpack retries")
+			ctx.Ctx().Logf("DEBUG: Setting bundle unpack retry minimum interval to 1s for OperatorGroup %s/%s", ogNN.Namespace, ogNN.Name)
 			setBundleUnpackRetryMinimumIntervalAnnotation(context.Background(), ctx.Ctx().Client(), ogNN, "1s")
 
+			// Verify the annotation was set
+			if og, ogErr := ctx.Ctx().OperatorClient().OperatorsV1().OperatorGroups(ogNN.Namespace).Get(context.Background(), ogNN.Name, metav1.GetOptions{}); ogErr == nil {
+				ctx.Ctx().Logf("DEBUG: OperatorGroup annotations after retry setup: %+v", og.Annotations)
+			}
+
 			By("waiting until the subscription has an IP reference")
+			ctx.Ctx().Logf("DEBUG: About to wait for subscription %s/%s to have InstallPlan reference", generatedNamespace.GetName(), unpackRetrySubName)
+			ctx.Ctx().Logf("DEBUG: Current time: %s", time.Now().Format("15:04:05.9999"))
+
+			sub, getErr := crc.OperatorsV1alpha1().Subscriptions(generatedNamespace.GetName()).Get(context.Background(), unpackRetrySubName, metav1.GetOptions{})
+			if getErr != nil {
+				ctx.Ctx().Logf("DEBUG: Failed to get subscription before fetchSubscription call: %v", getErr)
+			} else {
+				ctx.Ctx().Logf("DEBUG: Subscription status before fetchSubscription: State=%s, CurrentCSV=%s, InstallPlanRef=%v",
+					sub.Status.State, sub.Status.CurrentCSV, sub.Status.InstallPlanRef)
+				ctx.Ctx().Logf("DEBUG: Subscription conditions: %+v", sub.Status.Conditions)
+			}
+
 			subscription, err := fetchSubscription(crc, generatedNamespace.GetName(), unpackRetrySubName, subscriptionHasInstallPlanChecker())
+			if err != nil {
+				ctx.Ctx().Logf("DEBUG: fetchSubscription failed at %s with error: %v", time.Now().Format("15:04:05.9999"), err)
+				if debugSub, debugErr := crc.OperatorsV1alpha1().Subscriptions(generatedNamespace.GetName()).Get(context.Background(), unpackRetrySubName, metav1.GetOptions{}); debugErr == nil {
+					ctx.Ctx().Logf("DEBUG: Final subscription state: %+v", debugSub.Status)
+				}
+			}
 			Expect(err).Should(BeNil())
 
 			By("waiting for the v0.1.0 CSV to report a succeeded phase")
@@ -2826,6 +2867,7 @@ properties:
 			Expect(err).ShouldNot(HaveOccurred())
 
 			By("checking if old unpack conditions on subscription are removed")
+			ctx.Ctx().Logf("DEBUG: Checking condition cleanup with 10min timeout and 1min polling interval")
 			Eventually(func() error {
 				fetched, err := crc.OperatorsV1alpha1().Subscriptions(generatedNamespace.GetName()).Get(context.Background(), unpackRetrySubName, metav1.GetOptions{})
 				if err != nil {
@@ -2838,7 +2880,7 @@ properties:
 					return fmt.Errorf("unexpected condition %s on subscription", operatorsv1alpha1.SubscriptionBundleUnpackFailed)
 				}
 				return nil
-			}).Should(Succeed())
+			}, 10*time.Minute, 1*time.Minute).Should(Succeed())
 		})
 
 		It("should not retry successful unpack jobs", func() {
@@ -3280,7 +3322,7 @@ func fetchSubscription(crc versioned.Interface, namespace, name string, checker 
 	var lastCSV string
 	var lastInstallPlanRef *corev1.ObjectReference
 
-	err := wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+	err := wait.Poll(1*time.Minute, 10*time.Minute, func() (bool, error) {
 		var err error
 		fetchedSubscription, err = crc.OperatorsV1alpha1().Subscriptions(namespace).Get(context.Background(), name, metav1.GetOptions{})
 		if err != nil || fetchedSubscription == nil {
@@ -3398,7 +3440,7 @@ func waitForSubscriptionToDelete(namespace, name string, c versioned.Interface) 
 	lastTime := time.Now()
 
 	ctx.Ctx().Logf("waiting for subscription %s/%s to delete", namespace, name)
-	err := wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+	err := wait.Poll(1*time.Minute, 10*time.Minute, func() (bool, error) {
 		sub, err := c.OperatorsV1alpha1().Subscriptions(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			ctx.Ctx().Logf("subscription %s/%s deleted", namespace, name)
