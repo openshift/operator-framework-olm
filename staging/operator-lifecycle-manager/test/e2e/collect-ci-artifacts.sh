@@ -19,8 +19,12 @@ commands+=("get subscriptions -o yaml")
 commands+=("get operatorgroups -o yaml")
 commands+=("get clusterserviceversions -o yaml")
 commands+=("get installplans -o yaml")
+commands+=("get jobs -o yaml")
+commands+=("get configmaps -o yaml")
 commands+=("get pods -o wide")
+commands+=("get jobs -o wide")
 commands+=("get events --sort-by .lastTimestamp")
+commands+=("get configmaps -o wide")
 
 echo "Storing the test artifact output in the ${TEST_ARTIFACTS_DIR} directory"
 for command in "${commands[@]}"; do
