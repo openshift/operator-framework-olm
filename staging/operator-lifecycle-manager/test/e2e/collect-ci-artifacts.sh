@@ -20,6 +20,7 @@ commands+=("get operatorgroups -o yaml")
 commands+=("get clusterserviceversions -o yaml")
 commands+=("get installplans -o yaml")
 commands+=("get pods -o wide")
+commands+=("get jobs -o wide")
 commands+=("get events --sort-by .lastTimestamp")
 
 echo "Storing the test artifact output in the ${TEST_ARTIFACTS_DIR} directory"
