@@ -1,0 +1,648 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuites tests="208" disabled="205" errors="0" failures="0" time="80.682600418">
+      <testsuite name="End-to-end" package="/home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e" tests="208" disabled="0" skipped="205" errors="0" failures="0" time="80.682600418" timestamp="2025-09-05T18:12:55">
+          <properties>
+              <property name="SuiteSucceeded" value="true"></property>
+              <property name="SuiteHasProgrammaticFocus" value="false"></property>
+              <property name="SpecialSuiteFailureReason" value=""></property>
+              <property name="SuiteLabels" value="[]"></property>
+              <property name="RandomSeed" value="1757088767"></property>
+              <property name="RandomizeAllSpecs" value="false"></property>
+              <property name="LabelFilter" value=""></property>
+              <property name="FocusStrings" value=".*should retry failing unpack jobs.*"></property>
+              <property name="SkipStrings" value=""></property>
+              <property name="FocusFiles" value=""></property>
+              <property name="SkipFiles" value=""></property>
+              <property name="FailOnPending" value="false"></property>
+              <property name="FailFast" value="false"></property>
+              <property name="FlakeAttempts" value="0"></property>
+              <property name="DryRun" value="false"></property>
+              <property name="ParallelTotal" value="1"></property>
+              <property name="OutputInterceptorMode" value=""></property>
+          </properties>
+          <testcase name="[BeforeSuite]" classname="End-to-end" status="passed" time="0.50653865">
+              <system-err>&gt; Enter [BeforeSuite] TOP-LEVEL - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/e2e_test.go:84 @ 09/05/25 18:12:55.717&#xA;&lt; Exit [BeforeSuite] TOP-LEVEL - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/e2e_test.go:84 @ 09/05/25 18:12:56.223 (506ms)&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] CatalogSource Grpc Pod Config when the user wants more control over where the grpc catalog source pod gets scheduled should override the pod&#39;s spec.priorityClassName" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CatalogSource Grpc Pod Config when the user wants more control over where the grpc catalog source pod gets scheduled should override the pod&#39;s spec.priorityClassName when it is empty" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CatalogSource Grpc Pod Config when the user wants more control over where the grpc catalog source pod gets scheduled should override the pod&#39;s spec.nodeSelector" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CatalogSource Grpc Pod Config when the user wants more control over where the grpc catalog source pod gets scheduled should override the pod&#39;s spec.tolerations" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Package Manifest API lists available Operators from Catalog Sources Given a CatalogSource created using the ConfigMap as catalog source type retrieves the PackageManifest by package name and validates its fields" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Package Manifest API lists available Operators from Catalog Sources Given a CatalogSource created using the ConfigMap as catalog source type lists PackageManifest and ensures it has valid PackageManifest item" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Package Manifest API lists available Operators from Catalog Sources Given a CatalogSource created using the ConfigMap as catalog source type gets the icon from the default channel" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Package Manifest API lists available Operators from Catalog Sources Given a CatalogSource created using gRPC catalog source type lists the CatalogSource contents using the PackageManifest API" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Package Manifest API lists available Operators from Catalog Sources Given a CatalogSource created using gRPC catalog source type when the display name for catalog source is updated should successfully update the CatalogSource field" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Disabling copied CSVs when an operator is installed in AllNamespace mode should have Copied CSVs in all other namespaces" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Disabling copied CSVs when Copied CSVs are disabled should not have any copied CSVs" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Disabling copied CSVs when Copied CSVs are disabled should be reflected in the olmConfig.Status.Condition array that the expected number of copied CSVs exist" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Disabling copied CSVs when Copied CSVs are toggled back on should have copied CSVs in all other Namespaces" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Disabling copied CSVs when Copied CSVs are toggled back on should be reflected in the olmConfig.Status.Condition array that the expected number of copied CSVs exist" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscriptions create required objects from Catalogs Given a Namespace when a CatalogSource is created with a bundle that contains prometheus objects creating a subscription using the CatalogSource should install the operator successfully" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscriptions create required objects from Catalogs Given a Namespace when a CatalogSource is created with a bundle that contains prometheus objects creating a subscription using the CatalogSource should have created the expected prometheus objects" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Fail Forward Upgrades when an InstallPlan is reporting a failed state eventually reports a successful state when multiple bad versions are rolled forward" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Fail Forward Upgrades when an InstallPlan is reporting a failed state [FLAKE] eventually reports a successful state when using skip ranges" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Fail Forward Upgrades when an InstallPlan is reporting a failed state eventually reports a successful state when using skips" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Fail Forward Upgrades when an InstallPlan is reporting a failed state eventually reports a failed state when using replaces" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Fail Forward Upgrades when a CSV resource is in a failed state eventually reports a successful state when using skip ranges" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Fail Forward Upgrades when a CSV resource is in a failed state eventually reports a successful state when using skips" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Fail Forward Upgrades when a CSV resource is in a failed state [FLAKE] eventually reports a successful state when using replaces" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSV Namespace Labeler Plugin should not label non openshift- namespaces" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSV Namespace Labeler Plugin should label a non-payload openshift- namespace" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSV Namespace Labeler Plugin should relabel a non-payload openshift- namespace containing csvs if the label is deleted" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Global Catalog Exclusion when a subscription referring to the local catalog is created when the operator group is annotated with olm.operatorframework.io/exclude-global-namespace-resolution=true the broken subscription should resolve and have state AtLatest" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Garbage collection for dependent resources Given a ClusterRole owned by a CustomResourceDefinition when CustomResourceDefinition is deleted should delete the associated ClusterRole" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Garbage collection for dependent resources Given a ClusterRole owned by a APIService when APIService is deleted should delete the associated ClusterRole" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Garbage collection for dependent resources Given a dependent resource associated with multiple owners when removing one of the owner using &#39;Foreground&#39; deletion policy should not have deleted the dependent since ownerB CSV is still present" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Garbage collection for dependent resources Given a dependent resource associated with multiple owners when removing both the owners using &#39;Foreground&#39; deletion policy should have deleted the dependent since both the owners were deleted" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Garbage collection for dependent resources when a bundle with configmap and secret objects is installed when the CSV is deleted OLM should delete the associated configmap and secret" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Garbage collection for dependent resources when a bundle with a configmap is installed when the subscription is updated to a later CSV with a configmap with the same name but new data OLM should have upgraded associated configmap in place" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Garbage collection for dependent resources when a bundle with a new configmap is installed when the subscription is updated to a later CSV with a configmap with a new name [FLAKE] should have removed the old configmap and put the new configmap in place" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Not found APIs objects with APIs that are not on-cluster are created in the installplan when installplan contains a missing API the ip enters a failed state with a helpful error message" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion OwnNamespace OperatorGroup when a CustomResourceDefinition was installed alongside a ClusterServiceVersion [FLAKE] can satisfy an associated ClusterServiceVersion&#39;s ownership requirement" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion OwnNamespace OperatorGroup when a CustomResourceDefinition was installed alongside a ClusterServiceVersion can satisfy an unassociated ClusterServiceVersion&#39;s ownership requirement if replaced by an associated ClusterServiceVersion" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion OwnNamespace OperatorGroup when a CustomResourceDefinition was installed alongside a ClusterServiceVersion can satisfy an unassociated ClusterServiceVersion&#39;s non-ownership requirement" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion OwnNamespace OperatorGroup when an unassociated ClusterServiceVersion in different namespace owns the same CRD can satisfy the unassociated ClusterServiceVersion&#39;s ownership requirement" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup when a csv exists specifying two replicas with one max unavailable remains in phase Succeeded when only one pod is available" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup when a copied csv exists is synchronized with the original csv" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup when a csv requires a serviceaccount solely owned by a non-csv considers the serviceaccount requirement satisfied" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup create with unmet requirements min kube version" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup create with unmet requirements CRD" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup create with unmet permissions CRD" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup create with unmet requirements API service" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup create with unmet permissions API service" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup create with unmet requirements native API" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup create requirements met CRD" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup create requirements met API service" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup create with owned API service" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup update with owned API service" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup create same CSV with owned API service multi namespace" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup orphaned API service clean up" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup CSV annotations overwrite pod template annotations defined in a StrategyDetailsDeployment" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup Set labels for the Deployment created via the ClusterServiceVersion" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup update same deployment name" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup update different deployment name" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup update multiple intermediates" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup update in place" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup update multiple version CRD" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup update modify deployment name" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup update deployment spec in an existing CSV for a hotfix" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup emits CSV requirement events" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup status invalid CSV" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup api service resource migrated if adoptable" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup API service resource not migrated if not adoptable" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ClusterServiceVersion AllNamespaces OperatorGroup multiple API services on a single pod" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] MagicCatalog Deploys and Undeploys a File-based Catalog" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] MagicCatalog when an existing magic catalog exists should succeed when the magic catalog is updated" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] MagicCatalog when an existing magic catalog exists should fail when the magic catalog is re-created" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Scoped Client bound to a service account can be used to make API calls API call using scoped client returns error on API calls as ServiceAccount does not have any permission" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Scoped Client bound to a service account can be used to make API calls API call using scoped client successfully allows API calls to be made when ServiceAccount has permission" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Condition [FLAKE] OperatorCondition Upgradeable type and overrides" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Installing bundles with new object types when a bundle with a pdb, priorityclass, and VPA object is installed should create the additional bundle objects" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when an entry in the middle of a channel does not provide a required GVK should create a Subscription for the latest entry providing the required GVK" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription creation if not installed" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription creation using existing CSV" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription skip range" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription creation manual approval" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription with starting CSV" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription [FLAKE] updates multiple intermediates" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription updates existing install plan" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription puppeting CatalogSource health status when missing target catalog should surface the missing catalog" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription puppeting CatalogSource health status when the target catalog&#39;s sourceType is unknown should surface catalog health" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription puppeting CatalogSource health status when the target catalog&#39;s sourceType is grpc and its spec is missing the address and image fields should surface catalog health" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription puppeting CatalogSource health status when the target catalog&#39;s sourceType is internal and its spec is missing the configmap reference should surface catalog health" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription puppeting CatalogSource health status when the target catalog&#39;s sourceType is configmap and its spec is missing the configmap reference should surface catalog health" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription can reconcile InstallPlan status" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription creation with pod config" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription creation with nodeSelector config" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription [FLAKE] creation with dependencies" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription creation with dependencies required and provided in different versions of an operator in the same package" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription to an operator with dependencies from different CatalogSources with priorities creating CatalogSources providing the same dependency with different names when creating subscription for the main package [FLAKE] choose the dependency from the right CatalogSource based on lexicographical name ordering of catalogs" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription to an operator with dependencies from different CatalogSources with priorities creating the main and an arbitrary CatalogSources providing the same dependency when creating subscription for the main package choose the dependent package from the same catsrc as the installing operator" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription to an operator with dependencies from different CatalogSources with priorities creating CatalogSources providing the same dependency with different priority value when creating subscription for the main package choose the dependent package from the catsrc with higher priority" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription to an operator with dependencies from different CatalogSources with priorities creating CatalogSources providing the same dependency under test and global namespaces when creating subscription for the main package choose the dependent package from the catsrc in the same namespace as the installing operator" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription creation in case of transferring providedAPIs" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when A subscription is created for an operator that requires an API that is not available the subscription has a condition in it&#39;s status that indicates the resolution error" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when A subscription is created for an operator that requires an API that is not available when the required API is made available the ResolutionFailed condition previously set in its status that indicated the resolution error is cleared off" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when an unannotated ClusterServiceVersion exists with an associated Subscription uses inferred properties to prevent a duplicate installation from the same package" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when there exists a Subscription to an operator having dependency candidates in both default and nondefault channels should create a Subscription using the candidate&#39;s default channel" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription unpacks bundle image" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when unpacking bundle should not report unpacking progress or errors after successfull unpacking" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when unpacking bundle with bundle which OLM will fail to unpack should expose a condition indicating failure to unpack" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when unpacking bundle with bundle which OLM will fail to unpack should be able to recover when catalog gets updated with a fixed version" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when unpacking bundle with bundle which OLM will fail to unpack should report deprecation conditions when package, channel, and bundle are referenced in an olm.deprecations object" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when unpacking bundle with bundle which OLM will fail to unpack [FLAKE] should report only package and channel deprecation conditions when bundle is no longer deprecated" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when unpacking bundle with bundle which OLM will fail to unpack should report deprecated status when catalog is updated to deprecate an installed bundle" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Subscription when bundle unpack retries are enabled should retry failing unpack jobs" classname="End-to-end" status="passed" time="80.159882731">
+              <system-err>&gt; Enter [BeforeEach] Subscription - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:66 @ 09/05/25 18:12:56.233&#xA;created the subscription-e2e-bbdf7 testing namespace&#xA;created the subscription-e2e-bbdf7/subscription-e2e-bbdf7-operatorgroup operator group&#xA;&lt; Exit [BeforeEach] Subscription - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:66 @ 09/05/25 18:12:56.535 (302ms)&#xA;&gt; Enter [It] should retry failing unpack jobs - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2688 @ 09/05/25 18:12:56.535&#xA;STEP: Ensuring a registry to host bundle images - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2694 @ 09/05/25 18:12:56.835&#xA;STEP: The remote image to be copied onto the local registry - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2750 @ 09/05/25 18:12:57.228&#xA;STEP: on-cluster image ref - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2754 @ 09/05/25 18:12:57.229&#xA;STEP: creating a catalog referencing a non-existent bundle image - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2780 @ 09/05/25 18:12:57.229&#xA;STEP: patching the OperatorGroup to reduce the bundle unpacking timeout - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2787 @ 09/05/25 18:13:12.541&#xA;STEP: creating a subscription for the missing bundle - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2791 @ 09/05/25 18:13:12.739&#xA;STEP: waiting for bundle unpack to fail - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2795 @ 09/05/25 18:13:12.842&#xA;STEP: pushing missing bundle image - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2811 @ 09/05/25 18:13:45.402&#xA;STEP: wait for skopeo pod to exit successfully - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2737 @ 09/05/25 18:13:45.512&#xA;skopeo pod status: Pending (waiting for: Succeeded)&#xA;skopeo pod status: Pending (waiting for: Succeeded)&#xA;skopeo pod status: Pending (waiting for: Succeeded)&#xA;skopeo pod status: Pending (waiting for: Succeeded)&#xA;skopeo pod status: Pending (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Running (waiting for: Succeeded)&#xA;skopeo pod status: Succeeded (waiting for: Succeeded)&#xA;STEP: patching the OperatorGroup to increase the bundle unpacking timeout - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2814 @ 09/05/25 18:13:50.726&#xA;STEP: patching operator group to enable unpack retries - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2817 @ 09/05/25 18:13:50.929&#xA;STEP: waiting until the subscription has an IP reference - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2820 @ 09/05/25 18:13:51.13&#xA;18:14:01.1414: subscription subscription-e2e-bbdf7/subscription-e2e-bbdf7-unpack-retry-package-sub state: UpgradePending (csv example-operator.v0.1.0): installPlanRef: &amp;v1.ObjectReference{Kind:&#34;InstallPlan&#34;, Namespace:&#34;subscription-e2e-bbdf7&#34;, Name:&#34;install-wkmxq&#34;, UID:&#34;88589a3a-983a-4866-9014-304a97b14347&#34;, APIVersion:&#34;operators.coreos.com/v1alpha1&#34;, ResourceVersion:&#34;69274&#34;, FieldPath:&#34;&#34;}&#xA;18:14:01.1415: subscription subscription-e2e-bbdf7/subscription-e2e-bbdf7-unpack-retry-package-sub state: UpgradePending (csv example-operator.v0.1.0): status: v1alpha1.SubscriptionStatus{CurrentCSV:&#34;example-operator.v0.1.0&#34;, InstalledCSV:&#34;&#34;, Install:(*v1alpha1.InstallPlanReference)(0xc000873680), State:&#34;UpgradePending&#34;, Reason:&#34;&#34;, InstallPlanGeneration:1, InstallPlanRef:(*v1.ObjectReference)(0xc000447650), CatalogHealth:[]v1alpha1.SubscriptionCatalogHealth{v1alpha1.SubscriptionCatalogHealth{CatalogSourceRef:(*v1.ObjectReference)(0xc0004473b0), LastUpdated:time.Date(2025, time.September, 5, 18, 13, 33, 0, time.Local), Healthy:true}, v1alpha1.SubscriptionCatalogHealth{CatalogSourceRef:(*v1.ObjectReference)(0xc000447420), LastUpdated:time.Date(2025, time.September, 5, 18, 13, 33, 0, time.Local), Healthy:true}, v1alpha1.SubscriptionCatalogHealth{CatalogSourceRef:(*v1.ObjectReference)(0xc000447490), LastUpdated:time.Date(2025, time.September, 5, 18, 13, 33, 0, time.Local), Healthy:true}, v1alpha1.SubscriptionCatalogHealth{CatalogSourceRef:(*v1.ObjectReference)(0xc000447500), LastUpdated:time.Date(2025, time.September, 5, 18, 13, 33, 0, time.Local), Healthy:true}, v1alpha1.SubscriptionCatalogHealth{CatalogSourceRef:(*v1.ObjectReference)(0xc0004475e0), LastUpdated:time.Date(2025, time.September, 5, 18, 13, 33, 0, time.Local), Healthy:true}}, Conditions:[]v1alpha1.SubscriptionCondition{v1alpha1.SubscriptionCondition{Type:&#34;CatalogSourcesUnhealthy&#34;, Status:&#34;False&#34;, Reason:&#34;AllCatalogSourcesHealthy&#34;, Message:&#34;all available catalogsources are healthy&#34;, LastHeartbeatTime:&lt;nil&gt;, LastTransitionTime:time.Date(2025, time.September, 5, 18, 13, 34, 0, time.Local)}, v1alpha1.SubscriptionCondition{Type:&#34;BundleUnpacking&#34;, Status:&#34;True&#34;, Reason:&#34;UnpackingInProgress&#34;, Message:&#34;&#34;, LastHeartbeatTime:&lt;nil&gt;, LastTransitionTime:&lt;nil&gt;}, v1alpha1.SubscriptionCondition{Type:&#34;BundleUnpackFailed&#34;, Status:&#34;True&#34;, Reason:&#34;BundleUnpackFailed&#34;, Message:&#34;bundle unpacking failed. Reason: DeadlineExceeded, and Message: Job was active longer than specified deadline&#34;, LastHeartbeatTime:&lt;nil&gt;, LastTransitionTime:&lt;nil&gt;}}, LastUpdated:time.Date(2025, time.September, 5, 18, 14, 0, 0, time.Local)}&#xA;waiting 10.011459916s for subscription subscription-e2e-bbdf7/subscription-e2e-bbdf7-unpack-retry-package-sub to have installplan ref: has ref &amp;v1.ObjectReference{Kind:&#34;InstallPlan&#34;, Namespace:&#34;subscription-e2e-bbdf7&#34;, Name:&#34;install-wkmxq&#34;, UID:&#34;88589a3a-983a-4866-9014-304a97b14347&#34;, APIVersion:&#34;operators.coreos.com/v1alpha1&#34;, ResourceVersion:&#34;69274&#34;, FieldPath:&#34;&#34;}&#xA;STEP: waiting for the v0.1.0 CSV to report a succeeded phase - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2824 @ 09/05/25 18:14:01.141&#xA;waiting for CSV subscription-e2e-bbdf7/example-operator.v0.1.0 to reach condition&#xA;waited 203.899504ms for csv subscription-e2e-bbdf7/example-operator.v0.1.0 - Pending (RequirementsNotMet): one or more requirements couldn&#39;t be found&#xA;waited 203.929991ms for CSV subscription-e2e-bbdf7/example-operator.v0.1.0: to be in phases [Succeeded], in phase Pending (RequirementsNotMet): one or more requirements couldn&#39;t be found&#xA;waited 1.795144569s for csv subscription-e2e-bbdf7/example-operator.v0.1.0 - InstallReady (AllRequirementsMet): all requirements found, attempting install&#xA;waited 1.795156161s for CSV subscription-e2e-bbdf7/example-operator.v0.1.0: to be in phases [Succeeded], in phase InstallReady (AllRequirementsMet): all requirements found, attempting install&#xA;waited 398.081085ms for csv subscription-e2e-bbdf7/example-operator.v0.1.0 - Installing (InstallSucceeded): waiting for install components to report healthy&#xA;waited 398.095332ms for CSV subscription-e2e-bbdf7/example-operator.v0.1.0: to be in phases [Succeeded], in phase Installing (InstallSucceeded): waiting for install components to report healthy&#xA;waited 192.725317ms for csv subscription-e2e-bbdf7/example-operator.v0.1.0 - Installing (InstallWaiting): installing: waiting for deployment example-operator-controller-manager to become ready: deployment &#34;example-operator-controller-manager&#34; not available: Deployment does not have minimum availability.&#xA;waited 192.741667ms for CSV subscription-e2e-bbdf7/example-operator.v0.1.0: to be in phases [Succeeded], in phase Installing (InstallWaiting): installing: waiting for deployment example-operator-controller-manager to become ready: deployment &#34;example-operator-controller-manager&#34; not available: Deployment does not have minimum availability.&#xA;waited 10.200273797s for csv subscription-e2e-bbdf7/example-operator.v0.1.0 - Succeeded (InstallSucceeded): install strategy completed with no errors&#xA;waited 10.200294887s for CSV subscription-e2e-bbdf7/example-operator.v0.1.0: to be in phases [Succeeded], in phase Succeeded (InstallSucceeded): install strategy completed with no errors&#xA;STEP: checking if old unpack conditions on subscription are removed - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2828 @ 09/05/25 18:14:13.932&#xA;&lt; Exit [It] should retry failing unpack jobs - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:2688 @ 09/05/25 18:14:14.132 (1m17.597s)&#xA;&gt; Enter [AfterEach] Subscription - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:80 @ 09/05/25 18:14:14.132&#xA;tearing down the subscription-e2e-bbdf7 namespace&#xA;resetting e2e kube client&#xA;deleting subscription-e2e-bbdf7/subscription-e2e-bbdf7-catsrc&#xA;deleting subscription-e2e-bbdf7/subscription-e2e-bbdf7-catsrc-svc&#xA;deleting subscription-e2e-bbdf7/subscription-e2e-bbdf7-catsrc-pod&#xA;deleting subscription-e2e-bbdf7/subscription-e2e-bbdf7-catsrc-configmap&#xA;deleting subscription-e2e-bbdf7/subscription-e2e-bbdf7-operatorgroup&#xA;deleting &lt;global&gt;/subscription-e2e-bbdf7&#xA;garbage collecting CRDs&#xA;deleting crd apps.example.com&#xA;&lt; Exit [AfterEach] Subscription - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/subscription_e2e_test.go:80 @ 09/05/25 18:14:16.393 (2.26s)&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] Subscription when bundle unpack retries are enabled should not retry successful unpack jobs" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests loading between restarts" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests global update triggers subscription sync" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests config map update triggers registry pod rollout" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests config map replace triggers registry pod rollout" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests gRPC address catalog source" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests delete internal registry pod triggers recreation" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests delete gRPC registry pod triggers recreation" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests configure gRPC registry pod to extract content" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests image update" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests Dependency has correct replaces field" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests when A catalogSource is created with correct polling interval registry polls on the correct interval" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests when A catalogSource is created with incorrect polling interval the catalogsource status communicates that a default interval time is being used instead" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests when A catalogSource is created with incorrect polling interval when the catalogsource is updated with a valid polling interval the catalogsource spec shows the updated polling interval, and the error message in the status is cleared" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests adding catalog template adjusts image used" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests when A CatalogSource is created with an operator that has a CSV with missing metadata.ApiVersion when A Subscription is created catalogSource built with the malformed CSV fails with a BundleUnpackFailed error condition, and a message that highlights the missing field in the CSV" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests when The namespace is labled as Pod Security Admission policy enforce:restricted when A CatalogSource built with opm v1.21.0 (&lt;v1.23.2)is created with spec.GrpcPodConfig.SecurityContextConfig set to restricted The registry pod fails to become come up because of lack of permission" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Starting CatalogSource e2e tests when The namespace is labled as Pod Security Admission policy enforce:baseline when A CatalogSource built with opm v1.21.0 (&lt;v1.23.2)is created with spec.GrpcPodConfig.SecurityContextConfig set to legacy The registry pod comes up successfully" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan when an InstallPlan step contains a deprecated resource version creates an Event surfacing the deprecation warning" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan when an InstallPlan step contains a deprecated resource version increments a metric counting the warning" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan when a CustomResourceDefinition step resolved from a bundle is applied is annotated with a reference to its associated ClusterServiceVersion" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan when a CustomResourceDefinition step resolved from a bundle is applied when a second plan includes the same CustomResourceDefinition has one annotation for each ClusterServiceVersion" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan when an error is encountered during InstallPlan step execution times out if the error persists" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan when an error is encountered during InstallPlan step execution succeeds if there is no error on a later attempt" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan when an InstallPlan transfers ownership of a ServiceAccount to a new ClusterServiceVersion preserves owner references to both the old and the new ClusterServiceVersion" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan when a ClusterIP service exists it can be updated by an InstallPlan step" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan with CSVs across multiple catalog sources" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan creation with pre existing CRD owners OnePreExistingCRDOwner" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan with CRD schema change Test all existing versions are present, different (backwards compatible) schema" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan with CRD schema change Test all existing versions are present, different (backwards incompatible) schema" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan with CRD schema change Test missing existing versions in new CRD" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan with CRD schema change Test existing version is present in new CRD (deprecated field)" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan with deprecated version CRD Test upgrade CRD with deprecated version" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan update catalog for subscription AmplifyPermissions" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan update catalog for subscription AttenuatePermissions" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan update catalog for subscription StopOnCSVModifications" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan update catalog for subscription UpdateSingleExistingCRDOwner" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan update catalog for subscription UpdatePreexistingCRDFailed" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan creation with permissions" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan CRD validation" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan [FLAKE] consistent generation" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan when an InstallPlan is created with no valid OperatorGroup present [FLAKE] should clear up the condition in the InstallPlan status that contains an error message when a valid OperatorGroup is created" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan compresses installplan step resource manifests to configmap references" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan limits installed resources if the scoped serviceaccount has no permissions" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Install Plan uses the correct client when installing resources from an installplan" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ResourceManager should tag resources created with it" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] ResourceManager should delete resources on reset" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in an OperatorGroup that defines a selector The webhook is scoped to the selector" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in a SingleNamespace OperatorGroup Creates Webhooks scoped to a single namespace" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in a SingleNamespace OperatorGroup Reuses existing valid certs" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in a SingleNamespace OperatorGroup Fails to install a CSV if multiple Webhooks share the same name" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in a SingleNamespace OperatorGroup Fails if the webhooks intercepts all resources" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in a SingleNamespace OperatorGroup Fails if the webhook intercepts OLM resources" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in a SingleNamespace OperatorGroup Fails if webhook intercepts Admission Webhook resources" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in a SingleNamespace OperatorGroup Succeeds if the webhook intercepts non Admission Webhook resources in admissionregistration group" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in a SingleNamespace OperatorGroup Can be installed and upgraded successfully" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in a SingleNamespace OperatorGroup [FLAKE] Is updated when the CAs expire" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed in a Global OperatorGroup The webhook is scoped to all namespaces" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook Allows multiple installs of the same webhook" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when Installed from a catalog Source Validating, Mutating and Conversion webhooks work as intended" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when WebhookDescription has conversionCRDs field The conversion CRD is not updated via webhook when CSV does not own this CRD" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CSVs with a Webhook when WebhookDescription has conversionCRDs field The CSV is not created when dealing with conversionCRD and multiple installModes support exists" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Given an OperatorGroup that supports all namespaces when a CSV spec does not include Install Mode generates csv_abnormal metric for OLM pod" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Given an OperatorGroup that supports all namespaces when a CSV spec does not include Install Mode when the failed CSV is deleted deletes its associated CSV metrics" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Given an OperatorGroup that supports all namespaces when a CSV is created emits a CSV metrics" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Given an OperatorGroup that supports all namespaces when a CSV is created when the OLM pod restarts CSV metric is preserved" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Metrics emitted by objects during operator installation when A subscription object is created generates subscription_sync_total metric" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Metrics emitted by objects during operator installation when A subscription object is created generates dependency_resolution metric" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Metrics emitted by objects during operator installation when A subscription object is updated after emitting metrics deletes the old Subscription metric and emits the new metric" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Metrics emitted by objects during operator installation when A subscription object is updated after emitting metrics when The subscription object is updated again deletes the old subscription metric and emits the new metric(there is only one metric for the subscription)" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Metrics emitted by objects during operator installation when A subscription object is deleted after emitting metrics deletes the Subscription metric" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Metrics emitted by CatalogSources when A valid CatalogSource object is created emits catalogsource_ready metric for the catalogSource with Value equal to 1" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Metrics emitted by CatalogSources when A valid CatalogSource object is created when The CatalogSource object is deleted deletes the metrics for the CatalogSource" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Metrics are generated for OLM managed resources Metrics emitted by CatalogSources when A CatalogSource object is in an invalid state emits metrics for the CatlogSource with a Value equal to 0" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] User defined service account with no permission" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] User defined service account with permission" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] User defined service account with retry" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group e2e functionality" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group role aggregation" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group install mode support" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group [FLAKE] intersection" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group static provider" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group CSV copy watching all namespaces" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group insufficient permissions resolve via RBAC" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group insufficient permissions resolve via service account removal" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group cleanup csvs with bad namespace annotation" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group OperatorGroupLabels" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group CleanupDeletedOperatorGroupLabels" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group Given a set of Namespaces Associating these Namespaces with a label when an OperatorGroup is created having matching label selector defined [FLAKE] OLM applies labels to Namespaces that are associated with an OperatorGroup" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator Group Given a set of Namespaces when an OperatorGroup is created having above Namespaces defined under targetNamespaces field OLM applies labels to Namespaces that are associated with an OperatorGroup" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CRD Versions [FLAKE] creates v1 CRDs with a v1 schema successfully" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CRD Versions allows a CRD upgrade that doesn&#39;t cause data loss" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] CRD Versions blocks a CRD upgrade that could cause data loss" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator API should surface components in its status" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator API when a subscription to a package exists should automatically adopt components" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[It] Operator API when a subscription to a package exists when a namespace is added should not adopt copied csvs" classname="End-to-end" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+          </testcase>
+          <testcase name="[AfterSuite]" classname="End-to-end" status="passed" time="6.0624e-05">
+              <system-err>&gt; Enter [AfterSuite] TOP-LEVEL - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/e2e_test.go:130 @ 09/05/25 18:14:16.399&#xA;&lt; Exit [AfterSuite] TOP-LEVEL - /home/perdasilva/repos/perdasilva/operator-framework-olm/staging/operator-lifecycle-manager/test/e2e/e2e_test.go:130 @ 09/05/25 18:14:16.399 (0s)&#xA;</system-err>
+          </testcase>
+      </testsuite>
+  </testsuites>
