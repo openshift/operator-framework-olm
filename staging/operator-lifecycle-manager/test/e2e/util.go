@@ -1068,7 +1068,7 @@ func HaveMessage(goal string) gtypes.GomegaMatcher {
 func SetupGeneratedTestNamespaceWithOperatorGroup(name string, og operatorsv1.OperatorGroup) corev1.Namespace {
 	ns := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:   name,
 			Labels: map[string]string{},
 		},
 	}
