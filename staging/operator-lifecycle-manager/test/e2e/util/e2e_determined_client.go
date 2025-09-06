@@ -28,6 +28,11 @@ func (m *DeterminedE2EClient) Create(context context.Context, obj k8scontrollerc
 	return nil
 }
 
+// Update retries update operation until success or timeout
+//
+// Deprecation: do not use this method as it's not resilient to the case where the resource has changed out of band
+// it will conflict until it times out.
+// There's no priority to fix this client implementation - please use regular client instead
 func (m *DeterminedE2EClient) Update(context context.Context, obj k8scontrollerclient.Object, options ...k8scontrollerclient.UpdateOption) error {
 	m.keepTrying(func() error {
 		return m.E2EKubeClient.Update(context, obj, options...)
