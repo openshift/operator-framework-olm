@@ -88,11 +88,18 @@ var _ = Describe("CSV Namespace Labeler Plugin", func() {
 		}).Should(HaveKeyWithValue(plugins.NamespaceLabelSyncerLabelKey, "true"))
 
 		// delete label
-		ns := &v1.Namespace{}
-		Expect(determinedE2eClient.Get(context.Background(), k8scontrollerclient.ObjectKeyFromObject(&testNamespace), ns)).To(Succeed())
-		nsCopy := ns.DeepCopy()
-		delete(nsCopy.Annotations, plugins.NamespaceLabelSyncerLabelKey)
-		Expect(determinedE2eClient.Update(context.Background(), nsCopy)).To(Succeed())
+		// NOTE: not using the determined client here because it shouldn't be used for update operations due to
+		// race conditions (the updated resource could change b/w 'get' and 'update' operations
+		c := ctx.Ctx().E2EClient()
+		Eventually(func() error {
+			ns := &v1.Namespace{}
+			if err := c.Get(context.Background(), k8scontrollerclient.ObjectKeyFromObject(&testNamespace), ns); err != nil {
+				return err
+			}
+			nsCopy := ns.DeepCopy()
+			delete(nsCopy.Annotations, plugins.NamespaceLabelSyncerLabelKey)
+			return c.Update(context.Background(), nsCopy)
+		}).Should(BeNil())
 
 		// namespace should be labeled
 		Eventually(func() (map[string]string, error) {
