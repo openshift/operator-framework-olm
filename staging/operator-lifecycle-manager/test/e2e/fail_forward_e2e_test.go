@@ -191,7 +191,7 @@ var _ = Describe("Fail Forward Upgrades", func() {
 			}).Should(Equal("example-operator.v0.2.0"))
 		})
 	})
-	When("a CSV resource is in a failed state", func() {
+	XWhen("a CSV resource is in a failed state (https://github.com/operator-framework/operator-lifecycle-manager/issues/3573)", func() {
 
 		var (
 			magicCatalog      *MagicCatalog
