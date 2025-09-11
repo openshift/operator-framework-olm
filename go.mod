@@ -9,7 +9,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/googleapis/gnostic v0.5.5
 	github.com/grpc-ecosystem/grpc-health-probe v0.4.40
-	github.com/maxbrunsfeld/counterfeiter/v6 v6.11.3
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.12.0
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.25.2
 	github.com/openshift/api v3.9.0+incompatible
@@ -210,10 +210,10 @@ require (
 	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/term v0.34.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.36.0 // indirect
 	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
