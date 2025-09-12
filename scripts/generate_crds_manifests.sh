@@ -181,6 +181,7 @@ spec:
       annotations:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
         openshift.io/required-scc: restricted-v2
+        kubectl.kubernetes.io/default-container: package-server-manager
       labels:
         app: package-server-manager
     spec:
