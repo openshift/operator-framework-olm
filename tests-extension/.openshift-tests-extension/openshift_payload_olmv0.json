@@ -1,0 +1,12 @@
+[
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should pass a trivial sanity check",
+    "labels": {},
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  }
+]
