@@ -16,7 +16,15 @@ COPY .git/refs/heads/. .git/refs/heads
 RUN mkdir -p .git/objects
 
 COPY . .
-RUN make build/olm bin/cpb
+RUN make build/olm bin/cpb && \
+    # Build the OLMv0 Test Extension binary.
+    # This is used by openshift/origin to allow us to register the OLMv0 test extension
+    # The binary needs to be added in the component image and OCP image
+    cd staging/tests-extension && \
+       make build && \
+       mkdir -p /tmp/build && \
+       cp ./bin/olmv0-tests-ext /tmp/build/olmv0-tests-ext && \
+       gzip -f /tmp/build/olmv0-tests-ext
 
 FROM registry.ci.openshift.org/ocp/4.21:base-rhel9
 
@@ -31,6 +39,7 @@ COPY --from=builder /build/bin/package-server /bin/package-server
 COPY --from=builder /build/bin/cpb /bin/cpb
 COPY --from=builder /build/bin/psm /bin/psm
 COPY --from=builder /build/bin/copy-content /bin/copy-content
+COPY --from=builder /tmp/build/olmv0-tests-ext.gz /usr/bin/olmv0-tests-ext.gz
 
 # This image doesn't need to run as root user.
 USER 1001
