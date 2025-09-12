@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 
 	_ "github.com/openshift/operator-framework-olm/tests-extension/test/qe/specs"
+	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
 )
 
 func main() {
@@ -168,7 +169,7 @@ func main() {
 	}
 
 	// Automatically identify and label extended tests: select all tests from the specs directory and add the "Extended" label
-	// specs.Select(exutil.Olmv1QeTestsOnly()).AddLabel("Extended") // uncomment it when initing the framekwork
+	specs.Select(exutil.Olmv1QeTestsOnly()).AddLabel("Extended")
 	// Process all test specs to apply extended-specific transformations and topology exclusions
 	specs = specs.Walk(func(spec *et.ExtensionTestSpec) {
 		if spec.Labels.Has("Extended") {
@@ -234,7 +235,7 @@ func main() {
 
 	// Initialize the environment before running any tests.
 	specs.AddBeforeAll(func() {
-		// exutil.InitClusterEnv() // uncomment it when initing the framekwork
+		exutil.InitClusterEnv()
 	})
 
 	ext.AddSpecs(specs)

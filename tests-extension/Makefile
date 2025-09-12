@@ -58,7 +58,8 @@ vet: #HELP Run go vet against code.
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) #HELP Run golangci linter.
-	$(GOLANGCI_LINT) run
+	$(GOLANGCI_LINT) run ./test/... ./cmd/...
+# 	exclude the bindata
 
 .PHONY: fix-lint
 fix-lint: $(GOLANGCI_LINT) #HELP Fix lint issues

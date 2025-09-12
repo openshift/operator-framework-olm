@@ -1,12 +1,30 @@
 [
   {
     "name": "[sig-operator][Jira:OLM] OLMv0 should pass a trivial sanity check",
-    "labels": {},
+    "labels": {
+      "Extended": {},
+      "ReleaseGate": {}
+    },
     "resources": {
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
     "lifecycle": "blocking",
     "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:22259-[Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
   }
 ]
