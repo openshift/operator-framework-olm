@@ -123,6 +123,47 @@ spec:
       name: quay.io/openshift/origin-kube-rbac-proxy:latest
 EOF
 
+cat << EOF > manifests/0000_50_olm_02-extension-apiserver-authentication.configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: extension-apiserver-authentication
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+data:
+  client-ca-file: ""
+EOF
+
+cat << EOF > manifests/0000_50_olm_02-extension-apiserver-auth-rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:openshift:operator:olm-extension-apiserver-authentication
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames: ["extension-apiserver-authentication"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:openshift:operator:olm-extension-apiserver-authentication
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:operator:olm-extension-apiserver-authentication
+subjects:
+- kind: ServiceAccount
+  name: olm-operator-serviceaccount
+  namespace: openshift-operator-lifecycle-manager
+EOF
+
 cat << EOF > manifests/0000_50_olm_06-psm-operator.networkpolicy.yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -190,12 +231,47 @@ spec:
           type: RuntimeDefault
       serviceAccountName: olm-operator-serviceaccount
       priorityClassName: "system-cluster-critical"
+      initContainers:
+      - name: copy-extension-apiserver-authentication
+        image: quay.io/openshift/origin-cli:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -euo pipefail
+          echo "Copying extension-apiserver-authentication ConfigMap data..."
+          
+          # Get the client-ca-file from kube-system/extension-apiserver-authentication
+          # This must succeed or the deployment should fail
+          CLIENT_CA_DATA=\$(oc get configmap extension-apiserver-authentication -n kube-system -o jsonpath='{.data.client-ca-file}')
+          
+          if [ -z "\$CLIENT_CA_DATA" ]; then
+            echo "ERROR: client-ca-file is empty in kube-system/extension-apiserver-authentication ConfigMap"
+            echo "Cannot proceed without valid client CA certificate"
+            exit 1
+          fi
+          
+          echo "Retrieved client CA data (\${#CLIENT_CA_DATA} bytes)"
+          
+          # Update our local ConfigMap with the client CA data
+          # Use --from-literal to avoid JSON escaping issues with newlines
+          oc create configmap extension-apiserver-authentication -n openshift-operator-lifecycle-manager \
+            --from-literal=client-ca-file="\$CLIENT_CA_DATA" --dry-run=client -o yaml | oc apply -f -
+          
+          echo "Successfully updated extension-apiserver-authentication ConfigMap"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop: ["ALL"]
       containers:
         - args:
           - --secure-listen-address=0.0.0.0:8443
           - --upstream=http://127.0.0.1:9090/
           - --tls-cert-file=/etc/tls/private/tls.crt
           - --tls-private-key-file=/etc/tls/private/tls.key
+          - --client-ca-file=/etc/tls/client/client-ca-file
           - --logtostderr=true
           image: quay.io/openshift/origin-kube-rbac-proxy:latest
           imagePullPolicy: IfNotPresent
@@ -218,6 +294,9 @@ spec:
           volumeMounts:
           - mountPath: /etc/tls/private
             name: package-server-manager-serving-cert
+          - mountPath: /etc/tls/client
+            name: extension-apiserver-authentication
+            readOnly: true
         - name: package-server-manager
           securityContext:
             allowPrivilegeEscalation: false
@@ -282,6 +361,9 @@ spec:
       - name: package-server-manager-serving-cert
         secret:
           secretName: package-server-manager-serving-cert
+      - name: extension-apiserver-authentication
+        configMap:
+          name: extension-apiserver-authentication
 EOF
 
 cat << EOF > manifests/0000_50_olm_06-psm-operator.service.yaml
@@ -615,6 +697,7 @@ for file in ${microshift_manifests_files}; do
   done
   echo "  - $(realpath --relative-to "${ROOT_DIR}/microshift-manifests" "${file}")" >> "${ROOT_DIR}/microshift-manifests/kustomization.yaml"
 done
+
 
 # Now we need to get rid of these args from the olm-operator deployment:
 #

@@ -15,6 +15,8 @@ resources:
   - 0000_50_olm_00-pprof-secret.yaml
   - 0000_50_olm_00-subscriptions.crd.yaml
   - 0000_50_olm_01-networkpolicies.yaml
+  - 0000_50_olm_02-extension-apiserver-auth-rbac.yaml
+  - 0000_50_olm_02-extension-apiserver-authentication.configmap.yaml
   - 0000_50_olm_02-olm-operator.serviceaccount.yaml
   - 0000_50_olm_03-olmconfig.yaml
   - 0000_50_olm_03-services.yaml

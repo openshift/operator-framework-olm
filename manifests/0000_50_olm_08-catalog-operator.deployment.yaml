@@ -37,6 +37,12 @@ spec:
             secretName: pprof-cert
         - name: tmpfs
           emptyDir: {}
+        - name: catalog-operator-serving-cert
+          secret:
+            secretName: catalog-operator-serving-cert
+        - name: extension-apiserver-authentication
+          configMap:
+            name: extension-apiserver-authentication
       containers:
         - name: catalog-operator
           securityContext:
@@ -74,18 +80,18 @@ spec:
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8443
+            - containerPort: 9090
               name: metrics
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 8443
-              scheme: HTTPS
+              port: 9090
+              scheme: HTTP
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 8443
-              scheme: HTTPS
+              port: 9090
+              scheme: HTTP
           terminationMessagePolicy: FallbackToLogsOnError
           resources:
             requests:
@@ -94,6 +100,30 @@ spec:
           env:
             - name: RELEASE_VERSION
               value: "0.0.1-snapshot"
+        - name: kube-rbac-proxy
+          image: quay.io/openshift/origin-kube-rbac-proxy:latest
+          args:
+            - --secure-listen-address=0.0.0.0:8443
+            - --upstream=http://127.0.0.1:9090/
+            - --tls-cert-file=/etc/tls/private/tls.crt
+            - --tls-private-key-file=/etc/tls/private/tls.key
+            - --client-ca-file=/etc/tls/client/client-ca-file
+            - --logtostderr=true
+          ports:
+            - containerPort: 8443
+              name: https-metrics
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - mountPath: /etc/tls/private
+              name: catalog-operator-serving-cert
+            - mountPath: /etc/tls/client
+              name: extension-apiserver-authentication
+              readOnly: true
       nodeSelector:
         kubernetes.io/os: linux
         node-role.kubernetes.io/master: ""
@@ -110,3 +140,37 @@ spec:
           operator: Exists
           tolerationSeconds: 120
       priorityClassName: system-cluster-critical
+      initContainers:
+        - name: copy-extension-apiserver-authentication
+          image: quay.io/openshift/origin-cli:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              echo "Copying extension-apiserver-authentication ConfigMap data..."
+
+              # Get the client-ca-file from kube-system/extension-apiserver-authentication
+              # This must succeed or the deployment should fail
+              CLIENT_CA_DATA=$(oc get configmap extension-apiserver-authentication -n kube-system -o jsonpath='{.data.client-ca-file}')
+
+              if [ -z "$CLIENT_CA_DATA" ]; then
+                echo "ERROR: client-ca-file is empty in kube-system/extension-apiserver-authentication ConfigMap"
+                echo "Cannot proceed without valid client CA certificate"
+                exit 1
+              fi
+
+              echo "Retrieved client CA data (${#CLIENT_CA_DATA} bytes)"
+
+              # Update our local ConfigMap with the client CA data
+              # Use --from-literal to avoid JSON escaping issues with newlines
+              oc create configmap extension-apiserver-authentication -n openshift-operator-lifecycle-manager \
+                --from-literal=client-ca-file="$CLIENT_CA_DATA" --dry-run=client -o yaml | oc apply -f -
+
+              echo "Successfully updated extension-apiserver-authentication ConfigMap"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
