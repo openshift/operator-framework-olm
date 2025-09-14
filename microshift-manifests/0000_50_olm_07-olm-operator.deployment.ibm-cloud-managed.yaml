@@ -38,6 +38,9 @@ spec:
             secretName: pprof-cert
         - name: tmpfs
           emptyDir: {}
+        - name: olm-operator-serving-cert
+          secret:
+            secretName: olm-operator-serving-cert
       containers:
         - name: olm-operator
           securityContext:
@@ -100,6 +103,37 @@ spec:
             requests:
               cpu: 10m
               memory: 160Mi
+        - args:
+            - --secure-listen-address=0.0.0.0:9443
+            - --upstream=https://127.0.0.1:8443/
+            - --tls-cert-file=/etc/tls/private/tls.crt
+            - --tls-private-key-file=/etc/tls/private/tls.key
+            - --upstream-ca-file=/srv-cert/tls.crt
+            - --logtostderr=true
+          image: quay.io/openshift/origin-kube-rbac-proxy:latest
+          imagePullPolicy: IfNotPresent
+          name: kube-rbac-proxy
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - containerPort: 9443
+              name: metrics
+              protocol: TCP
+          resources:
+            requests:
+              memory: 20Mi
+              cpu: 10m
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - mountPath: /etc/tls/private
+              name: olm-operator-serving-cert
+            - mountPath: /srv-cert
+              name: srv-cert
+              readOnly: true
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:
