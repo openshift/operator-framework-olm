@@ -110,29 +110,49 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 	profile.RegisterHandlers(mux, profile.WithTLS(tlsEnabled || !sc.debug))
 
 	// Set up authenticated metrics endpoint if kubeConfig is provided
+	sc.logger.Infof("DEBUG: Checking authentication setup - kubeConfig != nil: %v, tlsEnabled: %v", sc.kubeConfig != nil, tlsEnabled)
+	
 	if sc.kubeConfig != nil && tlsEnabled {
+		sc.logger.Info("DEBUG: Setting up authenticated metrics endpoint")
+		
 		// Create authentication filter using controller-runtime
+		sc.logger.Info("DEBUG: Creating authentication filter with controller-runtime")
 		filter, err := filters.WithAuthenticationAndAuthorization(sc.kubeConfig, &http.Client{
 			Timeout: 30 * time.Second,
 		})
 		if err != nil {
+			sc.logger.Errorf("DEBUG: Failed to create authentication filter: %v", err)
 			return nil, fmt.Errorf("failed to create authentication filter: %w", err)
 		}
+		sc.logger.Info("DEBUG: Authentication filter created successfully")
 
 		// Create authenticated metrics handler
+		sc.logger.Info("DEBUG: Wrapping metrics handler with authentication")
 		logger := log.FromContext(context.Background())
 		authenticatedMetricsHandler, err := filter(logger, promhttp.Handler())
 		if err != nil {
+			sc.logger.Errorf("DEBUG: Failed to wrap metrics handler: %v", err)
 			return nil, fmt.Errorf("failed to wrap metrics handler with authentication: %w", err)
 		}
+		sc.logger.Info("DEBUG: Metrics handler wrapped successfully")
 
-		mux.Handle("/metrics", authenticatedMetricsHandler)
+		// Add debugging wrapper to log authentication attempts
+		debugAuthHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			sc.logger.Infof("DEBUG: Metrics request from %s, Auth header present: %v, User-Agent: %s", 
+				r.RemoteAddr, r.Header.Get("Authorization") != "", r.Header.Get("User-Agent"))
+			authenticatedMetricsHandler.ServeHTTP(w, r)
+		})
+
+		mux.Handle("/metrics", debugAuthHandler)
 		sc.logger.Info("Metrics endpoint configured with authentication and authorization")
 	} else {
 		// Fallback to unprotected metrics (for development/testing)
+		sc.logger.Warnf("DEBUG: Using unprotected metrics - kubeConfig != nil: %v, tlsEnabled: %v", sc.kubeConfig != nil, tlsEnabled)
 		mux.Handle("/metrics", promhttp.Handler())
 		if sc.kubeConfig == nil {
 			sc.logger.Warn("No Kubernetes config provided - metrics endpoint will be unprotected")
+		} else if !tlsEnabled {
+			sc.logger.Warn("TLS not enabled - metrics endpoint will be unprotected")
 		}
 	}
 

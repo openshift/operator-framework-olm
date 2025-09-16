@@ -58,6 +58,7 @@ spec:
           args:
             - --namespace
             - $(OPERATOR_NAMESPACE)
+            - --debug
             - --tls-cert
             - /srv-cert/tls.crt
             - --tls-key
@@ -89,6 +90,8 @@ spec:
                   fieldPath: metadata.namespace
             - name: OPERATOR_NAME
               value: olm-operator
+            - name: CI
+              value: "true"
             - name: RELEASE_VERSION
               value: "0.0.1-snapshot"
           resources:

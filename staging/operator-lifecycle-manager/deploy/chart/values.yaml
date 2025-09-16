@@ -17,7 +17,7 @@ operator_namespace_psa:
 minKubeVersion: 1.11.0
 writeStatusName: '""'
 imagestream: false
-debug: false
+debug: true
 installType: upstream
 catalogGrpcPodPort: 50051
 
