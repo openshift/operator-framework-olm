@@ -177,9 +177,30 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 	}
 	csw.Run(context.Background())
 
+	certPoolStore, err := filemonitor.NewCertPoolStore(*sc.clientCAPath)
+	if err != nil {
+		return nil, fmt.Errorf("certificate monitoring for client-ca failed: %v", err)
+	}
+	cpsw, err := filemonitor.NewWatch(sc.logger, []string{filepath.Dir(*sc.clientCAPath)}, certPoolStore.HandleCABundleUpdate)
+	if err != nil {
+		return nil, fmt.Errorf("error creating cert file watcher: %v", err)
+	}
+	cpsw.Run(context.Background())
+
 	s.TLSConfig = &tls.Config{
 		GetCertificate: func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			return certStore.GetCertificate(), nil
+		},
+		GetConfigForClient: func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
+			var certs []tls.Certificate
+			if cert := certStore.GetCertificate(); cert != nil {
+				certs = append(certs, *cert)
+			}
+			return &tls.Config{
+				Certificates: certs,
+				ClientCAs:    certPoolStore.GetCertPool(),
+				ClientAuth:   tls.VerifyClientCertIfGiven,
+			}, nil
 		},
 		NextProtos: []string{"http/1.1"}, // Disable HTTP/2 for security
 	}
