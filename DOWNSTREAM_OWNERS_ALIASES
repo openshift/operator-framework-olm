@@ -7,6 +7,7 @@ aliases:
    - oceanc80
    - perdasilva
    - tmshort
+   - jianzhangbjz
 
    # contributors who can review/lgtm any PRs in the repo
    operator-framework-reviewers:
