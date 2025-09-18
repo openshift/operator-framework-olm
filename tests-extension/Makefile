@@ -2,7 +2,7 @@
 # Include the same Bingo variables used by the project
 DIR := $(strip $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
 # Use openshift's Bingo variables
-include $(DIR)/../.bingo/Variables.mk
+include $(DIR)/.bingo/Variables.mk
 
 # Definitions for the extended tests
 
