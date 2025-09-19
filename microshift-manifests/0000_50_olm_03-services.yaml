@@ -17,7 +17,7 @@ spec:
     - name: https-metrics
       port: 8443
       protocol: TCP
-      targetPort: 8443
+      targetPort: 9443
   selector:
     app: olm-operator
 ---
@@ -40,6 +40,6 @@ spec:
     - name: https-metrics
       port: 8443
       protocol: TCP
-      targetPort: 8443
+      targetPort: 9443
   selector:
     app: catalog-operator
