@@ -6,11 +6,16 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/filemonitor"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/profile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // Option applies a configuration option to the given config.
@@ -43,11 +48,18 @@ func WithDebug(debug bool) Option {
 	}
 }
 
+func WithKubeConfig(config *rest.Config) Option {
+	return func(sc *serverConfig) {
+		sc.kubeConfig = config
+	}
+}
+
 type serverConfig struct {
 	logger       *logrus.Logger
 	tlsCertPath  *string
 	tlsKeyPath   *string
 	clientCAPath *string
+	kubeConfig   *rest.Config
 	debug        bool
 }
 
@@ -62,6 +74,7 @@ func defaultServerConfig() serverConfig {
 		tlsCertPath:  nil,
 		tlsKeyPath:   nil,
 		clientCAPath: nil,
+		kubeConfig:   nil,
 		logger:       nil,
 		debug:        false,
 	}
@@ -89,12 +102,59 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 		return nil, fmt.Errorf("both --tls-key and --tls-crt must be provided for TLS to be enabled")
 	}
 
+	// Create base HTTP mux with unprotected endpoints
 	mux := http.NewServeMux()
-	mux.Handle("/metrics", promhttp.Handler())
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	profile.RegisterHandlers(mux, profile.WithTLS(tlsEnabled || !sc.debug))
+
+	// Set up authenticated metrics endpoint if kubeConfig is provided
+	sc.logger.Infof("DEBUG: Checking authentication setup - kubeConfig != nil: %v, tlsEnabled: %v", sc.kubeConfig != nil, tlsEnabled)
+	
+	if sc.kubeConfig != nil && tlsEnabled {
+		sc.logger.Info("DEBUG: Setting up authenticated metrics endpoint")
+		
+		// Create authentication filter using controller-runtime
+		sc.logger.Info("DEBUG: Creating authentication filter with controller-runtime")
+		filter, err := filters.WithAuthenticationAndAuthorization(sc.kubeConfig, &http.Client{
+			Timeout: 30 * time.Second,
+		})
+		if err != nil {
+			sc.logger.Errorf("DEBUG: Failed to create authentication filter: %v", err)
+			return nil, fmt.Errorf("failed to create authentication filter: %w", err)
+		}
+		sc.logger.Info("DEBUG: Authentication filter created successfully")
+
+		// Create authenticated metrics handler
+		sc.logger.Info("DEBUG: Wrapping metrics handler with authentication")
+		logger := log.FromContext(context.Background())
+		authenticatedMetricsHandler, err := filter(logger, promhttp.Handler())
+		if err != nil {
+			sc.logger.Errorf("DEBUG: Failed to wrap metrics handler: %v", err)
+			return nil, fmt.Errorf("failed to wrap metrics handler with authentication: %w", err)
+		}
+		sc.logger.Info("DEBUG: Metrics handler wrapped successfully")
+
+		// Add debugging wrapper to log authentication attempts
+		debugAuthHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			sc.logger.Infof("DEBUG: Metrics request from %s, Auth header present: %v, User-Agent: %s", 
+				r.RemoteAddr, r.Header.Get("Authorization") != "", r.Header.Get("User-Agent"))
+			authenticatedMetricsHandler.ServeHTTP(w, r)
+		})
+
+		mux.Handle("/metrics", debugAuthHandler)
+		sc.logger.Info("Metrics endpoint configured with authentication and authorization")
+	} else {
+		// Fallback to unprotected metrics (for development/testing)
+		sc.logger.Warnf("DEBUG: Using unprotected metrics - kubeConfig != nil: %v, tlsEnabled: %v", sc.kubeConfig != nil, tlsEnabled)
+		mux.Handle("/metrics", promhttp.Handler())
+		if sc.kubeConfig == nil {
+			sc.logger.Warn("No Kubernetes config provided - metrics endpoint will be unprotected")
+		} else if !tlsEnabled {
+			sc.logger.Warn("TLS not enabled - metrics endpoint will be unprotected")
+		}
+	}
 
 	s := http.Server{
 		Handler: mux,
@@ -116,6 +176,7 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 		return nil, fmt.Errorf("error creating cert file watcher: %v", err)
 	}
 	csw.Run(context.Background())
+
 	certPoolStore, err := filemonitor.NewCertPoolStore(*sc.clientCAPath)
 	if err != nil {
 		return nil, fmt.Errorf("certificate monitoring for client-ca failed: %v", err)
@@ -141,6 +202,7 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 				ClientAuth:   tls.VerifyClientCertIfGiven,
 			}, nil
 		},
+		NextProtos: []string{"http/1.1"}, // Disable HTTP/2 for security
 	}
 	return func() error {
 		return s.ListenAndServeTLS("", "")
