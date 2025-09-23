@@ -8,14 +8,13 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/filemonitor"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/profile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 )
 
 // Option applies a configuration option to the given config.
@@ -111,10 +110,10 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 
 	// Set up authenticated metrics endpoint if kubeConfig is provided
 	sc.logger.Infof("DEBUG: Checking authentication setup - kubeConfig != nil: %v, tlsEnabled: %v", sc.kubeConfig != nil, tlsEnabled)
-	
+
 	if sc.kubeConfig != nil && tlsEnabled {
 		sc.logger.Info("DEBUG: Setting up authenticated metrics endpoint")
-		
+
 		// Create authentication filter using controller-runtime
 		sc.logger.Info("DEBUG: Creating authentication filter with controller-runtime")
 		filter, err := filters.WithAuthenticationAndAuthorization(sc.kubeConfig, &http.Client{
@@ -138,7 +137,7 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 
 		// Add debugging wrapper to log authentication attempts
 		debugAuthHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			sc.logger.Infof("DEBUG: Metrics request from %s, Auth header present: %v, User-Agent: %s", 
+			sc.logger.Infof("DEBUG: Metrics request from %s, Auth header present: %v, User-Agent: %s",
 				r.RemoteAddr, r.Header.Get("Authorization") != "", r.Header.Get("User-Agent"))
 			authenticatedMetricsHandler.ServeHTTP(w, r)
 		})
