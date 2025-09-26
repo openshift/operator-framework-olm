@@ -21,6 +21,7 @@ import (
 
 	_ "github.com/openshift/operator-framework-olm/tests-extension/test/qe/specs"
 	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
+	"github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/filters"
 )
 
 func main() {
@@ -53,8 +54,7 @@ func main() {
 		Name:    "olmv0/parallel",
 		Parents: []string{"openshift/conformance/parallel"},
 		Qualifiers: []string{
-			`((!labels.exists(l, l=="Extended")) || (labels.exists(l, l=="Extended") && labels.exists(l, l=="ReleaseGate"))) &&
-			!(name.contains("[Serial]") || name.contains("[Slow]"))`,
+			filters.BasedStandardTests(`!(name.contains("[Serial]") || name.contains("[Slow]"))`),
 		},
 	})
 
@@ -67,8 +67,7 @@ func main() {
 		Name:    "olmv0/serial",
 		Parents: []string{"openshift/conformance/serial"},
 		Qualifiers: []string{
-			`((!labels.exists(l, l=="Extended")) || (labels.exists(l, l=="Extended") && labels.exists(l, l=="ReleaseGate"))) &&
-			(name.contains("[Serial]") && !name.contains("[Disruptive]") && !name.contains("[Slow]"))`,
+			filters.BasedStandardTests(`(name.contains("[Serial]") && !name.contains("[Disruptive]") && !name.contains("[Slow]"))`),
 			// refer to https://github.com/openshift/origin/blob/main/pkg/testsuites/standard_suites.go#L456
 		},
 	})
@@ -82,8 +81,7 @@ func main() {
 		Name:    "olmv0/slow",
 		Parents: []string{"openshift/optional/slow"},
 		Qualifiers: []string{
-			`((!labels.exists(l, l=="Extended")) || (labels.exists(l, l=="Extended") && labels.exists(l, l=="ReleaseGate"))) &&
-			name.contains("[Slow]")`,
+			filters.BasedStandardTests(`name.contains("[Slow]")`),
 		},
 	})
 
@@ -94,7 +92,7 @@ func main() {
 	ext.AddSuite(e.Suite{
 		Name: "olmv0/all",
 		Qualifiers: []string{
-			`(!labels.exists(l, l=="Extended")) || (labels.exists(l, l=="Extended") && labels.exists(l, l=="ReleaseGate"))`,
+			filters.BasedStandardTests(``),
 		},
 	})
 
@@ -103,7 +101,7 @@ func main() {
 	ext.AddSuite(e.Suite{
 		Name: "olmv0/extended",
 		Qualifiers: []string{
-			`labels.exists(l, l=="Extended")`,
+			filters.BasedExtendedTests(``),
 		},
 	})
 
@@ -112,7 +110,7 @@ func main() {
 	ext.AddSuite(e.Suite{
 		Name: "olmv0/extended/releasegate",
 		Qualifiers: []string{
-			`labels.exists(l, l=="Extended") && labels.exists(l, l=="ReleaseGate")`,
+			filters.BasedExtendedReleaseGateTests(``),
 		},
 	})
 
@@ -121,17 +119,52 @@ func main() {
 	ext.AddSuite(e.Suite{
 		Name: "olmv0/extended/candidate",
 		Qualifiers: []string{
-			`labels.exists(l, l=="Extended") && !labels.exists(l, l=="ReleaseGate")`,
+			filters.BasedExtendedCandidateTests(``),
 		},
 	})
+
+	//
+	// Categorization of Extended Candidate Tests:
+	// ===========================================
+	// The extended/candidate tests are categorized by test purpose and characteristics:
+	//
+	// 1. By Test Type:
+	//    - function: Functional tests that verify feature behavior and business logic
+	//    - stress:   Stress tests that verify system behavior under resource pressure and load
+	//
+	// Relationship: candidate = function + stress + (other specialized test types)
+
+	// Extended Candidate Function Suite: Extended functional tests that don't meet OpenShift CI requirements
+	// Contains extended tests that are not for openshift-tests and exclude stress tests
+	ext.AddSuite(e.Suite{
+		Name: "olmv1/extended/candidate/function",
+		Qualifiers: []string{
+			filters.BasedExtendedCandidateFuncTests(``),
+		},
+	})
+
+	//
+	// Categorization of Extended Candidate Functional Tests:
+	// =====================================================
+	// The extended/candidate/function tests are categorized using two complementary approaches:
+	//
+	// 1. By Execution Model:
+	//    - parallel: Tests that can run concurrently (excludes [Serial] and [Slow])
+	//    - serial:   Tests that must run one at a time ([Serial] but not [Slow])
+	//    - slow:     Tests that take significant time to execute ([Slow])
+	//
+	// 2. By Execution Speed:
+	//    - fast:     All non-slow functional tests (includes both parallel and serial, excludes [Slow])
+	//    - slow:     Tests marked as [Slow] (same as above)
+	//
+	// Relationship: function = parallel + serial + slow = fast + slow
 
 	// Extended Candidate Suite Parallel Suite: extended tests that can run in parallel
 	// Contains extended tests that can run concurrently (excludes Serial, Slow, and StressTest)
 	ext.AddSuite(e.Suite{
 		Name: "olmv0/extended/candidate/parallel",
 		Qualifiers: []string{
-			`(labels.exists(l, l=="Extended") && !labels.exists(l, l=="ReleaseGate") && !labels.exists(l, l=="StressTest")) &&
-			!(name.contains("[Serial]") || name.contains("[Slow]"))`,
+			filters.BasedExtendedCandidateFuncTests(`!(name.contains("[Serial]") || name.contains("[Slow]"))`),
 		},
 	})
 	// Extended Candidate Serial Suite: extended tests that must run one at a time
@@ -139,10 +172,19 @@ func main() {
 	ext.AddSuite(e.Suite{
 		Name: "olmv0/extended/candidate/serial",
 		Qualifiers: []string{
-			`(labels.exists(l, l=="Extended") && !labels.exists(l, l=="ReleaseGate") && !labels.exists(l, l=="StressTest")) &&
-			(name.contains("[Serial]") && !name.contains("[Slow]"))`,
+			filters.BasedExtendedCandidateFuncTests(`(name.contains("[Serial]") && !name.contains("[Slow]"))`),
 			// it is not used for openshift-tests, so it does not exclude Disruptive, so that we could use
 			// olmv0/extended/candidate/serial to run all serial case including Disruptive cases
+		},
+	})
+
+	// Extended Candidate Fast Suite: extended functional tests excluding slow cases
+	// Contains all extended functional tests that are not marked as [Slow] (includes both Serial and Parallel)
+	// This provides a comprehensive functional test coverage with reasonable execution time
+	ext.AddSuite(e.Suite{
+		Name: "olmv1/extended/candidate/fast",
+		Qualifiers: []string{
+			filters.BasedExtendedCandidateFuncTests(`!name.contains("[Slow]")`),
 		},
 	})
 	// Extended Candidate Slow Suite: extended tests that take significant time to run
@@ -150,8 +192,7 @@ func main() {
 	ext.AddSuite(e.Suite{
 		Name: "olmv0/extended/candidate/slow",
 		Qualifiers: []string{
-			`(labels.exists(l, l=="Extended") && !labels.exists(l, l=="ReleaseGate") && !labels.exists(l, l=="StressTest")) &&
-			name.contains("[Slow]")`,
+			filters.BasedExtendedCandidateFuncTests(`name.contains("[Slow]")`),
 		},
 	})
 	// Extended Candidate Stress Suite: extended stress tests
@@ -159,7 +200,7 @@ func main() {
 	ext.AddSuite(e.Suite{
 		Name: "olmv0/extended/candidate/stress",
 		Qualifiers: []string{
-			`labels.exists(l, l=="Extended") && !labels.exists(l, l=="ReleaseGate") && labels.exists(l, l=="StressTest")`,
+			filters.BasedExtendedCandidateTests(`labels.exists(l, l=="StressTest")`),
 		},
 	})
 
