@@ -137,7 +137,7 @@ func main() {
 	// Extended Candidate Function Suite: Extended functional tests that don't meet OpenShift CI requirements
 	// Contains extended tests that are not for openshift-tests and exclude stress tests
 	ext.AddSuite(e.Suite{
-		Name: "olmv1/extended/candidate/function",
+		Name: "olmv0/extended/candidate/function",
 		Qualifiers: []string{
 			filters.BasedExtendedCandidateFuncTests(``),
 		},
@@ -182,7 +182,7 @@ func main() {
 	// Contains all extended functional tests that are not marked as [Slow] (includes both Serial and Parallel)
 	// This provides a comprehensive functional test coverage with reasonable execution time
 	ext.AddSuite(e.Suite{
-		Name: "olmv1/extended/candidate/fast",
+		Name: "olmv0/extended/candidate/fast",
 		Qualifiers: []string{
 			filters.BasedExtendedCandidateFuncTests(`!name.contains("[Slow]")`),
 		},
