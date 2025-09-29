@@ -2,9 +2,10 @@ package specs
 
 import (
 	"context"
+	"os/exec"
+
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-	"os/exec"
 
 	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
 	"github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/olmv0util"
@@ -16,6 +17,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0", func() {
 	})
 })
 
+// it is mapping to the Describe "OLM for an end user handle common object" and "OLM for an end user use" in olm.go
 var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 	defer g.GinkgoRecover()
 
@@ -56,6 +58,15 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		g.By("pod of marketplace restart")
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "TrueFalseFalse", exutil.Ok, []string{"clusteroperator", "marketplace",
 			"-o=jsonpath={.status.conditions[?(@.type==\"Available\")].status}{.status.conditions[?(@.type==\"Progressing\")].status}{.status.conditions[?(@.type==\"Degraded\")].status}"}).Check(oc)
+	})
+
+	g.It("PolarionID:73695-[Skipped:Disconnected]PO is disable", func() {
+
+		if !exutil.IsTechPreviewNoUpgrade(oc) {
+			g.Skip("PO is supported in TP only currently, so skip it")
+		}
+		_, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("co", "platform-operators-aggregated").Output()
+		o.Expect(err).To(o.HaveOccurred(), "PO is not disable")
 	})
 
 })

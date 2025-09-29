@@ -213,7 +213,7 @@ All migrated test case code needs the following changes to run in the new test f
 14. **CPaasrunOnly, CPaasrunBoth, StagerunOnly, StagerunBoth, ProdrunOnly, ProdrunBoth**: Deprecated
 15. **StressTest**: Use Ginkgo label `g.Label("StressTest")`
 16. **NonHyperShiftHOST**: Use Ginkgo label `g.Label("NonHyperShiftHOST")` or use `IsHypershiftHostedCluster` judgment, then skip
-17. **HyperShiftMGMT**: Deprecated. For cases needing hypershift mgmt execution, use `g.Label("NonHyperShiftHOST")` and `ValidHypershiftAndGetGuestKubeConf` validation (to be provided when OLMv1 supports hypershift)
+17. **HyperShiftMGMT**: Deprecated. For cases needing hypershift mgmt execution, use `g.Label("NonHyperShiftHOST")` and `ValidHypershiftAndGetGuestKubeConf` validation
 18. **MicroShiftOnly**: Deprecated. For cases not supporting microshift, use `SkipMicroshift` judgment, then skip
 19. **ROSA**: Deprecated. Three ROSA job types:
     - `rosa-sts-ovn`: equivalent to OCP
@@ -365,6 +365,25 @@ Consider these requirements when writing and reviewing code:
    
    /payload-aggregate periodic-ci-openshift-release-master-ci-<release version>-e2e-gcp-ovn-serial 5
    ```
+
+## Test Case Migration Mapping
+
+The following table shows the mapping between the original g.Describe blocks in `openshift-tests-private/test/extended/operators/olm.go` and the corresponding migrated spec files in this repository:
+
+| Original g.Describe in olm.go | Mapped Spec File | Line in olm.go |
+|-------------------------------|------------------|----------------|
+| `[sig-operators] OLM optional` | `olmv0_defaultoption.go` | 34 |
+| `[sig-operators] OLM should` | `olmv0_defaultoption.go` | 150 |
+| `[sig-operators] OLM for an end user use` | `olmv0_common.go` | 5302 |
+| `[sig-operators] OLM for an end user handle common object` | `olmv0_common.go` | 5349 |
+| `[sig-operators] OLM for an end user handle within a namespace` | `olmv0_nonallns.go` | 5555 |
+| `[sig-operators] OLM for an end user handle to support` | `olmv0_multins.go` | 11544 |
+| `[sig-operators] OLM for an end user handle within all namespace` | `olmv0_allns.go` | 12657 |
+| `[sig-operators] OLM on hypershift` | `olmv0_hypershiftmgmt.go` | 14814 |
+
+### Notes:
+- Each mapped spec file contains a comment indicating its relationship to the original olm.go g.Describe block
+- Some spec files map to multiple g.Describe blocks (e.g., `olmv0_common.go` and `olmv0_defaultoption.go`)
 
 ## How to Keep Test Names Unique
 

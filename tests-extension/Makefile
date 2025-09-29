@@ -42,7 +42,53 @@ TOOLS_BIN_DIR := $(CURDIR)/bin
 
 #SECTION Development
 .PHONY: verify #HELP To verify the code
-verify: tidy fmt vet lint
+verify:
+	@echo "Running verification checks..."
+	@errors=0; \
+	failed_steps=""; \
+	echo "1/4 Running 'make tidy'..."; \
+	if ! $(MAKE) tidy; then \
+		echo "ERROR: 'make tidy' failed"; \
+		errors=$$((errors+1)); \
+		failed_steps="$$failed_steps tidy"; \
+	else \
+		echo "SUCCESS: 'make tidy' passed"; \
+	fi; \
+	echo ""; \
+	echo "2/4 Running 'make fmt'..."; \
+	if ! $(MAKE) fmt; then \
+		echo "ERROR: 'make fmt' failed"; \
+		errors=$$((errors+1)); \
+		failed_steps="$$failed_steps fmt"; \
+	else \
+		echo "SUCCESS: 'make fmt' passed"; \
+	fi; \
+	echo ""; \
+	echo "3/4 Running 'make vet'..."; \
+	if ! $(MAKE) vet; then \
+		echo "ERROR: 'make vet' failed"; \
+		errors=$$((errors+1)); \
+		failed_steps="$$failed_steps vet"; \
+	else \
+		echo "SUCCESS: 'make vet' passed"; \
+	fi; \
+	echo ""; \
+	echo "4/4 Running 'make lint'..."; \
+	if ! $(MAKE) lint; then \
+		echo "ERROR: 'make lint' failed"; \
+		errors=$$((errors+1)); \
+		failed_steps="$$failed_steps lint"; \
+	else \
+		echo "SUCCESS: 'make lint' passed"; \
+	fi; \
+	echo ""; \
+	echo "Verification completed with $$errors error(s)"; \
+	if [ $$errors -gt 0 ]; then \
+		echo "FAILED: The following verification check(s) failed:$$failed_steps"; \
+		exit 1; \
+	else \
+		echo "SUCCESS: All verification checks passed"; \
+	fi
 
 .PHONY: tidy #HELP Run go mod tidy.
 tidy:
@@ -50,7 +96,15 @@ tidy:
 
 .PHONY: fmt
 fmt: #HELP Run go fmt against code.
-	go fmt ./...
+	@files=$$(find . -name '*.go' -not -path './vendor/*' -not -path './pkg/bindata/qe/*' -exec gofmt -l {} \;); \
+	if [ -n "$$files" ]; then \
+		echo "Files that need formatting:"; \
+		echo "$$files"; \
+		echo ""; \
+		echo "To fix formatting, run:"; \
+		echo "  find . -name '*.go' -not -path './vendor/*' -not -path './pkg/bindata/qe/*' -exec gofmt -w {} \\;"; \
+		exit 1; \
+	fi
 
 .PHONY: vet
 vet: #HELP Run go vet against code.
