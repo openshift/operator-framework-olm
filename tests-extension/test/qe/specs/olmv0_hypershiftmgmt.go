@@ -3,6 +3,7 @@ package specs
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
@@ -13,7 +14,7 @@ import (
 )
 
 // it is mapping to the Describe "OLM on hypershift" in olm.go
-var _ = g.Describe("[sig-operator][Jira:OLM] OLMvo on hypershift mgmt", g.Label("NonHyperShiftHOST"), func() {
+var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", g.Label("NonHyperShiftHOST"), func() {
 	defer g.GinkgoRecover()
 
 	var (
@@ -25,6 +26,10 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMvo on hypershift mgmt", g.Label(
 
 	g.BeforeEach(func() {
 		exutil.SkipMicroshift(oc)
+		if !exutil.IsHypershiftMgmtCluster(oc) {
+			g.Skip("this is not a hypershift management cluster, skip test run")
+		}
+
 		isAKS, errIsAKS = exutil.IsAKSCluster(context.TODO(), oc)
 		if errIsAKS != nil {
 			g.Skip("can not determine if it is openshift cluster or aks cluster")
@@ -32,12 +37,18 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMvo on hypershift mgmt", g.Label(
 		if !isAKS {
 			exutil.SkipNoOLMCore(oc)
 		}
+
+		err := exutil.EnsureHypershiftBinary(oc)
+		if err != nil {
+			g.Skip("Failed to setup hypershift binary: " + err.Error())
+		}
+
 		guestClusterName, guestClusterKube, hostedClusterNS = exutil.ValidHypershiftAndGetGuestKubeConf(oc)
 		e2e.Logf("%s, %s, %s", guestClusterName, guestClusterKube, hostedClusterNS)
 		oc.SetGuestKubeconf(guestClusterKube)
 	})
 
-	g.It("ROSA-OSD_CCS-HyperShiftMGMT-ConnectedOnly-Author:kuiwang-Medium-45381-Support custom catalogs in hypershift", func() {
+	g.It("PolarionID:45381-[Skipped:Disconnected]Support custom catalogs in hypershift", func() {
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -104,6 +115,42 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMvo on hypershift mgmt", g.Label(
 		g.By("Check the oadp-operator.v0.5.3 is installed successfully")
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", subOadp.InstalledCSV, "-n", subOadp.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc.AsGuestKubeconf())
 
+	})
+
+	g.It("PolarionID:45408-[Skipped:Disconnected]Eliminate use of imagestreams in catalog management", func() {
+		controlProject := hostedClusterNS + "-" + guestClusterName
+		if !isAKS {
+			exutil.SkipBaselineCaps(oc, "None")
+			g.By("1) check if uses the ImageStream resource")
+			isOutput, err := oc.AsAdmin().Run("get").Args("is", "catalogs", "-n", controlProject, "-o", "yaml").Output()
+			if err != nil {
+				e2e.Failf("Fail to get cronjob in project: %s, error:%v", controlProject, err)
+			}
+			is := []string{"certified-operators", "community-operators", "redhat-marketplace", "redhat-operators"}
+			for _, imageStream := range is {
+				if !strings.Contains(isOutput, imageStream) {
+					e2e.Failf("find ImageStream:%s in project:%v", imageStream, controlProject)
+				}
+			}
+		}
+
+		g.By("2) check if Deployment uses the ImageStream")
+		deploys := []string{"certified-operators-catalog", "community-operators-catalog", "redhat-marketplace-catalog", "redhat-operators-catalog"}
+		for _, deploy := range deploys {
+			annotations, err := oc.AsAdmin().Run("get").Args("deployment", "-n", controlProject, deploy, "-o=jsonpath={.metadata.annotations}").Output()
+			if err != nil {
+				e2e.Failf("Fail to get deploy:%s in project: %s, error:%v", deploy, controlProject, err)
+			}
+			if !isAKS {
+				if !strings.Contains(strings.ToLower(annotations), "imagestream") {
+					e2e.Failf("The deploy does not use ImageStream: %v", annotations)
+				}
+			} else {
+				if strings.Contains(strings.ToLower(annotations), "imagestream") {
+					e2e.Failf("The deploy does not use ImageStream: %v", annotations)
+				}
+			}
+		}
 	})
 
 })
