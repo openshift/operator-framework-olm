@@ -30,6 +30,7 @@ func BasedStandardTests(filter string) string {
 	standardFilter := `(!labels.exists(l, l=="Extended")) || (labels.exists(l, l=="Extended") && labels.exists(l, l=="ReleaseGate"))`
 	return buildFilter(standardFilter, filter)
 }
+
 // BasedExtendedTests generates a qualifier for all extended tests.
 // Includes: all tests marked with "Extended" label.
 // Additional filter can be applied to further narrow the selection.
@@ -37,6 +38,7 @@ func BasedExtendedTests(filter string) string {
 	extendedFilter := `labels.exists(l, l=="Extended")`
 	return buildFilter(extendedFilter, filter)
 }
+
 // BasedExtendedReleaseGateTests generates a qualifier for extended release gate tests.
 // Includes: Extended tests that are also marked as ReleaseGate.
 // Additional filter can be applied to further narrow the selection.
@@ -44,6 +46,7 @@ func BasedExtendedReleaseGateTests(filter string) string {
 	extendedReleaseGateFilter := `labels.exists(l, l=="Extended") && labels.exists(l, l=="ReleaseGate")`
 	return buildFilter(extendedReleaseGateFilter, filter)
 }
+
 // BasedExtendedCandidateTests generates a qualifier for extended candidate tests.
 // Includes: Extended tests that are NOT marked as ReleaseGate.
 // Additional filter can be applied to further narrow the selection.
@@ -51,6 +54,7 @@ func BasedExtendedCandidateTests(filter string) string {
 	extendedCandidateFilter := `labels.exists(l, l=="Extended") && !labels.exists(l, l=="ReleaseGate")`
 	return buildFilter(extendedCandidateFilter, filter)
 }
+
 // BasedExtendedCandidateFuncTests generates a qualifier for extended candidate functional tests.
 // Includes: Extended tests that are NOT ReleaseGate and NOT StressTest.
 // Additional filter can be applied to further narrow the selection.

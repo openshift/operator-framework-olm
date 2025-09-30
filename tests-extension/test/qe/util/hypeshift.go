@@ -48,12 +48,12 @@ const (
 func ValidHypershiftAndGetGuestKubeConf(oc *CLI) (string, string, string) {
 	operatorNS := GetHyperShiftOperatorNameSpace(oc)
 	if len(operatorNS) <= 0 {
-		g.Skip("there is no hypershift operator on host cluster, skip test run")
+		g.Skip("there is no hypershift operator on host cluster, so it is not hypershift mgmt cluster and skip test run")
 	}
 
 	hostedclusterNS := GetHyperShiftHostedClusterNameSpace(oc)
 	if len(hostedclusterNS) <= 0 {
-		g.Skip("there is no hosted cluster NS in mgmt cluster, skip test run")
+		g.Skip("there is no hosted cluster NS in mgmt cluster, so it is not hypershift mgmt cluster and skip test run")
 	}
 
 	clusterNames, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
@@ -79,6 +79,12 @@ func ValidHypershiftAndGetGuestKubeConf(oc *CLI) (string, string, string) {
 		hostedClusterKubeconfigFile = os.Getenv("GUEST_KUBECONFIG")
 		e2e.Logf("use a known hosted cluster kubeconfig: %v", hostedClusterKubeconfigFile)
 	} else {
+		// Check if hypershift command is available
+		_, err := exec.LookPath("hypershift")
+		if err != nil {
+			g.Skip("hypershift command not found in PATH, cannot create kubeconfig for hosted cluster")
+		}
+
 		hostedClusterKubeconfigFile = "/tmp/guestcluster-kubeconfig-" + clusterName + "-" + GetRandomString()
 		output, err := exec.Command("bash", "-c", fmt.Sprintf("hypershift create kubeconfig --name %s --namespace %s > %s",
 			clusterName, hostedclusterNS, hostedClusterKubeconfigFile)).Output()
@@ -129,6 +135,12 @@ func ValidHypershiftAndGetGuestKubeConfWithNoSkip(oc *CLI) (string, string, stri
 		hostedClusterKubeconfigFile = os.Getenv("GUEST_KUBECONFIG")
 		e2e.Logf("use a known hosted cluster kubeconfig: %v", hostedClusterKubeconfigFile)
 	} else {
+		// Check if hypershift command is available
+		_, err := exec.LookPath("hypershift")
+		if err != nil {
+			return "", "", ""
+		}
+
 		hostedClusterKubeconfigFile = "/tmp/guestcluster-kubeconfig-" + clusterName + "-" + GetRandomString()
 		output, err := exec.Command("bash", "-c", fmt.Sprintf("hypershift create kubeconfig --name %s --namespace %s > %s",
 			clusterName, hostedclusterNS, hostedClusterKubeconfigFile)).Output()
