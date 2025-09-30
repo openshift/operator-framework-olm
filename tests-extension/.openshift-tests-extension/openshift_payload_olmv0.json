@@ -179,5 +179,35 @@
     "source": "openshift:payload:olmv0",
     "lifecycle": "informing",
     "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43185-DC based opm subcommands out of alpha",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43180-opm init dc configuration package",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
   }
 ]

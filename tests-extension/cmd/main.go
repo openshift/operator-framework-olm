@@ -286,7 +286,30 @@ func main() {
 		Long: "OLMv0 Tests Extension",
 	}
 
-	root.AddCommand(cmd.DefaultExtensionCommands(registry)...)
+	// Get all default commands from the extension framework
+	allCommands := cmd.DefaultExtensionCommands(registry)
+
+	// Add KUBECONFIG check to run-suite and run-test commands only.
+	// Other commands (list, info, images, update, completion, help) don't need KUBECONFIG.
+	for _, command := range allCommands {
+		// Identify run-suite and run-test commands by their Use field
+		if command.Use == "run-suite NAME" || command.Use == "run-test [-n NAME...] [NAME]" {
+			// Save the original RunE function
+			originalRunE := command.RunE
+
+			// Wrap it with KUBECONFIG check
+			command.RunE = func(cmd *cobra.Command, args []string) error {
+				// Check KUBECONFIG before running the test
+				if err := exutil.CheckKubeconfigSet(); err != nil {
+					return err
+				}
+				// Call the original RunE function
+				return originalRunE(cmd, args)
+			}
+		}
+	}
+
+	root.AddCommand(allCommands...)
 
 	if err := func() error {
 		return root.Execute()
