@@ -9,6 +9,23 @@ import (
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
 
+// CheckKubeconfigSet verifies that the KUBECONFIG environment variable is set and points to a valid file.
+// This check is only required for commands that interact with a Kubernetes cluster (run-suite and run-test).
+// Other commands (list, info, images, update, completion, help) do not require KUBECONFIG.
+func CheckKubeconfigSet() error {
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if kubeconfig == "" {
+		return fmt.Errorf("KUBECONFIG environment variable is not set.\nPlease set KUBECONFIG to point to your cluster configuration file.\nExample: export KUBECONFIG=/path/to/kubeconfig")
+	}
+
+	// Check if kubeconfig file exists
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return fmt.Errorf("KUBECONFIG file does not exist: %s (error: %v)", kubeconfig, err)
+	}
+
+	return nil
+}
+
 // InitClusterEnv initializes the cluster environment for testing by setting up test framework and configuration
 // This function will panic if initialization fails
 func InitClusterEnv() {
