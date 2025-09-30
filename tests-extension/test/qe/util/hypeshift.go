@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/blang/semver/v4"
@@ -40,21 +44,172 @@ const (
 	PowerVSPlatform HostedClusterPlatformType = "PowerVS"
 )
 
+var (
+	hypershiftBinaryOnce  sync.Once
+	hypershiftBinarySetup error
+)
+
+// EnsureHypershiftBinary ensures hypershift binary is available with cross-process synchronization
+func EnsureHypershiftBinary(oc *CLI) error {
+	hypershiftBinaryOnce.Do(func() {
+		hypershiftBinarySetup = ensureHypershiftBinaryWithLock(oc)
+	})
+	return hypershiftBinarySetup
+}
+
+// isArchitectureSupported checks if the current architecture supports hypershift binary
+func isArchitectureSupported() error {
+	arch := runtime.GOARCH
+	os := runtime.GOOS
+
+	e2e.Logf("Current runtime: OS=%s, ARCH=%s", os, arch)
+
+	// Hypershift binary is x86-64 Linux ELF executable
+	if os != "linux" {
+		return fmt.Errorf("hypershift binary only supports Linux, current OS: %s", os)
+	}
+
+	if arch != "amd64" {
+		return fmt.Errorf("hypershift binary only supports x86-64 architecture, current architecture: %s", arch)
+	}
+
+	return nil
+}
+
+func ensureHypershiftBinaryWithLock(oc *CLI) error {
+	e2e.Logf("Setting up hypershift binary...")
+
+	_, err := exec.LookPath("hypershift")
+	if err == nil {
+		e2e.Logf("hypershift command is found in PATH")
+		return nil
+	}
+
+	// Check architecture compatibility first
+	if err := isArchitectureSupported(); err != nil {
+		return err
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	var hypershiftPath string
+	var hypershiftDir string
+	var lockPath string
+
+	if cwd == "/tmp" {
+		hypershiftPath = filepath.Join(cwd, "hypershift")
+		hypershiftDir = cwd
+		lockPath = filepath.Join(cwd, "hypershift.lock")
+	} else {
+		hypershiftPath = "/tmp/hypershift"
+		hypershiftDir = "/tmp"
+		lockPath = "/tmp/hypershift.lock"
+	}
+
+	lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := lockFile.Close(); closeErr != nil {
+			e2e.Logf("Failed to close lock file: %v", closeErr)
+		}
+	}()
+
+	e2e.Logf("Acquiring file lock for hypershift binary installation...")
+	maxRetries := 90
+	for i := 0; i < maxRetries; i++ {
+		err = syscall.Flock(int(lockFile.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+		if err == nil {
+			break
+		}
+		if err != syscall.EWOULDBLOCK {
+			return err
+		}
+		e2e.Logf("Lock is held by another process, retrying in 1 second... (%d/%d)", i+1, maxRetries)
+		time.Sleep(1 * time.Second)
+	}
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if unlockErr := syscall.Flock(int(lockFile.Fd()), syscall.LOCK_UN); unlockErr != nil {
+			e2e.Logf("Failed to unlock file: %v", unlockErr)
+		}
+	}()
+
+	e2e.Logf("File lock acquired, checking if hypershift binary exists...")
+
+	if _, err := os.Stat(hypershiftPath); err == nil {
+		e2e.Logf("Hypershift binary already exists at %s", hypershiftPath)
+		return setupHypershiftEnv(hypershiftDir)
+	}
+
+	e2e.Logf("Extracting hypershift binary from container image...")
+	err = oc.WithoutNamespace().Run("image").Args("extract", "quay.io/hypershift/hypershift-operator:latest", "--file=/usr/bin/hypershift").Execute()
+	if err != nil {
+		return err
+	}
+
+	if hypershiftDir != cwd {
+		// Move hypershift binary to target directory
+		err = exec.Command("mv", "hypershift", hypershiftPath).Run()
+		if err != nil {
+			return fmt.Errorf("failed to move hypershift binary: %v", err)
+		}
+		// Set executable permissions
+		err = exec.Command("chmod", "755", hypershiftPath).Run()
+		if err != nil {
+			return fmt.Errorf("failed to set permissions on hypershift binary: %v", err)
+		}
+	} else {
+		// Set executable permissions in current directory
+		err = exec.Command("chmod", "755", "hypershift").Run()
+		if err != nil {
+			return fmt.Errorf("failed to set permissions on hypershift binary: %v", err)
+		}
+	}
+
+	e2e.Logf("Hypershift binary installed at %s", hypershiftPath)
+	return setupHypershiftEnv(hypershiftDir)
+}
+
+func setupHypershiftEnv(hypershiftDir string) error {
+	currentPath := os.Getenv("PATH")
+	if !strings.Contains(currentPath, hypershiftDir) {
+		newPath := hypershiftDir + ":" + currentPath
+		err := os.Setenv("PATH", newPath)
+		if err != nil {
+			return err
+		}
+		e2e.Logf("Added %s to PATH: %s", hypershiftDir, newPath)
+	}
+	return nil
+}
+
+// IsHypershiftMgmtCluster checks if the current cluster is a hypershift management cluster
+// Returns true if both hypershift operator and hosted cluster namespace exist
+func IsHypershiftMgmtCluster(oc *CLI) bool {
+	operatorNS := GetHyperShiftOperatorNameSpace(oc)
+	hostedclusterNS := GetHyperShiftHostedClusterNameSpace(oc)
+	return len(operatorNS) > 0 && len(hostedclusterNS) > 0
+}
+
 // ValidHypershiftAndGetGuestKubeConf check if it is hypershift env and get kubeconf of the hosted cluster
 // the first return is hosted cluster name
 // the second return is the file of kubeconfig of the hosted cluster
 // the third return is the hostedcluster namespace in mgmt cluster which contains the generated resources
 // if it is not hypershift env, it will skip test.
 func ValidHypershiftAndGetGuestKubeConf(oc *CLI) (string, string, string) {
-	operatorNS := GetHyperShiftOperatorNameSpace(oc)
-	if len(operatorNS) <= 0 {
-		g.Skip("there is no hypershift operator on host cluster, so it is not hypershift mgmt cluster and skip test run")
+	if !IsHypershiftMgmtCluster(oc) {
+		g.Skip("this is not a hypershift management cluster, skip test run")
 	}
 
+	operatorNS := GetHyperShiftOperatorNameSpace(oc)
 	hostedclusterNS := GetHyperShiftHostedClusterNameSpace(oc)
-	if len(hostedclusterNS) <= 0 {
-		g.Skip("there is no hosted cluster NS in mgmt cluster, so it is not hypershift mgmt cluster and skip test run")
-	}
 
 	clusterNames, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
 		"-n", hostedclusterNS, "hostedclusters", "-o=jsonpath={.items[*].metadata.name}").Output()
@@ -102,15 +257,12 @@ func ValidHypershiftAndGetGuestKubeConf(oc *CLI) (string, string, string) {
 // the third return is the hostedcluster namespace in mgmt cluster which contains the generated resources
 // if it is not hypershift env, it will not skip the testcase and return null string.
 func ValidHypershiftAndGetGuestKubeConfWithNoSkip(oc *CLI) (string, string, string) {
-	operatorNS := GetHyperShiftOperatorNameSpace(oc)
-	if len(operatorNS) <= 0 {
+	if !IsHypershiftMgmtCluster(oc) {
 		return "", "", ""
 	}
 
+	operatorNS := GetHyperShiftOperatorNameSpace(oc)
 	hostedclusterNS := GetHyperShiftHostedClusterNameSpace(oc)
-	if len(hostedclusterNS) <= 0 {
-		return "", "", ""
-	}
 
 	clusterNames, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
 		"-n", hostedclusterNS, "hostedclusters", "-o=jsonpath={.items[*].metadata.name}").Output()
@@ -170,6 +322,13 @@ func GetHyperShiftOperatorNameSpace(oc *CLI) string {
 // GetHyperShiftHostedClusterNameSpace get hypershift hostedcluster namespace
 // if not exist, it will return empty string. If more than one exists, it will return the first one.
 func GetHyperShiftHostedClusterNameSpace(oc *CLI) string {
+	// First check if HostedCluster CRD exists
+	_, crdErr := oc.AsAdmin().WithoutNamespace().Run("get").Args("crd", "hostedclusters.hypershift.openshift.io", "--ignore-not-found").Output()
+	if crdErr != nil {
+		e2e.Logf("HostedCluster CRD not found, this is not a hypershift management cluster: %v", crdErr)
+		return ""
+	}
+
 	namespace, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
 		"hostedcluster", "-A", "--ignore-not-found", "-ojsonpath={.items[*].metadata.namespace}").Output()
 
