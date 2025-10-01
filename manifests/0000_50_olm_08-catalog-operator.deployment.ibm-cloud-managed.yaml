@@ -59,6 +59,7 @@ spec:
           args:
             - '--namespace'
             - openshift-marketplace
+            - '--debug'
             - --configmapServerImage=quay.io/operator-framework/configmap-operator-registry:latest
             - --opmImage=quay.io/operator-framework/configmap-operator-registry:latest
             - --util-image
@@ -73,6 +74,11 @@ spec:
             - /profile-collector-cert/tls.crt
             - --set-workload-user-id=false
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
+          env:
+            - name: CI
+              value: "true"
+            - name: RELEASE_VERSION
+              value: "0.0.1-snapshot"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
@@ -92,9 +98,6 @@ spec:
             requests:
               cpu: 10m
               memory: 80Mi
-          env:
-            - name: RELEASE_VERSION
-              value: "0.0.1-snapshot"
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:
