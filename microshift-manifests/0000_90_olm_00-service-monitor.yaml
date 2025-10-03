@@ -1,4 +1,37 @@
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: operator-lifecycle-manager-metrics-reader
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+    include.release.openshift.io/hypershift: "true"
+rules:
+  - nonResourceURLs:
+      - "/metrics"
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: operator-lifecycle-manager-metrics-reader
+  annotations:
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+    include.release.openshift.io/hypershift: "true"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: operator-lifecycle-manager-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-k8s
+    namespace: openshift-monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: operator-lifecycle-manager-metrics
