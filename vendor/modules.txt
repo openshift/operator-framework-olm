@@ -719,7 +719,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/stor
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/version
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
-# github.com/operator-framework/operator-registry v1.59.0 => ./staging/operator-registry
+# github.com/operator-framework/operator-registry v1.60.0 => ./staging/operator-registry
 ## explicit; go 1.24.4
 github.com/operator-framework/operator-registry/alpha/action
 github.com/operator-framework/operator-registry/alpha/action/migrations
