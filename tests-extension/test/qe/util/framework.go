@@ -22,13 +22,6 @@ import (
 	testdata "github.com/openshift/operator-framework-olm/tests-extension/pkg/bindata/qe"
 )
 
-func init() {
-	if KubeConfigPath() == "" {
-		fmt.Fprintf(os.Stderr, "Please set KUBECONFIG first!\n")
-		os.Exit(0)
-	}
-}
-
 // WaitForServiceAccount waits until the named service account gets fully
 // provisioned
 func WaitForServiceAccount(c corev1client.ServiceAccountInterface, name string, checkSecret bool) error {

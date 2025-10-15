@@ -370,6 +370,31 @@ Consider these requirements when writing and reviewing code:
 
 The following table shows the mapping between the original g.Describe blocks in `openshift-tests-private/test/extended/operators/olm.go` and the corresponding migrated spec files in this repository:
 
+### Binary Dependencies
+
+This test framework automatically installs required binaries before running tests:
+
+#### OPM Binary Support
+- **Automatic Installation**: The OPM binary is automatically downloaded and installed before running OPM-related tests
+- **Multi-Architecture Support**: Supports Linux (amd64, arm64, ppc64le, s390x) and macOS (amd64 only)
+- **Concurrent Safe**: Uses file locking to prevent conflicts when multiple test processes run simultaneously
+- **Architecture Detection**: Automatically selects the correct binary for the current platform
+
+**Special Note for macOS ARM64 Developers**:
+If you're developing OPM test cases on an ARM64 macOS machine, the framework will skip tests since OPM binaries are only available for macOS amd64. To work around this:
+1. Build OPM from source for ARM64 macOS
+2. Place the compiled `opm` binary in your system PATH
+3. The framework will detect the existing binary and skip automatic installation
+
+#### HyperShift Binary Support
+- **Automatic Installation**: The HyperShift binary is automatically downloaded and installed for HyperShift management cluster tests
+- **Architecture Requirements**: Only supports Linux x86-64 architecture
+- **Concurrent Safe**: Uses file locking similar to OPM binary installation
+
+### Test File Mapping
+
+#### From openshift-tests-private/test/extended/operators/olm.go
+
 | Original g.Describe in olm.go | Mapped Spec File | Line in olm.go |
 |-------------------------------|------------------|----------------|
 | `[sig-operators] OLM optional` | `olmv0_defaultoption.go` | 34 |
@@ -381,9 +406,16 @@ The following table shows the mapping between the original g.Describe blocks in 
 | `[sig-operators] OLM for an end user handle within all namespace` | `olmv0_allns.go` | 12657 |
 | `[sig-operators] OLM on hypershift` | `olmv0_hypershiftmgmt.go` | 14814 |
 
+#### From openshift-tests-private/test/extended/opm/opm.go
+
+| Original Content | Mapped Spec File | Coverage |
+|------------------|------------------|----------|
+| All OPM CLI functionality tests | `olmv0_opm.go` | Complete |
+
 ### Notes:
-- Each mapped spec file contains a comment indicating its relationship to the original olm.go g.Describe block
+- Each mapped spec file contains a comment indicating its relationship to the original olm.go g.Describe block or source file
 - Some spec files map to multiple g.Describe blocks (e.g., `olmv0_common.go` and `olmv0_defaultoption.go`)
+- `olmv0_opm.go` maps to OPM CLI functionality tests from openshift-tests-private
 
 ## How to Keep Test Names Unique
 
