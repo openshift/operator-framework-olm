@@ -27,9 +27,64 @@ crddir="${chartdir}/crds"
 crdsrcdir="${tmpdir}/operators"
 
 SED="sed"
-if ! command -v ${SED} &> /dev/null; then
-    SED="sed"
+if command -v gsed &> /dev/null; then
+  SED="gsed"
+elif ! command -v "${SED}" &> /dev/null; then
+  echo "GNU sed is required for creating manifests, unable to proceed"
+  exit 1
 fi
+
+relpath() {
+  local base="$1"
+  local target="$2"
+  local base_abs target_abs
+  local rel=""
+
+  base_abs=$(cd "${base}" && pwd -P)
+  target_abs=$(cd "$(dirname "${target}")" && pwd -P)/$(basename "${target}")
+
+  IFS='/' read -r -a base_parts <<< "${base_abs}"
+  IFS='/' read -r -a target_parts <<< "${target_abs}"
+
+  local i=0
+  local max_common=${#base_parts[@]}
+  if [ ${#target_parts[@]} -lt ${max_common} ]; then
+    max_common=${#target_parts[@]}
+  fi
+
+  while [ $i -lt ${max_common} ] && [ "${base_parts[$i]}" = "${target_parts[$i]}" ]; do
+    i=$((i + 1))
+  done
+
+  local j=$i
+  while [ $j -lt ${#base_parts[@]} ]; do
+    if [ -n "${base_parts[$j]}" ]; then
+      if [ -z "${rel}" ]; then
+        rel=".."
+      else
+        rel="../${rel}"
+      fi
+    fi
+    j=$((j + 1))
+  done
+
+  if [ -z "${rel}" ]; then
+    rel="."
+  fi
+
+  while [ $i -lt ${#target_parts[@]} ]; do
+    if [ -n "${target_parts[$i]}" ]; then
+      if [ "${rel}" = "." ]; then
+        rel="${target_parts[$i]}"
+      else
+        rel="${rel}/${target_parts[$i]}"
+      fi
+    fi
+    i=$((i + 1))
+  done
+
+  printf '%s\n' "${rel}"
+}
 
 # OSX distrubtions do not include GNU sed by default, the test below
 # exits if we detect that the the insert command is not supported by
@@ -614,7 +669,7 @@ for file in ${microshift_manifests_files}; do
      continue 2
     fi
   done
-  echo "  - $(realpath --relative-to "${ROOT_DIR}/microshift-manifests" "${file}")" >> "${ROOT_DIR}/microshift-manifests/kustomization.yaml"
+  echo "  - $(relpath "${ROOT_DIR}/microshift-manifests" "${file}")" >> "${ROOT_DIR}/microshift-manifests/kustomization.yaml"
 done
 
 # Now we need to get rid of these args from the olm-operator deployment:
