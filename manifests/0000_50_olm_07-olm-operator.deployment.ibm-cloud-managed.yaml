@@ -59,6 +59,7 @@ spec:
           args:
             - --namespace
             - $(OPERATOR_NAMESPACE)
+            - --debug
             - --writeStatusName
             - operator-lifecycle-manager
             - --writePackageServerStatusName
@@ -94,6 +95,8 @@ spec:
                   fieldPath: metadata.namespace
             - name: OPERATOR_NAME
               value: olm-operator
+            - name: CI
+              value: "true"
             - name: RELEASE_VERSION
               value: "0.0.1-snapshot"
           resources:

@@ -57,9 +57,15 @@ func (o *options) run(ctx context.Context, logger *logrus.Logger) error {
 		o.catalogNamespace = catalogNamespaceEnvVarValue
 	}
 
+	config, err := clientcmd.BuildConfigFromFlags("", o.kubeconfig)
+	if err != nil {
+		return fmt.Errorf("error configuring client: %s", err.Error())
+	}
+
 	listenAndServe, err := server.GetListenAndServeFunc(
 		server.WithLogger(logger),
 		server.WithTLS(&o.tlsCertPath, &o.tlsKeyPath, &o.clientCAPath),
+		server.WithKubeConfig(config),
 		server.WithDebug(o.debug),
 	)
 	if err != nil {
@@ -71,12 +77,6 @@ func (o *options) run(ctx context.Context, logger *logrus.Logger) error {
 			logger.Error(err)
 		}
 	}()
-
-	// create a config client for operator status
-	config, err := clientcmd.BuildConfigFromFlags("", o.kubeconfig)
-	if err != nil {
-		return fmt.Errorf("error configuring client: %s", err.Error())
-	}
 	configClient, err := configv1client.NewForConfig(config)
 	if err != nil {
 		return fmt.Errorf("error configuring client: %s", err.Error())
