@@ -31,10 +31,10 @@ spec:
       volumes:
         - name: srv-cert
           secret:
-            secretName: olm-cert
+            secretName: catalog-operator-serving-cert
         - name: profile-collector-cert
           secret:
-            secretName: olm-cert
+            secretName: pprof-cert
         - name: tmpfs
           emptyDir: {}
       containers:
