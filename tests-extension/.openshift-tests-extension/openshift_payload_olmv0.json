@@ -184,7 +184,8 @@
     "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43185-DC based opm subcommands out of alpha",
     "labels": {
       "Extended": {},
-      "NonHyperShiftHOST": {}
+      "NonHyperShiftHOST": {},
+      "opm": {}
     },
     "resources": {
       "isolation": {}
@@ -199,7 +200,264 @@
     "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43180-opm init dc configuration package",
     "labels": {
       "Extended": {},
-      "NonHyperShiftHOST": {}
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43171-[Skipped:Disconnected] opm render blob from bundle, db based index, dc based index, db file and directory",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43248-Support ignoring files when loading declarative configs",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43768-Improve formatting of opm validate",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45401-opm validate should detect cycles in channels",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45402-[Skipped:Disconnected] opm render should automatically pulling in the image(s) used in the deployments",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:48438-[Skipped:Disconnected] opm render should support olm.constraint which is defined in dependencies",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:70013-[Skipped:Disconnected] opm support deprecated channel",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:34016-opm can prune operators from catalog",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:54168-[Skipped:Disconnected] opm support '--use-http' global flag",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43409-[Skipped:Disconnected] opm can list catalog contents",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45407-opm and oc should print sqlite deprecation warnings",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53869-[Skipped:Disconnected] opm supports creating a catalog using basic veneer",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53871-PolarionID:53915-PolarionID:53996-[Skipped:Disconnected][Slow] opm supports creating a catalog using semver veneer [Slow]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53917-[Skipped:Disconnected] opm can visualize the update graph for a given Operator from an arbitrary version",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:60573-[Skipped:Disconnected] opm exclude bundles with olm.deprecated property when rendering",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:73218-[Skipped:Disconnected] opm alpha render-graph indicate deprecated graph content",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
     },
     "resources": {
       "isolation": {}
