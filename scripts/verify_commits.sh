@@ -112,7 +112,7 @@ function fetch_remotes() {
 function main() {
     fetch_remotes || { err "failed to fetch remotes" &&  exit 1; }
 
-    local target_branch="${1:-master}"
+    local target_branch="${1:-main}"
 
     # get all commits we're introducing into the target branch
     local -a new_commits
