@@ -12,7 +12,7 @@ require (
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.12.0
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.26.0
-	github.com/openshift/api v3.9.0+incompatible
+	github.com/openshift/api v0.0.0-20251021211107-8c9accafe91d
 	github.com/operator-framework/api v0.35.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.60.0
@@ -211,7 +211,6 @@ require (
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
-	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250804133106-a7a43d27e69b // indirect
@@ -242,10 +241,6 @@ require (
 )
 
 replace (
-	// controller runtime
-	github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
-	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
-
 	// use staged repositories
 	github.com/operator-framework/api => ./staging/api
 	github.com/operator-framework/operator-lifecycle-manager => ./staging/operator-lifecycle-manager
