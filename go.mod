@@ -242,8 +242,6 @@ require (
 )
 
 replace (
-	// pinned because of incompatibility with k8s.io/apiserver
-	github.com/google/cel-go => github.com/google/cel-go v0.22.1
 	// controller runtime
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
