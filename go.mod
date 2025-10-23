@@ -12,7 +12,7 @@ require (
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.11.3
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.24.0
-	github.com/openshift/api v3.9.0+incompatible
+	github.com/openshift/api v0.0.0-20250811150514-cc869c87a7f0
 	github.com/operator-framework/api v0.33.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.56.0
@@ -251,7 +251,7 @@ replace (
 	// pinned because of incompatibility with k8s.io/apiserver
 	github.com/google/cel-go => github.com/google/cel-go v0.22.1
 	// controller runtime
-	github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
+	github.com/openshift/api => github.com/openshift/api v0.0.0-20250811150514-cc869c87a7f0
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
 
 	// use staged repositories
