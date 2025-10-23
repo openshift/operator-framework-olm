@@ -52,6 +52,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&InfrastructureList{},
 		&Ingress{},
 		&IngressList{},
+		&Node{},
+		&NodeList{},
 		&Network{},
 		&NetworkList{},
 		&OAuth{},
@@ -64,6 +66,18 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ProxyList{},
 		&Scheduler{},
 		&SchedulerList{},
+		&ImageContentPolicy{},
+		&ImageContentPolicyList{},
+		&ImageDigestMirrorSet{},
+		&ImageDigestMirrorSetList{},
+		&ImageTagMirrorSet{},
+		&ImageTagMirrorSetList{},
+		&ImagePolicy{},
+		&ImagePolicyList{},
+		&ClusterImagePolicy{},
+		&ClusterImagePolicyList{},
+		&InsightsDataGather{},
+		&InsightsDataGatherList{},
 	)
 	metav1.AddToGroupVersion(scheme, GroupVersion)
 	return nil
