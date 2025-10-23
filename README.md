@@ -1,3 +1,6 @@
+TEST - Should pass in all CI jobs
+(no changes)
+
 # operator-framework-olm
 
 This repository is a monorepo superset of the projects that comprises the
