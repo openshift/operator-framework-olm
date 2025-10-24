@@ -288,6 +288,28 @@ Consider these requirements when writing and reviewing code:
 	})
   ```
 
+## Using Claude Code for Development of QE Case
+
+If you are using Claude Code as your AI coding assistant:
+
+1. **Start Claude Code from tests-extension directory**:
+   ```bash
+   cd tests-extension/
+   # Then launch Claude Code from this directory
+   claude
+   ```
+
+2. **Load AGENTS.md**:
+   - If starting from `tests-extension/` directory: AGENTS.md auto-loads (no prompt)
+   - If starting from a subdirectory (e.g., `tests-extension/test/qe/`): On first launch, Claude Code will prompt you to load the parent AGENTS.md - select **Yes** (subsequent launches will auto-load)
+   - Use `/memory` to verify AGENTS.md is loaded and view its content
+
+This ensures Claude Code has access to:
+- Test framework architecture and patterns
+- Migration guidelines from tests-private
+- Suite definitions and label requirements
+- Code quality standards and anti-patterns
+
 ## Local Development Workflow
 
 ### Before Submitting PR
