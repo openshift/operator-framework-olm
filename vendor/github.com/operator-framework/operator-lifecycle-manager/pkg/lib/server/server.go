@@ -11,6 +11,9 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/profile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 )
 
 // Option applies a configuration option to the given config.
@@ -43,11 +46,18 @@ func WithDebug(debug bool) Option {
 	}
 }
 
+func WithKubeConfig(config *rest.Config) Option {
+	return func(sc *serverConfig) {
+		sc.kubeConfig = config
+	}
+}
+
 type serverConfig struct {
 	logger       *logrus.Logger
 	tlsCertPath  *string
 	tlsKeyPath   *string
 	clientCAPath *string
+	kubeConfig   *rest.Config
 	debug        bool
 }
 
@@ -62,6 +72,7 @@ func defaultServerConfig() serverConfig {
 		tlsCertPath:  nil,
 		tlsKeyPath:   nil,
 		clientCAPath: nil,
+		kubeConfig:   nil,
 		logger:       nil,
 		debug:        false,
 	}
@@ -90,11 +101,52 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/metrics", promhttp.Handler())
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	profile.RegisterHandlers(mux, profile.WithTLS(tlsEnabled || !sc.debug))
+
+	// Set up authenticated metrics endpoint if kubeConfig is provided
+	if sc.kubeConfig != nil && tlsEnabled {
+		sc.logger.Info("Setting up authenticated metrics endpoint")
+		// Create HTTP client with proper TLS configuration from kubeConfig
+		// This is necessary for TokenReview/SubjectAccessReview API calls to verify API server certificates
+		httpClient, err := rest.HTTPClientFor(sc.kubeConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create http client for authentication: %w", err)
+		}
+		// Create authentication filter using controller-runtime
+		filter, err := filters.WithAuthenticationAndAuthorization(sc.kubeConfig, httpClient)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create authentication filter: %w", err)
+		}
+		// Create authenticated metrics handler
+		logger := log.FromContext(context.Background())
+		authenticatedMetricsHandler, err := filter(logger, promhttp.Handler())
+		if err != nil {
+			return nil, fmt.Errorf("failed to wrap metrics handler with authentication: %w", err)
+		}
+		// Add request logging for debugging if debug mode is enabled
+		if sc.debug {
+			debugAuthHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				sc.logger.Infof("Metrics request from %s, Auth header present: %v, User-Agent: %s",
+					r.RemoteAddr, r.Header.Get("Authorization") != "", r.Header.Get("User-Agent"))
+				authenticatedMetricsHandler.ServeHTTP(w, r)
+			})
+			mux.Handle("/metrics", debugAuthHandler)
+		} else {
+			mux.Handle("/metrics", authenticatedMetricsHandler)
+		}
+		sc.logger.Info("Metrics endpoint configured with authentication and authorization")
+	} else {
+		// Fallback to unprotected metrics (for development/testing)
+		mux.Handle("/metrics", promhttp.Handler())
+		if sc.kubeConfig == nil {
+			sc.logger.Warn("No Kubernetes config provided - metrics endpoint will be unprotected")
+		} else if !tlsEnabled {
+			sc.logger.Warn("TLS not enabled - metrics endpoint will be unprotected")
+		}
+	}
 
 	s := http.Server{
 		Handler: mux,
@@ -141,6 +193,7 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 				ClientAuth:   tls.VerifyClientCertIfGiven,
 			}, nil
 		},
+		NextProtos: []string{"http/1.1"}, // Disable HTTP/2 for security
 	}
 	return func() error {
 		return s.ListenAndServeTLS("", "")

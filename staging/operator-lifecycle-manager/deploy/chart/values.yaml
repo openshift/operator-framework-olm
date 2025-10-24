@@ -27,10 +27,10 @@ olm:
     ref: quay.io/operator-framework/olm:master
     pullPolicy: Always
   service:
+    name: olm-operator-metrics
     internalPort: 8080
+    internalPortHttps: 8443
     externalPort: metrics
-  # tlsSecret: olm-operator-serving-cert
-  # clientCASecret: pprof-serving-cert
   nodeSelector:
     kubernetes.io/os: linux
   resources:
@@ -47,10 +47,10 @@ catalog:
     ref: quay.io/operator-framework/olm:master
     pullPolicy: Always
   service:
+    name: catalog-operator-metrics
     internalPort: 8080
+    internalPortHttps: 8443
     externalPort: metrics
-  # tlsSecret: catalog-operator-serving-cert
-  # clientCASecret: pprof-serving-cert
   nodeSelector:
     kubernetes.io/os: linux
   resources:
@@ -77,6 +77,31 @@ package:
 monitoring:
   enabled: false
   namespace: monitoring
+
+certManager:
+  enabled: true
+  issuer:
+    name: olm-ca-issuer
+    selfSigned: true
+    ca:
+      secretName: ""
+  certificate:
+    name: olm-cert
+    secretName: olm-cert
+    extraDnsNames: []
+    extraIpAddresses: []
+
+# OpenShift service-ca configuration
+# When enabled, uses OpenShift service-ca-operator for certificate management
+# This is mutually exclusive with certManager - only one should be enabled
+serviceCa:
+  enabled: false
+  # Secret names are left empty in upstream, to be filled by downstream values.yaml
+  # Service names are taken from olm.service.name and catalog.service.name
+  olmOperator:
+    secretName: ""
+  catalogOperator:
+    secretName: ""
 
 networkPolicy:
   dns:

@@ -101,6 +101,18 @@ package:
     requests:
       cpu: 10m
       memory: 50Mi
+# Disable cert-manager in favor of OpenShift service-ca
+certManager:
+  enabled: false
+
+# Enable OpenShift service-ca for automatic certificate management
+serviceCa:
+  enabled: true
+  olmOperator:
+    secretName: olm-operator-serving-cert
+  catalogOperator:
+    secretName: catalog-operator-serving-cert
+
 monitoring:
   enabled: true
   namespace: openshift-monitoring
