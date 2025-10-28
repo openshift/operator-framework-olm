@@ -11,7 +11,7 @@ require (
 	github.com/grpc-ecosystem/grpc-health-probe v0.4.40
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.12.0
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
-	github.com/onsi/ginkgo/v2 v2.26.0
+	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/openshift/api v0.0.0-20251023193535-8691c3014652
 	github.com/operator-framework/api v0.35.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
@@ -194,7 +194,6 @@ require (
 	go.podman.io/common v0.65.0 // indirect
 	go.podman.io/image/v5 v5.38.0 // indirect
 	go.podman.io/storage v1.61.0 // indirect
-	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
