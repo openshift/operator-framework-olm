@@ -215,9 +215,9 @@ func main() {
 	specs = specs.Walk(func(spec *et.ExtensionTestSpec) {
 		if spec.Labels.Has("Extended") {
 			// Change blocking tests to informing unless marked as ReleaseGate
-			if !spec.Labels.Has("ReleaseGate") && spec.Lifecycle == "blocking" {
-				spec.Lifecycle = "informing"
-			}
+			// if !spec.Labels.Has("ReleaseGate") && spec.Lifecycle == "blocking" {
+			// 	spec.Lifecycle = "informing"
+			// }
 			// Exclude External topology for NonHyperShiftHOST tests
 			if spec.Labels.Has("NonHyperShiftHOST") {
 				spec.Exclude(et.TopologyEquals("External"))
