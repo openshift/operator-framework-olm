@@ -36,7 +36,6 @@ We need to identify all cases from tests-private among all cases, then mark whic
    g.It("xxxxxx", g.Label("ReleaseGate"), func() {
    ```
    - This makes the case equivalent to origin cases for openshift-tests
-   - Test framework automatically sets these cases without `ReleaseGate` as `Informing`
    - For the cases with `ReleaseGate` that need `Informing`, add:
      ```go
      import oteg "github.com/openshift-eng/openshift-tests-extension/pkg/ginkgo"

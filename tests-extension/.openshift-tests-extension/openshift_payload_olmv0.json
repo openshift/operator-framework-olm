@@ -9,10 +9,73 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:25783-[Skipped:Disconnected]Subscriptions are not getting processed taking very long to get processed[Serial]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21484-PolarionID:21532-[Skipped:Disconnected]watch special or all namespace by operator group",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:24906-[Skipped:Disconnected]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:33241-[Skipped:Disconnected]Enable generated operator component adoption for operators with all ns mode[Serial]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:22226-[Skipped:Disconnected]the csv without support AllNamespaces fails for og with allnamespace",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
   },
   {
     "name": "[sig-operator][Jira:OLM] OLMv0 should pass a trivial sanity check",
@@ -37,7 +100,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -51,8 +114,94 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:24076-check the version of olm operator is appropriate in ClusterOperator",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:21825-[Skipped:Disconnected]Certs for packageserver can be rotated successfully [Serial]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:83105-[Skipped:Disconnected]olmv0 static networkpolicy on ocp",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "ReleaseGate": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:83583-[Skipped:Disconnected]olmv0 networkpolicy on hosted hypershift",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "ReleaseGate": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
   },
   {
     "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[Skipped:Disconnected]catalogsource with invalid name is created",
@@ -64,7 +213,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -79,7 +228,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -94,7 +243,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -109,7 +258,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -124,7 +273,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -139,7 +288,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -153,8 +302,38 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:71119-[Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:29275-[Skipped:Disconnected]label to target namespace of operator group with multi namespace",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
   },
   {
     "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24870-[Skipped:Disconnected]can not create csv without operator group",
@@ -165,7 +344,34 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:22200-[Skipped:Disconnected]add minimum kube version to CSV [Slow]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23473-[Skipped:Disconnected]permit z-stream releases skipping during operator updates",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
     "environmentSelector": {}
   },
   {
@@ -177,8 +383,365 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29231-PolarionID:29277-label to target namespace of group",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25855-[Skipped:Disconnected][Serial]Add the channel field to subscription_sync_count",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23170-[Skipped:Disconnected]API labels should be hash",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:20979-[Skipped:Disconnected]only one IP is generated",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25757-PolarionID:22656-[Skipped:Disconnected]manual approval strategy apply to subsequent releases",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24438-[Skipped:Disconnected]check subscription CatalogSource Status",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24027-[Skipped:Disconnected]can create and delete catalogsource and sub repeatedly",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:21404-[Skipped:Disconnected]csv will be RequirementsNotMet after sa is delete",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29723-[Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:30762-[Skipped:Disconnected]installs bundles with v1 CRDs",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:27683-[Skipped:Disconnected]InstallPlans can install from extracted bundles",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24513-[Skipped:Disconnected]Operator config support env only",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24382-[Skipped:Disconnected]Should restrict CRD update if schema changes[Serial]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25760-[Skipped:Disconnected]Operator upgrades does not fail after change the channel",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:35895-[Skipped:Disconnected]can't install a CSV with duplicate roles",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:32863-[Skipped:Disconnected]Support resources required for SAP Gardener Control Plane Operator[Serial][Disruptive]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:34472-[Skipped:Disconnected]olm label dependency",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:33176-[Skipped:Disconnected]Enable generated operator component adoption for operators with single ns mode[Slow][Serial]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:39897-[Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50135-[Skipped:Disconnected]automatic upgrade for failed operator installation og created correctly",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50136-[Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50138-[Skipped:Disconnected]automatic upgrade for failed operator installation ip fails",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:40958-[Skipped:Disconnected]Indicate invalid OperatorGroup on InstallPlan status",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:60114-[Skipped:Disconnected]olm serves an api to discover all versions of an operator[Slow]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62974-olm sets invalid scc label on its namespaces",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-general way collect profiles cronjob pod missing target.workload.openshift.io management annotation",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
   },
   {
     "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43185-DC based opm subcommands out of alpha",
@@ -191,7 +754,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -207,7 +770,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -223,7 +786,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -239,7 +802,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -255,7 +818,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -271,7 +834,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -287,7 +850,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -303,7 +866,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -319,7 +882,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -335,7 +898,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -351,7 +914,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -367,7 +930,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -383,7 +946,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -399,7 +962,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -415,7 +978,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -431,7 +994,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -447,7 +1010,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -463,7 +1026,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "informing",
+    "lifecycle": "blocking",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }

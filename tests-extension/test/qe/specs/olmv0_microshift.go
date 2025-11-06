@@ -43,7 +43,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 
 	})
 
-	// author: kuiwang@redhat.com
 	g.It("PolarionID:69867-[Skipped:Disconnected]deployed in microshift and install one operator with single mode.", func() {
 
 		var (
@@ -147,7 +146,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 		), "some resources do not exist")
 
 	})
-	// author: kuiwang@redhat.com
+
 	g.It("PolarionID:69868-[Skipped:Disconnected]olm microshift install operator with all mode, muilt og error and delete one og to get it installed.", func() {
 
 		var (
@@ -220,7 +219,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 
 	})
 
-	// author: kuiwang@redhat.com
 	g.It("PolarionID:83581-[Skipped:Disconnected]olmv0 networkpolicy on microshift.", func() {
 
 		policies := []olmv0util.NpExpecter{

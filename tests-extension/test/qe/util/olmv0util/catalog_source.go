@@ -54,10 +54,15 @@ func (catsrc *CatalogSourceDescription) Create(oc *exutil.CLI, itName string, dr
 		applyFn = ApplyResourceFromTemplateOnMicroshift
 	}
 	// Apply the catalog source template with all configured parameters
+	// Quote empty values to prevent shell parsing errors
+	imageTemplate := catsrc.ImageTemplate
+	if imageTemplate == "" {
+		imageTemplate = `""`
+	}
 	err := applyFn(oc, "--ignore-unknown-parameters=true", "-f", catsrc.Template,
 		"-p", "NAME="+catsrc.Name, "NAMESPACE="+catsrc.Namespace, "ADDRESS="+catsrc.Address, "SECRET="+catsrc.Secret,
 		"DISPLAYNAME="+"\""+catsrc.DisplayName+"\"", "PUBLISHER="+"\""+catsrc.Publisher+"\"", "SOURCETYPE="+catsrc.SourceType,
-		"INTERVAL="+catsrc.Interval, "IMAGETEMPLATE="+catsrc.ImageTemplate)
+		"INTERVAL="+catsrc.Interval, "IMAGETEMPLATE="+imageTemplate)
 	o.Expect(err).NotTo(o.HaveOccurred())
 	// Configure security context constraints for non-microshift clusters
 	if strings.Compare(catsrc.ClusterType, "microshift") != 0 {

@@ -1,5 +1,6 @@
 // Code generated for package testdata by go-bindata DO NOT EDIT. (@generated)
 // sources:
+// test/qe/testdata/olm/apiservice.yaml
 // test/qe/testdata/olm/catalogsource-address.yaml
 // test/qe/testdata/olm/catalogsource-configmap.yaml
 // test/qe/testdata/olm/catalogsource-image-cacheless.yaml
@@ -189,6 +190,46 @@ func (fi bindataFileInfo) IsDir() bool {
 // Sys return file is sys mode
 func (fi bindataFileInfo) Sys() interface{} {
 	return nil
+}
+
+var _testQeTestdataOlmApiserviceYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: apiservice-template
+objects:
+- kind: APIService
+  apiVersion: apiregistration.k8s.io/v1
+  metadata:
+    name: "${NAME}"
+  spec:
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJaekNDQVE2Z0F3SUJBZ0lJTjRRUFRuVnJWK2t3Q2dZSUtvWkl6ajBFQXdJd0dERVdNQlFHQTFVRUNoTU4KVW1Wa0lFaGhkQ3dnU1c1akxqQWVGdzB5TURBMk1qSXhOREE1TWpSYUZ3MHlNakEyTWpJeE5EQTVNalJhTUJneApGakFVQmdOVkJBb1REVkpsWkNCSVlYUXNJRWx1WXk0d1dUQVRCZ2NxaGtqT1BRSUJCZ2dxaGtqT1BRTUJCd05DCkFBUmVkUlVESkhGb2gzTThYcEYxTzN1RXRCWU9ZeW1vMEdPTjN6WC91dHNpRlM3YnZ1Tmk2UEE0NC9teGZlT3oKUENrdDBRWitWUWp0MnE3UHhHdzZ4YkZwbzBJd1FEQU9CZ05WSFE4QkFmOEVCQU1DQW9Rd0hRWURWUjBsQkJZdwpGQVlJS3dZQkJRVUhBd0lHQ0NzR0FRVUZCd01CTUE4R0ExVWRFd0VCL3dRRk1BTUJBZjh3Q2dZSUtvWkl6ajBFCkF3SURSd0F3UkFJZ0NxY2tjdE1Tc1hYQi9PQ0hwQjlkSmZSRmZMYmJNOFQ1Q3J3dGlBNTlRYW9DSUdRSlh1TnkKUVlBUnczUmNLUXI1ZnNQM1JhMElRaUNORzNveUZXaVg1Y3RSCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+    group: foos.bar.com
+    groupPriorityMinimum: 2000
+    service:
+      name: foo
+      namespace: bar
+      port: 5443
+    version: "${VERSION}"
+    versionPriority: 15
+parameters:
+- name: NAME
+- name: VERSION
+
+`)
+
+func testQeTestdataOlmApiserviceYamlBytes() ([]byte, error) {
+	return _testQeTestdataOlmApiserviceYaml, nil
+}
+
+func testQeTestdataOlmApiserviceYaml() (*asset, error) {
+	bytes, err := testQeTestdataOlmApiserviceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/qe/testdata/olm/apiservice.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
 }
 
 var _testQeTestdataOlmCatalogsourceAddressYaml = []byte(`apiVersion: template.openshift.io/v1
@@ -17876,6 +17917,7 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
+	"test/qe/testdata/olm/apiservice.yaml":                                                                       testQeTestdataOlmApiserviceYaml,
 	"test/qe/testdata/olm/catalogsource-address.yaml":                                                            testQeTestdataOlmCatalogsourceAddressYaml,
 	"test/qe/testdata/olm/catalogsource-configmap.yaml":                                                          testQeTestdataOlmCatalogsourceConfigmapYaml,
 	"test/qe/testdata/olm/catalogsource-image-cacheless.yaml":                                                    testQeTestdataOlmCatalogsourceImageCachelessYaml,
@@ -18063,6 +18105,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"qe": {nil, map[string]*bintree{
 			"testdata": {nil, map[string]*bintree{
 				"olm": {nil, map[string]*bintree{
+					"apiservice.yaml":                                   {testQeTestdataOlmApiserviceYaml, map[string]*bintree{}},
 					"catalogsource-address.yaml":                        {testQeTestdataOlmCatalogsourceAddressYaml, map[string]*bintree{}},
 					"catalogsource-configmap.yaml":                      {testQeTestdataOlmCatalogsourceConfigmapYaml, map[string]*bintree{}},
 					"catalogsource-image-cacheless.yaml":                {testQeTestdataOlmCatalogsourceImageCachelessYaml, map[string]*bintree{}},
