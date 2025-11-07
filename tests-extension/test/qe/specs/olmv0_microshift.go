@@ -43,7 +43,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 
 	})
 
-	g.It("PolarionID:69867-[Skipped:Disconnected]deployed in microshift and install one operator with single mode.", func() {
+	g.It("PolarionID:69867-[OTP][Skipped:Disconnected]deployed in microshift and install one operator with single mode.", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:69867-[Skipped:Disconnected]deployed in microshift and install one operator with single mode."), func() {
 
 		var (
 			itName              = g.CurrentSpecReport().FullText()
@@ -147,7 +147,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 
 	})
 
-	g.It("PolarionID:69868-[Skipped:Disconnected]olm microshift install operator with all mode, muilt og error and delete one og to get it installed.", func() {
+	g.It("PolarionID:69868-[OTP][Skipped:Disconnected]olm microshift install operator with all mode muilt og error and delete one og to get it installed.", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:69868-[Skipped:Disconnected]olm microshift install operator with all mode muilt og error and delete one og to get it installed."), func() {
 
 		var (
 			itName              = g.CurrentSpecReport().FullText()
@@ -219,7 +219,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 
 	})
 
-	g.It("PolarionID:83581-[Skipped:Disconnected]olmv0 networkpolicy on microshift.", func() {
+	g.It("PolarionID:83581-[OTP][Skipped:Disconnected]olmv0 networkpolicy on microshift.", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:83581-[Skipped:Disconnected]olmv0 networkpolicy on microshift."), func() {
 
 		policies := []olmv0util.NpExpecter{
 			{

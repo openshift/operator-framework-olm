@@ -48,7 +48,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", g.Label(
 		oc.SetGuestKubeconf(guestClusterKube)
 	})
 
-	g.It("PolarionID:45381-[Skipped:Disconnected]Support custom catalogs in hypershift", func() {
+	g.It("PolarionID:45381-[OTP][Skipped:Disconnected]Support custom catalogs in hypershift", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45381-[Skipped:Disconnected]Support custom catalogs in hypershift"), func() {
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -117,7 +117,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", g.Label(
 
 	})
 
-	g.It("PolarionID:45408-[Skipped:Disconnected]Eliminate use of imagestreams in catalog management", func() {
+	g.It("PolarionID:45408-[OTP][Skipped:Disconnected]Eliminate use of imagestreams in catalog management", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45408-[Skipped:Disconnected]Eliminate use of imagestreams in catalog management"), func() {
 		controlProject := hostedClusterNS + "-" + guestClusterName
 		if !isAKS {
 			exutil.SkipBaselineCaps(oc, "None")

@@ -34,7 +34,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 with multi ns", func() {
 
 	g.AfterEach(func() {})
 
-	g.It("PolarionID:22226-[Skipped:Disconnected]the csv without support MultiNamespace fails for og with MultiNamespace", func() {
+	g.It("PolarionID:22226-[OTP][Skipped:Disconnected]the csv without support MultiNamespace fails for og with MultiNamespace", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:22226-[Skipped:Disconnected]the csv without support MultiNamespace fails for og with MultiNamespace"), func() {
 		var (
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
 			cmNcTemplate        = filepath.Join(buildPruningBaseDir, "cm-namespaceconfig.yaml")
@@ -115,7 +115,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 with multi ns", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "MultiNamespace InstallModeType not supported", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.message}"}).Check(oc)
 	})
 
-	g.It("PolarionID:71119-[Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:71119-[OTP][Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:71119-[Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]"), func() {
 		exutil.SkipForSNOCluster(oc)
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipNoCapabilities(oc, "marketplace")
@@ -206,7 +206,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 with multi ns", func() {
 		}, 150*time.Second, 10*time.Second).Should(o.Equal(0), "the pod restart")
 	})
 
-	g.It("PolarionID:29275-[Skipped:Disconnected]label to target namespace of operator group with multi namespace", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:29275-[OTP][Skipped:Disconnected]label to target namespace of operator group with multi namespace", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:29275-[Skipped:Disconnected]label to target namespace of operator group with multi namespace"), func() {
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")

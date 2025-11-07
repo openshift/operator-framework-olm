@@ -44,7 +44,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		dr.RmIr(itName)
 	})
 
-	g.It("PolarionID:24870-[Skipped:Disconnected]can not create csv without operator group", func() {
+	g.It("PolarionID:24870-[OTP][Skipped:Disconnected]can not create csv without operator group", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24870-[Skipped:Disconnected]can not create csv without operator group"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
@@ -102,7 +102,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithNamespace, exutil.Compare, "Succeeded"+"InstallSucceeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-o=jsonpath={.status.phase}{.status.reason}"}).Check(oc)
 	})
 
-	g.It("PolarionID:22200-[Skipped:Disconnected]add minimum kube version to CSV [Slow]", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:22200-[OTP][Skipped:Disconnected]add minimum kube version to CSV [Slow]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:22200-[Skipped:Disconnected]add minimum kube version to CSV [Slow]"), func() {
 		checkArch := architecture.ClusterArchitecture(oc)
 		e2e.Logf("the curent arch is %v", checkArch.String())
 		architecture.SkipNonAmd64SingleArch(oc)
@@ -231,7 +231,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		}
 	})
 
-	g.It("PolarionID:23473-[Skipped:Disconnected]permit z-stream releases skipping during operator updates", func() {
+	g.It("PolarionID:23473-[OTP][Skipped:Disconnected]permit z-stream releases skipping during operator updates", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23473-[Skipped:Disconnected]permit z-stream releases skipping during operator updates"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
@@ -307,7 +307,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		o.Expect(strings.Contains(sub.IpCsv, skippedVersion)).To(o.BeFalse())
 	})
 
-	g.It("PolarionID:37263-[Skipped:Disconnected][Skipped:Proxy]Subscription stays in UpgradePending but InstallPlan not installing [Slow]", func() {
+	g.It("PolarionID:37263-[OTP][Skipped:Disconnected][Skipped:Proxy]Subscription stays in UpgradePending but InstallPlan not installing [Slow]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:37263-[Skipped:Disconnected][Skipped:Proxy]Subscription stays in UpgradePending but InstallPlan not installing [Slow]"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipForSNOCluster(oc)
@@ -459,7 +459,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// It will cover test case: OCP-29231 and OCP-29277
-	g.It("PolarionID:29231-PolarionID:29277-label to target namespace of group", func() {
+	g.It("PolarionID:29231-PolarionID:29277-[OTP]label to target namespace of group", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29231-PolarionID:29277-label to target namespace of group"), func() {
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -510,7 +510,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 2: OCP-25855
-	g.It("PolarionID:25855-[Skipped:Disconnected][Serial]Add the channel field to subscription_sync_count", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:25855-[OTP][Skipped:Disconnected][Serial]Add the channel field to subscription_sync_count", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25855-[Skipped:Disconnected][Serial]Add the channel field to subscription_sync_count"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		infra, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("infrastructures", "cluster", "-o=jsonpath={.status.infrastructureTopology}").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
@@ -611,7 +611,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 2: OCP-23170
-	g.It("PolarionID:23170-[Skipped:Disconnected]API labels should be hash", func() {
+	g.It("PolarionID:23170-[OTP][Skipped:Disconnected]API labels should be hash", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23170-[Skipped:Disconnected]API labels should be hash"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
@@ -685,7 +685,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 3: OCP-20979
-	g.It("PolarionID:20979-[Skipped:Disconnected]only one IP is generated", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:20979-[OTP][Skipped:Disconnected]only one IP is generated", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:20979-[Skipped:Disconnected]only one IP is generated"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		if isAks, _ := exutil.IsAKSCluster(context.TODO(), oc); isAks {
 			g.Skip("skip for aks cluster")
@@ -787,7 +787,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 3: OCP-25757/22656
-	g.It("PolarionID:25757-PolarionID:22656-[Skipped:Disconnected]manual approval strategy apply to subsequent releases", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:25757-PolarionID:22656-[OTP][Skipped:Disconnected]manual approval strategy apply to subsequent releases", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25757-PolarionID:22656-[Skipped:Disconnected]manual approval strategy apply to subsequent releases"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		if isAks, _ := exutil.IsAKSCluster(context.TODO(), oc); isAks {
 			g.Skip("skip for aks cluster")
@@ -890,7 +890,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 4 - OCP-24438 + OCP-24027
-	g.It("PolarionID:24438-[Skipped:Disconnected]check subscription CatalogSource Status", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:24438-[OTP][Skipped:Disconnected]check subscription CatalogSource Status", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24438-[Skipped:Disconnected]check subscription CatalogSource Status"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		platform := exutil.CheckPlatform(oc)
 		if strings.Contains(platform, "openstack") || strings.Contains(platform, "baremetal") || strings.Contains(platform, "vsphere") || strings.Contains(platform, "none") || exutil.Is3MasterNoDedicatedWorkerNode(oc) {
@@ -957,7 +957,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "READY", exutil.Ok, []string{"catsrc", catsrc.Name, "-n", catsrc.Namespace, "-o=jsonpath={.status..lastObservedState}"}).Check(oc)
 	})
 
-	g.It("PolarionID:24027-[Skipped:Disconnected]can create and delete catalogsource and sub repeatedly", func() {
+	g.It("PolarionID:24027-[OTP][Skipped:Disconnected]can create and delete catalogsource and sub repeatedly", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24027-[Skipped:Disconnected]can create and delete catalogsource and sub repeatedly"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		platform := exutil.CheckPlatform(oc)
 		if strings.Contains(platform, "openstack") || strings.Contains(platform, "baremetal") || strings.Contains(platform, "vsphere") || strings.Contains(platform, "none") || exutil.Is3MasterNoDedicatedWorkerNode(oc) {
@@ -1032,7 +1032,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// OCP-21404 - CSV will be RequirementsNotMet after SA is deleted
-	g.It("PolarionID:21404-[Skipped:Disconnected]csv will be RequirementsNotMet after sa is delete", func() {
+	g.It("PolarionID:21404-[OTP][Skipped:Disconnected]csv will be RequirementsNotMet after sa is delete", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:21404-[Skipped:Disconnected]csv will be RequirementsNotMet after sa is delete"), func() {
 		if isAks, _ := exutil.IsAKSCluster(context.TODO(), oc); isAks {
 			g.Skip("skip for ask cluster")
 		}
@@ -1114,7 +1114,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// OCP-29723 - As cluster admin find abnormal status condition via components of operator resource
-	g.It("PolarionID:29723-[Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:29723-[OTP][Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29723-[Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
@@ -1184,7 +1184,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// OCP-30762 - installs bundles with v1 CRDs
-	g.It("PolarionID:30762-[Skipped:Disconnected]installs bundles with v1 CRDs", func() {
+	g.It("PolarionID:30762-[OTP][Skipped:Disconnected]installs bundles with v1 CRDs", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:30762-[Skipped:Disconnected]installs bundles with v1 CRDs"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		platform := exutil.CheckPlatform(oc)
 		proxy, errProxy := oc.AsAdmin().WithoutNamespace().Run("get").Args("proxy", "cluster", "-o=jsonpath={.status.httpProxy}{.status.httpsProxy}").Output()
@@ -1251,7 +1251,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// OCP-27683 - InstallPlans can install from extracted bundles
-	g.It("PolarionID:27683-[Skipped:Disconnected]InstallPlans can install from extracted bundles", func() {
+	g.It("PolarionID:27683-[OTP][Skipped:Disconnected]InstallPlans can install from extracted bundles", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:27683-[Skipped:Disconnected]InstallPlans can install from extracted bundles"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
@@ -1320,7 +1320,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		o.Expect(jobBundle).To(o.ContainSubstring(ipBundle))
 	})
 
-	g.It("PolarionID:24513-[Skipped:Disconnected]Operator config support env only", func() {
+	g.It("PolarionID:24513-[OTP][Skipped:Disconnected]Operator config support env only", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24513-[Skipped:Disconnected]Operator config support env only"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		platform := exutil.CheckPlatform(oc)
 		if strings.Contains(platform, "openstack") || strings.Contains(platform, "baremetal") || strings.Contains(platform, "vsphere") || strings.Contains(platform, "none") || exutil.Is3MasterNoDedicatedWorkerNode(oc) {
@@ -1388,7 +1388,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("check the empty env")
 	})
 
-	g.It("PolarionID:24382-[Skipped:Disconnected]Should restrict CRD update if schema changes[Serial]", func() {
+	g.It("PolarionID:24382-[OTP][Skipped:Disconnected]Should restrict CRD update if schema changes[Serial]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24382-[Skipped:Disconnected]Should restrict CRD update if schema changes[Serial]"), func() {
 		if isAks, _ := exutil.IsAKSCluster(context.TODO(), oc); isAks {
 			g.Skip("skip for aks cluster")
 		}
@@ -1518,7 +1518,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 8: OCP-25760 + OCP-35895
-	g.It("PolarionID:25760-[Skipped:Disconnected]Operator upgrades does not fail after change the channel", func() {
+	g.It("PolarionID:25760-[OTP][Skipped:Disconnected]Operator upgrades does not fail after change the channel", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25760-[Skipped:Disconnected]Operator upgrades does not fail after change the channel"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipForSNOCluster(oc)
 		platform := exutil.CheckPlatform(oc)
@@ -1594,7 +1594,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
 	})
 
-	g.It("PolarionID:35895-[Skipped:Disconnected]can't install a CSV with duplicate roles", func() {
+	g.It("PolarionID:35895-[OTP][Skipped:Disconnected]can't install a CSV with duplicate roles", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:35895-[Skipped:Disconnected]can't install a CSV with duplicate roles"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		infra, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("infrastructures", "cluster", "-o=jsonpath={.status.infrastructureTopology}").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
@@ -1670,7 +1670,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 9: OCP-32863
-	g.It("PolarionID:32863-[Skipped:Disconnected]Support resources required for SAP Gardener Control Plane Operator[Disruptive]", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:32863-[OTP][Skipped:Disconnected]Support resources required for SAP Gardener Control Plane Operator[Disruptive]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:32863-[Skipped:Disconnected]Support resources required for SAP Gardener Control Plane Operator[Serial][Disruptive]"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipForSNOCluster(oc)
@@ -1772,7 +1772,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 10 - OCP-34472
-	g.It("PolarionID:34472-[Skipped:Disconnected]olm label dependency", func() {
+	g.It("PolarionID:34472-[OTP][Skipped:Disconnected]olm label dependency", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:34472-[Skipped:Disconnected]olm label dependency"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		platform := exutil.CheckPlatform(oc)
 		if strings.Contains(platform, "openstack") || strings.Contains(platform, "baremetal") || strings.Contains(platform, "vsphere") || strings.Contains(platform, "none") || exutil.Is3MasterNoDedicatedWorkerNode(oc) {
@@ -1835,7 +1835,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 10 - OCP-33176
-	g.It("PolarionID:33176-[Skipped:Disconnected]Enable generated operator component adoption for operators with single ns mode[Slow][Serial]", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:33176-[OTP][Skipped:Disconnected]Enable generated operator component adoption for operators with single ns mode[Slow][Serial]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:33176-[Skipped:Disconnected]Enable generated operator component adoption for operators with single ns mode[Slow][Serial]"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		if isAks, _ := exutil.IsAKSCluster(context.TODO(), oc); isAks {
 			g.Skip("skip for ask cluster")
@@ -2035,7 +2035,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 11 - OCP-39897
-	g.It("PolarionID:39897-[Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]", func() {
+	g.It("PolarionID:39897-[OTP][Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:39897-[Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		if isAks, _ := exutil.IsAKSCluster(context.TODO(), oc); isAks {
 			g.Skip("skip for ask cluster")
@@ -2136,7 +2136,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 12 - OCP-50135
-	g.It("PolarionID:50135-[Skipped:Disconnected]automatic upgrade for failed operator installation og created correctly", func() {
+	g.It("PolarionID:50135-[OTP][Skipped:Disconnected]automatic upgrade for failed operator installation og created correctly", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50135-[Skipped:Disconnected]automatic upgrade for failed operator installation og created correctly"), func() {
 		var (
 			itName                    = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir       = exutil.FixturePath("testdata", "olm")
@@ -2209,7 +2209,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 12 - OCP-50136
-	g.It("PolarionID:50136-[Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]", func() {
+	g.It("PolarionID:50136-[OTP][Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50136-[Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
@@ -2314,7 +2314,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 
 	})
 
-	g.It("PolarionID:50138-[Skipped:Disconnected]automatic upgrade for failed operator installation ip fails", func() {
+	g.It("PolarionID:50138-[OTP][Skipped:Disconnected]automatic upgrade for failed operator installation ip fails", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50138-[Skipped:Disconnected]automatic upgrade for failed operator installation ip fails"), func() {
 		infra, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("infrastructures", "cluster", "-o=jsonpath={.status.infrastructureTopology}").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		if infra == "SingleReplica" {
@@ -2431,7 +2431,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 
 	})
 
-	g.It("PolarionID:40958-[Skipped:Disconnected]Indicate invalid OperatorGroup on InstallPlan status", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:40958-[OTP][Skipped:Disconnected]Indicate invalid OperatorGroup on InstallPlan status", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:40958-[Skipped:Disconnected]Indicate invalid OperatorGroup on InstallPlan status"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		if isAks, _ := exutil.IsAKSCluster(context.TODO(), oc); isAks {
 			g.Skip("skip for ask cluster")
@@ -2586,7 +2586,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		}
 	})
 
-	g.It("PolarionID:60114-[Skipped:Disconnected]olm serves an api to discover all versions of an operator[Slow]", func() {
+	g.It("PolarionID:60114-[OTP][Skipped:Disconnected]olm serves an api to discover all versions of an operator[Slow]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:60114-[Skipped:Disconnected]olm serves an api to discover all versions of an operator[Slow]"), func() {
 		architecture.SkipArchitectures(oc, architecture.PPC64LE, architecture.S390X, architecture.MULTI)
 		_ = oc.AsAdmin().WithoutNamespace().Run("get").Args("node", "-o=jsonpath={.items[0].metadata}").Execute()
 		nodes, errGet := oc.AsAdmin().WithoutNamespace().Run("get").Args("node", "-l", "node.kubernetes.io/instance-type=Standard_EC4es_v6").Output()
@@ -2762,7 +2762,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 
 	})
 
-	g.It("PolarionID:62974-olm sets invalid scc label on its namespaces", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:62974-[OTP]olm sets invalid scc label on its namespaces", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62974-olm sets invalid scc label on its namespaces"), func() {
 		labelKey := "openshift\\.io\\/scc"
 
 		for _, ns := range []string{"openshift-operators", "openshift-operator-lifecycle-manager"} {
@@ -2778,7 +2778,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		}
 	})
 
-	g.It("PolarionID:62973-[Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Disruptive][Slow]", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:62973-[OTP][Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Disruptive][Slow]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]"), func() {
 		if !exutil.IsSNOCluster(oc) {
 			g.Skip("it is not sno cluster, so skip it")
 		}
@@ -2819,7 +2819,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		}, 20*time.Minute, 1*time.Minute).Should(o.ContainSubstring("resources.workload.openshift.io/collect-profiles"))
 	})
 
-	g.It("PolarionID:62973-general way collect profiles cronjob pod missing target.workload.openshift.io management annotation", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:62973-[OTP]general way collect profiles cronjob pod missing target.workload.openshift.io management annotation", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-general way collect profiles cronjob pod missing target.workload.openshift.io management annotation"), func() {
 		g.By("https://issues.redhat.com/browse/OCPBUGS-1088 automated")
 
 		g.By("check target.workload.openshift.io/management")
