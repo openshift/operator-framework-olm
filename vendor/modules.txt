@@ -605,7 +605,7 @@ github.com/openshift/client-go/config/informers/externalversions/config
 github.com/openshift/client-go/config/informers/externalversions/config/v1
 github.com/openshift/client-go/config/informers/externalversions/internalinterfaces
 github.com/openshift/client-go/config/listers/config/v1
-# github.com/operator-framework/api v0.35.0 => ./staging/api
+# github.com/operator-framework/api v0.36.0 => ./staging/api
 ## explicit; go 1.24.4
 github.com/operator-framework/api/crds
 github.com/operator-framework/api/pkg/constraints
@@ -624,7 +624,7 @@ github.com/operator-framework/api/pkg/validation/errors
 github.com/operator-framework/api/pkg/validation/interfaces
 github.com/operator-framework/api/pkg/validation/internal
 # github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000 => ./staging/operator-lifecycle-manager
-## explicit; go 1.24.4
+## explicit; go 1.24.6
 github.com/operator-framework/operator-lifecycle-manager/cmd/catalog
 github.com/operator-framework/operator-lifecycle-manager/cmd/copy-content
 github.com/operator-framework/operator-lifecycle-manager/cmd/olm
