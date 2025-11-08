@@ -242,17 +242,10 @@ require (
 
 replace (
 	// pinned because of incompatibility with k8s.io/apiserver
-	github.com/google/cel-go => github.com/google/cel-go v0.22.1
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
 
 	// use staged repositories
 	github.com/operator-framework/api => ./staging/api
 	github.com/operator-framework/operator-lifecycle-manager => ./staging/operator-lifecycle-manager
 	github.com/operator-framework/operator-registry => ./staging/operator-registry
-
-	// pinned because of incompatibility with k8s.io/apiserver otelgrpc API changes
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc => go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.58.0
-
-	// pinned because no tag supports 1.18 yet
-	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06
 )
