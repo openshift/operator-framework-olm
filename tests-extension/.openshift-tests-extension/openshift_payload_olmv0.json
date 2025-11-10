@@ -1,9 +1,11 @@
 [
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21418-PolarionID:25679-[Skipped:Disconnected]Cluster resource created and deleted correctly [Serial]",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21418-PolarionID:25679-[OTP][Skipped:Disconnected]Cluster resource created and deleted correctly [Serial]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21418-PolarionID:25679-[Skipped:Disconnected]Cluster resource created and deleted correctly [Serial]",
     "labels": {
       "Extended": {},
-      "NonHyperShiftHOST": {}
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21418-PolarionID:25679-[Skipped:Disconnected]Cluster resource created and deleted correctly [Serial]": {}
     },
     "resources": {
       "isolation": {}
@@ -15,10 +17,12 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:25783-[Skipped:Disconnected]Subscriptions are not getting processed taking very long to get processed[Serial]",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:25783-[OTP][Skipped:Disconnected]Subscriptions are not getting processed taking very long to get processed[Serial]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:25783-[Skipped:Disconnected]Subscriptions are not getting processed taking very long to get processed[Serial]",
     "labels": {
       "Extended": {},
-      "NonHyperShiftHOST": {}
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:25783-[Skipped:Disconnected]Subscriptions are not getting processed taking very long to get processed[Serial]": {}
     },
     "resources": {
       "isolation": {}
@@ -30,9 +34,11 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21484-PolarionID:21532-[Skipped:Disconnected]watch special or all namespace by operator group",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21484-PolarionID:21532-[OTP][Skipped:Disconnected]watch special or all namespace by operator group",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21484-PolarionID:21532-[Skipped:Disconnected]watch special or all namespace by operator group",
     "labels": {
-      "Extended": {}
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21484-PolarionID:21532-[Skipped:Disconnected]watch special or all namespace by operator group": {}
     },
     "resources": {
       "isolation": {}
@@ -42,9 +48,11 @@
     "environmentSelector": {}
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:24906-[Skipped:Disconnected]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:24906-[OTP][Skipped:Disconnected]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:24906-[Skipped:Disconnected]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]",
     "labels": {
-      "Extended": {}
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:24906-[Skipped:Disconnected]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]": {}
     },
     "resources": {
       "isolation": {}
@@ -54,9 +62,11 @@
     "environmentSelector": {}
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:33241-[Skipped:Disconnected]Enable generated operator component adoption for operators with all ns mode[Serial]",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:33241-[OTP][Skipped:Disconnected]Enable generated operator component adoption for operators with all ns mode[Serial]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:33241-[Skipped:Disconnected]Enable generated operator component adoption for operators with all ns mode[Serial]",
     "labels": {
-      "Extended": {}
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:33241-[Skipped:Disconnected]Enable generated operator component adoption for operators with all ns mode[Serial]": {}
     },
     "resources": {
       "isolation": {}
@@ -66,9 +76,11 @@
     "environmentSelector": {}
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:22226-[Skipped:Disconnected]the csv without support AllNamespaces fails for og with allnamespace",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:22226-[OTP][Skipped:Disconnected]the csv without support AllNamespaces fails for og with allnamespace",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:22226-[Skipped:Disconnected]the csv without support AllNamespaces fails for og with allnamespace",
     "labels": {
-      "Extended": {}
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:22226-[Skipped:Disconnected]the csv without support AllNamespaces fails for og with allnamespace": {}
     },
     "resources": {
       "isolation": {}
@@ -91,92 +103,12 @@
     "environmentSelector": {}
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:22259-[Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:73695-[Skipped:Disconnected]PO is disable",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:24076-check the version of olm operator is appropriate in ClusterOperator",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:21825-[Skipped:Disconnected]Certs for packageserver can be rotated successfully [Serial]",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:83105-[Skipped:Disconnected]olmv0 static networkpolicy on ocp",
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:22259-[OTP][Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:22259-[Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "ReleaseGate": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:22259-[Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]": {}
     },
     "resources": {
       "isolation": {}
@@ -188,11 +120,26 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:83583-[Skipped:Disconnected]olmv0 networkpolicy on hosted hypershift",
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:73695-[OTP][Skipped:Disconnected]PO is disable",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:73695-[Skipped:Disconnected]PO is disable",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:73695-[Skipped:Disconnected]PO is disable": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:24076-[OTP]check the version of olm operator is appropriate in ClusterOperator",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:24076-check the version of olm operator is appropriate in ClusterOperator",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "ReleaseGate": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:24076-check the version of olm operator is appropriate in ClusterOperator": {}
     },
     "resources": {
       "isolation": {}
@@ -204,99 +151,11 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[Skipped:Disconnected]catalogsource with invalid name is created",
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[OTP][Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]",
     "labels": {
       "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45381-[Skipped:Disconnected]Support custom catalogs in hypershift",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45408-[Skipped:Disconnected]Eliminate use of imagestreams in catalog management",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:69867-[Skipped:Disconnected]deployed in microshift and install one operator with single mode.",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:69868-[Skipped:Disconnected]olm microshift install operator with all mode, muilt og error and delete one og to get it installed.",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:83581-[Skipped:Disconnected]olmv0 networkpolicy on microshift.",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:22226-[Skipped:Disconnected]the csv without support MultiNamespace fails for og with MultiNamespace",
-    "labels": {
-      "Extended": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]": {}
     },
     "resources": {
       "isolation": {}
@@ -306,39 +165,11 @@
     "environmentSelector": {}
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:71119-[Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]",
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[OTP][Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself",
     "labels": {
       "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:29275-[Skipped:Disconnected]label to target namespace of operator group with multi namespace",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24870-[Skipped:Disconnected]can not create csv without operator group",
-    "labels": {
-      "Extended": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself": {}
     },
     "resources": {
       "isolation": {}
@@ -348,407 +179,12 @@
     "environmentSelector": {}
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:22200-[Skipped:Disconnected]add minimum kube version to CSV [Slow]",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23473-[Skipped:Disconnected]permit z-stream releases skipping during operator updates",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:37263-[Skipped:Disconnected][Skipped:Proxy]Subscription stays in UpgradePending but InstallPlan not installing [Slow]",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29231-PolarionID:29277-label to target namespace of group",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25855-[Skipped:Disconnected][Serial]Add the channel field to subscription_sync_count",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23170-[Skipped:Disconnected]API labels should be hash",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:20979-[Skipped:Disconnected]only one IP is generated",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25757-PolarionID:22656-[Skipped:Disconnected]manual approval strategy apply to subsequent releases",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24438-[Skipped:Disconnected]check subscription CatalogSource Status",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24027-[Skipped:Disconnected]can create and delete catalogsource and sub repeatedly",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:21404-[Skipped:Disconnected]csv will be RequirementsNotMet after sa is delete",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29723-[Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:30762-[Skipped:Disconnected]installs bundles with v1 CRDs",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:27683-[Skipped:Disconnected]InstallPlans can install from extracted bundles",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24513-[Skipped:Disconnected]Operator config support env only",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24382-[Skipped:Disconnected]Should restrict CRD update if schema changes[Serial]",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25760-[Skipped:Disconnected]Operator upgrades does not fail after change the channel",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:35895-[Skipped:Disconnected]can't install a CSV with duplicate roles",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:32863-[Skipped:Disconnected]Support resources required for SAP Gardener Control Plane Operator[Serial][Disruptive]",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:34472-[Skipped:Disconnected]olm label dependency",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:33176-[Skipped:Disconnected]Enable generated operator component adoption for operators with single ns mode[Slow][Serial]",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:39897-[Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50135-[Skipped:Disconnected]automatic upgrade for failed operator installation og created correctly",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50136-[Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50138-[Skipped:Disconnected]automatic upgrade for failed operator installation ip fails",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:40958-[Skipped:Disconnected]Indicate invalid OperatorGroup on InstallPlan status",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:60114-[Skipped:Disconnected]olm serves an api to discover all versions of an operator[Slow]",
-    "labels": {
-      "Extended": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {}
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62974-olm sets invalid scc label on its namespaces",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-general way collect profiles cronjob pod missing target.workload.openshift.io management annotation",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43185-DC based opm subcommands out of alpha",
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:21825-[OTP][Skipped:Disconnected]Certs for packageserver can be rotated successfully [Serial]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:21825-[Skipped:Disconnected]Certs for packageserver can be rotated successfully [Serial]",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:21825-[Skipped:Disconnected]Certs for packageserver can be rotated successfully [Serial]": {}
     },
     "resources": {
       "isolation": {}
@@ -760,11 +196,13 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43180-opm init dc configuration package",
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:83105-[OTP][Skipped:Disconnected]olmv0 static networkpolicy on ocp",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:83105-[Skipped:Disconnected]olmv0 static networkpolicy on ocp",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "ReleaseGate": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:83105-[Skipped:Disconnected]olmv0 static networkpolicy on ocp": {}
     },
     "resources": {
       "isolation": {}
@@ -776,11 +214,13 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43171-[Skipped:Disconnected] opm render blob from bundle, db based index, dc based index, db file and directory",
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:83583-[OTP][Skipped:Disconnected]olmv0 networkpolicy on hosted hypershift",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:83583-[Skipped:Disconnected]olmv0 networkpolicy on hosted hypershift",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "ReleaseGate": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:83583-[Skipped:Disconnected]olmv0 networkpolicy on hosted hypershift": {}
     },
     "resources": {
       "isolation": {}
@@ -792,11 +232,12 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43248-Support ignoring files when loading declarative configs",
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[OTP][Skipped:Disconnected]catalogsource with invalid name is created",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[Skipped:Disconnected]catalogsource with invalid name is created",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[Skipped:Disconnected]catalogsource with invalid name is created": {}
     },
     "resources": {
       "isolation": {}
@@ -808,11 +249,12 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43768-Improve formatting of opm validate",
+    "name": "[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45381-[OTP][Skipped:Disconnected]Support custom catalogs in hypershift",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45381-[Skipped:Disconnected]Support custom catalogs in hypershift",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45381-[Skipped:Disconnected]Support custom catalogs in hypershift": {}
     },
     "resources": {
       "isolation": {}
@@ -824,11 +266,12 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45401-opm validate should detect cycles in channels",
+    "name": "[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45408-[OTP][Skipped:Disconnected]Eliminate use of imagestreams in catalog management",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45408-[Skipped:Disconnected]Eliminate use of imagestreams in catalog management",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45408-[Skipped:Disconnected]Eliminate use of imagestreams in catalog management": {}
     },
     "resources": {
       "isolation": {}
@@ -840,11 +283,12 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45402-[Skipped:Disconnected] opm render should automatically pulling in the image(s) used in the deployments",
+    "name": "[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:69867-[OTP][Skipped:Disconnected]deployed in microshift and install one operator with single mode.",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:69867-[Skipped:Disconnected]deployed in microshift and install one operator with single mode.",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:69867-[Skipped:Disconnected]deployed in microshift and install one operator with single mode.": {}
     },
     "resources": {
       "isolation": {}
@@ -856,11 +300,12 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:48438-[Skipped:Disconnected] opm render should support olm.constraint which is defined in dependencies",
+    "name": "[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:69868-[OTP][Skipped:Disconnected]olm microshift install operator with all mode muilt og error and delete one og to get it installed.",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:69868-[Skipped:Disconnected]olm microshift install operator with all mode muilt og error and delete one og to get it installed.",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:69868-[Skipped:Disconnected]olm microshift install operator with all mode muilt og error and delete one og to get it installed.": {}
     },
     "resources": {
       "isolation": {}
@@ -872,11 +317,12 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:70013-[Skipped:Disconnected] opm support deprecated channel",
+    "name": "[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:83581-[OTP][Skipped:Disconnected]olmv0 networkpolicy on microshift.",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:83581-[Skipped:Disconnected]olmv0 networkpolicy on microshift.",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:83581-[Skipped:Disconnected]olmv0 networkpolicy on microshift.": {}
     },
     "resources": {
       "isolation": {}
@@ -888,11 +334,26 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:34016-opm can prune operators from catalog",
+    "name": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:22226-[OTP][Skipped:Disconnected]the csv without support MultiNamespace fails for og with MultiNamespace",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:22226-[Skipped:Disconnected]the csv without support MultiNamespace fails for og with MultiNamespace",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:22226-[Skipped:Disconnected]the csv without support MultiNamespace fails for og with MultiNamespace": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:71119-[OTP][Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:71119-[Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:71119-[Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]": {}
     },
     "resources": {
       "isolation": {}
@@ -904,11 +365,12 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:54168-[Skipped:Disconnected] opm support '--use-http' global flag",
+    "name": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:29275-[OTP][Skipped:Disconnected]label to target namespace of operator group with multi namespace",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:29275-[Skipped:Disconnected]label to target namespace of operator group with multi namespace",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:29275-[Skipped:Disconnected]label to target namespace of operator group with multi namespace": {}
     },
     "resources": {
       "isolation": {}
@@ -920,11 +382,26 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43409-[Skipped:Disconnected] opm can list catalog contents",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24870-[OTP][Skipped:Disconnected]can not create csv without operator group",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24870-[Skipped:Disconnected]can not create csv without operator group",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24870-[Skipped:Disconnected]can not create csv without operator group": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:22200-[OTP][Skipped:Disconnected]add minimum kube version to CSV [Slow]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:22200-[Skipped:Disconnected]add minimum kube version to CSV [Slow]",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:22200-[Skipped:Disconnected]add minimum kube version to CSV [Slow]": {}
     },
     "resources": {
       "isolation": {}
@@ -936,11 +413,54 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45407-opm and oc should print sqlite deprecation warnings",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23473-[OTP][Skipped:Disconnected]permit z-stream releases skipping during operator updates",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23473-[Skipped:Disconnected]permit z-stream releases skipping during operator updates",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23473-[Skipped:Disconnected]permit z-stream releases skipping during operator updates": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:37263-[OTP][Skipped:Disconnected][Skipped:Proxy]Subscription stays in UpgradePending but InstallPlan not installing [Slow]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:37263-[Skipped:Disconnected][Skipped:Proxy]Subscription stays in UpgradePending but InstallPlan not installing [Slow]",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:37263-[Skipped:Disconnected][Skipped:Proxy]Subscription stays in UpgradePending but InstallPlan not installing [Slow]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29231-PolarionID:29277-[OTP]label to target namespace of group",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29231-PolarionID:29277-label to target namespace of group",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29231-PolarionID:29277-label to target namespace of group": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25855-[OTP][Skipped:Disconnected][Serial]Add the channel field to subscription_sync_count",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25855-[Skipped:Disconnected][Serial]Add the channel field to subscription_sync_count",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25855-[Skipped:Disconnected][Serial]Add the channel field to subscription_sync_count": {}
     },
     "resources": {
       "isolation": {}
@@ -952,11 +472,26 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53869-[Skipped:Disconnected] opm supports creating a catalog using basic veneer",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23170-[OTP][Skipped:Disconnected]API labels should be hash",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23170-[Skipped:Disconnected]API labels should be hash",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23170-[Skipped:Disconnected]API labels should be hash": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:20979-[OTP][Skipped:Disconnected]only one IP is generated",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:20979-[Skipped:Disconnected]only one IP is generated",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:20979-[Skipped:Disconnected]only one IP is generated": {}
     },
     "resources": {
       "isolation": {}
@@ -968,11 +503,12 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53871-PolarionID:53915-PolarionID:53996-[Skipped:Disconnected][Slow] opm supports creating a catalog using semver veneer [Slow]",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25757-PolarionID:22656-[OTP][Skipped:Disconnected]manual approval strategy apply to subsequent releases",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25757-PolarionID:22656-[Skipped:Disconnected]manual approval strategy apply to subsequent releases",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25757-PolarionID:22656-[Skipped:Disconnected]manual approval strategy apply to subsequent releases": {}
     },
     "resources": {
       "isolation": {}
@@ -984,11 +520,12 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53917-[Skipped:Disconnected] opm can visualize the update graph for a given Operator from an arbitrary version",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24438-[OTP][Skipped:Disconnected]check subscription CatalogSource Status",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24438-[Skipped:Disconnected]check subscription CatalogSource Status",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24438-[Skipped:Disconnected]check subscription CatalogSource Status": {}
     },
     "resources": {
       "isolation": {}
@@ -1000,11 +537,40 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:60573-[Skipped:Disconnected] opm exclude bundles with olm.deprecated property when rendering",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24027-[OTP][Skipped:Disconnected]can create and delete catalogsource and sub repeatedly",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24027-[Skipped:Disconnected]can create and delete catalogsource and sub repeatedly",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24027-[Skipped:Disconnected]can create and delete catalogsource and sub repeatedly": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:21404-[OTP][Skipped:Disconnected]csv will be RequirementsNotMet after sa is delete",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:21404-[Skipped:Disconnected]csv will be RequirementsNotMet after sa is delete",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:21404-[Skipped:Disconnected]csv will be RequirementsNotMet after sa is delete": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29723-[OTP][Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29723-[Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29723-[Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource": {}
     },
     "resources": {
       "isolation": {}
@@ -1016,11 +582,589 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:73218-[Skipped:Disconnected] opm alpha render-graph indicate deprecated graph content",
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:30762-[OTP][Skipped:Disconnected]installs bundles with v1 CRDs",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:30762-[Skipped:Disconnected]installs bundles with v1 CRDs",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:30762-[Skipped:Disconnected]installs bundles with v1 CRDs": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:27683-[OTP][Skipped:Disconnected]InstallPlans can install from extracted bundles",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:27683-[Skipped:Disconnected]InstallPlans can install from extracted bundles",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:27683-[Skipped:Disconnected]InstallPlans can install from extracted bundles": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24513-[OTP][Skipped:Disconnected]Operator config support env only",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24513-[Skipped:Disconnected]Operator config support env only",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24513-[Skipped:Disconnected]Operator config support env only": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24382-[OTP][Skipped:Disconnected]Should restrict CRD update if schema changes[Serial]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24382-[Skipped:Disconnected]Should restrict CRD update if schema changes[Serial]",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24382-[Skipped:Disconnected]Should restrict CRD update if schema changes[Serial]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25760-[OTP][Skipped:Disconnected]Operator upgrades does not fail after change the channel",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25760-[Skipped:Disconnected]Operator upgrades does not fail after change the channel",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25760-[Skipped:Disconnected]Operator upgrades does not fail after change the channel": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:35895-[OTP][Skipped:Disconnected]can't install a CSV with duplicate roles",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:35895-[Skipped:Disconnected]can't install a CSV with duplicate roles",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:35895-[Skipped:Disconnected]can't install a CSV with duplicate roles": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:32863-[OTP][Skipped:Disconnected]Support resources required for SAP Gardener Control Plane Operator[Serial][Disruptive]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:32863-[Skipped:Disconnected]Support resources required for SAP Gardener Control Plane Operator[Serial][Disruptive]",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "opm": {}
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:32863-[Skipped:Disconnected]Support resources required for SAP Gardener Control Plane Operator[Serial][Disruptive]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:34472-[OTP][Skipped:Disconnected]olm label dependency",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:34472-[Skipped:Disconnected]olm label dependency",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:34472-[Skipped:Disconnected]olm label dependency": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:33176-[OTP][Skipped:Disconnected]Enable generated operator component adoption for operators with single ns mode[Slow][Serial]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:33176-[Skipped:Disconnected]Enable generated operator component adoption for operators with single ns mode[Slow][Serial]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:33176-[Skipped:Disconnected]Enable generated operator component adoption for operators with single ns mode[Slow][Serial]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:39897-[OTP][Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:39897-[Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:39897-[Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50135-[OTP][Skipped:Disconnected]automatic upgrade for failed operator installation og created correctly",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50135-[Skipped:Disconnected]automatic upgrade for failed operator installation og created correctly",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50135-[Skipped:Disconnected]automatic upgrade for failed operator installation og created correctly": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50136-[OTP][Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50136-[Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50136-[Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50138-[OTP][Skipped:Disconnected]automatic upgrade for failed operator installation ip fails",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50138-[Skipped:Disconnected]automatic upgrade for failed operator installation ip fails",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50138-[Skipped:Disconnected]automatic upgrade for failed operator installation ip fails": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:40958-[OTP][Skipped:Disconnected]Indicate invalid OperatorGroup on InstallPlan status",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:40958-[Skipped:Disconnected]Indicate invalid OperatorGroup on InstallPlan status",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:40958-[Skipped:Disconnected]Indicate invalid OperatorGroup on InstallPlan status": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:60114-[OTP][Skipped:Disconnected]olm serves an api to discover all versions of an operator[Slow]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:60114-[Skipped:Disconnected]olm serves an api to discover all versions of an operator[Slow]",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:60114-[Skipped:Disconnected]olm serves an api to discover all versions of an operator[Slow]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62974-[OTP]olm sets invalid scc label on its namespaces",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62974-olm sets invalid scc label on its namespaces",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62974-olm sets invalid scc label on its namespaces": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[OTP][Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[OTP]general way collect profiles cronjob pod missing target.workload.openshift.io management annotation",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-general way collect profiles cronjob pod missing target.workload.openshift.io management annotation",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-general way collect profiles cronjob pod missing target.workload.openshift.io management annotation": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43185-[OTP]DC based opm subcommands out of alpha",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43185-DC based opm subcommands out of alpha",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43185-DC based opm subcommands out of alpha": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43180-[OTP]opm init dc configuration package",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43180-opm init dc configuration package",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43180-opm init dc configuration package": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43171-[OTP][Skipped:Disconnected] opm render blob from bundle db based index dc based index db file and directory",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43171-[Skipped:Disconnected] opm render blob from bundle db based index dc based index db file and directory",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43171-[Skipped:Disconnected] opm render blob from bundle db based index dc based index db file and directory": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43248-[OTP]Support ignoring files when loading declarative configs",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43248-Support ignoring files when loading declarative configs",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43248-Support ignoring files when loading declarative configs": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43768-[OTP]Improve formatting of opm validate",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43768-Improve formatting of opm validate",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43768-Improve formatting of opm validate": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45401-[OTP]opm validate should detect cycles in channels",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45401-opm validate should detect cycles in channels",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45401-opm validate should detect cycles in channels": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45402-[OTP][Skipped:Disconnected] opm render should automatically pulling in the images used in the deployments",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45402-[Skipped:Disconnected] opm render should automatically pulling in the images used in the deployments",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45402-[Skipped:Disconnected] opm render should automatically pulling in the images used in the deployments": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:48438-[OTP][Skipped:Disconnected] opm render should support olm.constraint which is defined in dependencies",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:48438-[Skipped:Disconnected] opm render should support olm.constraint which is defined in dependencies",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:48438-[Skipped:Disconnected] opm render should support olm.constraint which is defined in dependencies": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:70013-[OTP][Skipped:Disconnected] opm support deprecated channel",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:70013-[Skipped:Disconnected] opm support deprecated channel",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:70013-[Skipped:Disconnected] opm support deprecated channel": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:34016-[OTP]opm can prune operators from catalog",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:34016-opm can prune operators from catalog",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:34016-opm can prune operators from catalog": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:54168-[OTP][Skipped:Disconnected] opm support '--use-http' global flag",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:54168-[Skipped:Disconnected] opm support '--use-http' global flag",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:54168-[Skipped:Disconnected] opm support '--use-http' global flag": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43409-[OTP][Skipped:Disconnected] opm can list catalog contents",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43409-[Skipped:Disconnected] opm can list catalog contents",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43409-[Skipped:Disconnected] opm can list catalog contents": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45407-[OTP]opm and oc should print sqlite deprecation warnings",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45407-opm and oc should print sqlite deprecation warnings",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45407-opm and oc should print sqlite deprecation warnings": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53869-[OTP][Skipped:Disconnected] opm supports creating a catalog using basic veneer",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53869-[Skipped:Disconnected] opm supports creating a catalog using basic veneer",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53869-[Skipped:Disconnected] opm supports creating a catalog using basic veneer": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53871-PolarionID:53915-PolarionID:53996-[OTP][Skipped:Disconnected][Slow] opm supports creating a catalog using semver veneer [Slow]",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53871-PolarionID:53915-PolarionID:53996-[Skipped:Disconnected][Slow] opm supports creating a catalog using semver veneer [Slow]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53871-PolarionID:53915-PolarionID:53996-[Skipped:Disconnected][Slow] opm supports creating a catalog using semver veneer [Slow]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53917-[OTP][Skipped:Disconnected] opm can visualize the update graph for a given Operator from an arbitrary version",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53917-[Skipped:Disconnected] opm can visualize the update graph for a given Operator from an arbitrary version",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53917-[Skipped:Disconnected] opm can visualize the update graph for a given Operator from an arbitrary version": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:60573-[OTP][Skipped:Disconnected] opm exclude bundles with olm.deprecated property when rendering",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:60573-[Skipped:Disconnected] opm exclude bundles with olm.deprecated property when rendering",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:60573-[Skipped:Disconnected] opm exclude bundles with olm.deprecated property when rendering": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:73218-[OTP][Skipped:Disconnected] opm alpha render-graph indicate deprecated graph content",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:73218-[Skipped:Disconnected] opm alpha render-graph indicate deprecated graph content",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:73218-[Skipped:Disconnected] opm alpha render-graph indicate deprecated graph content": {}
     },
     "resources": {
       "isolation": {}

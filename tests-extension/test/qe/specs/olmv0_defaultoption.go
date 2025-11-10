@@ -22,7 +22,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		exutil.SkipNoOLMCore(oc)
 	})
 
-	g.It("PolarionID:68679-[Skipped:Disconnected]catalogsource with invalid name is created", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:68679-[OTP][Skipped:Disconnected]catalogsource with invalid name is created", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[Skipped:Disconnected]catalogsource with invalid name is created"), func() {
 		dr := make(olmv0util.DescriberResrouce)
 		itName := g.CurrentSpecReport().FullText()
 		dr.AddIr(itName)

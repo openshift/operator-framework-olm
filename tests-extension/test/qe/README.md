@@ -160,6 +160,8 @@ We need to identify all cases from tests-private among all cases, then mark whic
 
 ## Test Case Migration Guide
 
+**Required For all QE cases**: Do not use `&|!,()/` in case title
+
 ### A. Code Changes for Migrated Cases
 
 All migrated test case code needs the following changes to run in the new test framework:
@@ -195,32 +197,33 @@ All migrated test case code needs the following changes to run in the new test f
 2. **Jira Component**: Add `[Jira:OLM]` in case title
 3. **OpenShift CI compatibility**: If you believe the case meets OpenShift CI requirements, add `ReleaseGate` label to Ginkgo
    - **Note**: Don't add `ReleaseGate` if case title contains `Disruptive` or `Slow`, or labels contain `StressTest`
+4. **Required For Migrated case from test-private**: Add `[OTP]` in case title
 
 #### Optional Label for Migration and New
-4. **LEVEL0**: Use Ginkgo label `g.Label("LEVEL0")`
-5. **Author**: Deprecated
-6. **ConnectedOnly**: Add `[Skipped:Disconnected]` in title
-7. **DisconnectedOnly**: Add `[Skipped:Connected][Skipped:Proxy]` in title
-8. **Case ID**: change to `PolarionID:xxxxxx`
-9. **Importance**: Deprecated
-10. **NonPrerelease**: Deprecated
+1. **LEVEL0**: Use title label `[Level0]`
+2. **Author**: Deprecated
+3. **ConnectedOnly**: Add `[Skipped:Disconnected]` in title
+4. **DisconnectedOnly**: Add `[Skipped:Connected][Skipped:Proxy]` in title
+5. **Case ID**: change to `PolarionID:xxxxxx`
+6. **Importance**: Deprecated
+7.  **NonPrerelease**: Deprecated
     - **Longduration**: Change to `[Slow]` in case title
     - **ChkUpg**: Not supported (openshift-tests upgrade differs from OpenShift QE)
-11. **VMonly**: Deprecated
-12. **Slow, Serial, Disruptive**: Preserved
-13. **DEPRECATED**: Deprecated, corresponding cases deprecated. Use `IgnoreObsoleteTests` for deprecation after addition
-14. **CPaasrunOnly, CPaasrunBoth, StagerunOnly, StagerunBoth, ProdrunOnly, ProdrunBoth**: Deprecated
-15. **StressTest**: Use Ginkgo label `g.Label("StressTest")`
-16. **NonHyperShiftHOST**: Use Ginkgo label `g.Label("NonHyperShiftHOST")` or use `IsHypershiftHostedCluster` judgment, then skip
-17. **HyperShiftMGMT**: Deprecated. For cases needing hypershift mgmt execution, use `g.Label("NonHyperShiftHOST")` and `ValidHypershiftAndGetGuestKubeConf` validation
-18. **MicroShiftOnly**: Deprecated. For cases not supporting microshift, use `SkipMicroshift` judgment, then skip
-19. **ROSA**: Deprecated. Three ROSA job types:
+8.  **VMonly**: Deprecated
+9.  **Slow, Serial, Disruptive**: Preserved
+10. **DEPRECATED**: Deprecated, corresponding cases deprecated. Use `IgnoreObsoleteTests` for deprecation after addition
+11. **CPaasrunOnly, CPaasrunBoth, StagerunOnly, StagerunBoth, ProdrunOnly, ProdrunBoth**: Deprecated
+12. **StressTest**: Use Ginkgo label `g.Label("StressTest")`
+13. **NonHyperShiftHOST**: Use Ginkgo label `g.Label("NonHyperShiftHOST")` or use `IsHypershiftHostedCluster` judgment, then skip
+14. **HyperShiftMGMT**: Deprecated. For cases needing hypershift mgmt execution, use `g.Label("NonHyperShiftHOST")` and `ValidHypershiftAndGetGuestKubeConf` validation
+15. **MicroShiftOnly**: Deprecated. For cases not supporting microshift, use `SkipMicroshift` judgment, then skip
+16. **ROSA**: Deprecated. Three ROSA job types:
     - `rosa-sts-ovn`: equivalent to OCP
     - `rosa-sts-hypershift-ovn`: equivalent to hypershift hosted
     - `rosa-classic-sts`: doesn't use openshift-tests
-20. **ARO**: Deprecated. All ARO jobs based on HCP are equivalent to hypershift hosted (don't actually use openshift-test)
-21. **OSD_CCS**: Deprecated. Only one job type: `osd-ccs-gcp` equivalent to OCP
-22. **Feature Gates**: Handle test cases based on their feature gate requirements:
+17. **ARO**: Deprecated. All ARO jobs based on HCP are equivalent to hypershift hosted (don't actually use openshift-test)
+18. **OSD_CCS**: Deprecated. Only one job type: `osd-ccs-gcp` equivalent to OCP
+19. **Feature Gates**: Handle test cases based on their feature gate requirements:
 
     **Case 1: Test only runs when feature gate is enabled**
     - The test should not execute if the feature gate is disabled
@@ -238,7 +241,7 @@ All migrated test case code needs the following changes to run in the new test f
     - The test executes the same way regardless of feature gate status
     - Do NOT use `IsFeaturegateEnabled` check
     - Do NOT add `[OCPFeatureGate:xxxx]` label
-23. **Exclusive**: change to `Serial`
+20. **Exclusive**: change to `Serial`
 
 ## Test Automation Code Requirements
 

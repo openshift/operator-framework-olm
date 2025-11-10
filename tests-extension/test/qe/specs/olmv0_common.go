@@ -46,7 +46,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		dr.RmIr(itName)
 	})
 
-	g.It("PolarionID:22259-[Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:22259-[OTP][Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:22259-[Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]"), func() {
 
 		exutil.SkipForSNOCluster(oc)
 		exutil.SkipNoCapabilities(oc, "marketplace")
@@ -66,7 +66,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 			"-o=jsonpath={.status.conditions[?(@.type==\"Available\")].status}{.status.conditions[?(@.type==\"Progressing\")].status}{.status.conditions[?(@.type==\"Degraded\")].status}"}).Check(oc)
 	})
 
-	g.It("PolarionID:73695-[Skipped:Disconnected]PO is disable", func() {
+	g.It("PolarionID:73695-[OTP][Skipped:Disconnected]PO is disable", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:73695-[Skipped:Disconnected]PO is disable"), func() {
 
 		if !exutil.IsTechPreviewNoUpgrade(oc) {
 			g.Skip("PO is supported in TP only currently, so skip it")
@@ -75,7 +75,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(err).To(o.HaveOccurred(), "PO is not disable")
 	})
 
-	g.It("PolarionID:24076-check the version of olm operator is appropriate in ClusterOperator", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:24076-[OTP]check the version of olm operator is appropriate in ClusterOperator", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:24076-check the version of olm operator is appropriate in ClusterOperator"), func() {
 		var (
 			olmClusterOperatorName = "operator-lifecycle-manager"
 		)
@@ -88,7 +88,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, olmVersion, exutil.Ok, []string{"clusteroperator", "-o=jsonpath={.items[?(@.metadata.name==\"" + olmClusterOperatorName + "\")].status.versions[?(@.name==\"operator\")].version}"}).Check(oc)
 	})
 
-	g.It("PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]", func() {
+	g.It("PolarionID:29775-PolarionID:29786-[OTP][Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]"), func() {
 		var (
 			bundleIndex1         = "quay.io/kuiwang/operators-all:v1"
 			bundleIndex2         = "quay.io/kuiwang/operators-dockerio:v1"
@@ -167,7 +167,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(result).NotTo(o.ContainSubstring("docker.io/atlasmap/atlasmap-operator"))
 	})
 
-	g.It("PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself", func() {
+	g.It("PolarionID:33452-[OTP][Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself"), func() {
 		var (
 			bundleIndex1 = "quay.io/olmqe/olm-api@sha256:71cfd4deaa493d31cd1d8255b1dce0fb670ae574f4839c778f2cfb1bf1f96995"
 			manifestPath = "manifests-olm-api-" + exutil.GetRandomString()
@@ -190,7 +190,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(result).To(o.ContainSubstring("quay.io/olmqe/olm-api"))
 	})
 
-	g.It("PolarionID:21825-[Skipped:Disconnected]Certs for packageserver can be rotated successfully [Serial]", g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:21825-[OTP][Skipped:Disconnected]Certs for packageserver can be rotated successfully [Serial]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:21825-[Skipped:Disconnected]Certs for packageserver can be rotated successfully [Serial]"), func() {
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 		var (
@@ -232,7 +232,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "redhat-operators", exutil.Ok, []string{"packagemanifest", "--selector=catalog=redhat-operators", "-o=jsonpath={.items[*].status.catalogSource}"}).Check(oc)
 	})
 
-	g.It("PolarionID:83105-[Skipped:Disconnected]olmv0 static networkpolicy on ocp", g.Label("NonHyperShiftHOST", "ReleaseGate"), func() {
+	g.It("PolarionID:83105-[OTP][Skipped:Disconnected]olmv0 static networkpolicy on ocp", g.Label("NonHyperShiftHOST", "ReleaseGate"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:83105-[Skipped:Disconnected]olmv0 static networkpolicy on ocp"), func() {
 
 		policies := []olmv0util.NpExpecter{
 			{
@@ -462,7 +462,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 
 	})
 
-	g.It("PolarionID:83583-[Skipped:Disconnected]olmv0 networkpolicy on hosted hypershift", g.Label("NonHyperShiftHOST", "ReleaseGate"), func() {
+	g.It("PolarionID:83583-[OTP][Skipped:Disconnected]olmv0 networkpolicy on hosted hypershift", g.Label("NonHyperShiftHOST", "ReleaseGate"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:83583-[Skipped:Disconnected]olmv0 networkpolicy on hosted hypershift"), func() {
 
 		topology, err := oc.WithoutNamespace().AsAdmin().Run("get").Args("infrastructures.config.openshift.io",
 			"cluster", "-o=jsonpath={.status.controlPlaneTopology}").Output()
