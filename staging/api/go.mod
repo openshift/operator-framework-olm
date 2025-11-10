@@ -1,6 +1,6 @@
 module github.com/operator-framework/api
 
-go 1.24.4
+go 1.24.6
 
 require (
 	github.com/blang/semver/v4 v4.0.0
@@ -14,7 +14,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
-	sigs.k8s.io/controller-runtime v0.22.1
+	sigs.k8s.io/controller-runtime v0.22.3
 	sigs.k8s.io/yaml v1.6.0
 )
 

@@ -1,6 +1,6 @@
 module github.com/openshift/operator-framework-olm
 
-go 1.24.4
+go 1.24.6
 
 require (
 	github.com/blang/semver/v4 v4.0.0
@@ -13,7 +13,7 @@ require (
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/openshift/api v0.0.0-20251023193535-8691c3014652
-	github.com/operator-framework/api v0.35.0
+	github.com/operator-framework/api v0.36.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.60.0
 	github.com/sirupsen/logrus v1.9.3
@@ -28,7 +28,7 @@ require (
 	k8s.io/code-generator v0.34.1
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
-	sigs.k8s.io/controller-runtime v0.22.3
+	sigs.k8s.io/controller-runtime v0.22.4
 	sigs.k8s.io/controller-tools v0.19.0
 )
 
@@ -50,7 +50,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/cgroups/v3 v3.0.5 // indirect
-	github.com/containerd/containerd v1.7.28 // indirect
+	github.com/containerd/containerd v1.7.29 // indirect
 	github.com/containerd/containerd/api v1.9.0 // indirect
 	github.com/containerd/continuity v0.4.5 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
@@ -156,7 +156,7 @@ require (
 	github.com/proglottis/gpgme v0.1.5 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.67.1 // indirect
+	github.com/prometheus/common v0.67.2 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect

@@ -1,6 +1,6 @@
 module github.com/operator-framework/operator-lifecycle-manager
 
-go 1.24.4
+go 1.24.6
 
 require (
 	github.com/blang/semver/v4 v4.0.0
@@ -21,13 +21,13 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/openshift/api v0.0.0-20221021112143-4226c2167e40
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a
-	github.com/operator-framework/api v0.35.0
+	github.com/operator-framework/api v0.36.0
 	github.com/operator-framework/operator-registry v1.60.0
 	github.com/otiai10/copy v1.14.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.67.1
+	github.com/prometheus/common v0.67.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
@@ -50,7 +50,7 @@ require (
 	k8s.io/kube-aggregator v0.34.1
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
-	sigs.k8s.io/controller-runtime v0.22.3
+	sigs.k8s.io/controller-runtime v0.22.4
 	sigs.k8s.io/controller-tools v0.19.0
 )
 
@@ -67,7 +67,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/cgroups/v3 v3.0.5 // indirect
-	github.com/containerd/containerd v1.7.28 // indirect
+	github.com/containerd/containerd v1.7.29 // indirect
 	github.com/containerd/containerd/api v1.9.0 // indirect
 	github.com/containerd/continuity v0.4.5 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
