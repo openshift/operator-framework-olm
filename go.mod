@@ -241,9 +241,6 @@ require (
 )
 
 replace (
-	// pinned because of incompatibility with k8s.io/apiserver
-	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
-
 	// use staged repositories
 	github.com/operator-framework/api => ./staging/api
 	github.com/operator-framework/operator-lifecycle-manager => ./staging/operator-lifecycle-manager
