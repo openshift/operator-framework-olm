@@ -209,7 +209,6 @@ require (
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
-	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250804133106-a7a43d27e69b // indirect
@@ -240,9 +239,6 @@ require (
 )
 
 replace (
-	// pinned because of incompatibility with k8s.io/apiserver
-	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0 // release-4.5
-
 	// use staged repositories
 	github.com/operator-framework/api => ./staging/api
 	github.com/operator-framework/operator-lifecycle-manager => ./staging/operator-lifecycle-manager

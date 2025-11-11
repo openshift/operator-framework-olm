@@ -3,47 +3,30 @@
 package v1
 
 import (
-	v1 "github.com/openshift/api/config/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	configv1 "github.com/openshift/api/config/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // IngressLister helps list Ingresses.
+// All objects returned here must be treated as read-only.
 type IngressLister interface {
 	// List lists all Ingresses in the indexer.
-	List(selector labels.Selector) (ret []*v1.Ingress, err error)
+	// Objects returned here must be treated as read-only.
+	List(selector labels.Selector) (ret []*configv1.Ingress, err error)
 	// Get retrieves the Ingress from the index for a given name.
-	Get(name string) (*v1.Ingress, error)
+	// Objects returned here must be treated as read-only.
+	Get(name string) (*configv1.Ingress, error)
 	IngressListerExpansion
 }
 
 // ingressLister implements the IngressLister interface.
 type ingressLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*configv1.Ingress]
 }
 
 // NewIngressLister returns a new IngressLister.
 func NewIngressLister(indexer cache.Indexer) IngressLister {
-	return &ingressLister{indexer: indexer}
-}
-
-// List lists all Ingresses in the indexer.
-func (s *ingressLister) List(selector labels.Selector) (ret []*v1.Ingress, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Ingress))
-	})
-	return ret, err
-}
-
-// Get retrieves the Ingress from the index for a given name.
-func (s *ingressLister) Get(name string) (*v1.Ingress, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("ingress"), name)
-	}
-	return obj.(*v1.Ingress), nil
+	return &ingressLister{listers.New[*configv1.Ingress](indexer, configv1.Resource("ingress"))}
 }
