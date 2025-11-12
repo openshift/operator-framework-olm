@@ -602,8 +602,8 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runtime-spec v1.2.0
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
-# github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
-## explicit; go 1.15
+# github.com/openshift/api v0.0.0-20250425163235-9b80d67473bc => github.com/openshift/api v0.0.0-20250425163235-9b80d67473bc
+## explicit; go 1.23.0
 github.com/openshift/api/config/v1
 # github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0
 ## explicit; go 1.13
@@ -2145,7 +2145,7 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
 # google.golang.org/grpc => google.golang.org/grpc v1.63.2
-# github.com/openshift/api => github.com/openshift/api v0.0.0-20210517065120-b325f58df679
+# github.com/openshift/api => github.com/openshift/api v0.0.0-20250425163235-9b80d67473bc
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0
 # github.com/operator-framework/api => ./staging/api
 # github.com/operator-framework/operator-lifecycle-manager => ./staging/operator-lifecycle-manager

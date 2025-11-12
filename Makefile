@@ -157,6 +157,17 @@ vendor:
 	go mod tidy
 	go mod vendor
 	go mod verify
+	# Copy required CRD manifests for tests
+	@OPENSHIFT_API_VERSION=$$(go list -m -f '{{.Version}}' github.com/openshift/api) && \
+	GOMODCACHE=$$(go env GOMODCACHE) && \
+	OPENSHIFT_API_PATH="$$GOMODCACHE/github.com/openshift/api@$$OPENSHIFT_API_VERSION" && \
+	if [ -d "$$OPENSHIFT_API_PATH/config/v1/zz_generated.crd-manifests" ]; then \
+		mkdir -p vendor/github.com/openshift/api/config/v1/zz_generated.crd-manifests && \
+		cp -f "$$OPENSHIFT_API_PATH/config/v1/zz_generated.crd-manifests/0000_00_cluster-version-operator_01_clusteroperators.crd.yaml" \
+			vendor/github.com/openshift/api/config/v1/zz_generated.crd-manifests/ 2>/dev/null || true && \
+		cp -f "$$OPENSHIFT_API_PATH/config/v1/zz_generated.crd-manifests/0000_00_cluster-version-operator_01_clusterversions-Default.crd.yaml" \
+			vendor/github.com/openshift/api/config/v1/zz_generated.crd-manifests/ 2>/dev/null || true; \
+	fi
 
 .PHONY: manifests
 manifests: ## Generate manifests
