@@ -593,10 +593,10 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runtime-spec v1.2.1
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
-# github.com/openshift/api v0.0.0-20251023193535-8691c3014652
+# github.com/openshift/api v0.0.0-20251111193948-50e2ece149d7
 ## explicit; go 1.24.0
 github.com/openshift/api/config/v1
-# github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0
+# github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235 => github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0
 ## explicit; go 1.13
 github.com/openshift/client-go/config/clientset/versioned
 github.com/openshift/client-go/config/clientset/versioned/scheme
@@ -1114,7 +1114,7 @@ go.yaml.in/yaml/v2
 # go.yaml.in/yaml/v3 v3.0.4
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/crypto v0.43.0
+# golang.org/x/crypto v0.44.0
 ## explicit; go 1.24.0
 golang.org/x/crypto/cast5
 golang.org/x/crypto/cryptobyte
@@ -1148,7 +1148,7 @@ golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.46.0
+# golang.org/x/net v0.47.0
 ## explicit; go 1.24.0
 golang.org/x/net/context
 golang.org/x/net/html
@@ -1180,10 +1180,10 @@ golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/term v0.36.0
+# golang.org/x/term v0.37.0
 ## explicit; go 1.24.0
 golang.org/x/term
-# golang.org/x/text v0.30.0
+# golang.org/x/text v0.31.0
 ## explicit; go 1.24.0
 golang.org/x/text/cases
 golang.org/x/text/feature/plural
@@ -2186,8 +2186,8 @@ k8s.io/kube-aggregator/pkg/client/informers/externalversions/apiregistration/v1b
 k8s.io/kube-aggregator/pkg/client/informers/externalversions/internalinterfaces
 k8s.io/kube-aggregator/pkg/client/listers/apiregistration/v1
 k8s.io/kube-aggregator/pkg/client/listers/apiregistration/v1beta1
-# k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b
-## explicit; go 1.23
+# k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912
+## explicit; go 1.23.0
 k8s.io/kube-openapi/cmd/openapi-gen
 k8s.io/kube-openapi/cmd/openapi-gen/args
 k8s.io/kube-openapi/pkg/builder
@@ -2219,7 +2219,7 @@ k8s.io/kube-openapi/pkg/validation/validate
 k8s.io/kubectl/pkg/util/interrupt
 k8s.io/kubectl/pkg/util/templates
 k8s.io/kubectl/pkg/util/term
-# k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
+# k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 ## explicit; go 1.18
 k8s.io/utils/buffer
 k8s.io/utils/clock
