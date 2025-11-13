@@ -7,5 +7,4 @@
 // The inter package is designed with facets of solving interfaces.  Facets for
 // solve processes, models, assumptions, scoping, and asynchronous solves are
 // provided.
-//
 package inter

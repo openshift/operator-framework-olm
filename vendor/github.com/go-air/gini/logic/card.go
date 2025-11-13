@@ -19,7 +19,7 @@ type Card interface {
 
 // CardSort provides cardinality constraints via sorting networks.
 //
-// Sorting Networks
+// # Sorting Networks
 //
 // CardSort uses sorting networks which implement O log(|ms|)**2 compare/swap
 // to sort |ms| literals. Each compare/swap is coded symbolically and generates
@@ -46,7 +46,6 @@ type CardSort struct {
 // NewCardSort creates a new Card object which gives access to unary Cardinality
 // constraints over ms.  The resulting predicates reflect how many of the literals
 // in ms are true.
-//
 func NewCardSort(ms []z.Lit, c *C) *CardSort {
 	p := uint(0)
 	for 1<<p < len(ms) {
@@ -99,7 +98,7 @@ func (c *CardSort) Gr(b int) z.Lit {
 // cardinality is tested.  N is len(ms) when
 // the caller calls
 //
-//    NewCard(ms, va)
+//	NewCard(ms, va)
 func (c *CardSort) N() int {
 	return c.n
 }
@@ -114,9 +113,7 @@ func (c *CardSort) sort(l, h int) {
 	c.merge(l, h, 1)
 }
 
-//
 // odd even merge sort
-//
 func (c *CardSort) merge(l, h, s int) {
 	if h <= l+s {
 		return

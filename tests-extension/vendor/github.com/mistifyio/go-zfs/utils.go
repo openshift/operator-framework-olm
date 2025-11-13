@@ -267,10 +267,10 @@ func parseInodeChange(line []string) (*InodeChange, error) {
 }
 
 // example input
-//M       /       /testpool/bar/
-//+       F       /testpool/bar/hello.txt
-//M       /       /testpool/bar/hello.txt (+1)
-//M       /       /testpool/bar/hello-hardlink
+// M       /       /testpool/bar/
+// +       F       /testpool/bar/hello.txt
+// M       /       /testpool/bar/hello.txt (+1)
+// M       /       /testpool/bar/hello-hardlink
 func parseInodeChanges(lines [][]string) ([]*InodeChange, error) {
 	changes := make([]*InodeChange, len(lines))
 

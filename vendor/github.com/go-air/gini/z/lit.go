@@ -14,8 +14,8 @@ const LitNull Lit = 0
 // Dimacs2Lit takes a dimacs-coded literal and returns a Lit.
 // A Dimacs coded literal for a variable v is
 //
-//  -v for not(v)
-//   v for v
+//	-v for not(v)
+//	 v for v
 func Dimacs2Lit(m int) Lit {
 	if m < 0 {
 		return Lit(-2*m + 1)
@@ -47,7 +47,8 @@ func (m Lit) Not() Lit {
 
 // Sign returns
 //
-//  1  if m is a variable
+//	1  if m is a variable
+//
 // -1 if m is a negated variable
 func (m Lit) Sign() int8 {
 	if m&1 == 0 {

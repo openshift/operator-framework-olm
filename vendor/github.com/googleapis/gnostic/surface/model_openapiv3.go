@@ -39,9 +39,9 @@ func newOpenAPI3Builder(document *openapiv3.Document) *OpenAPI3Builder {
 // in a way  that is more processable by plugins like gnostic-go-generator or gnostic-grpc.
 // Since OpenAPI schemas can be indefinitely nested, it is a recursive approach to build all Types and Methods.
 // The basic idea is that whenever we have "named OpenAPI object" (e.g.: NamedSchemaOrReference, NamedMediaType) we:
-//	1. Create a Type with that name
-//	2. Recursively create sub schemas (see buildFromSchema function)
-// 	3. Return a FieldInfo object that describes how the created Type should be represented inside another Type as field.
+//  1. Create a Type with that name
+//  2. Recursively create sub schemas (see buildFromSchema function)
+//  3. Return a FieldInfo object that describes how the created Type should be represented inside another Type as field.
 func (b *OpenAPI3Builder) buildModel(document *openapiv3.Document, sourceName string) (*Model, error) {
 	b.model.Types = make([]*Type, 0)
 	b.model.Methods = make([]*Method, 0)
@@ -321,11 +321,11 @@ func (b *OpenAPI3Builder) buildFromSchemaOrReference(name string, schemaOrRefere
 }
 
 // Given an OpenAPI schema there are two possibilities:
-//  1. 	The schema is an object/array: We create a type for the object, recursively call according methods for child
-//  	schemas, and then return information on how to use the created Type as field.
-//	2. 	The schema has a scalar type: We return information on how to represent a scalar schema as Field. Fields are
-//		created whenever Types are created (higher up in the callstack). This possibility can be considered as the "base condition"
-//		for the recursive approach.
+//  1. The schema is an object/array: We create a type for the object, recursively call according methods for child
+//     schemas, and then return information on how to use the created Type as field.
+//  2. The schema has a scalar type: We return information on how to represent a scalar schema as Field. Fields are
+//     created whenever Types are created (higher up in the callstack). This possibility can be considered as the "base condition"
+//     for the recursive approach.
 func (b *OpenAPI3Builder) buildFromSchema(name string, schema *openapiv3.Schema) (fInfo *FieldInfo) {
 	fInfo = &FieldInfo{}
 	// Data types according to: https://swagger.io/docs/specification/data-models/data-types/

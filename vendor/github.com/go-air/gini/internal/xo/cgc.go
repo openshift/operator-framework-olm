@@ -117,7 +117,7 @@ func uniq(cs []z.C) []z.C {
 // Compact runs a clause gc, which in turn sometimes
 // compacts the underlying CDat.  Compact returns
 //
-//  (num clauses removed, num clauses cdat removed, num freed uint32s)
+//	(num clauses removed, num clauses cdat removed, num freed uint32s)
 func (c *Cgc) Compact(cdb *Cdb) (int, int, int) {
 	c.stCompacts++
 	c.stopWatch = c.luby.Next() * c.factor

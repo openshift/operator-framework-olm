@@ -5,19 +5,19 @@
 //
 // Package gini contains both libraries and commands.  The libraries include
 //
-//  - A high quality, core single goroutine SAT solver (internal package xo).
-//  - Concurrent solving utilities (gini/ax, ...)
-//  - CRISP-1.0 client and server (gini/crisp)
-//  - Generators (gini/gen)
-//  - benchmarking library (gini/bench)
-//  - scoped assumptions
-//  - logic library
-//  ...
+//   - A high quality, core single goroutine SAT solver (internal package xo).
+//   - Concurrent solving utilities (gini/ax, ...)
+//   - CRISP-1.0 client and server (gini/crisp)
+//   - Generators (gini/gen)
+//   - benchmarking library (gini/bench)
+//   - scoped assumptions
+//   - logic library
+//     ...
 //
 // The commands include
 //
-//  - gini, a command for solving SAT problems in cnf and icnf formats, and a
-//    CRISP-1.0 client.
-//  - bench, a utility for constructing, running, and comparing benchmarks
-//  - crispd, CRISP-1.0 server
+//   - gini, a command for solving SAT problems in cnf and icnf formats, and a
+//     CRISP-1.0 client.
+//   - bench, a utility for constructing, running, and comparing benchmarks
+//   - crispd, CRISP-1.0 server
 package gini

@@ -33,6 +33,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
 	go.podman.io/image/v5 v5.38.0
+	go.uber.org/mock v0.6.0
 	golang.org/x/net v0.46.0
 	golang.org/x/sync v0.18.0
 	golang.org/x/time v0.14.0

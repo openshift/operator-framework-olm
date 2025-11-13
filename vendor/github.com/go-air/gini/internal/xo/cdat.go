@@ -23,19 +23,18 @@ type CDat struct {
 
 // The Layout is as follows
 //
-//  Each clause is indexed by a z.C, which is a uint32 index into CDat.D.  The location is
-//  the beginning of the list of literals in the clause, which is terminated by z.LitNull.
-//  Each location is preceded by a Chd giving clause metadata.  Since the underlying type of
-//  Chd and z.Lit are uint32, this is fine.
+//	Each clause is indexed by a z.C, which is a uint32 index into CDat.D.  The location is
+//	the beginning of the list of literals in the clause, which is terminated by z.LitNull.
+//	Each location is preceded by a Chd giving clause metadata.  Since the underlying type of
+//	Chd and z.Lit are uint32, this is fine.
 //
-//  Rather than allocate lots of bits in the Chd to the size, we only allocate 5 bits (max size
-//  of 31).  For each actual size s, we store
+//	Rather than allocate lots of bits in the Chd to the size, we only allocate 5 bits (max size
+//	of 31).  For each actual size s, we store
 //
-//    s & 31
+//	  s & 31
 //
-//  To find the end of a clause at a given location, we iterate through the possible sizes
-//  with the same modulus, which is usually 1 operation.
-//
+//	To find the end of a clause at a given location, we iterate through the possible sizes
+//	with the same modulus, which is usually 1 operation.
 func NewCDat(cap int) *CDat {
 	if cap < 3 {
 		cap = 3
@@ -115,7 +114,6 @@ func (c *CDat) CompactReady(nc, nl int) bool {
 //
 // 1. remap every removed clause in rm to CNull
 // 2. remap every moved clause
-//
 func (c *CDat) Compact(rm []z.C) (map[z.C]z.C, int) {
 	if len(rm) == 0 {
 		return make(map[z.C]z.C, 0), 0

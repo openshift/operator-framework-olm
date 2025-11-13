@@ -18,7 +18,7 @@ import "time"
 // and several caveats must be respected:
 //
 //  1. Once a result from the underlying Solve() is obtained, Solve should
-//  no longer be used.
+//     no longer be used.
 //  2. Every successful Pause() should be followed by Unpause before trying to
 //     obtain a result.
 //  3. Every unsucessful Pause should not be followed by a corresponding

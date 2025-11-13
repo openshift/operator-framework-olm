@@ -95,14 +95,13 @@ func (g *Gini) Lit() z.Lit {
 // Add implements inter.S.  To add a clause (x + y + z),
 // one calls
 //
-//  g.Add(x)
-//  g.Add(y)
-//  g.Add(z)
-//  g.Add(0)
+//	g.Add(x)
+//	g.Add(y)
+//	g.Add(z)
+//	g.Add(0)
 //
 // If Add is called under a test scope, then Add will panic
 // if `m` is 0/LitNull.
-//
 func (g *Gini) Add(m z.Lit) {
 	g.xo.Add(m)
 }
@@ -126,9 +125,10 @@ func (g *Gini) Solve() int {
 }
 
 // Try solves with a timeout.  Try returns
-//  1  if sat
-//  -1 if unsat
-//  0  if timeout
+//
+//	1  if sat
+//	-1 if unsat
+//	0  if timeout
 func (g *Gini) Try(dur time.Duration) int {
 	return g.xo.Try(dur)
 }
@@ -163,15 +163,17 @@ func (g *Gini) Why(ms []z.Lit) []z.Lit {
 // and opens a scope for future assumptions.
 //
 // Test returns the result of BCP res
-//  (1: SAT, -1: UNSAT: 0, UNKNOWN)
+//
+//	(1: SAT, -1: UNSAT: 0, UNKNOWN)
+//
 // And any associated data in out.  The data tries to use dst
 // for storage if there is space.
 //
 // The associated data is
 //
-//  - All assigned literals since last test if SAT or UNKNOWN
-//  - Either the literals of a clause which is unsat under BCP or an assumption
-//    which is false under BCP, whichever is found first.
+//   - All assigned literals since last test if SAT or UNKNOWN
+//   - Either the literals of a clause which is unsat under BCP or an assumption
+//     which is false under BCP, whichever is found first.
 //
 // When g is under a test scope, many operations are not
 // possible, in particular: {Add,Activate,ActivateWith,Deactivate}
@@ -218,19 +220,19 @@ func (g *Gini) Reasons(dst []z.Lit, m z.Lit) []z.Lit {
 //
 // Example:
 //
-//  if g.Value(a) != false || g.Value(b) != false {
-//    g.Add(a)
-//    g.Add(b)
-//    m := g.Activate()  // don't call g.Add(0).
-//    g.Assume(m) // now the clause (a + b)  is active
-//    if g.Solve() == 1 {
-//       // do something
-//    }
-//    // now the clause (a+b) is not active.
-//    g.Deactivate(m)
-//    // now `m` can be re-used and the solver can ignore
-//    // clauses with `m`.
-//  }
+//	if g.Value(a) != false || g.Value(b) != false {
+//	  g.Add(a)
+//	  g.Add(b)
+//	  m := g.Activate()  // don't call g.Add(0).
+//	  g.Assume(m) // now the clause (a + b)  is active
+//	  if g.Solve() == 1 {
+//	     // do something
+//	  }
+//	  // now the clause (a+b) is not active.
+//	  g.Deactivate(m)
+//	  // now `m` can be re-used and the solver can ignore
+//	  // clauses with `m`.
+//	}
 //
 // Activation of all clauses can be used in conjunction with cardinality constraints
 // to easily create a MAXSAT solver.

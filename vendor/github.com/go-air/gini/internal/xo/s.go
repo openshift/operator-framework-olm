@@ -316,34 +316,33 @@ func (s *S) Value(m z.Lit) bool {
 //
 // Test returns a pair
 //
-//  (res, ns)
+//	(res, ns)
 //
 // where
 //
-//  - If res == 1, then the problem is SAT and a full model is found.
-//  - If res == 0, then the problem is unknown (but consistent under unit
-//    propagation).
-//  - If res == -1 then the problem is UNSAT.
+//   - If res == 1, then the problem is SAT and a full model is found.
+//   - If res == 0, then the problem is unknown (but consistent under unit
+//     propagation).
+//   - If res == -1 then the problem is UNSAT.
 //
 // Additionally if ns is not nil, then
 //
-//  - If res in {0,1}, then ns
-//  contains all literals assigned under BCP since last Test(), including
-//  assumptions.
-//  - If res = -1, then ns contains the literals in a clause
-//  which is false under unit propagation, or an assumed false literal, whichever
-//  we happen upon first. (This is distinct from Why which gives failed literals).
-//  - ns is stored in ms if possible
+//   - If res in {0,1}, then ns
+//     contains all literals assigned under BCP since last Test(), including
+//     assumptions.
+//   - If res = -1, then ns contains the literals in a clause
+//     which is false under unit propagation, or an assumed false literal, whichever
+//     we happen upon first. (This is distinct from Why which gives failed literals).
+//   - ns is stored in ms if possible
 //
 // Test operates under the following caveat.
 //
-//  If Test() or Solve() returns unsat, then Test() should not
-//  be called subsequently until Untest() is called and returns 0.  Note
-//  That it can be that Untest() will never return 0 if the problem is unsat
-//  without assumptions.
+//	If Test() or Solve() returns unsat, then Test() should not
+//	be called subsequently until Untest() is called and returns 0.  Note
+//	That it can be that Untest() will never return 0 if the problem is unsat
+//	without assumptions.
 //
 // If this does not hold, Test panics.
-//
 func (s *S) Test(ms []z.Lit) (res int, ns []z.Lit) {
 	//fmt.Printf("test\n")
 	ns = ms
@@ -392,24 +391,24 @@ func (s *S) Test(ms []z.Lit) (res int, ns []z.Lit) {
 // Note that when interleaving Solve,Test,and Untest, the
 // following sequences are possible:
 //
-//  Assume(A1)
-//  Test()     ->   0, []
-//  Assume(A2)
-//  Test()     ->   0
-//  Assume(A3)
-//  Solve()        -1
-//  Untest()   ->  -1, [] // problem is unsat with A1 and A2
-//  Untest()   ->  -1, [] // problem is unsat with A1 under BCP, even though it wasn't before
+//	Assume(A1)
+//	Test()     ->   0, []
+//	Assume(A2)
+//	Test()     ->   0
+//	Assume(A3)
+//	Solve()        -1
+//	Untest()   ->  -1, [] // problem is unsat with A1 and A2
+//	Untest()   ->  -1, [] // problem is unsat with A1 under BCP, even though it wasn't before
 //
-//  Assume(A1)
-//  Test()     ->   0, [...]
-//  Solve()    ->  -1 // unsat under A1
-//  Untest()   ->   0
-//  Assume(A2) ->
-//  Test()     ->   1  // sat under A2
-//  Untest()   ->   0
-//  Assume(A1)
-//  Test()     ->  -1, [] // problem is unsat with A1 under BCP, even though it wasn't before
+//	Assume(A1)
+//	Test()     ->   0, [...]
+//	Solve()    ->  -1 // unsat under A1
+//	Untest()   ->   0
+//	Assume(A2) ->
+//	Test()     ->   1  // sat under A2
+//	Untest()   ->   0
+//	Assume(A1)
+//	Test()     ->  -1, [] // problem is unsat with A1 under BCP, even though it wasn't before
 func (s *S) Untest() int {
 	if len(s.testLevels) == 0 {
 		panic("Untest without Test")
@@ -436,8 +435,9 @@ func (s *S) Untest() int {
 // returned from test.
 //
 // Reasons takes 2 arguments,
-//  dst a z.Lit slice in which to place the reasons
-//  m the literal for which to supply reasons.
+//
+//	dst a z.Lit slice in which to place the reasons
+//	m the literal for which to supply reasons.
 //
 // Reasons returns the reasons for m appended to
 // dst.

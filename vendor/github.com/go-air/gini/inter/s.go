@@ -14,9 +14,9 @@ import (
 //
 // Solve/Try returns
 //
-//  1  If the problem is SAT
-//  0  If the problem is undetermined (Try only)
-//  -1 If the problem is UNSAT
+//	1  If the problem is SAT
+//	0  If the problem is undetermined (Try only)
+//	-1 If the problem is UNSAT
 //
 // These error codes are used throughout gini.
 type Solvable interface {
@@ -54,7 +54,6 @@ type MaxVar interface {
 
 // Liter produces fresh variables and returns the corresponding
 // positive literal.
-//
 type Liter interface {
 	Lit() z.Lit
 }

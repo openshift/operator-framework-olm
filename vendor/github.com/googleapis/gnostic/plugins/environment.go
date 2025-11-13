@@ -14,9 +14,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 
+	discovery "github.com/googleapis/gnostic/discovery"
 	openapiv2 "github.com/googleapis/gnostic/openapiv2"
 	openapiv3 "github.com/googleapis/gnostic/openapiv3"
-	discovery "github.com/googleapis/gnostic/discovery"
 	surface "github.com/googleapis/gnostic/surface"
 )
 

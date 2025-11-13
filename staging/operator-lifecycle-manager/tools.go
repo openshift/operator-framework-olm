@@ -13,8 +13,8 @@ import _ "github.com/operator-framework/api/crds" // operators.coreos.com CRD ma
 // mock-generation
 // These tools are referenced in //go:generate directives in the code
 import (
-	_ "github.com/golang/mock/mockgen"
 	_ "github.com/maxbrunsfeld/counterfeiter/v6"
+	_ "go.uber.org/mock/mockgen"
 )
 
 // k8s code generators

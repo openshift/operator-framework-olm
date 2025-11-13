@@ -6,7 +6,6 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/go-bindata/go-bindata/v3 v3.1.3
 	github.com/go-logr/logr v1.4.3
-	github.com/golang/mock v1.6.0
 	github.com/googleapis/gnostic v0.5.5
 	github.com/grpc-ecosystem/grpc-health-probe v0.4.41
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.12.0
@@ -19,6 +18,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
+	go.uber.org/mock v0.6.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1
 	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v2 v2.4.0

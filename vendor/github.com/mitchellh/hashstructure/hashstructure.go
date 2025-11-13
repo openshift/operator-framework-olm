@@ -58,29 +58,28 @@ type HashOptions struct {
 //
 // Notes on the value:
 //
-//   * Unexported fields on structs are ignored and do not affect the
+//   - Unexported fields on structs are ignored and do not affect the
 //     hash value.
 //
-//   * Adding an exported field to a struct with the zero value will change
+//   - Adding an exported field to a struct with the zero value will change
 //     the hash value.
 //
 // For structs, the hashing can be controlled using tags. For example:
 //
-//    struct {
-//        Name string
-//        UUID string `hash:"ignore"`
-//    }
+//	struct {
+//	    Name string
+//	    UUID string `hash:"ignore"`
+//	}
 //
 // The available tag values are:
 //
-//   * "ignore" or "-" - The field will be ignored and not affect the hash code.
+//   - "ignore" or "-" - The field will be ignored and not affect the hash code.
 //
-//   * "set" - The field will be treated as a set, where ordering doesn't
-//             affect the hash code. This only works for slices.
+//   - "set" - The field will be treated as a set, where ordering doesn't
+//     affect the hash code. This only works for slices.
 //
-//   * "string" - The field will be hashed as a string, only works when the
-//                field implements fmt.Stringer
-//
+//   - "string" - The field will be hashed as a string, only works when the
+//     field implements fmt.Stringer
 func Hash(v interface{}, opts *HashOptions) (uint64, error) {
 	// Create default options
 	if opts == nil {

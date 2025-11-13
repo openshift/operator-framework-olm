@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build windows
 // +build windows
 
 package win_pdh
@@ -13,12 +14,12 @@ import (
 
 // Error codes
 const (
-	ERROR_SUCCESS             = 0
-	ERROR_INVALID_FUNCTION    = 1
+	ERROR_SUCCESS          = 0
+	ERROR_INVALID_FUNCTION = 1
 )
 
 type (
-	HANDLE    uintptr
+	HANDLE uintptr
 )
 
 // PDH error codes, which can be returned by all Pdh* functions. Taken from mingw-w64 pdhmsg.h
@@ -216,7 +217,7 @@ func init() {
 // full implemention of the pdh.dll API, except with a GUI and all that. The registry setting also provides an
 // interface to the available counters, and can be found at the following key:
 //
-// 	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\CurrentLanguage
+//	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\CurrentLanguage
 //
 // This registry key contains several values as follows:
 //
@@ -278,9 +279,9 @@ func PdhCloseQuery(hQuery PDH_HQUERY) uint32 {
 // of the counter can be extracted with PdhGetFormattedCounterValue(). For example, the following code
 // requires at least two calls:
 //
-// 	var handle win.PDH_HQUERY
-// 	var counterHandle win.PDH_HCOUNTER
-// 	ret := win.PdhOpenQuery(0, 0, &handle)
+//	var handle win.PDH_HQUERY
+//	var counterHandle win.PDH_HCOUNTER
+//	ret := win.PdhOpenQuery(0, 0, &handle)
 //	ret = win.PdhAddEnglishCounter(handle, "\\Processor(_Total)\\% Idle Time", 0, &counterHandle)
 //	var derp win.PDH_FMT_COUNTERVALUE_DOUBLE
 //

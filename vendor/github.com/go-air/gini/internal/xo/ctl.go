@@ -77,10 +77,9 @@ func (c *Ctl) stop() int {
 // and returns it together with whether the
 // underlying Solve() has terminated.  Test returns
 //
-//  - 1   for SAT
-//  - -1  for UNSAT
-//  - 0   for UNKNOWN
-//
+//   - 1   for SAT
+//   - -1  for UNSAT
+//   - 0   for UNKNOWN
 func (c *Ctl) Test() (result int, done bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

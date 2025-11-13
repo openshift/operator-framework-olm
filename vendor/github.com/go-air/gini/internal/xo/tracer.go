@@ -3,7 +3,6 @@
 
 package xo
 
-//
 type Tracer interface {
 	Add(m int)
 	Remove(i int)

@@ -240,9 +240,11 @@ func isURL(path string) bool {
 
 // Write bytes to a named file.
 // Certain names have special meaning:
-//   ! writes nothing
-//   - writes to stdout
-//   = writes to stderr
+//
+//	! writes nothing
+//	- writes to stdout
+//	= writes to stderr
+//
 // If a directory name is given, the file is written there with
 // a name derived from the source and extension arguments.
 func writeFile(name string, bytes []byte, source string, extension string) {

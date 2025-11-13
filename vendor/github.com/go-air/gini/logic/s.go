@@ -46,13 +46,12 @@ func (s *S) Copy() *S {
 //
 // init must be one of the following
 //
-//  s.T
-//  s.F
-//  z.LitNull
+//	s.T
+//	s.F
+//	z.LitNull
 //
 // or Latch will panic.  z.LitNull means uninitialized, or unknown
 // or 'X' in ternary logic.
-//
 func (s *S) Latch(init z.Lit) z.Lit {
 	if init != s.F && init != s.T && init != z.LitNull {
 		panic("invalid initial value")
@@ -87,9 +86,9 @@ func (s *S) SetNext(m, nxt z.Lit) {
 
 // Init returns the initial state of the latch latch.
 //
-//  - s.F if false
-//  - s.T if true
-//  - z.LitNull if X
+//   - s.F if false
+//   - s.T if true
+//   - z.LitNull if X
 func (s *S) Init(latch z.Lit) z.Lit {
 	v := latch.Var()
 	return s.nodes[v].a

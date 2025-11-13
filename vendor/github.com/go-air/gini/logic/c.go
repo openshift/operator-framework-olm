@@ -325,15 +325,16 @@ func (c *C) Xor(a, b z.Lit) z.Lit {
 }
 
 // Choice constructs a literal which is equivalent to
-//  if i then t else e
+//
+//	if i then t else e
 func (c *C) Choice(i, t, e z.Lit) z.Lit {
 	return c.Or(c.And(i, t), c.And(i.Not(), e))
 }
 
 // Ins returns the children/ operands of m.
 //
-//  If m is an input, then, Ins returns z.LitNull, z.LitNull
-//  If m is an and, then Ins returns the two conjuncts
+//	If m is an input, then, Ins returns z.LitNull, z.LitNull
+//	If m is an and, then Ins returns the two conjuncts
 func (c *C) Ins(m z.Lit) (z.Lit, z.Lit) {
 	v := m.Var()
 	n := c.nodes[v]
