@@ -1,6 +1,6 @@
 ## Overview
 
-When creating test cases based on OTE (OpenShift Tests Extension) in operator-controller, there are two sources:
+When creating test cases based on OTE (OpenShift Tests Extension) in operator-framework-olm, there are two sources:
 
 ### 1. Migrated Cases from Origin
 - These cases are all robust and stable, meeting OpenShift CI requirements
