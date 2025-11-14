@@ -70,6 +70,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:43171-[OTP][Skipped:Disconnected] opm render blob from bundle db based index dc based index db file and directory", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43171-[Skipped:Disconnected] opm render blob from bundle db based index dc based index db file and directory"), func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
 		g.By("render db-based index image")
 		output, err := opmCLI.Run("render").Args("quay.io/olmqe/olm-index:OLM-2199").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
@@ -236,6 +239,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:45402-[OTP][Skipped:Disconnected] opm render should automatically pulling in the images used in the deployments", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45402-[Skipped:Disconnected] opm render should automatically pulling in the images used in the deployments"), func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
 		g.By("render bundle image")
 		output, err := opmCLI.Run("render").Args("quay.io/olmqe/mta-operator:v0.0.4-45402", "quay.io/olmqe/eclipse-che:7.32.2-45402", "-oyaml").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
@@ -261,6 +267,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:48438-[OTP][Skipped:Disconnected] opm render should support olm.constraint which is defined in dependencies", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:48438-[Skipped:Disconnected] opm render should support olm.constraint which is defined in dependencies"), func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
 		g.By("render bundle image")
 		output, err := opmCLI.Run("render").Args("quay.io/olmqe/etcd-bundle:v0.9.2-48438", "-oyaml").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
@@ -272,6 +281,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:70013-[OTP][Skipped:Disconnected] opm support deprecated channel", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:70013-[Skipped:Disconnected] opm support deprecated channel"), func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
 		opmBaseDir := exutil.FixturePath("testdata", "opm", "70013")
 		opmCLI.ExecCommandPath = opmBaseDir
 
@@ -302,6 +314,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:54168-[OTP][Skipped:Disconnected] opm support '--use-http' global flag", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:54168-[Skipped:Disconnected] opm support '--use-http' global flag"), func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
 		if os.Getenv("HTTP_PROXY") != "" || os.Getenv("http_proxy") != "" {
 			g.Skip("HTTP_PROXY is not empty - skipping test ...")
 		}
@@ -345,6 +360,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:43409-[OTP][Skipped:Disconnected] opm can list catalog contents", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43409-[Skipped:Disconnected] opm can list catalog contents"), func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
 		dcimagetag := "quay.io/olmqe/nginxolm-operator-index:v1"
 		g.By("1, testing with dc format index image")
 		g.By("1.1 list packages")
@@ -415,6 +433,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:53869-[OTP][Skipped:Disconnected] opm supports creating a catalog using basic veneer", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53869-[Skipped:Disconnected] opm supports creating a catalog using basic veneer"), func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
 		if os.Getenv("HTTP_PROXY") != "" || os.Getenv("http_proxy") != "" {
 			g.Skip("HTTP_PROXY is not empty - skipping test ...")
 		}
@@ -423,7 +444,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 
 		g.By("step: create dir catalog")
 		catsrcPathYaml := filepath.Join(opmBaseDir, "catalog-yaml")
-		err := os.MkdirAll(catsrcPathYaml, 0755)
+		err = os.MkdirAll(catsrcPathYaml, 0755)
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		g.By("step: create a catalog using basic veneer with yaml format")
@@ -646,6 +667,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:53917-[OTP][Skipped:Disconnected] opm can visualize the update graph for a given Operator from an arbitrary version", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53917-[Skipped:Disconnected] opm can visualize the update graph for a given Operator from an arbitrary version"), func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
 		if os.Getenv("HTTP_PROXY") != "" || os.Getenv("http_proxy") != "" {
 			g.Skip("HTTP_PROXY is not empty - skipping test ...")
 		}
@@ -702,6 +726,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:60573-[OTP][Skipped:Disconnected] opm exclude bundles with olm.deprecated property when rendering", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:60573-[Skipped:Disconnected] opm exclude bundles with olm.deprecated property when rendering"), func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
 		g.By("opm render the sqlite index image message")
 		msg, err := opmCLI.Run("render").Args("quay.io/olmqe/catalogtest-index:v4.12depre", "-oyaml").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
@@ -720,6 +747,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:73218-[OTP][Skipped:Disconnected] opm alpha render-graph indicate deprecated graph content", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:73218-[Skipped:Disconnected] opm alpha render-graph indicate deprecated graph content"), func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
 		if os.Getenv("HTTP_PROXY") != "" || os.Getenv("http_proxy") != "" {
 			g.Skip("HTTP_PROXY is not empty - skipping test ...")
 		}
