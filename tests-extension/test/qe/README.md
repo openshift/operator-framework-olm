@@ -1,6 +1,6 @@
 ## Overview
 
-When creating test cases based on OTE (OpenShift Tests Extension) in operator-controller, there are two sources:
+When creating test cases based on OTE (OpenShift Tests Extension) in operator-framework-olm, there are two sources:
 
 ### 1. Migrated Cases from Origin
 - These cases are all robust and stable, meeting OpenShift CI requirements
@@ -160,7 +160,11 @@ We need to identify all cases from tests-private among all cases, then mark whic
 
 ## Test Case Migration Guide
 
-**Required For all QE cases**: Do not use `&|!,()/` in case title
+**Required For all QE cases**:
+- Do not use `&|!,()/` in case title
+- Do NOT remove the PolarionID number from the `original-name` label. The PolarionID in `g.Label("original-name:...")` must include the case ID number.
+  - ✅ **Correct**: `g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[Skipped:Disconnected]catalogsource with invalid name is created")`
+  - ❌ **Wrong**: `g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:[Skipped:Disconnected]catalogsource with invalid name is created")` (missing case ID)
 
 ### A. Code Changes for Migrated Cases
 
@@ -192,31 +196,39 @@ All migrated test case code needs the following changes to run in the new test f
 
 ### B. Label Requirements for Migrated and New Cases
 
-#### Required Labels
+#### Required Labels in case title
 1. **Component annotation**: Add `[sig-operator]` in case title
 2. **Jira Component**: Add `[Jira:OLM]` in case title
 3. **OpenShift CI compatibility**: If you believe the case meets OpenShift CI requirements, add `ReleaseGate` label to Ginkgo
    - **Note**: Don't add `ReleaseGate` if case title contains `Disruptive` or `Slow`, or labels contain `StressTest`
 4. **Required For Migrated case from test-private**: Add `[OTP]` in case title
 
-#### Optional Label for Migration and New
-1. **LEVEL0**: Use title label `[Level0]`
-2. **Author**: Deprecated
+#### Optional Labels in Migration/New test cases' title
+1. **LEVEL0**: Add `[Level0]` in the case title as a title tag. Do NOT use `g.Label("LEVEL0")`.
+   - ✅ **Correct**: `g.It("PolarionID:72192-[Level0][OTP]-description", func() { ... })`
+   - ❌ **Wrong**: `g.It("PolarionID:72192-[OTP]-description", g.Label("LEVEL0"), func() { ... })`
+2. **Author**: Deprecated, remove it.
 3. **ConnectedOnly**: Add `[Skipped:Disconnected]` in title
 4. **DisconnectedOnly**: Add `[Skipped:Connected][Skipped:Proxy]` in title
-5. **Case ID**: change to `PolarionID:xxxxxx`
-6. **Importance**: Deprecated
-7.  **NonPrerelease**: Deprecated
-    - **Longduration**: Change to `[Slow]` in case title
-    - **ChkUpg**: Not supported (openshift-tests upgrade differs from OpenShift QE)
-8.  **VMonly**: Deprecated
-9.  **Slow, Serial, Disruptive**: Preserved
-10. **DEPRECATED**: Deprecated, corresponding cases deprecated. Use `IgnoreObsoleteTests` for deprecation after addition
-11. **CPaasrunOnly, CPaasrunBoth, StagerunOnly, StagerunBoth, ProdrunOnly, ProdrunBoth**: Deprecated
+5. **Case ID**: change it to `PolarionID:xxxxxx` format, and remove the old one from the case title. Such as `-72017-` strings.
+   - **IMPORTANT**: The PolarionID number should only appear ONCE in the test title - at the beginning as `PolarionID:xxxxx`. Do NOT repeat the number anywhere else in the title.
+   - **IMPORTANT**: Do NOT add `-` between two consecutive square brackets. Adjacent tags should be written directly together.
+   - ✅ **Correct**: `PolarionID:73201-[OTP][Skipped:Disconnected]catalog pods do not recover from node failure [Disruptive][Serial]`
+   - ❌ **Wrong**: `PolarionID:73201-[OTP]-[Skipped:Disconnected]catalog pods do not recover from node failure [Disruptive][Serial]` (dash between brackets)
+   - ❌ **Wrong**: `PolarionID:73201-[OTP][Skipped:Disconnected]73201-catalog pods do not recover from node failure [Disruptive][Serial]` (repeated ID)
+   - ❌ **Wrong**: `PolarionID:22070-[OTP][Skipped:Disconnected]22070-support grpc sourcetype [Serial]` (repeated ID)
+6. **Importance**: Deprecated, remove it. Such as `Critical`, `High`, `Medium` and `Low` strings.
+7. **NonPrerelease**: Deprecated, remove it.
+    - **Longduration**: Change it to `[Slow]` in case title.
+    - **ChkUpg**: Deprecated, remove it. Not supported (openshift-tests upgrade differs from OpenShift QE)
+8.  **VMonly**: Deprecated, and don't migrate the `VMonly` test cases to here. 
+9.  **Slow, Serial, Disruptive**: Preserved, but add them in the end of the title. Such as `"[sig-operator][Jira:OLM] OLMv0 optional should PolarionID: xxx ...[Slow][Serial][Disruptive]"`
+10. **DEPRECATED**: Deprecated, don't add this kind of case to here. But, if your test case has been merged into this repo, please add this case into the [IgnoreObsoleteTests](https://github.com/openshift/operator-framework-olm/blob/main/tests-extension/cmd/main.go#L272).
+11. **CPaasrunOnly, CPaasrunBoth, StagerunOnly, StagerunBoth, ProdrunOnly, ProdrunBoth**: Deprecated, remove them.
 12. **StressTest**: Use Ginkgo label `g.Label("StressTest")`
 13. **NonHyperShiftHOST**: Use Ginkgo label `g.Label("NonHyperShiftHOST")` or use `IsHypershiftHostedCluster` judgment, then skip
-14. **HyperShiftMGMT**: Deprecated. For cases needing hypershift mgmt execution, use `g.Label("NonHyperShiftHOST")` and `ValidHypershiftAndGetGuestKubeConf` validation
-15. **MicroShiftOnly**: Deprecated. For cases not supporting microshift, use `SkipMicroshift` judgment, then skip
+14. **HyperShiftMGMT**: Deprecated. Use `g.Label("NonHyperShiftHOST")` and `ValidHypershiftAndGetGuestKubeConf` validation instead.
+15. **MicroShiftOnly**: Deprecated. Use `SkipMicroshift` instead.
 16. **ROSA**: Deprecated. Three ROSA job types:
     - `rosa-sts-ovn`: equivalent to OCP
     - `rosa-sts-hypershift-ovn`: equivalent to hypershift hosted
@@ -242,6 +254,8 @@ All migrated test case code needs the following changes to run in the new test f
     - Do NOT use `IsFeaturegateEnabled` check
     - Do NOT add `[OCPFeatureGate:xxxx]` label
 20. **Exclusive**: change to `Serial`
+
+### C. Don't output the sensitive info in the log
 
 ## Disconnected Environment Support for Migrated QE cases
 
@@ -289,6 +303,7 @@ g.It("test case supporting disconnected", func() {
   - If ITMS is configured: Test proceeds normally
   - If ITMS is missing: Test is skipped with clear message explaining what's missing
 
+
 ## Test Automation Code Requirements
 
 Consider these requirements when writing and reviewing code:
@@ -317,6 +332,31 @@ Consider these requirements when writing and reviewing code:
 - Don't modify shared libraries (e.g., Ginkgo) or global settings affecting other tests
 - Don't execute logic code in `g.Describe` except for initing oc, and move to `g.BeforeEach`
 - Don't use single/double quotes in case titles (causes XML parse failures)
+- **JSONPath field names must use lowercase**: When using `-o=jsonpath={}` with `oc` commands, all field names must be lowercase
+  ```go
+  // Wrong - capitalized field names:
+  .metadata.Name              // ❌
+  .spec.Template              // ❌
+  @.Name                      // ❌
+  .subjects[0].Name           // ❌
+  .ownerReferences[0].Name    // ❌
+
+  // Correct - lowercase field names:
+  .metadata.name              // ✅
+  .spec.template              // ✅
+  @.name                      // ✅
+  .subjects[0].name           // ✅
+  .ownerReferences[0].name    // ✅
+
+  // Examples:
+  // Wrong:
+  oc.Run("get").Args("pod", "mypod", "-o=jsonpath={.metadata.Name}").Output()
+  oc.Run("get").Args("deploy", "mydeploy", "-o=jsonpath={.spec.Template.spec.containers[0].image}").Output()
+
+  // Correct:
+  oc.Run("get").Args("pod", "mypod", "-o=jsonpath={.metadata.name}").Output()
+  oc.Run("get").Args("deploy", "mydeploy", "-o=jsonpath={.spec.template.spec.containers[0].image}").Output()
+  ```
 - Avoid `o.Expect` in `wait.Poll`:
   ```go
   // Wrong:
@@ -368,24 +408,72 @@ This ensures Claude Code has access to:
 
 1. **Build and compile**:
    ```bash
-   make bindata
-   make build
+   $ cd tests-extension
+   $ make bindata
+   $ make build
    ```
 
 2. **Check test name**:
    ```bash
+   $ ./bin/olmv0-tests-ext -h
+OLMv0 Tests Extension
+
+Usage:
+   [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  images      List test images
+  info        Display extension metadata
+  list        List items
+  run-suite   Run a group of tests by suite. This is more limited than origin, and intended for light local development use. Orchestration parameters, scheduling, isolation, etc are not obeyed, and Ginkgo tests are executed serially.
+  run-test    Runs tests by name
+  update      Update test metadata
+
+Flags:
+  -h, --help   help for this command
+
+Use " [command] --help" for more information about a command.
+
    # List all test names and search for your test using a keyword
-   ./bin/olmv0-tests-ext list -o names | grep "keyword_from_your_test_name"
+   $ ./bin/olmv0-tests-ext list -o names | grep "keyword_from_your_test_name"
    
    # Example: If your test is about "catalog installation", search for:
-   ./bin/olmv0-tests-ext list -o names | grep "catalog"
+   $ ./bin/olmv0-tests-ext list -o names | grep "catalog"
    # This will show the full test name like:
    # [sig-operator][Jira:OLM] OLMv0 catalog installation should succeed
    ```
 
 3. **Run test locally**:
    ```bash
-   ./bin/olmv0-tests-ext run-test <full test name>
+   $ ./bin/olmv0-tests-ext run-test <full test name>
+   ```
+   For example, 
+   ```console
+   jiazha-mac:tests-extension jiazha$ ./bin/olmv0-tests-ext list -o names | grep 43271
+   [sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43271-[OTP]-Bundle Content Compression
+
+   jiazha-mac:tests-extension jiazha$ ./bin/olmv0-tests-ext run-test -n "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43271-[OTP]-Bundle Content Compression"
+   I1120 12:13:20.979754 47868 test_context.go:566] The --provider flag is not set. Continuing as if --provider=skeleton had been used.
+   Running Suite:  - /Users/jiazha/goproject/operator-framework-olm/tests-extension
+   ================================================================================
+   Random Seed: 1763612000 - will randomize all specs
+
+   Will run 1 of 1 specs
+   ------------------------------
+   [sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43271-[OTP]-Bundle Content Compression [original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43271-[OTP]-Medium-43191-Medium-43271-Bundle Content Compression]
+   ...
+   ```
+   
+   **Keep generated temporary project for Debugging**
+   Add the Env Var: `export DELETE_NAMESPACE=false`. These random namespaces will be kept, like below:
+   ```console
+   jiazha-mac:tests-extension jiazha$ oc get ns 
+   NAME                                               STATUS   AGE
+   default                                            Active   76m
+   e2e-test-default-1a2fc8d6-2jr22                    Active   119s
+   e2e-test-default-1a2fc8d6-fg54z                    Active   104s
    ```
 
 4. **Test with openshift-tests**:
@@ -410,11 +498,11 @@ This ensures Claude Code has access to:
      ./openshift-tests run olmv0/extended/candidate/parallel --monitor watch-namespaces
      ```
 
-5. **Update metadata**:
+5. **Please update metadata if test case title changed**:
    ```bash
    make update-metadata
    ```
-   - If test name changed, refer to "How to Keep Test Names Unique"
+   - If test case title changed, refer to "How to Keep Test Names Unique"
 
 6. **Create PR**
 
