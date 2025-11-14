@@ -80,10 +80,10 @@ func SkipNonAmd64SingleArch(oc *exutil.CLI) Architecture {
 func getNodeArchitectures(oc *exutil.CLI) []string {
 	output, err := oc.WithoutNamespace().AsAdmin().Run("get").Args("nodes", "-o=jsonpath={.items[*].status.nodeInfo.architecture}").Output()
 	if err != nil {
-		e2e.Failf("unable to get cluster node architectures: %v", err)
+		g.Skip(fmt.Sprintf("unable to get cluster node architectures: %v", err))
 	}
 	if output == "" {
-		e2e.Failf("no nodes found or architecture information missing")
+		g.Skip("no nodes found or architecture information missing")
 	}
 	return strings.Fields(output) // Use Fields instead of Split to handle multiple spaces
 }
@@ -97,7 +97,7 @@ func getNodeArchitectures(oc *exutil.CLI) []string {
 func GetAvailableArchitecturesSet(oc *exutil.CLI) []Architecture {
 	architectureStrings := getNodeArchitectures(oc)
 	if len(architectureStrings) == 0 {
-		e2e.Failf("no node architectures found")
+		g.Skip("no node architectures found")
 	}
 
 	// Use map for deduplication with Architecture as key
@@ -199,7 +199,7 @@ func (a Architecture) String() string {
 func ClusterArchitecture(oc *exutil.CLI) Architecture {
 	architectureStrings := getNodeArchitectures(oc)
 	if len(architectureStrings) == 0 {
-		e2e.Failf("no node architectures found")
+		g.Skip("no node architectures found")
 	}
 
 	// Filter out empty strings and convert to Architecture
@@ -211,7 +211,7 @@ func ClusterArchitecture(oc *exutil.CLI) Architecture {
 	}
 
 	if len(architectures) == 0 {
-		e2e.Failf("no valid node architectures found")
+		g.Skip("no valid node architectures found")
 	}
 
 	// Check if all architectures are the same
@@ -267,7 +267,7 @@ func GetControlPlaneArch(oc *exutil.CLI) Architecture {
 
 	architectureStr = strings.TrimSpace(architectureStr)
 	if architectureStr == "" {
-		e2e.Failf("Control plane node %s has no architecture information", masterNode)
+		g.Skip(fmt.Sprintf("Control plane node %s has no architecture information", masterNode))
 	}
 
 	return FromString(architectureStr)

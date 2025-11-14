@@ -115,7 +115,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 with multi ns", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "MultiNamespace InstallModeType not supported", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.message}"}).Check(oc)
 	})
 
-	g.It("PolarionID:71119-[OTP][Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:71119-[Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]"), func() {
+	g.It("PolarionID:71119-[OTP]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial][Slow]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 with multi ns PolarionID:71119-[Skipped:Disconnected]pod does not start for installing operator of multi-ns mode when og is in one of the ns[Serial]"), func() {
 		exutil.SkipForSNOCluster(oc)
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipNoCapabilities(oc, "marketplace")
@@ -132,6 +132,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 with multi ns", func() {
 			os.Getenv("HTTP_PROXY") != "" || os.Getenv("HTTPS_PROXY") != "" || os.Getenv("http_proxy") != "" || os.Getenv("https_proxy") != "" {
 			g.Skip("it is not supported")
 		}
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
