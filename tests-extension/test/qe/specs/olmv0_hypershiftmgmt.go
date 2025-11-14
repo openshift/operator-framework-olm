@@ -152,5 +152,77 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", g.Label(
 			}
 		}
 	})
+	// Polarion ID: 45543
+	g.It("PolarionID:45543-[OTP][Skipped:Disconnected]Enable hypershift to deploy OperatorLifecycleManager resources", func() {
 
+		g.By("1, check if any resource running in the guest cluster")
+		projects := []string{"openshift-operator-lifecycle-manager", "openshift-marketplace"}
+		for _, project := range projects {
+			resource, err := oc.AsGuestKubeconf().Run("get").Args("pods", "-n", project).Output()
+			if err != nil {
+				e2e.Failf("Fail to get resource in project: %s, error:%v", project, err)
+			}
+			// now, for guest cluster, there is may have a custom catalog resource for testing
+			if project == "openshift-marketplace" && strings.Contains(resource, "marketplace-operator") {
+				e2e.Failf("Found Marketplace related resources running on the guest cluster")
+			}
+			if project != "openshift-marketplace" && !strings.Contains(resource, "No resources found") {
+				e2e.Failf("Found OLM related resources running on the guest cluster")
+			}
+		}
+
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
+		g.By("2, create an OperatorGroup")
+		ns := "guest-cluster-45543"
+		err := oc.AsGuestKubeconf().Run("create").Args("ns", ns).Execute()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		defer func() {
+			_ = oc.AsGuestKubeconf().Run("delete").Args("ns", ns).Execute()
+		}()
+		ogSingleTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-45543",
+			Namespace: ns,
+			Template:  ogSingleTemplate,
+		}
+		defer og.Delete(itName, dr)
+		og.CreateWithCheck(oc.AsGuestKubeconf(), itName, dr)
+
+		g.By("3, create the learn-operator CatalogSource")
+		catsrcImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "catsrc-45543",
+			Namespace:   ns,
+			DisplayName: "QE Operators",
+			Publisher:   "OpenShift QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/learn-operator-index:v25",
+			Template:    catsrcImageTemplate,
+		}
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc.AsGuestKubeconf(), itName, dr)
+
+		g.By("4, subscribe to learn-operator.v0.0.3")
+		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-45348",
+			Namespace:              ns,
+			CatalogSourceName:      "catsrc-45543",
+			CatalogSourceNamespace: ns,
+			Channel:                "beta",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "learn",
+			StartingCSV:            "learn-operator.v0.0.3",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		defer sub.Delete(itName, dr)
+		sub.Create(oc.AsGuestKubeconf(), itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "learn-operator.v0.0.3", "-n", ns, "-o=jsonpath={.status.phase}"}).Check(oc.AsGuestKubeconf())
+	})
 })
