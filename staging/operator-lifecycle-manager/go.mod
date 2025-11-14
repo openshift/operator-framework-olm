@@ -22,7 +22,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onsi/ginkgo/v2 v2.23.3
 	github.com/onsi/gomega v1.36.2
-	github.com/openshift/api v3.9.0+incompatible
+	github.com/openshift/api v0.0.0-20250425163235-9b80d67473bc
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a
 	github.com/operator-framework/api v0.30.0
 	github.com/operator-framework/operator-registry v1.51.0
@@ -191,7 +191,7 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.63.2
 
 replace (
 	// controller runtime
-	github.com/openshift/api => github.com/openshift/api v0.0.0-20221021112143-4226c2167e40 // release-4.12
+	github.com/openshift/api => github.com/openshift/api v0.0.0-20250425163235-9b80d67473bc // release-4.19
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20221019143426-16aed247da5c // release-4.12
 )
 

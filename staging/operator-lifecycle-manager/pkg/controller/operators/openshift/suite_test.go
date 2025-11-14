@@ -2,6 +2,7 @@ package openshift
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -46,15 +47,25 @@ const (
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	base := filepath.Join("..", "..", "..", "..", "vendor", "github.com", "openshift", "api", "config", "v1")
+	// Try to find CRDs in vendor first, fall back to GOMODCACHE if not found
+	base := filepath.Join("..", "..", "..", "..", "vendor", "github.com", "openshift", "api", "config", "v1", "zz_generated.crd-manifests")
+	if _, err := os.Stat(base); os.IsNotExist(err) {
+		// Fall back to GOMODCACHE
+		gomodcache := os.Getenv("GOMODCACHE")
+		if gomodcache == "" {
+			gomodcache = filepath.Join(os.Getenv("HOME"), "go", "pkg", "mod")
+		}
+		base = filepath.Join(gomodcache, "github.com", "openshift", "api@v0.0.0-20250425163235-9b80d67473bc", "config", "v1", "zz_generated.crd-manifests")
+	}
+
 	testEnv = &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
 		CRDs: []*apiextensionsv1.CustomResourceDefinition{
 			crds.ClusterServiceVersion(),
 		},
 		CRDDirectoryPaths: []string{
-			filepath.Join(base, "0000_00_cluster-version-operator_01_clusteroperator.crd.yaml"),
-			filepath.Join(base, "0000_00_cluster-version-operator_01_clusterversion.crd.yaml"),
+			filepath.Join(base, "0000_00_cluster-version-operator_01_clusteroperators.crd.yaml"),
+			filepath.Join(base, "0000_00_cluster-version-operator_01_clusterversions-Default.crd.yaml"),
 		},
 	}
 
