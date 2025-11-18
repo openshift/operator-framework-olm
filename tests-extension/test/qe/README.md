@@ -243,6 +243,52 @@ All migrated test case code needs the following changes to run in the new test f
     - Do NOT add `[OCPFeatureGate:xxxx]` label
 20. **Exclusive**: change to `Serial`
 
+## Disconnected Environment Support for Migrated QE cases
+
+**IMPORTANT**: With IDMS/ITMS mirror configuration in place, disconnected environments work exactly like connected environments.
+
+**What this means:**
+- Write test cases the same way you would for connected environments
+- Create ClusterCatalogs directly - no environment detection needed
+- IDMS/ITMS automatically redirects image pulls to mirror registry
+- No special helper functions or conditional logic required
+
+**Image Requirements for Migrated QE Cases:**
+- All operator images (bundle, base, index) must be hosted under `quay.io/openshifttest` or `quay.io/olmqe`
+- This ensures images are mirrored to disconnected environments via IDMS/ITMS configuration
+- Images from other registries will not be available in disconnected clusters
+
+**Environment Validation for Disconnected-Supporting Migrated Test Cases:**
+
+**When to use `ValidateAccessEnvironment`:**
+
+1. **Test cases that create CatalogSource or Subscription**:
+   - If your test supports disconnected environments (both connected+disconnected, or disconnected-only)
+   - AND your test creates CatalogSource or Subscription resources
+   - **MUST** call `ValidateAccessEnvironment(oc)` at the beginning of the test
+   - This applies to both newly created test cases and migrated test cases
+
+2. **Test cases that do NOT create both CatalogSource and Subscription**:
+   - Optional to use `ValidateAccessEnvironment(oc)`
+   - Using it won't cause errors, but it's not required
+   - The validation is primarily for ensuring catalog images can be mirrored
+
+**Usage example:**
+
+```go
+g.It("test case supporting disconnected", func() {
+    olmv0util.ValidateAccessEnvironment(oc)  // MUST call if creating CatalogSource/Subscription
+    // rest of test code
+})
+```
+
+**What ValidateAccessEnvironment does:**
+- **Proxy clusters**: Returns immediately (no validation needed, proxy provides external access)
+- **Connected clusters**: Returns immediately after quick network check (no validation needed)
+- **Disconnected clusters**: Validates that ImageTagMirrorSet `image-policy-aosqe` is configured
+  - If ITMS is configured: Test proceeds normally
+  - If ITMS is missing: Test is skipped with clear message explaining what's missing
+
 ## Test Automation Code Requirements
 
 Consider these requirements when writing and reviewing code:
@@ -313,6 +359,10 @@ This ensures Claude Code has access to:
 - Code quality standards and anti-patterns
 
 ## Local Development Workflow
+
+### Environment Configuration for Migrated QE cases
+
+**IMPORTANT**: With IDMS/ITMS in place, tests work the same in both connected and disconnected environments. No special configuration is needed.
 
 ### Before Submitting PR
 

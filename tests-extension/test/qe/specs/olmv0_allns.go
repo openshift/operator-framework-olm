@@ -38,7 +38,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within all namespace", func()
 		dr.RmIr(itName)
 	})
 
-	g.It("PolarionID:21418-PolarionID:25679-[OTP][Skipped:Disconnected]Cluster resource created and deleted correctly [Serial]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21418-PolarionID:25679-[Skipped:Disconnected]Cluster resource created and deleted correctly [Serial]"), func() {
+	g.It("PolarionID:21418-PolarionID:25679-[OTP]Cluster resource created and deleted correctly [Serial]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21418-PolarionID:25679-[Skipped:Disconnected]Cluster resource created and deleted correctly [Serial]"), func() {
 		architecture.SkipArchitectures(oc, architecture.PPC64LE, architecture.S390X, architecture.MULTI)
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipNoCapabilities(oc, "marketplace")
@@ -56,6 +56,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within all namespace", func()
 			os.Getenv("HTTP_PROXY") != "" || os.Getenv("HTTPS_PROXY") != "" || os.Getenv("http_proxy") != "" || os.Getenv("https_proxy") != "" {
 			g.Skip("it is not supported")
 		}
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -241,9 +242,10 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within all namespace", func()
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", subCockroachdb.InstalledCSV, "-n", subCockroachdb.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
 	})
 
-	g.It("PolarionID:21484-PolarionID:21532-[OTP][Skipped:Disconnected]watch special or all namespace by operator group", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21484-PolarionID:21532-[Skipped:Disconnected]watch special or all namespace by operator group"), func() {
+	g.It("PolarionID:21484-PolarionID:21532-[OTP]watch special or all namespace by operator group", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21484-PolarionID:21532-[Skipped:Disconnected]watch special or all namespace by operator group"), func() {
 		architecture.SkipArchitectures(oc, architecture.PPC64LE, architecture.S390X, architecture.MULTI)
 		exutil.SkipNoCapabilities(oc, "marketplace")
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -321,7 +323,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within all namespace", func()
 
 	})
 
-	g.It("PolarionID:24906-[OTP][Skipped:Disconnected]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:24906-[Skipped:Disconnected]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]"), func() {
+	g.It("PolarionID:24906-[OTP]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:24906-[Skipped:Disconnected]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]"), func() {
 		architecture.SkipArchitectures(oc, architecture.PPC64LE, architecture.S390X, architecture.MULTI)
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipNoCapabilities(oc, "marketplace")
@@ -339,6 +341,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within all namespace", func()
 			os.Getenv("HTTP_PROXY") != "" || os.Getenv("HTTPS_PROXY") != "" || os.Getenv("http_proxy") != "" || os.Getenv("https_proxy") != "" {
 			g.Skip("it is not supported")
 		}
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")

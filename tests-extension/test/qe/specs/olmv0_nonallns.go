@@ -611,8 +611,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 2: OCP-23170
-	g.It("PolarionID:23170-[OTP][Skipped:Disconnected]API labels should be hash", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23170-[Skipped:Disconnected]API labels should be hash"), func() {
+	g.It("PolarionID:23170-[OTP]API labels should be hash", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23170-[Skipped:Disconnected]API labels should be hash"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -685,7 +686,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 3: OCP-20979
-	g.It("PolarionID:20979-[OTP][Skipped:Disconnected]only one IP is generated", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:20979-[Skipped:Disconnected]only one IP is generated"), func() {
+	g.It("PolarionID:20979-[OTP]only one IP is generated", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:20979-[Skipped:Disconnected]only one IP is generated"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		if isAks, _ := exutil.IsAKSCluster(context.TODO(), oc); isAks {
 			g.Skip("skip for aks cluster")
@@ -706,6 +707,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			os.Getenv("HTTP_PROXY") != "" || os.Getenv("HTTPS_PROXY") != "" || os.Getenv("http_proxy") != "" || os.Getenv("https_proxy") != "" {
 			g.Skip("it is not supported")
 		}
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -1114,8 +1116,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// OCP-29723 - As cluster admin find abnormal status condition via components of operator resource
-	g.It("PolarionID:29723-[OTP][Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29723-[Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource"), func() {
+	g.It("PolarionID:29723-[OTP]As cluster admin find abnormal status condition via components of operator resource", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:29723-[Skipped:Disconnected]As cluster admin find abnormal status condition via components of operator resource"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -1184,7 +1187,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// OCP-30762 - installs bundles with v1 CRDs
-	g.It("PolarionID:30762-[OTP][Skipped:Disconnected]installs bundles with v1 CRDs", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:30762-[Skipped:Disconnected]installs bundles with v1 CRDs"), func() {
+	g.It("PolarionID:30762-[OTP]installs bundles with v1 CRDs", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:30762-[Skipped:Disconnected]installs bundles with v1 CRDs"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		platform := exutil.CheckPlatform(oc)
 		proxy, errProxy := oc.AsAdmin().WithoutNamespace().Run("get").Args("proxy", "cluster", "-o=jsonpath={.status.httpProxy}{.status.httpsProxy}").Output()
@@ -1196,6 +1199,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			exutil.Is3MasterNoDedicatedWorkerNode(oc) {
 			g.Skip("it is not supported")
 		}
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -1251,8 +1255,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// OCP-27683 - InstallPlans can install from extracted bundles
-	g.It("PolarionID:27683-[OTP][Skipped:Disconnected]InstallPlans can install from extracted bundles", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:27683-[Skipped:Disconnected]InstallPlans can install from extracted bundles"), func() {
+	g.It("PolarionID:27683-[OTP]InstallPlans can install from extracted bundles", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:27683-[Skipped:Disconnected]InstallPlans can install from extracted bundles"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -1320,12 +1325,13 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		o.Expect(jobBundle).To(o.ContainSubstring(ipBundle))
 	})
 
-	g.It("PolarionID:24513-[OTP][Skipped:Disconnected]Operator config support env only", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24513-[Skipped:Disconnected]Operator config support env only"), func() {
+	g.It("PolarionID:24513-[OTP]Operator config support env only", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24513-[Skipped:Disconnected]Operator config support env only"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		platform := exutil.CheckPlatform(oc)
 		if strings.Contains(platform, "openstack") || strings.Contains(platform, "baremetal") || strings.Contains(platform, "vsphere") || strings.Contains(platform, "none") || exutil.Is3MasterNoDedicatedWorkerNode(oc) {
 			g.Skip("it is not supported")
 		}
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -1518,7 +1524,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 8: OCP-25760 + OCP-35895
-	g.It("PolarionID:25760-[OTP][Skipped:Disconnected]Operator upgrades does not fail after change the channel", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25760-[Skipped:Disconnected]Operator upgrades does not fail after change the channel"), func() {
+	g.It("PolarionID:25760-[OTP]Operator upgrades does not fail after change the channel", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25760-[Skipped:Disconnected]Operator upgrades does not fail after change the channel"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipForSNOCluster(oc)
 		platform := exutil.CheckPlatform(oc)
@@ -1533,6 +1539,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		if errFips != nil || strings.Contains(efips, "FIPS mode is enabled") {
 			g.Skip("skip it without impacting function")
 		}
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
@@ -2035,7 +2042,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 11 - OCP-39897
-	g.It("PolarionID:39897-[OTP][Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:39897-[Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]"), func() {
+	g.It("PolarionID:39897-[OTP]operator objects should not be recreated after all other associated resources have been deleted[Serial]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:39897-[Skipped:Disconnected]operator objects should not be recreated after all other associated resources have been deleted[Serial]"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		if isAks, _ := exutil.IsAKSCluster(context.TODO(), oc); isAks {
 			g.Skip("skip for ask cluster")
@@ -2061,6 +2068,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			os.Getenv("HTTP_PROXY") != "" || os.Getenv("HTTPS_PROXY") != "" || os.Getenv("http_proxy") != "" || os.Getenv("https_proxy") != "" {
 			g.Skip("it is not supported")
 		}
+		olmv0util.ValidateAccessEnvironment(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
