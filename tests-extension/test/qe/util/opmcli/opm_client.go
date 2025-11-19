@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"sync"
 
 	g "github.com/onsi/ginkgo/v2"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
@@ -231,4 +232,63 @@ func DeleteDir(filePathStr string, filePre string) bool {
 		}
 		return true
 	}
+}
+
+var (
+	// policyMutex ensures thread-safe access to container policy file creation
+	policyMutex sync.Mutex
+	// policyCreated tracks whether policy.json has been created to avoid redundant operations
+	policyCreated bool
+)
+
+// EnsureContainerPolicy ensures that the containers policy.json file exists.
+// Creates ${HOME}/.config/containers/policy.json with insecureAcceptAnything policy if it doesn't exist.
+// This is required for OPM commands that interact with container images.
+// This function is thread-safe and can be called concurrently from parallel test cases.
+// Returns error if HOME is not set or if file creation fails.
+func EnsureContainerPolicy() error {
+	// Use mutex to ensure only one goroutine creates the file at a time
+	policyMutex.Lock()
+	defer policyMutex.Unlock()
+
+	// If already created in a previous call, just verify it exists
+	if policyCreated {
+		return nil
+	}
+
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		return fmt.Errorf("HOME environment variable is not set")
+	}
+	policyDir := filepath.Join(homeDir, ".config", "containers")
+	policyFile := filepath.Join(policyDir, "policy.json")
+
+	// Check if policy.json exists
+	if _, err := os.Stat(policyFile); os.IsNotExist(err) {
+		// Create directory if it doesn't exist
+		if err := os.MkdirAll(policyDir, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", policyDir, err)
+		}
+
+		// Create policy.json with insecure accept anything policy
+		policyContent := `{
+  "default": [
+    {
+      "type": "insecureAcceptAnything"
+    }
+  ]
+}
+`
+		if err := os.WriteFile(policyFile, []byte(policyContent), 0644); err != nil {
+			return fmt.Errorf("failed to create policy.json at %s: %w", policyFile, err)
+		}
+		e2e.Logf("Created containers policy.json at: %s", policyFile)
+		policyCreated = true
+	} else if err != nil {
+		return fmt.Errorf("failed to check policy.json at %s: %w", policyFile, err)
+	} else {
+		e2e.Logf("Containers policy.json already exists at: %s", policyFile)
+		policyCreated = true
+	}
+	return nil
 }
