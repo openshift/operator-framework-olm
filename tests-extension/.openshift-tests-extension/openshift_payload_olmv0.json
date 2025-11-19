@@ -232,6 +232,306 @@
     }
   },
   {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:54038-[OTP][Skipped:Disconnected]Comply with Operator Anti-Affinity definition",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-54038-Comply with Operator Anti-Affinity definition",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-54038-Comply with Operator Anti-Affinity definition": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:54036-[OTP][Skipped:Disconnected]Comply with Operator NodeAffinity definition",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-54036-Comply with Operator NodeAffinity definition",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-54036-Comply with Operator NodeAffinity definition": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24850-[OTP]Allow users to edit the deployment of an active CSV",
+    "originalName": "[sig-operators] OLM should Author:bandrade-Medium-24850-Allow users to edit the deployment of an active CSV",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should Author:bandrade-Medium-24850-Allow users to edit the deployment of an active CSV": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24387-[OTP][Skipped:Disconnected][Serial][Disruptive]Any CRD upgrade is allowed if there is only one owner in a cluster",
+    "originalName": "[sig-operators] OLM should Author:bandrade-ConnectedOnly-High-24387-Any CRD upgrade is allowed if there is only one owner in a cluster [Disruptive]",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should Author:bandrade-ConnectedOnly-High-24387-Any CRD upgrade is allowed if there is only one owner in a cluster [Disruptive]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:42970-[OTP]OperatorGroup status indicates cardinality conflicts - SingleNamespace",
+    "originalName": "[sig-operators] OLM should Author:bandrade-Medium-42970-OperatorGroup status indicates cardinality conflicts - SingleNamespace",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should Author:bandrade-Medium-42970-OperatorGroup status indicates cardinality conflicts - SingleNamespace": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:42972-[OTP]OperatorGroup status should indicate if the SA named in spec not found",
+    "originalName": "[sig-operators] OLM should Author:bandrade-Medium-42972-OperatorGroup status should indicate if the SA named in spec not found",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should Author:bandrade-Medium-42972-OperatorGroup status should indicate if the SA named in spec not found": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24771-[OTP]OLM should support for user defined ServiceAccount for OperatorGroup",
+    "originalName": "[sig-operators] OLM should Author:bandrade-Medium-24771-OLM should support for user defined ServiceAccount for OperatorGroup",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should Author:bandrade-Medium-24771-OLM should support for user defined ServiceAccount for OperatorGroup": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43073-[OTP][Skipped:Disconnected]Indicate dependency class in resolution constraint text",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-43073-Indicate dependency class in resolution constraint text",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-43073-Indicate dependency class in resolution constraint text": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24772-[OTP]OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission",
+    "originalName": "[sig-operators] OLM should Author:bandrade-Medium-24772-OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should Author:bandrade-Medium-24772-OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24886-[OTP]OLM should support for user defined ServiceAccount permission changes",
+    "originalName": "[sig-operators] OLM should Author:bandrade-Medium-24886-OLM should support for user defined ServiceAccount permission changes",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should Author:bandrade-Medium-24886-OLM should support for user defined ServiceAccount permission changes": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:30765-[OTP][Skipped:Disconnected]Operator-version based dependencies metadata",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-30765-Operator-version based dependencies metadata",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-30765-Operator-version based dependencies metadata": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:27680-[OTP][Skipped:Disconnected][Serial]OLM Bundle support for Prometheus Types",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-27680-OLM Bundle support for Prometheus Types [Serial]",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-27680-OLM Bundle support for Prometheus Types [Serial]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24916-[OTP][Skipped:Disconnected]Operators in AllNamespaces should be granted namespace list",
+    "originalName": "[sig-operators] OLM should Author:bandrade-ConnectedOnly-Medium-24916-Operators in AllNamespaces should be granted namespace list",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should Author:bandrade-ConnectedOnly-Medium-24916-Operators in AllNamespaces should be granted namespace list": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:47149-[OTP][Skipped:Disconnected]Conjunctive constraint of one packages and one GVK",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-47149-Conjunctive constraint of one packages and one GVK",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-47149-Conjunctive constraint of one packages and one GVK": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:47181-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-47181-Disjunctive constraint of one package and one GVK",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-47181-Disjunctive constraint of one package and one GVK": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:47179-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-47179-Disjunctive constraint of one package and one GVK",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-47179-Disjunctive constraint of one package and one GVK": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:49130-[OTP][Skipped:Disconnected]Default CatalogSources deployed by marketplace do not have toleration for tainted nodes",
+    "originalName": "[sig-operators] OLM should NonHyperShiftHOST-ConnectedOnly-Author:bandrade-Medium-49130-Default CatalogSources deployed by marketplace do not have toleration for tainted nodes",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operators] OLM should NonHyperShiftHOST-ConnectedOnly-Author:bandrade-Medium-49130-Default CatalogSources deployed by marketplace do not have toleration for tainted nodes": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:21130-[OTP]Fetching non-existent PackageManifest should return 404",
+    "originalName": "[sig-operators] OLM should Author:bandrade-Medium-21130-Fetching non-existent `PackageManifest` should return 404",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should Author:bandrade-Medium-21130-Fetching non-existent `PackageManifest` should return 404": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24057-[OTP]Have terminationMessagePolicy defined as FallbackToLogsOnError",
+    "originalName": "[sig-operators] OLM should NonHyperShiftHOST-Author:bandrade-Low-24057-Have terminationMessagePolicy defined as FallbackToLogsOnError",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operators] OLM should NonHyperShiftHOST-Author:bandrade-Low-24057-Have terminationMessagePolicy defined as FallbackToLogsOnError": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:32613-[OTP][Skipped:Disconnected]Operators won't install if the CSV dependency is already installed",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-High-32613-Operators won't install if the CSV dependency is already installed",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-High-32613-Operators won't install if the CSV dependency is already installed": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24055-[OTP][Skipped:Disconnected]Check for defaultChannel mandatory field when having multiple channels",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-Low-24055-Check for defaultChannel mandatory field when having multiple channels",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Low-24055-Check for defaultChannel mandatory field when having multiple channels": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
     "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[OTP][Skipped:Disconnected]catalogsource with invalid name is created",
     "originalName": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[Skipped:Disconnected]catalogsource with invalid name is created",
     "labels": {
@@ -247,6 +547,20 @@
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:31693-[OTP][Skipped:Disconnected]Check CSV information on the PackageManifest",
+    "originalName": "[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-31693-Check CSV information on the PackageManifest",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-31693-Check CSV information on the PackageManifest": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
   },
   {
     "name": "[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45381-[OTP][Skipped:Disconnected]Support custom catalogs in hypershift",
@@ -852,6 +1166,86 @@
     }
   },
   {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:41026-[OTP][Level0]OCS should only one installplan generated when creating subscription",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-LEVEL0-Critical-41026-OCS should only one installplan generated when creating subscription",
+    "labels": {
+      "Extended": {},
+      "Level0": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-LEVEL0-Critical-41026-OCS should only one installplan generated when creating subscription": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:68521-[OTP][Skipped:Disconnected]Check failureThreshold of redhat-operators catalog",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-ConnectedOnly-NonHyperShiftHOST-Medium-68521-Check failureThreshold of redhat-operators catalog",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-ConnectedOnly-NonHyperShiftHOST-Medium-68521-Check failureThreshold of redhat-operators catalog": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:68901-[OTP][Skipped:Disconnected]Packageserver pod should not crash if updateStrategy is incorrect",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-ConnectedOnly-NonHyperShiftHOST-Medium-68901-Packageserver pod should not crash if updateStrategy is incorrect",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-ConnectedOnly-NonHyperShiftHOST-Medium-68901-Packageserver pod should not crash if updateStrategy is incorrect": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24917-[OTP][Skipped:Disconnected][Serial][Disruptive]Operators in SingleNamespace should not be granted namespace list",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-Medium-24917-Operators in SingleNamespace should not be granted namespace list [Disruptive]",
+    "labels": {
+      "Extended": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-Medium-24917-Operators in SingleNamespace should not be granted namespace list [Disruptive]": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25644-[OTP][Skipped:Disconnected]OLM collect CSV health per version",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace NonHyperShiftHOST-ConnectedOnly-Author:bandrade-Medium-25644-OLM collect CSV health per version",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace NonHyperShiftHOST-ConnectedOnly-Author:bandrade-Medium-25644-OLM collect CSV health per version": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
     "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43185-[OTP]DC based opm subcommands out of alpha",
     "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43185-DC based opm subcommands out of alpha",
     "labels": {
@@ -1050,6 +1444,24 @@
     }
   },
   {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:30318-[OTP]Bundle build understands packages",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should Author:bandrade-VMonly-Low-30318-Bundle build understands packages",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should Author:bandrade-VMonly-Low-30318-Bundle build understands packages": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
     "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43409-[OTP][Skipped:Disconnected] opm can list catalog contents",
     "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43409-[Skipped:Disconnected] opm can list catalog contents",
     "labels": {
@@ -1165,6 +1577,24 @@
       "NonHyperShiftHOST": {},
       "opm": {},
       "original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:73218-[Skipped:Disconnected] opm alpha render-graph indicate deprecated graph content": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:34049-[OTP][Skipped:Disconnected]opm can prune operators from index",
+    "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should Author:bandrade-ConnectedOnly-VMonly-Medium-34049-opm can prune operators from index",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {},
+      "original-name:[sig-operator][Jira:OLM] OLMv0 opm should Author:bandrade-ConnectedOnly-VMonly-Medium-34049-opm can prune operators from index": {}
     },
     "resources": {
       "isolation": {}
