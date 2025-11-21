@@ -299,14 +299,24 @@ func downloadFile(url, filepath string) error {
 
 func setupOPMEnv(opmDir string) error {
 	currentPath := os.Getenv("PATH")
-	if !strings.Contains(currentPath, opmDir) {
-		newPath := opmDir + ":" + currentPath
-		err := os.Setenv("PATH", newPath)
-		if err != nil {
-			return err
+
+	// Split PATH and check if opmDir already exists as an exact entry
+	// This prevents false positives like "/tmp/google-cloud-sdk/bin" matching "/tmp"
+	paths := strings.Split(currentPath, ":")
+	for _, p := range paths {
+		if p == opmDir {
+			e2e.Logf("%s already in PATH", opmDir)
+			return nil
 		}
-		e2e.Logf("Added %s to PATH: %s", opmDir, newPath)
 	}
+
+	// Not in PATH, add it
+	newPath := opmDir + ":" + currentPath
+	err := os.Setenv("PATH", newPath)
+	if err != nil {
+		return err
+	}
+	e2e.Logf("Added %s to PATH: %s", opmDir, newPath)
 	return nil
 }
 

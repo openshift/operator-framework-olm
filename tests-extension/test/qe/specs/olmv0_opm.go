@@ -19,13 +19,14 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	defer g.GinkgoRecover()
 
 	var (
-		oc     = exutil.NewCLIForKubeOpenShift("opm-" + exutil.GetRandomString())
+		oc     = exutil.NewCLIWithoutNamespace("default")
 		opmCLI = opmcli.NewOpmCLI()
 	)
 
 	g.BeforeEach(func() {
 		exutil.SkipMicroshift(oc)
 
+		oc.SetupProject()
 		err := opmcli.EnsureOPMBinary()
 		if err != nil {
 			g.Skip("Failed to setup opm binary: " + err.Error())
@@ -500,6 +501,8 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 		if os.Getenv("HTTP_PROXY") != "" || os.Getenv("http_proxy") != "" {
 			g.Skip("HTTP_PROXY is not empty - skipping test ...")
 		}
+		errPolicy := opmcli.EnsureContainerPolicy()
+		o.Expect(errPolicy).NotTo(o.HaveOccurred())
 		opmBaseDir := exutil.FixturePath("testdata", "opm", "53871")
 		opmCLI.ExecCommandPath = opmBaseDir
 

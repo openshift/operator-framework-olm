@@ -1741,5 +1741,37 @@
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLM v0 for stress PolarionID:80299-[OTP][Skipped:Disconnected][OlmStress]create mass operator to see if they all are installed successfully with different ns [Slow][Timeout:180m]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "StressTest": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLM v0 for stress PolarionID:80413-[OTP][Skipped:Disconnected][OlmStress]install operator repeatedly serially with same ns [Slow][Timeout:180m]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "StressTest": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
   }
 ]

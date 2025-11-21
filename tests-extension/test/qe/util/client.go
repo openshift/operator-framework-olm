@@ -720,63 +720,153 @@ type ExitError struct {
 	*exec.ExitError
 }
 
+// isTransientKubeconfigError checks if the error is a transient kubeconfig-related error
+// that can be retried (typically caused by race conditions in parallel test execution)
+func isTransientKubeconfigError(output string) bool {
+	transientErrors := []string{
+		"context was not found",
+		"Error in configuration",
+		"cluster has no server defined",
+		"error loading config file",
+		"unable to read client-cert",
+		"unable to read client-key",
+		"unable to read certificate-authority",
+	}
+	for _, errMsg := range transientErrors {
+		if strings.Contains(output, errMsg) {
+			return true
+		}
+	}
+	return false
+}
+
 // Output executes the command and returns stdout/stderr combined into one string
+// Implements retry logic for transient kubeconfig errors caused by parallel test execution
 func (c *CLI) Output() (string, error) {
 	if c.verbose {
 		fmt.Printf("DEBUG: oc %s\n", c.printCmd())
 	}
-	cmd := exec.Command(c.execPath, c.finalArgs...) // nolint:gosec // G204: execPath is hardcoded to "oc" and finalArgs come from test code
-	cmd.Stdin = c.stdin
-	if c.showInfo {
-		e2e.Logf("Running '%s %s'", c.execPath, strings.Join(c.finalArgs, " "))
+
+	// Retry configuration for handling race conditions in parallel tests
+	const maxRetries = 3
+	const retryDelay = 500 * time.Millisecond
+
+	var lastErr error
+	var lastOutput string
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		cmd := exec.Command(c.execPath, c.finalArgs...) // nolint:gosec // G204: execPath is hardcoded to "oc" and finalArgs come from test code
+		cmd.Stdin = c.stdin
+		if c.showInfo && attempt == 1 {
+			e2e.Logf("Running '%s %s'", c.execPath, strings.Join(c.finalArgs, " "))
+		}
+		out, err := cmd.CombinedOutput()
+		trimmed := strings.TrimSpace(string(out))
+
+		if err == nil {
+			c.stdout = bytes.NewBuffer(out)
+			if attempt > 1 {
+				e2e.Logf("Command succeeded on retry attempt %d/%d", attempt, maxRetries)
+			}
+			return trimmed, nil
+		}
+
+		lastOutput = trimmed
+		lastErr = err
+
+		// Check if this is a transient kubeconfig error that we should retry
+		if isTransientKubeconfigError(trimmed) {
+			if attempt < maxRetries {
+				e2e.Logf("Transient kubeconfig error detected (attempt %d/%d), retrying after %v: %s",
+					attempt, maxRetries, retryDelay, trimmed)
+				time.Sleep(retryDelay)
+				continue
+			}
+			e2e.Logf("Transient kubeconfig error persisted after %d attempts: %s", maxRetries, trimmed)
+		}
+
+		// Not a transient error or max retries reached, break and handle normally
+		break
 	}
-	out, err := cmd.CombinedOutput()
-	trimmed := strings.TrimSpace(string(out))
-	if err == nil {
-		c.stdout = bytes.NewBuffer(out)
-		return trimmed, nil
-	}
+
+	// Handle the final error
 	var err1 *exec.ExitError
-	if errors.As(err, &err1) {
-		e2e.Logf("Error running %v:\n%s", cmd, trimmed)
-		return trimmed, &ExitError{ExitError: err1, Cmd: c.execPath + " " + strings.Join(c.finalArgs, " "), StdErr: trimmed}
+	if errors.As(lastErr, &err1) {
+		e2e.Logf("Error running %v:\n%s", c.execPath+" "+strings.Join(c.finalArgs, " "), lastOutput)
+		return lastOutput, &ExitError{ExitError: err1, Cmd: c.execPath + " " + strings.Join(c.finalArgs, " "), StdErr: lastOutput}
 	}
-	FatalErr(fmt.Errorf("unable to execute %q: %v", c.execPath, err))
+	FatalErr(fmt.Errorf("unable to execute %q: %v", c.execPath, lastErr))
 	return "", nil
 }
 
 // Outputs executes the command and returns the stdout/stderr output as separate strings
+// Implements retry logic for transient kubeconfig errors caused by parallel test execution
 func (c *CLI) Outputs() (string, string, error) {
 	if c.verbose {
 		fmt.Printf("DEBUG: oc %s\n", c.printCmd())
 	}
-	cmd := exec.Command(c.execPath, c.finalArgs...) // nolint:gosec // G204: execPath is hardcoded to "oc" and finalArgs come from test code
-	cmd.Stdin = c.stdin
-	e2e.Logf("showInfo is %v", c.showInfo)
-	if c.showInfo {
-		e2e.Logf("Running '%s %s'", c.execPath, strings.Join(c.finalArgs, " "))
-	}
-	//out, err := cmd.CombinedOutput()
-	var stdErrBuff, stdOutBuff bytes.Buffer
-	cmd.Stdout = &stdOutBuff
-	cmd.Stderr = &stdErrBuff
-	err := cmd.Run()
 
-	stdOutBytes := stdOutBuff.Bytes()
-	stdErrBytes := stdErrBuff.Bytes()
-	stdOut := strings.TrimSpace(string(stdOutBytes))
-	stdErr := strings.TrimSpace(string(stdErrBytes))
-	if err == nil {
-		c.stdout = bytes.NewBuffer(stdOutBytes)
-		c.stderr = bytes.NewBuffer(stdErrBytes)
-		return stdOut, stdErr, nil
+	// Retry configuration for handling race conditions in parallel tests
+	const maxRetries = 3
+	const retryDelay = 500 * time.Millisecond
+
+	var lastErr error
+	var lastStdOut, lastStdErr string
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		cmd := exec.Command(c.execPath, c.finalArgs...) // nolint:gosec // G204: execPath is hardcoded to "oc" and finalArgs come from test code
+		cmd.Stdin = c.stdin
+		if c.showInfo && attempt == 1 {
+			e2e.Logf("showInfo is %v", c.showInfo)
+			e2e.Logf("Running '%s %s'", c.execPath, strings.Join(c.finalArgs, " "))
+		}
+
+		var stdErrBuff, stdOutBuff bytes.Buffer
+		cmd.Stdout = &stdOutBuff
+		cmd.Stderr = &stdErrBuff
+		err := cmd.Run()
+
+		stdOutBytes := stdOutBuff.Bytes()
+		stdErrBytes := stdErrBuff.Bytes()
+		stdOut := strings.TrimSpace(string(stdOutBytes))
+		stdErr := strings.TrimSpace(string(stdErrBytes))
+
+		if err == nil {
+			c.stdout = bytes.NewBuffer(stdOutBytes)
+			c.stderr = bytes.NewBuffer(stdErrBytes)
+			if attempt > 1 {
+				e2e.Logf("Command succeeded on retry attempt %d/%d", attempt, maxRetries)
+			}
+			return stdOut, stdErr, nil
+		}
+
+		lastStdOut = stdOut
+		lastStdErr = stdErr
+		lastErr = err
+
+		// Check if this is a transient kubeconfig error in either stdout or stderr
+		combinedOutput := stdOut + stdErr
+		if isTransientKubeconfigError(combinedOutput) {
+			if attempt < maxRetries {
+				e2e.Logf("Transient kubeconfig error detected (attempt %d/%d), retrying after %v: %s",
+					attempt, maxRetries, retryDelay, combinedOutput)
+				time.Sleep(retryDelay)
+				continue
+			}
+			e2e.Logf("Transient kubeconfig error persisted after %d attempts: %s", maxRetries, combinedOutput)
+		}
+
+		// Not a transient error or max retries reached, break and handle normally
+		break
 	}
+
+	// Handle the final error
 	var err1 *exec.ExitError
-	if errors.As(err, &err1) {
-		e2e.Logf("Error running %v:\nStdOut>\n%s\nStdErr>\n%s\n", cmd, stdOut, stdErr)
-		return stdOut, stdErr, &ExitError{ExitError: err1, Cmd: c.execPath + " " + strings.Join(c.finalArgs, " "), StdErr: stdErr}
+	if errors.As(lastErr, &err1) {
+		e2e.Logf("Error running %v:\nStdOut>\n%s\nStdErr>\n%s\n", c.execPath+" "+strings.Join(c.finalArgs, " "), lastStdOut, lastStdErr)
+		return lastStdOut, lastStdErr, &ExitError{ExitError: err1, Cmd: c.execPath + " " + strings.Join(c.finalArgs, " "), StdErr: lastStdErr}
 	}
-	FatalErr(fmt.Errorf("unable to execute %q: %v", c.execPath, err))
+	FatalErr(fmt.Errorf("unable to execute %q: %v", c.execPath, lastErr))
 	return "", "", nil
 }
 

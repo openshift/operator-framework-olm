@@ -28,13 +28,14 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 	defer g.GinkgoRecover()
 
 	var (
-		oc = exutil.NewCLI("olm-common-"+exutil.GetRandomString(), exutil.KubeConfigPath())
+		oc = exutil.NewCLIWithoutNamespace("default")
 
 		dr = make(olmv0util.DescriberResrouce)
 	)
 
 	g.BeforeEach(func() {
 		exutil.SkipMicroshift(oc)
+		oc.SetupProject()
 		exutil.SkipNoOLMCore(oc)
 		itName := g.CurrentSpecReport().FullText()
 		dr.AddIr(itName)
