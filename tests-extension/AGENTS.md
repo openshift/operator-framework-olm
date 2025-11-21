@@ -249,8 +249,8 @@ For complete label requirements and migration guidelines, refer to **[README.md]
 - `[sig-operator]` - Component annotation (required in title)
 - `[Jira:OLM]` - Jira component (required in title)
 - `PolarionID:xxxxx` - Case ID format (required in title)
+- `[Level0]` - Level 0 priority test (in title)
 - `g.Label("ReleaseGate")` - For cases meeting OpenShift CI requirements
-- `g.Label("LEVEL0")` - Level 0 priority tests
 - `g.Label("StressTest")` - Stress testing
 
 **Common title tags**:
@@ -391,11 +391,11 @@ make update-metadata          # Update test metadata
 ```
 
 ### Key Labels
-- `ReleaseGate` - Promotes Extended case to openshift-tests
-- `Extended` - Auto-added to cases under test/qe/specs/
-- `LEVEL0` - Level 0 priority test
-- `StressTest` - Stress testing
-- `NonHyperShiftHOST` - Skip on HyperShift hosted clusters
+- `ReleaseGate` - Promotes Extended case to openshift-tests (Ginkgo label)
+- `Extended` - Auto-added to cases under test/qe/specs/ (Ginkgo label)
+- `[Level0]` - Level 0 priority test (title tag, NOT Ginkgo label)
+- `StressTest` - Stress testing (Ginkgo label)
+- `NonHyperShiftHOST` - Skip on HyperShift hosted clusters (Ginkgo label)
 
 ## Resources
 
