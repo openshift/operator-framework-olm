@@ -249,6 +249,558 @@
     }
   },
   {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:83027-[OTP]-Unnecessary churn with operatorgroup clusterrole management[Serial]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:70162-[OTP]-Leverage Composable OpenShift feature to make OperatorLifecycleManager optional",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:73201-[OTP][Skipped:Disconnected]catalog pods do not recover from node failure [Disruptive][Serial]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:72192-[Level0][OTP]-is not correctly refreshing operator catalogs due to IfNotPresent imagePullPolicy",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:72017-[OTP]-pod panics when EnsureSecretOwnershipAnnotations runs",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:72013-[Level0][OTP]-Creating an OperatorGroup with Name cluster breaks the whole cluster",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:71996-[OTP]-package-server-manager forbidden securityContext.seLinuxOptions [Serial]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:53771-[OTP][Skipped:Disconnected]The certificate relating to operator-lifecycle-manager-packageserver isn't rotated after expired [Slow][Serial][Disruptive]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68681-[OTP][Skipped:Disconnected]pods with no controller true ownerReferences",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:59413-[OTP][Skipped:Disconnected]Default CatalogSource aren't created in restricted mode [Serial]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:59422-[OTP]-package-server-manager does not stomp on changes made to packgeserver CSV",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:59416-[OTP][Skipped:Disconnected]Revert Catalog PSA decisions for 4.12 [Serial]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:53914-[OTP]-OLM controller plug-in for openshift-* namespace labelling [Serial]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:53759-[OTP]-Opeatorhub status shows errors after disabling default catalogSources [Serial][Disruptive]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:53758-[OTP][Skipped:Disconnected]failed to recreate SA for the CatalogSource that without poll Interval",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:53740-[OTP]-CatalogSource incorrect parsing validation",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:49687-[OTP]-Make the marketplace operator optional",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:49352-[OTP]-SNO Leader election conventions for cluster topology",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:49167-[OTP]-fatal error",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:46964-[OTP][Skipped:Disconnected]Disable Copied CSVs Toggle [Serial]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43487-[OTP]-3rd party Operator Catalog references change during an OCP Upgrade",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43271-[OTP]-Bundle Content Compression",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43101-[OTP][Skipped:Disconnected]OLM blocks minor OpenShift upgrades when incompatible optional operators are installed",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43977-[OTP]-OPENSHIFT_VERSIONS in assisted operator subscription does not propagate [Serial]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43978-[OTP]-Catalog pods don't report termination logs to catalog-operator",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43803-[OTP]-Only one of multiple subscriptions to the same package is honored",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:45411-[OTP]-packageserver isn't following the OpenShift HA conventions",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24028-[OTP]-need to set priorityClassName as system-cluster-critical",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:21548-[OTP]-aggregates CR roles to standard admin view edit",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:37442-[OTP]-create a Conditions CR for each Operator it installs",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:37710-[OTP][Skipped:Disconnected]supports the Upgradeable Supported Condition",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:37631-[OTP]-Allow cluster admin to overwrite the OperatorCondition",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:33450-[OTP][Skipped:Disconnected]Operator upgrades can delete existing CSV before completion",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:37260-[OTP][Skipped:Disconnected]should allow to create the default CatalogSource [Serial][Disruptive]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:25922-[OTP]-Support spec.config.volumes and volumemount in Subscription",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:35631-[OTP]-Remove OperatorSource API",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:33902-[OTP][Skipped:Disconnected]Catalog Weighting",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:32559-[OTP]-catalog operator crashed",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:22070-[Level0][OTP][Skipped:Disconnected]support grpc sourcetype [Serial]",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:20981-[OTP]-contain the source commit id",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:21126-[OTP]-OLM Subscription status says CSV is installed when it is not",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
     "name": "[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45381-[OTP][Skipped:Disconnected]Support custom catalogs in hypershift",
     "originalName": "[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45381-[Skipped:Disconnected]Support custom catalogs in hypershift",
     "labels": {
@@ -272,6 +824,21 @@
       "Extended": {},
       "NonHyperShiftHOST": {},
       "original-name:[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45408-[Skipped:Disconnected]Eliminate use of imagestreams in catalog management": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt PolarionID:45543-[OTP][Skipped:Disconnected]Enable hypershift to deploy OperatorLifecycleManager resources",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
     },
     "resources": {
       "isolation": {}
