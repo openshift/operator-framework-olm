@@ -312,6 +312,28 @@ func ClusterPackageExistsInNamespace(oc *exutil.CLI, sub SubscriptionDescription
 	return found, err
 }
 
+func SkipIfPackagemanifestNotExist(oc *exutil.CLI, packageName string) {
+	if oc == nil {
+		e2e.Logf("CLI client is nil")
+		g.Skip("CLI client is nil, cannot check packagemanifest")
+	}
+
+	if packageName == "" {
+		e2e.Logf("Package name is empty")
+		g.Skip("Package name is empty, cannot check packagemanifest")
+	}
+
+	var output string
+	var err error
+	output, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", packageName, "--ignore-not-found").Output()
+
+	if err != nil || strings.TrimSpace(output) == "" {
+		e2e.Logf("Packagemanifest '%s' not found, error: %v", packageName, err)
+		g.Skip(fmt.Sprintf("Packagemanifest '%s' not found. This test requires the packagemanifest to be available.", packageName))
+	}
+	e2e.Logf("Packagemanifest '%s' exists", packageName)
+}
+
 // Return a github client
 func GithubClient() (context.Context, *http.Client) {
 	ctx := context.Background()
