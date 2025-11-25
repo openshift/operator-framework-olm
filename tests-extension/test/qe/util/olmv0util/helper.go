@@ -749,8 +749,9 @@ func GetMetrics(oc *exutil.CLI, olmToken string, data PrometheusQueryResult, met
 	for _, metric := range metricsCon {
 		waitErr := wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, 60*time.Second, false, func(ctx context.Context) (bool, error) {
 			queryContent := fmt.Sprintf("https://%s:9091/api/v1/query?query=%s", prometheusPodIP, metric)
-			args = append(args, "-k", "-H", fmt.Sprintf("Authorization: Bearer %v", olmToken), queryContent)
-			msg, _, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(args...).Outputs()
+			execArgs := append([]string{}, args...)
+			execArgs = append(execArgs, "-k", "-H", fmt.Sprintf("Authorization: Bearer %v", olmToken), queryContent)
+			msg, _, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(execArgs...).Outputs()
 			e2e.Logf("%s, err:%v, msg:%v", metric, err, msg)
 			if msg == "" {
 				return false, nil
@@ -766,8 +767,8 @@ func GetMetrics(oc *exutil.CLI, olmToken string, data PrometheusQueryResult, met
 				}
 				return false, nil
 			}
-			metrics.subscriptionSyncTotal = 0
 			if metric == "subscription_sync_total" {
+				metrics.subscriptionSyncTotal = 0
 				for i := range data.Data.Result {
 					if strings.Contains(data.Data.Result[i].Metric.SrcName, subName) {
 						metrics.subscriptionSyncTotal, _ = strconv.Atoi(data.Data.Result[i].Value[1].(string))

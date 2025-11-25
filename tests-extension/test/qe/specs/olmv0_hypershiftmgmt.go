@@ -210,7 +210,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", g.Label(
 		g.By("4, subscribe to learn-operator.v0.0.3")
 		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
 		sub := olmv0util.SubscriptionDescription{
-			SubName:                "sub-45348",
+			SubName:                "sub-45543",
 			Namespace:              ns,
 			CatalogSourceName:      "catsrc-45543",
 			CatalogSourceNamespace: ns,
