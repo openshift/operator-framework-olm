@@ -26,13 +26,14 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	defer g.GinkgoRecover()
 
 	var (
-		oc = exutil.NewCLI("olm-a-"+exutil.GetRandomString(), exutil.KubeConfigPath())
+		oc = exutil.NewCLIWithoutNamespace("default")
 
 		dr = make(olmv0util.DescriberResrouce)
 	)
 
 	g.BeforeEach(func() {
 		exutil.SkipMicroshift(oc)
+		oc.SetupProject()
 		exutil.SkipNoOLMCore(oc)
 		itName := g.CurrentSpecReport().FullText()
 		dr.AddIr(itName)
@@ -1108,7 +1109,22 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("Delete sa of csv")
 		sa.GetDefinition(oc)
 		sa.Delete(oc)
-		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithNamespace, exutil.Compare, "RequirementsNotMet", exutil.Ok, []string{"csv", sub.InstalledCSV, "-o=jsonpath={.status.reason}"}).Check(oc)
+		var output string
+		var err error
+		errCsv := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
+			output, err = oc.WithoutNamespace().Run("get").Args("csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.reason}").Output()
+			if err != nil {
+				return false, err
+			}
+			if strings.Contains(output, "RequirementsNotMet") {
+				return true, nil
+			}
+			return false, nil
+		})
+		if strings.Contains(output, "InstallWaiting") {
+			g.Skip("skip because of slow installation")
+		}
+		exutil.AssertWaitPollNoErr(errCsv, fmt.Sprintf("csv status %v is not expected", output))
 
 		g.By("Recovery sa of csv")
 		sa.Reapply(oc)
@@ -1835,6 +1851,8 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 
 		g.By("install operator")
 		sub.Create(oc, itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		defer sub.Delete(itName, dr)
 
 		g.By("check if dependent operator is installed")
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)

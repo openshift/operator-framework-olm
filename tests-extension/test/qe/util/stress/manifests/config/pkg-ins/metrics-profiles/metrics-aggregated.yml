@@ -1,0 +1,4 @@
+# Containers & pod metrics
+
+- query: (sum(irate(container_cpu_usage_seconds_total{container="registry-server",namespace="openshift-marketplace"}[2m]) * 100) by (container, pod)) > 0
+  metricName: containerCPU-CatSrc

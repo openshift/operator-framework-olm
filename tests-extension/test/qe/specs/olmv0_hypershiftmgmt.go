@@ -18,7 +18,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", g.Label(
 	defer g.GinkgoRecover()
 
 	var (
-		oc                                                  = exutil.NewCLIForKubeOpenShift("hypershiftmgmt-" + exutil.GetRandomString())
+		oc                                                  = exutil.NewCLIWithoutNamespace("default")
 		guestClusterName, guestClusterKube, hostedClusterNS string
 		isAKS                                               bool
 		errIsAKS                                            error
@@ -26,6 +26,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", g.Label(
 
 	g.BeforeEach(func() {
 		exutil.SkipMicroshift(oc)
+		oc.SetupProject()
 		if !exutil.IsHypershiftMgmtCluster(oc) {
 			g.Skip("this is not a hypershift management cluster, skip test run")
 		}

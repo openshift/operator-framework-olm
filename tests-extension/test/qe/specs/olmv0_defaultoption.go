@@ -33,11 +33,12 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 	defer g.GinkgoRecover()
 
 	var (
-		oc = exutil.NewCLI("default-"+exutil.GetRandomString(), exutil.KubeConfigPath())
+		oc = exutil.NewCLIWithoutNamespace("default")
 	)
 
 	g.BeforeEach(func() {
 		exutil.SkipMicroshift(oc)
+		oc.SetupProject()
 		exutil.SkipNoOLMCore(oc)
 	})
 

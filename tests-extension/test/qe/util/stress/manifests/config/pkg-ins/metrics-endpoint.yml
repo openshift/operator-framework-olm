@@ -1,0 +1,9 @@
+- endpoint: {{.PROMETHEUS_URL}}
+  token: {{.PROMETHEUS_TOKEN}}
+  step: 10s
+  skipTLSVerify: true
+  metrics:
+    - metrics-profiles/metrics-aggregated.yml
+  indexer:
+    type: local
+    metricsDirectory: collected-metrics-{{.UUID}}

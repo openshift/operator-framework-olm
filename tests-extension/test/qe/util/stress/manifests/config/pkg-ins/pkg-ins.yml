@@ -1,0 +1,72 @@
+---
+global:
+  gc: {{.GC}}
+  gcMetrics: {{.GC_METRICS}}
+  measurements:
+    - name: podLatency
+
+
+jobs:
+  - name: {{.OPERATION}} # will be parameter
+    jobType: create
+    jobIterations: {{.JOB_ITERATIONS}}
+    namespace: {{.OPERATION}}
+    namespacedIterations: {{.NAMESPACED_ITERATIONS}}
+    iterationsPerNamespace: {{.ITERATIONS_PER_NAMESPACE}}
+    cleanup: true
+    podWait: true
+    waitWhenFinished: true
+    maxWaitTimeout: {{.MAX_WAIT_TIMEOUT}}
+    jobIterationDelay: {{.JOB_ITERATION_DELAY}}
+    jobPause: {{.JOB_PAUSE}}
+    qps: {{.QPS}}
+    burst: {{.BURST}}
+    executionMode: parallel
+    verifyObjects: true
+    errorOnVerify: true
+    skipIndexing: false
+    preLoadImages: true
+    preLoadPeriod: 15s
+    churn: {{.CHURN}}
+    churnCycles: {{.CHURN_CYCLES}}
+    churnDuration: {{.CHURN_DURATION}}
+    churnPercent: {{.CHURN_PERCENT}}
+    churnDelay: {{.CHURN_DELAY}}
+    churnDeletionStrategy: {{.CHURN_DELETION_STRATEGY}}
+    defaultMissingKeysWithZero: false
+    namespaceLabels:
+      security.openshift.io/scc.podSecurityLabelSync: false
+      pod-security.kubernetes.io/enforce: privileged
+      pod-security.kubernetes.io/audit: privileged
+      pod-security.kubernetes.io/warn: privileged
+    objects:
+
+      - objectTemplate: templates/og.yml
+        replicas: 1
+        inputVars:
+          prefixNamespace: {{.OPERATION}}
+
+
+      - objectTemplate: templates/sub.yml
+        replicas: 1
+        inputVars:
+          pkgName: {{.PKG_NAME}}
+          channelName: {{.CHANNEL_NAME}}
+          catsrcName: {{.CATALOGSOURCE_NAME}}
+          catsrcNamespace: {{.CATALOGSOURCE_NAMESPACE}}
+        # will add inputVars to make operator as parameters
+        waitOptions:
+          # only take one of customStatusPaths and kind, and both can use labelSelector
+          # 1, take customStatusPaths to check sub's status
+          customStatusPaths:
+            - key: ".state"
+              value: "AtLatestKnown"
+          # 2, take kind to check pod's status with label
+          # labelSelector: {app: migration}
+          # labelSelector: {control-plane: controller-manager}
+          # kind: Pod
+          # 3, take other field of sub and it does not work yet
+          # labelSelector: {kube-burner-job: operator-install-delete}
+          # customStatusPaths:
+          #   - key: ".installedCSV"
+          #     value: "oadp-operator.v1.4.2"

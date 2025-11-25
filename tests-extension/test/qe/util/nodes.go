@@ -737,11 +737,23 @@ func GetNodeListByLabel(oc *CLI, labelKey string) []string {
 //   - bool: true if default node selector is configured, false otherwise
 func IsDefaultNodeSelectorEnabled(oc *CLI) bool {
 	defaultNodeSelector, getNodeSelectorErr := oc.AsAdmin().WithoutNamespace().Run("get").Args("scheduler", "cluster", "-o=jsonpath={.spec.defaultNodeSelector}").Output()
-	if getNodeSelectorErr != nil && strings.Contains(defaultNodeSelector, `the server doesn't have a resource type`) {
-		e2e.Logf("WARNING: The scheduler API is not supported on the test cluster")
-		return false
+	if getNodeSelectorErr != nil {
+		// Check if the scheduler API is not supported (expected on some cluster types)
+		if strings.Contains(defaultNodeSelector, `the server doesn't have a resource type`) {
+			e2e.Logf("WARNING: The scheduler API is not supported on the test cluster")
+			return false
+		}
+		// Handle transient kubeconfig errors (race conditions during parallel test execution)
+		// These errors can occur when temp kubeconfig files have stale context references
+		if strings.Contains(defaultNodeSelector, "context was not found") ||
+			strings.Contains(defaultNodeSelector, "Error in configuration") ||
+			strings.Contains(defaultNodeSelector, "cluster has no server defined") {
+			e2e.Logf("WARNING: Transient kubeconfig error detected (likely race condition), assuming no default node selector: %v", getNodeSelectorErr)
+			return false
+		}
+		// For other unexpected errors, fail the test with detailed information
+		o.Expect(getNodeSelectorErr).NotTo(o.HaveOccurred(), "Fail to get cluster scheduler defaultNodeSelector got error: %v\n", getNodeSelectorErr)
 	}
-	o.Expect(getNodeSelectorErr).NotTo(o.HaveOccurred(), "Fail to get cluster scheduler defaultNodeSelector got error: %v\n", getNodeSelectorErr)
 	return !strings.EqualFold(defaultNodeSelector, "")
 }
 

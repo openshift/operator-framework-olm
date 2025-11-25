@@ -93,9 +93,20 @@ func (catsrc *CatalogSourceDescription) SetSCCRestricted(oc *exutil.CLI) {
 	} else {
 		// Retrieve PSA enforcement level from cluster configuration
 		output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("configmaps", "-n", "openshift-kube-apiserver", "config", `-o=jsonpath={.data.config\.yaml}`).Output()
-		o.Expect(err).NotTo(o.HaveOccurred())
-		psa = gjson.Get(output, "admission.pluginConfig.PodSecurity.configuration.defaults.enforce").String()
-		e2e.Logf("pod-security.kubernetes.io/enforce is %s", string(psa))
+		if err != nil {
+			// Check if this is a Forbidden error (permission denied)
+			if strings.Contains(err.Error(), "Forbidden") {
+				// In some CI environments, even with AsAdmin(), the service account may not have permission
+				// to access openshift-kube-apiserver namespace. Use default value "restricted" in such cases.
+				e2e.Logf("cannot get default PSA setting from kube-apiserver config (permission denied), use default value restricted: %v", err)
+			} else {
+				// For other errors (e.g., network issues, API server down), fail the test
+				o.Expect(err).NotTo(o.HaveOccurred())
+			}
+		} else {
+			psa = gjson.Get(output, "admission.pluginConfig.PodSecurity.configuration.defaults.enforce").String()
+			e2e.Logf("pod-security.kubernetes.io/enforce is %s", string(psa))
+		}
 	}
 	// Apply restricted security context if PSA enforcement requires it
 	if strings.Contains(string(psa), "restricted") {
