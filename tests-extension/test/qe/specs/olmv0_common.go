@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -607,6 +608,272 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 			olmv0util.VerifyEgress(specs, policy.ExpectEgress, policy.Name)
 		}
 
+	})
+
+	g.It("PolarionID:21080-[OTP][Skipped:Disconnected]Check metrics[Serial]", g.Label("NonHyperShiftHOST"), func() {
+		exutil.SkipOnProxyCluster(oc)
+
+		var (
+			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+			ogTemplate          = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+			subFile             = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+
+			data          olmv0util.PrometheusQueryResult
+			err           error
+			exists        bool
+			metricsBefore olmv0util.Metrics
+			metricsAfter  olmv0util.Metrics
+			olmToken      string
+		)
+
+		oc.SetupProject()
+		ns := oc.Namespace()
+		itName := g.CurrentSpecReport().FullText()
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "test-21080-group",
+			Namespace: ns,
+			Template:  ogTemplate,
+		}
+		g.By("create the learn-operator CatalogSource")
+		catsrcImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "catsrc-21080",
+			Namespace:   ns,
+			DisplayName: "QE Operators",
+			Publisher:   "OpenShift QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/learn-operator-index:v25",
+			Template:    catsrcImageTemplate,
+		}
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-21080",
+			Namespace:              ns,
+			CatalogSourceName:      "catsrc-21080",
+			CatalogSourceNamespace: ns,
+			IpApproval:             "Automatic",
+			Channel:                "beta",
+			OperatorPackage:        "learn",
+			SingleNamespace:        true,
+			Template:               subFile,
+		}
+
+		g.By("1, check if this operator ready for installing")
+		e2e.Logf("Check if %v exists in the %v catalog", sub.OperatorPackage, sub.CatalogSourceName)
+		exists, err = olmv0util.ClusterPackageExistsInNamespace(oc, sub, ns)
+		if !exists {
+			g.Skip(fmt.Sprintf("%s does not exist in the cluster", sub.OperatorPackage))
+		}
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(exists).To(o.BeTrue())
+
+		g.By("2, Get token & pods so that access the Prometheus")
+		olmToken, err = exutil.GetSAToken(oc, "prometheus-k8s", "openshift-monitoring")
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(olmToken).NotTo(o.BeEmpty())
+
+		// the reason why use it is to workaround the Network policy since OCP4.20
+		g.By("2-1, get Prometheus Pod IP address")
+		PrometheusPodIP, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", "-n", "openshift-monitoring", "prometheus-k8s-0", "-o=jsonpath={.status.podIP}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		g.By("3, Collect olm metrics before installing an operator")
+		metricsBefore = olmv0util.GetMetrics(oc, olmToken, data, metricsBefore, sub.SubName, PrometheusPodIP)
+		e2e.Logf("\nbefore {csv_count, csv_upgrade_count, catalog_source_count, install_plan_count, subscription_count, subscription_sync_total}\n%v", metricsBefore)
+
+		g.By("4, Start to subscribe to etcdoperator")
+		og.Create(oc, itName, dr)
+		defer sub.Delete(itName, dr) // remove the subscription after test
+		sub.Create(oc, itName, dr)
+
+		g.By("4.5 Check for latest version")
+		defer sub.DeleteCSV(itName, dr) // remove the csv after test
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "learn-operator.v0.0.3", "-n", ns, "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("5, learnoperator is at v0.0.3, start to collect olm metrics after")
+		// The prometheus-k8s-0 IP might be changed, so rerun it here.
+		PrometheusPodIP, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", "-n", "openshift-monitoring", "prometheus-k8s-0", "-o=jsonpath={.status.podIP}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		metricsAfter = olmv0util.GetMetrics(oc, olmToken, data, metricsAfter, sub.SubName, PrometheusPodIP)
+		g.By("6, Check results")
+		e2e.Logf("{csv_count csv_upgrade_count catalog_source_count install_plan_count subscription_count subscription_sync_total}")
+		e2e.Logf("%v", metricsBefore)
+		e2e.Logf("%v", metricsAfter)
+		g.By("All PASS\n")
+	})
+
+	g.It("PolarionID:21953-[OTP]Ensure that operator deployment is in the master node", g.Label("NonHyperShiftHOST"), func() {
+		exutil.SkipBaselineCaps(oc, "None")
+		var (
+			err            error
+			msg            string
+			olmErrs        = true
+			olmJpath       = "-o=jsonpath={@.spec.template.spec.nodeSelector}"
+			olmNamespace   = "openshift-marketplace"
+			olmNodeName    string
+			olmPodFullName string
+			olmPodName     = "marketplace-operator"
+			nodeRole       = "node-role.kubernetes.io/master"
+			nodes          string
+			nodeStatus     bool
+			pod            string
+			pods           string
+			status         []string
+			x              []string
+		)
+
+		g.By("Get deployment")
+		msg, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "-n", olmNamespace, olmPodName, olmJpath).Output()
+		if err != nil {
+			e2e.Logf("Unable to get deployment -n %v %v %v.", olmNamespace, olmPodName, olmJpath)
+		}
+		o.Expect(err).NotTo(o.HaveOccurred())
+		if len(msg) < 1 || !strings.Contains(msg, nodeRole) {
+			e2e.Failf("Could not find %v variable %v for %v: %v", olmJpath, nodeRole, olmPodName, msg)
+		}
+
+		g.By("Look at pods")
+		// look for the marketplace-operator pod's full name
+		pods, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", olmNamespace, "-o", "wide").Output()
+		if err != nil {
+			e2e.Logf("Unable to query pods -n %v %v %v.", olmNamespace, err, pods)
+		}
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(pods).NotTo(o.ContainSubstring("No resources found"))
+		// e2e.Logf("Pods %v ", pods)
+
+		for _, pod = range strings.Split(pods, "\n") {
+			if len(pod) <= 0 {
+				continue
+			}
+			// Find the node in the pod
+			if strings.Contains(pod, olmPodName) {
+				x = strings.Fields(pod)
+				olmPodFullName = x[0]
+				// olmNodeName = x[6]
+				olmNodeName, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", olmNamespace, olmPodFullName, "-o=jsonpath={.spec.nodeName}").Output()
+				o.Expect(err).NotTo(o.HaveOccurred())
+				olmErrs = false
+				// e2e.Logf("Found pod is %v", pod)
+				break
+			}
+		}
+		if olmErrs {
+			e2e.Failf("Unable to find the full pod name for %v in %v: %v.", olmPodName, olmNamespace, pods)
+		}
+
+		g.By("Query node label value")
+		// Look at the setting for the node to be on the master
+		olmErrs = true
+		nodes, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("nodes", "-n", olmNamespace, olmNodeName, "-o=jsonpath={.metadata.labels}").Output()
+		if err != nil {
+			e2e.Failf("Unable to query nodes -n %v %v %v.", olmNamespace, err, nodes)
+		}
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(nodes).To(o.ContainSubstring("node-role.kubernetes.io/master"))
+
+		g.By("look at oc get nodes")
+		// Found the setting, verify that it's really on the master node
+		msg, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("nodes", "-n", olmNamespace, olmNodeName, "--show-labels", "--no-headers").Output()
+		if err != nil {
+			e2e.Failf("Unable to query the %v node of pod %v for %v's status", olmNodeName, olmPodFullName, msg)
+		}
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(msg).NotTo(o.ContainSubstring("No resources found"))
+		status = strings.Fields(msg)
+		if strings.Contains(status[2], "master") {
+			olmErrs = false
+			nodeStatus = true
+			e2e.Logf("node %v is a %v", olmNodeName, status[2])
+		}
+		if olmErrs || !nodeStatus {
+			e2e.Failf("The node %v of %v pod is not a master:%v", olmNodeName, olmPodFullName, msg)
+		}
+		g.By("Finish")
+		e2e.Logf("The pod %v is on the master node %v", olmPodFullName, olmNodeName)
+	})
+
+	g.It("PolarionID:43135-[OTP]PackageServer respects single-node configuration[Slow][Disruptive]", g.Label("NonHyperShiftHOST"), func() {
+		g.By("1) get the cluster infrastructure")
+		infra, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("infrastructures", "cluster", "-o=jsonpath={.status.infrastructureTopology}").Output()
+		if err != nil {
+			e2e.Failf("Fail to get the cluster infra")
+		}
+		num, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("-n", "openshift-operator-lifecycle-manager", "deployment", "packageserver", "-o=jsonpath={.status.replicas}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		if infra == "SingleReplica" {
+			e2e.Logf("This is a SNO cluster")
+			g.By("2) check if only have one packageserver pod")
+			if num != "1" {
+				e2e.Failf("!!!Fail, should only have 1 packageserver pod, but get %s!", num)
+			}
+			// make sure the CVO recover if any error in the follow steps
+			defer func() {
+				_, err = oc.AsAdmin().WithoutNamespace().Run("scale").Args("--replicas", "1", "deployment/cluster-version-operator", "-n", "openshift-cluster-version").Output()
+				if err != nil {
+					e2e.Failf("Defer: fail to enable CVO")
+				}
+			}()
+			g.By("3) stop CVO")
+			_, err := oc.AsAdmin().WithoutNamespace().Run("scale").Args("--replicas", "0", "deployment/cluster-version-operator", "-n", "openshift-cluster-version").Output()
+			if err != nil {
+				e2e.Failf("Fail to stop CVO")
+			}
+			g.By("4) stop the PSM")
+			_, err = oc.AsAdmin().WithoutNamespace().Run("scale").Args("--replicas", "0", "deployment/package-server-manager", "-n", "openshift-operator-lifecycle-manager").Output()
+			if err != nil {
+				e2e.Failf("Fail to stop the PSM")
+			}
+			g.By("5) patch the replica to 3")
+			// oc get csv packageserver -o=jsonpath={.spec.install.spec.deployments[?(@.name==\"packageserver\")].spec.replicas}
+			// oc patch csv/packageserver -p '{"spec":{"install":{"spec":{"deployments":[{"name":"packageserver", "spec":{"replicas":3, "template":{}, "selector":{"matchLabels":{"app":"packageserver"}}}}]}}}}' --type=merge
+			// oc patch deploy/packageserver -p '{"spec":{"replicas":3}}' --type=merge
+			// should update CSV
+			olmv0util.PatchResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "-n", "openshift-operator-lifecycle-manager", "csv", "packageserver", "-p", "{\"spec\":{\"install\":{\"spec\":{\"deployments\":[{\"name\":\"packageserver\", \"spec\":{\"replicas\":3, \"template\":{}, \"selector\":{\"matchLabels\":{\"app\":\"packageserver\"}}}}]}}}}", "--type=merge")
+			olmv0util.PatchResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "-n", "openshift-operator-lifecycle-manager", "deployment", "packageserver", "-p", "{\"spec\":{\"replicas\":3}}", "--type=merge")
+			err = wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, 60*time.Second, false, func(ctx context.Context) (bool, error) {
+				num, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.status.availableReplicas}").Output()
+				e2e.Logf("packageserver replicas is %s", num)
+				if num != "3" {
+					return false, nil
+				}
+				return true, nil
+			})
+			exutil.AssertWaitPollNoErr(err, "packageserver replicas is not 3")
+			g.By("6) enable CVO")
+			_, err = oc.AsAdmin().WithoutNamespace().Run("scale").Args("--replicas", "1", "deployment/cluster-version-operator", "-n", "openshift-cluster-version").Output()
+			if err != nil {
+				e2e.Failf("Fail to enable CVO")
+			}
+			g.By("7) check if the PSM back")
+			err = wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, 60*time.Second, false, func(ctx context.Context) (bool, error) {
+				num, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "package-server-manager", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.status.replicas}").Output()
+				if num != "1" {
+					return false, nil
+				}
+				return true, nil
+			})
+			exutil.AssertWaitPollNoErr(err, "package-server-manager replicas is not reback to 1")
+			g.By("8) check if the packageserver pods number back to 1")
+			// for some SNO clusters, reback may take 10 mins around
+			err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 600*time.Second, false, func(ctx context.Context) (bool, error) {
+				num, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.status.availableReplicas}").Output()
+				if num != "1" {
+					return false, nil
+				}
+				return true, nil
+			})
+			exutil.AssertWaitPollNoErr(err, "packageserver replicas is not reback to 1")
+		} else {
+			// HighlyAvailable
+			e2e.Logf("This is HA cluster, not SNO")
+			g.By("2) check if only have two packageserver pods")
+			if num != "2" {
+				e2e.Failf("!!!Fail, should only have 2 packageserver pods, but get %s!", num)
+			}
+		}
 	})
 
 })
