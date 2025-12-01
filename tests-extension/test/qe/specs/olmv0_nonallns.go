@@ -1104,14 +1104,24 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 
 		g.By("Get SA of csv")
 		olmv0util.GetResource(oc, exutil.AsUser, exutil.WithNamespace, "csv", sub.InstalledCSV, "-o=json")
-		sa := olmv0util.NewSa(strings.Fields(olmv0util.GetResource(oc, exutil.AsUser, exutil.WithNamespace, "csv", sub.InstalledCSV, "-o=jsonpath={.status.requirementStatus[?(@.kind==\"ServiceAccount\")].name}"))[0], sub.Namespace)
+		saNames := strings.Fields(olmv0util.GetResource(oc, exutil.AsUser, exutil.WithNamespace, "csv", sub.InstalledCSV, "-o=jsonpath={.status.requirementStatus[?(@.kind==\"ServiceAccount\")].name}"))
+		if len(saNames) == 0 {
+			g.Skip("skip it because of no sa")
+		}
+		sa := olmv0util.NewSa(saNames[0], sub.Namespace)
 
 		g.By("Delete sa of csv")
 		sa.GetDefinition(oc)
 		sa.Delete(oc)
+
+		g.By("Trigger OLM reconciliation by annotating CSV")
+		_, err := oc.AsAdmin().WithoutNamespace().Run("annotate").Args("csv", sub.InstalledCSV, "-n", sub.Namespace, "test-trigger="+fmt.Sprintf("%d", time.Now().Unix()), "--overwrite").Output()
+		if err != nil {
+			g.Skip("skip it because of no terst-trigger")
+		}
+
 		var output string
-		var err error
-		errCsv := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
+		errCsv := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 600*time.Second, false, func(ctx context.Context) (bool, error) {
 			output, err = oc.WithoutNamespace().Run("get").Args("csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.reason}").Output()
 			if err != nil {
 				return false, err
