@@ -90,15 +90,15 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, olmVersion, exutil.Ok, []string{"clusteroperator", "-o=jsonpath={.items[?(@.metadata.name==\"" + olmClusterOperatorName + "\")].status.versions[?(@.name==\"operator\")].version}"}).Check(oc)
 	})
 
-	g.It("PolarionID:29775-PolarionID:29786-[OTP][Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]"), func() {
+	g.It("PolarionID:29775-PolarionID:29786-[OTP][Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]"), g.Label("NonHyperShiftHOST"), func() {
 		var (
 			bundleIndex1         = "quay.io/kuiwang/operators-all:v1"
 			bundleIndex2         = "quay.io/kuiwang/operators-dockerio:v1"
-			operatorAllPath      = "operators-all-manifests-" + exutil.GetRandomString()
-			operatorDockerioPath = "operators-dockerio-manifests-" + exutil.GetRandomString()
+			operatorAllPath      = "/tmp/operators-all-manifests-" + exutil.GetRandomString()
+			operatorDockerioPath = "/tmp/operators-dockerio-manifests-" + exutil.GetRandomString()
 		)
-		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr ./"+operatorAllPath).Output() }()
-		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr ./"+operatorDockerioPath).Output() }()
+		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr "+operatorAllPath).Output() }()
+		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr "+operatorDockerioPath).Output() }()
 
 		g.By("mirror to quay.io/kuiwang")
 		var output string
@@ -123,14 +123,14 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(output).To(o.ContainSubstring("operators-all-manifests"))
 
 		g.By("check mapping.txt")
-		result, err := exec.Command("bash", "-c", "cat ./"+operatorAllPath+"/mapping.txt|grep -E \"atlasmap-atlasmap-operator:0.1.0|quay.io/kuiwang/jmckind-argocd-operator:[a-z0-9][a-z0-9]|redhat-cop-cert-utils-operator:latest\"").Output()
+		result, err := exec.Command("bash", "-c", "cat "+operatorAllPath+"/mapping.txt|grep -E \"atlasmap-atlasmap-operator:0.1.0|quay.io/kuiwang/jmckind-argocd-operator:[a-z0-9][a-z0-9]|redhat-cop-cert-utils-operator:latest\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("atlasmap-atlasmap-operator:0.1.0"))
 		o.Expect(result).To(o.ContainSubstring("redhat-cop-cert-utils-operator:latest"))
 		o.Expect(result).To(o.ContainSubstring("quay.io/kuiwang/jmckind-argocd-operator"))
 
 		g.By("check icsp yaml")
-		result, err = exec.Command("bash", "-c", "cat ./"+operatorAllPath+"/imageContentSourcePolicy.yaml | grep -E \"quay.io/kuiwang/strimzi-operator|docker.io/strimzi/operator$\"").Output()
+		result, err = exec.Command("bash", "-c", "cat "+operatorAllPath+"/imageContentSourcePolicy.yaml | grep -E \"quay.io/kuiwang/strimzi-operator|docker.io/strimzi/operator$\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("- quay.io/kuiwang/strimzi-operator"))
 		o.Expect(result).To(o.ContainSubstring("source: docker.io/strimzi/operator"))
@@ -156,25 +156,25 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(output).To(o.ContainSubstring("operators-dockerio-manifests"))
 
 		g.By("check mapping.txt to localhost:5000")
-		result, err = exec.Command("bash", "-c", "cat ./"+operatorDockerioPath+"/mapping.txt|grep -E \"localhost:5000/atlasmap/atlasmap-operator:0.1.0|localhost:5000/strimzi/operator:[a-z0-9][a-z0-9]\"").Output()
+		result, err = exec.Command("bash", "-c", "cat "+operatorDockerioPath+"/mapping.txt|grep -E \"localhost:5000/atlasmap/atlasmap-operator:0.1.0|localhost:5000/strimzi/operator:[a-z0-9][a-z0-9]\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("localhost:5000/atlasmap/atlasmap-operator:0.1.0"))
 		o.Expect(result).To(o.ContainSubstring("localhost:5000/strimzi/operator"))
 
 		g.By("check icsp yaml to localhost:5000")
-		result, err = exec.Command("bash", "-c", "cat ./"+operatorDockerioPath+"/imageContentSourcePolicy.yaml | grep -E \"localhost:5000/strimzi/operator|docker.io/strimzi/operator$\"").Output()
+		result, err = exec.Command("bash", "-c", "cat "+operatorDockerioPath+"/imageContentSourcePolicy.yaml | grep -E \"localhost:5000/strimzi/operator|docker.io/strimzi/operator$\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("- localhost:5000/strimzi/operator"))
 		o.Expect(result).To(o.ContainSubstring("source: docker.io/strimzi/operator"))
 		o.Expect(result).NotTo(o.ContainSubstring("docker.io/atlasmap/atlasmap-operator"))
 	})
 
-	g.It("PolarionID:33452-[OTP][Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself"), func() {
+	g.It("PolarionID:33452-[OTP][Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself"), g.Label("NonHyperShiftHOST"), func() {
 		var (
 			bundleIndex1 = "quay.io/olmqe/olm-api@sha256:71cfd4deaa493d31cd1d8255b1dce0fb670ae574f4839c778f2cfb1bf1f96995"
-			manifestPath = "manifests-olm-api-" + exutil.GetRandomString()
+			manifestPath = "/tmp/manifests-olm-api-" + exutil.GetRandomString()
 		)
-		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr ./"+manifestPath).Output() }()
+		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr "+manifestPath).Output() }()
 
 		g.By("mirror to localhost:5000/test")
 		output, err := oc.AsAdmin().WithoutNamespace().Run("adm", "catalog", "mirror").Args("--manifests-only", "--to-manifests="+manifestPath, bundleIndex1, "localhost:5000/test").Output()
@@ -182,12 +182,12 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(output).To(o.ContainSubstring("manifests-olm-api"))
 
 		g.By("check mapping.txt to localhost:5000")
-		result, err := exec.Command("bash", "-c", "cat ./"+manifestPath+"/mapping.txt|grep -E \"quay.io/olmqe/olm-api\"").Output()
+		result, err := exec.Command("bash", "-c", "cat "+manifestPath+"/mapping.txt|grep -E \"quay.io/olmqe/olm-api\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("quay.io/olmqe/olm-api"))
 
 		g.By("check icsp yaml to localhost:5000")
-		result, err = exec.Command("bash", "-c", "cat ./"+manifestPath+"/imageContentSourcePolicy.yaml | grep -E \"quay.io/olmqe/olm-api\"").Output()
+		result, err = exec.Command("bash", "-c", "cat "+manifestPath+"/imageContentSourcePolicy.yaml | grep -E \"quay.io/olmqe/olm-api\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("quay.io/olmqe/olm-api"))
 	})
