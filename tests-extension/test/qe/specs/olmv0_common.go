@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1043,6 +1045,103 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		}
 		o.Expect(foundCatalogSourceReadyRule).To(o.BeTrue(), "PrometheusRule should contain catalogsource_ready metric check")
 		e2e.Logf("PrometheusRule validation passed: Alert rule is properly configured to monitor catalogsource_ready metric")
+	})
+
+	g.It("PolarionID:43975-[OTP]olm operator serviceaccount should not rely on external networking for health check[Disruptive][Slow]", g.Label("NonHyperShiftHOST"), func() {
+		g.By("1) get the cluster infrastructure")
+		infra, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("infrastructures", "cluster", "-o=jsonpath={.status.infrastructureTopology}").Output()
+		if err != nil {
+			e2e.Failf("Fail to get the cluster infra")
+		}
+		if infra != "SingleReplica" {
+			g.Skip("Not SNO cluster - skipping test ...")
+		}
+
+		originProfile := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "apiserver", "cluster", "-o=jsonpath={.spec.audit.profile}")
+		o.Expect(originProfile).NotTo(o.BeEmpty())
+		if strings.Compare(originProfile, "Default") != 0 {
+			g.Skip("audit profile is not Default - skipping test ...")
+		}
+
+		g.By("2) get revision number")
+		revisionNumber1 := 0
+		reg := regexp.MustCompile(`at revision (\d+)`)
+		if reg == nil {
+			e2e.Failf("get revision number regexp err!")
+		}
+		output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("kubeapiserver", "-o=jsonpath={..status.conditions[?(@.type==\"NodeInstallerProgressing\")]}").Output()
+		if err != nil {
+			e2e.Failf("Fail to get kubeapiserver")
+		}
+		result := reg.FindAllStringSubmatch(output, -1)
+		if result != nil {
+			revisionNumberStr1 := result[0][1]
+			revisionNumber1, _ = strconv.Atoi(revisionNumberStr1)
+			e2e.Logf("origin revision number is : %v", revisionNumber1)
+		} else {
+			e2e.Failf("Fail to get revision number")
+		}
+
+		g.By("3) Configuring the audit log policy to AllRequestBodies")
+		defer func() {
+			pathJSON := fmt.Sprintf("{\"spec\":{\"audit\":{\"profile\":\"%s\"}}}", originProfile)
+			e2e.Logf("recover to be %v", pathJSON)
+			exutil.PatchResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "apiserver", "cluster", "-p", pathJSON, "--type=merge")
+			output = olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "apiserver", "cluster", "-o=jsonpath={.spec.audit.profile}")
+			o.Expect(output).To(o.Equal("Default"))
+		}()
+		exutil.PatchResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "apiserver", "cluster", "-p", "{\"spec\":{\"audit\":{\"profile\":\"AllRequestBodies\"}}}", "--type=merge")
+		output = olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "apiserver", "cluster", "-o=jsonpath={.spec.audit.profile}")
+		o.Expect(output).To(o.Equal("AllRequestBodies"))
+
+		g.By("4) Wait for api rollout")
+		err = wait.PollUntilContextTimeout(context.TODO(), 30*time.Second, 600*time.Second, false, func(ctx context.Context) (bool, error) {
+			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("kubeapiserver", "-o=jsonpath={..status.conditions[?(@.type==\"NodeInstallerProgressing\")]}").Output()
+			e2e.Logf("kubeapiserver status output: %s", output)
+			if err != nil {
+				e2e.Logf("Fail to get kubeapiserver status, go next round")
+				return false, nil
+			}
+			if !strings.Contains(output, "AllNodesAtLatestRevision") {
+				e2e.Logf("the api is rolling, go next round")
+				return false, nil
+			}
+			result := reg.FindAllStringSubmatch(output, -1)
+			if result != nil {
+				revisionNumberStr2 := result[0][1]
+				revisionNumber2, _ := strconv.Atoi(revisionNumberStr2)
+				e2e.Logf("revision number is : %v", revisionNumber2)
+				if revisionNumber2 > revisionNumber1 {
+					return true, nil
+				}
+				e2e.Logf("revision number is not changed, go next round")
+				return false, nil
+
+			}
+			e2e.Logf("Fail to get revision number, go next round")
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "api not rollout")
+
+		// According to the case steps, wait for 5 minutes, then check the audit log doesn't contain olm-operator-serviceaccount.
+		g.By("Wait for 5 minutes, then check the audit log")
+		time.Sleep(5 * time.Minute)
+
+		g.By("check the audit log")
+		nodeName, err := exutil.GetFirstMasterNode(oc)
+		e2e.Logf("master node name: %s", nodeName)
+		o.Expect(err).NotTo(o.HaveOccurred())
+		auditlogPath := "43975.log"
+		defer func() {
+			_, _ = exec.Command("bash", "-c", "rm -fr "+auditlogPath).Output()
+		}()
+		outputPath, err := oc.AsAdmin().WithoutNamespace().Run("adm").Args("node-logs", nodeName, "--path=kube-apiserver/audit.log").OutputToFile(auditlogPath)
+		o.Expect(err).NotTo(o.HaveOccurred())
+		commandParserLog := "cat " + outputPath + " | grep -i health | grep -i subjectaccessreviews | grep -v Unhealth | jq -r '.user.username' | sort | uniq"
+		resultParserLog, err := exec.Command("bash", "-c", commandParserLog).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		e2e.Logf("Found usernames in audit log: %s", string(resultParserLog))
+		o.Expect(resultParserLog).NotTo(o.ContainSubstring("olm-operator-serviceaccount"))
 	})
 
 })
