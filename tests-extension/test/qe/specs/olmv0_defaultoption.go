@@ -32,7 +32,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		exutil.SkipNoOLMCore(oc)
 	})
 
-	g.It("PolarionID:54038-[OTP][Skipped:Disconnected]Comply with Operator Anti-Affinity definition", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-54038-Comply with Operator Anti-Affinity definition"), func() {
+	g.It("PolarionID:54038-[OTP][Skipped:Disconnected]Comply with Operator Anti-Affinity definition", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:54038-[Skipped:Disconnected]Comply with Operator Anti-Affinity definition"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 		exutil.SkipBaselineCaps(oc, "None")
@@ -118,7 +118,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		}
 	})
 
-	g.It("PolarionID:54036-[OTP][Skipped:Disconnected]Comply with Operator NodeAffinity definition", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-54036-Comply with Operator NodeAffinity definition"), func() {
+	g.It("PolarionID:54036-[OTP][Skipped:Disconnected]Comply with Operator NodeAffinity definition", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:54036-[Skipped:Disconnected]Comply with Operator NodeAffinity definition"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 		exutil.SkipBaselineCaps(oc, "None")
@@ -195,7 +195,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		o.Expect(firstNode).To(o.Equal(deployedNode))
 	})
 
-	g.It("PolarionID:24850-[OTP]Allow users to edit the deployment of an active CSV", g.Label("original-name:[sig-operators] OLM should Author:bandrade-Medium-24850-Allow users to edit the deployment of an active CSV"), func() {
+	g.It("PolarionID:24850-[OTP]Allow users to edit the deployment of an active CSV", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24850-Allow users to edit the deployment of an active CSV"), func() {
 		exutil.SkipMissingQECatalogsource(oc)
 		g.By("1) Install the OperatorGroup in a random project")
 
@@ -245,7 +245,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		o.Expect(podName).NotTo(o.Equal(podNameAfterPatch))
 	})
 
-	g.It("PolarionID:24387-[OTP][Skipped:Disconnected][Disruptive]Any CRD upgrade is allowed if there is only one owner in a cluster", g.Label("original-name:[sig-operators] OLM should Author:bandrade-ConnectedOnly-High-24387-Any CRD upgrade is allowed if there is only one owner in a cluster [Disruptive]"), func() {
+	g.It("PolarionID:24387-[OTP][Skipped:Disconnected][Disruptive]Any CRD upgrade is allowed if there is only one owner in a cluster", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24387-[Skipped:Disconnected][Disruptive]Any CRD upgrade is allowed if there is only one owner in a cluster"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
@@ -334,7 +334,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		o.Expect(crdYamlOutput).To(o.ContainSubstring("propertyIncludedTest"))
 	})
 
-	g.It("PolarionID:42970-[OTP]OperatorGroup status indicates cardinality conflicts - SingleNamespace", g.Label("original-name:[sig-operators] OLM should Author:bandrade-Medium-42970-OperatorGroup status indicates cardinality conflicts - SingleNamespace"), func() {
+	g.It("PolarionID:42970-[OTP]OperatorGroup status indicates cardinality conflicts - SingleNamespace", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:42970-OperatorGroup status indicates cardinality conflicts - SingleNamespace"), func() {
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 
@@ -387,7 +387,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		g.By("6) OCP-42970 SUCCESS")
 	})
 
-	g.It("PolarionID:42972-[OTP]OperatorGroup status should indicate if the SA named in spec not found", g.Label("original-name:[sig-operators] OLM should Author:bandrade-Medium-42972-OperatorGroup status should indicate if the SA named in spec not found"), func() {
+	g.It("PolarionID:42972-[OTP]OperatorGroup status should indicate if the SA named in spec not found", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:42972-OperatorGroup status should indicate if the SA named in spec not found"), func() {
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup-serviceaccount.yaml")
 		serviceAccount := "scoped-42972"
@@ -432,7 +432,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		exutil.AssertWaitPollNoErr(err, "The error ServiceAccountNotFound still be reported in status")
 	})
 
-	g.It("PolarionID:24771-[OTP]OLM should support for user defined ServiceAccount for OperatorGroup", g.Label("original-name:[sig-operators] OLM should Author:bandrade-Medium-24771-OLM should support for user defined ServiceAccount for OperatorGroup"), func() {
+	g.It("PolarionID:24771-[OTP]OLM should support for user defined ServiceAccount for OperatorGroup", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24771-OLM should support for user defined ServiceAccount for OperatorGroup"), func() {
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		saRoles := filepath.Join(buildPruningBaseDir, "scoped-sa-roles.yaml")
 		oc.SetupProject()
@@ -515,7 +515,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			[]string{"csv", targetCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
 	})
 
-	g.It("PolarionID:43073-[OTP][Skipped:Disconnected]Indicate dependency class in resolution constraint text", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-43073-Indicate dependency class in resolution constraint text"), func() {
+	g.It("PolarionID:43073-[OTP][Skipped:Disconnected]Indicate dependency class in resolution constraint text", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43073-[Skipped:Disconnected]Indicate dependency class in resolution constraint text"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		oc.SetupProject()
 
@@ -574,7 +574,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			[]string{"subs", "lib-bucket-provisioner-43073", "-n", oc.Namespace(), "-o=jsonpath={.status.conditions[?(.type==\"ResolutionFailed\")].reason}"}).Check(oc)
 	})
 
-	g.It("PolarionID:24772-[OTP]OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission", g.Label("original-name:[sig-operators] OLM should Author:bandrade-Medium-24772-OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission"), func() {
+	g.It("PolarionID:24772-[OTP]OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24772-OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		saRoles := filepath.Join(buildPruningBaseDir, "scoped-sa-fine-grained-roles.yaml")
@@ -660,7 +660,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			[]string{"csv", targetCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
 	})
 
-	g.It("PolarionID:24886-[OTP]OLM should support for user defined ServiceAccount permission changes", g.Label("original-name:[sig-operators] OLM should Author:bandrade-Medium-24886-OLM should support for user defined ServiceAccount permission changes"), func() {
+	g.It("PolarionID:24886-[OTP]OLM should support for user defined ServiceAccount permission changes", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24886-OLM should support for user defined ServiceAccount permission changes"), func() {
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		saRoles := filepath.Join(buildPruningBaseDir, "scoped-sa-etcd.yaml")
 		oc.SetupProject()
@@ -757,7 +757,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			[]string{"csv", targetCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
 	})
 
-	g.It("PolarionID:30765-[OTP][Skipped:Disconnected]Operator-version based dependencies metadata", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-30765-Operator-version based dependencies metadata"), func() {
+	g.It("PolarionID:30765-[OTP][Skipped:Disconnected]Operator-version based dependencies metadata", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:30765-[Skipped:Disconnected]Operator-version based dependencies metadata"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
@@ -816,7 +816,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		o.Expect(msg).To(o.ContainSubstring("prometheus"))
 	})
 
-	g.It("PolarionID:27680-[OTP][Skipped:Disconnected][Serial]OLM Bundle support for Prometheus Types", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-27680-OLM Bundle support for Prometheus Types [Serial]"), func() {
+	g.It("PolarionID:27680-[OTP][Skipped:Disconnected][Serial]OLM Bundle support for Prometheus Types", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:27680-[Skipped:Disconnected][Serial]OLM Bundle support for Prometheus Types"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
@@ -883,7 +883,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		o.Expect(msg).To(o.ContainSubstring("my-prometheusrule"))
 	})
 
-	g.It("PolarionID:24916-[OTP][Skipped:Disconnected]Operators in AllNamespaces should be granted namespace list", g.Label("original-name:[sig-operators] OLM should Author:bandrade-ConnectedOnly-Medium-24916-Operators in AllNamespaces should be granted namespace list"), func() {
+	g.It("PolarionID:24916-[OTP][Skipped:Disconnected]Operators in AllNamespaces should be granted namespace list", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24916-[Skipped:Disconnected]Operators in AllNamespaces should be granted namespace list"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipMissingQECatalogsource(oc)
@@ -933,7 +933,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		}
 	})
 
-	g.It("PolarionID:47149-[OTP][Skipped:Disconnected]Conjunctive constraint of one packages and one GVK", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-47149-Conjunctive constraint of one packages and one GVK"), func() {
+	g.It("PolarionID:47149-[OTP][Skipped:Disconnected]Conjunctive constraint of one packages and one GVK", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:47149-[Skipped:Disconnected]Conjunctive constraint of one packages and one GVK"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
@@ -1006,7 +1006,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			[]string{"csv", "etcdoperator.v0.9.4", "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
 	})
 
-	g.It("PolarionID:47181-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-47181-Disjunctive constraint of one package and one GVK"), func() {
+	g.It("PolarionID:47181-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:47181-[Skipped:Disconnected]Disjunctive constraint of one package and one GVK"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 
 		baseDir := exutil.FixturePath("testdata", "olm")
@@ -1060,7 +1060,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			[]string{"csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
 	})
 
-	g.It("PolarionID:47179-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-47179-Disjunctive constraint of one package and one GVK"), func() {
+	g.It("PolarionID:47179-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:47179-[Skipped:Disconnected]Disjunctive constraint of one package and one GVK"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
@@ -1115,7 +1115,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			[]string{"csv", "-n", sub.Namespace}).Check(oc)
 	})
 
-	g.It("PolarionID:49130-[OTP][Skipped:Disconnected]Default CatalogSources deployed by marketplace do not have toleration for tainted nodes", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operators] OLM should NonHyperShiftHOST-ConnectedOnly-Author:bandrade-Medium-49130-Default CatalogSources deployed by marketplace do not have toleration for tainted nodes"), func() {
+	g.It("PolarionID:49130-[OTP][Skipped:Disconnected]Default CatalogSources deployed by marketplace do not have toleration for tainted nodes", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:49130-[Skipped:Disconnected]Default CatalogSources deployed by marketplace do not have toleration for tainted nodes"), func() {
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
@@ -1159,7 +1159,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		}
 	})
 
-	g.It("PolarionID:21130-[OTP]Fetching non-existent PackageManifest should return 404", g.Label("original-name:[sig-operators] OLM should Author:bandrade-Medium-21130-Fetching non-existent `PackageManifest` should return 404"), func() {
+	g.It("PolarionID:21130-[OTP]Fetching non-existent PackageManifest should return 404", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:21130-Fetching non-existent PackageManifest should return 404"), func() {
 		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", "--all-namespaces", "--no-headers").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		packageserverLines := strings.Split(msg, "\n")
@@ -1172,7 +1172,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		}
 	})
 
-	g.It("PolarionID:24057-[OTP]Have terminationMessagePolicy defined as FallbackToLogsOnError", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operators] OLM should NonHyperShiftHOST-Author:bandrade-Low-24057-Have terminationMessagePolicy defined as FallbackToLogsOnError"), func() {
+	g.It("PolarionID:24057-[OTP]Have terminationMessagePolicy defined as FallbackToLogsOnError", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24057-Have terminationMessagePolicy defined as FallbackToLogsOnError"), func() {
 		labels := [...]string{"app=packageserver", "app=catalog-operator", "app=olm-operator"}
 		for _, l := range labels {
 			msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-o=jsonpath={range .items[*].spec}{.containers[*].name}{\"\\t\"}", "-n", "openshift-operator-lifecycle-manager", "-l", l).Output()
@@ -1189,7 +1189,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		}
 	})
 
-	g.It("PolarionID:32613-[OTP][Skipped:Disconnected]Operators won't install if the CSV dependency is already installed", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-High-32613-Operators won't install if the CSV dependency is already installed"), func() {
+	g.It("PolarionID:32613-[OTP][Skipped:Disconnected]Operators won't install if the CSV dependency is already installed", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:32613-[Skipped:Disconnected]Operators won't install if the CSV dependency is already installed"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 		exutil.SkipBaselineCaps(oc, "None")
@@ -1264,7 +1264,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			[]string{"subs", "prometheus-32613", "-n", oc.Namespace(), "-o=jsonpath={.status.conditions..message}"}).Check(oc)
 	})
 
-	g.It("PolarionID:24055-[OTP][Skipped:Disconnected]Check for defaultChannel mandatory field when having multiple channels", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Low-24055-Check for defaultChannel mandatory field when having multiple channels"), func() {
+	g.It("PolarionID:24055-[OTP][Skipped:Disconnected]Check for defaultChannel mandatory field when having multiple channels", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:24055-[Skipped:Disconnected]Check for defaultChannel mandatory field when having multiple channels"), func() {
 		baseDir := exutil.FixturePath("testdata", "olm")
 		cmMapWithoutDefaultChannel := filepath.Join(baseDir, "configmap-without-defaultchannel.yaml")
 		cmMapWithDefaultChannel := filepath.Join(baseDir, "configmap-with-defaultchannel.yaml")
@@ -1331,7 +1331,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		cs.CreateWithCheck(oc, itName, dr)
 	})
 
-	g.It("PolarionID:31693-[OTP][Skipped:Disconnected]Check CSV information on the PackageManifest", g.Label("original-name:[sig-operators] OLM should ConnectedOnly-Author:bandrade-Medium-31693-Check CSV information on the PackageManifest"), func() {
+	g.It("PolarionID:31693-[OTP][Skipped:Disconnected]Check CSV information on the PackageManifest", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:31693-[Skipped:Disconnected]Check CSV information on the PackageManifest"), func() {
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 

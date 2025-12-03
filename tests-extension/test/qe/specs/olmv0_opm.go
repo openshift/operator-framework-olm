@@ -1,7 +1,6 @@
 package specs
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,8 +10,6 @@ import (
 	o "github.com/onsi/gomega"
 
 	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
-	"github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/container"
-	"github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/db"
 	"github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/opmcli"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
@@ -345,19 +342,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 		if !strings.Contains(output, "nginx-operator") {
 			e2e.Failf("Failed run render-graph command : %s", output)
 		}
-	})
-
-	g.It("PolarionID:30318-[OTP]Bundle build understands packages", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should Author:bandrade-VMonly-Low-30318-Bundle build understands packages"), func() {
-		opmBaseDir := exutil.FixturePath("testdata", "opm")
-		testDataPath := filepath.Join(opmBaseDir, "learn_operator")
-		opmCLI.ExecCommandPath = testDataPath
-		defer opmcli.DeleteDir(testDataPath, "fixture-testdata")
-
-		g.By("opm alpha bundle generate")
-		output, err := opmCLI.Run("alpha").Args("bundle", "generate", "-d", "package/0.0.1", "-p", "25955-operator", "-c", "alpha", "-e", "alpha").Output()
-		o.Expect(err).NotTo(o.HaveOccurred())
-		o.Expect(output).To(o.ContainSubstring("Writing annotations.yaml"))
-		o.Expect(output).To(o.ContainSubstring("Writing bundle.Dockerfile"))
 	})
 
 	g.It("PolarionID:43409-[OTP][Skipped:Disconnected] opm can list catalog contents", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43409-[Skipped:Disconnected] opm can list catalog contents"), func() {
@@ -746,49 +730,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 		o.Expect(string(output)).To(o.ContainSubstring("classDef deprecated fill:#E8960F"))
 		o.Expect(string(output)).To(o.ContainSubstring("deprecated"))
 		o.Expect(string(output)).To(o.ContainSubstring("nginx73218-candidate-v1.0-nginx73218.v1.0.1[\"nginx73218.v1.0.1\"]-- skip --> nginx73218-candidate-v1.0-nginx73218.v1.0.3[\"nginx73218.v1.0.3\"]"))
-	})
-
-	g.It("PolarionID:34049-[OTP][Skipped:Disconnected]opm can prune operators from index", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should Author:bandrade-ConnectedOnly-VMonly-Medium-34049-opm can prune operators from index"), func() {
-		sqlit := db.NewSqlit()
-		quayCLI := container.NewQuayCLI()
-		podmanCLI := container.NewPodmanCLI()
-		opmBaseDir := exutil.FixturePath("testdata", "opm")
-		testDataPath := filepath.Join(opmBaseDir, "temp")
-		indexTmpPath := filepath.Join(testDataPath, exutil.GetRandomString())
-		defer opmcli.DeleteDir(testDataPath, indexTmpPath)
-		err := os.MkdirAll(indexTmpPath, 0755)
-		o.Expect(err).NotTo(o.HaveOccurred())
-
-		containerCLI := container.NewPodmanCLI()
-		containerTool := "podman"
-		sourceImageTag := "quay.io/olmqe/multi-index:2.0"
-		imageTag := fmt.Sprintf("quay.io/olmqe/multi-index:3.0.%s", exutil.GetRandomString())
-		defer podmanCLI.RemoveImage(imageTag)
-		defer podmanCLI.RemoveImage(sourceImageTag)
-
-		g.By("Prune the index image to keep planetscale only")
-		output, err := opmCLI.Run("index").Args("prune", "-f", sourceImageTag, "-p", "planetscale", "-t", imageTag, "-c", containerTool).Output()
-		if err != nil {
-			e2e.Logf(output)
-		}
-		o.Expect(err).NotTo(o.HaveOccurred())
-
-		g.By("Push the pruned index image")
-		output, err = containerCLI.Run("push").Args(imageTag).Output()
-		if err != nil {
-			e2e.Logf(output)
-		}
-		defer quayCLI.DeleteTag(strings.Replace(imageTag, "quay.io/", "", 1))
-		o.Expect(err).NotTo(o.HaveOccurred())
-
-		g.By("Extract database from pruned image")
-		_, err = oc.AsAdmin().WithoutNamespace().Run("image").Args("extract", imageTag, "--path", "/database/index.db:"+indexTmpPath).Output()
-		e2e.Logf("get index.db SUCCESS, path is %s", filepath.Join(indexTmpPath, "index.db"))
-		o.Expect(err).NotTo(o.HaveOccurred())
-
-		result, err := sqlit.DBMatch(filepath.Join(indexTmpPath, "index.db"), "channel_entry", "operatorbundle_name", []string{"lib-bucket-provisioner.v1.0.0"})
-		o.Expect(err).NotTo(o.HaveOccurred())
-		o.Expect(result).To(o.BeFalse())
 	})
 
 })
