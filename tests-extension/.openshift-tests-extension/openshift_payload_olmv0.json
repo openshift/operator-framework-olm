@@ -155,6 +155,7 @@
     "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]",
     "labels": {
       "Extended": {},
+      "NonHyperShiftHOST": {},
       "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]": {}
     },
     "resources": {
@@ -162,13 +163,16 @@
     },
     "source": "openshift:payload:olmv0",
     "lifecycle": "blocking",
-    "environmentSelector": {}
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
   },
   {
     "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[OTP][Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself",
     "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself",
     "labels": {
       "Extended": {},
+      "NonHyperShiftHOST": {},
       "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself": {}
     },
     "resources": {
@@ -176,7 +180,9 @@
     },
     "source": "openshift:payload:olmv0",
     "lifecycle": "blocking",
-    "environmentSelector": {}
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
   },
   {
     "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:21825-[OTP][Skipped:Disconnected]Certs for packageserver can be rotated successfully [Serial]",
