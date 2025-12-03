@@ -70,6 +70,378 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 			"-o=jsonpath={.status.conditions[?(@.type==\"Available\")].status}{.status.conditions[?(@.type==\"Progressing\")].status}{.status.conditions[?(@.type==\"Degraded\")].status}"}).Check(oc)
 	})
 
+	g.It("PolarionID:32862-[OTP][Skipped:Disconnected]Pods found with invalid container images not present in release payload", func() {
+
+		exutil.SkipBaselineCaps(oc, "None")
+		g.By("Verify the version of marketplace_operator")
+		pods, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", "-n", "openshift-marketplace", "--no-headers").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		lines := strings.Split(pods, "\n")
+		for _, line := range lines {
+			e2e.Logf("line: %v", line)
+			if strings.Contains(line, "certified-operators") || strings.Contains(line, "community-operators") || strings.Contains(line, "marketplace-operator") || strings.Contains(line, "redhat-marketplace") || strings.Contains(line, "redhat-operators") && strings.Contains(line, "1/1") {
+				name := strings.Split(line, " ")
+				checkRel, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(name[0], "-n", "openshift-marketplace", "--", "cat", "/etc/redhat-release").Output()
+				if err != nil {
+					e2e.Logf("can not get content with error %v, and try next", err)
+					continue
+				}
+				o.Expect(checkRel).To(o.ContainSubstring("Red Hat"))
+			}
+		}
+
+	})
+
+	g.It("PolarionID:42041-[OTP]Available=False despite unavailableReplicas <= maxUnavailable", g.Label("NonHyperShiftHOST"), func() {
+		g.By("get the cluster infrastructure")
+		infra, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("infrastructures", "cluster", "-o=jsonpath={.status.infrastructureTopology}").Output()
+		if err != nil {
+			e2e.Failf("Fail to get the cluster infra")
+		}
+		if infra == "SingleReplica" {
+			e2e.Logf("This is a SNO cluster")
+			maxUnavailable, err1 := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.spec.strategy.rollingUpdate.maxUnavailable}").Output()
+			e2e.Logf("%s", maxUnavailable)
+			o.Expect(err1).NotTo(o.HaveOccurred())
+			o.Expect(maxUnavailable).NotTo(o.BeEmpty())
+
+			maxSurge, err1 := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.spec.strategy.rollingUpdate.maxSurge}").Output()
+			e2e.Logf("%s", maxSurge)
+			o.Expect(err1).NotTo(o.HaveOccurred())
+			o.Expect(maxSurge).NotTo(o.BeEmpty())
+
+		} else {
+			maxUnavailableInCsv, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={..install.spec.deployments[0].spec.strategy.rollingUpdate.maxUnavailable}").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Expect(maxUnavailableInCsv).NotTo(o.BeEmpty())
+			maxSurgeInCsv, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={..install.spec.deployments[0].spec.strategy.rollingUpdate.maxSurge}").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Expect(maxSurgeInCsv).NotTo(o.BeEmpty())
+
+			_, err1 := oc.AsAdmin().WithoutNamespace().Run("patch").Args("csv", "packageserver", "-n", "openshift-operator-lifecycle-manager",
+				"--type=json", "--patch", "[{\"op\": \"add\",\"path\": \"/spec/install/spec/deployments/0/spec/template/metadata/annotations\", \"value\": { \"custom.csv\": \"custom csv value\"} }]").Output()
+			o.Expect(err1).NotTo(o.HaveOccurred())
+
+			maxUnavailable, err1 := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.spec.strategy.rollingUpdate.maxUnavailable}").Output()
+			e2e.Logf("%s", maxUnavailable)
+			o.Expect(err1).NotTo(o.HaveOccurred())
+			o.Expect(maxUnavailable).To(o.Equal(maxUnavailableInCsv))
+
+			maxSurge, err1 := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.spec.strategy.rollingUpdate.maxSurge}").Output()
+			e2e.Logf("%s", maxSurge)
+			o.Expect(err1).NotTo(o.HaveOccurred())
+			o.Expect(maxSurge).To(o.Equal(maxSurgeInCsv))
+		}
+	})
+
+	g.It("PolarionID:42068-[OTP]Available condition set to false on any Deployment spec change", g.Label("NonHyperShiftHOST"), func() {
+		available, err1 := oc.AsAdmin().WithoutNamespace().Run("get").Args("clusteroperator", "operator-lifecycle-manager-packageserver", "-o=jsonpath={.status.conditions[1].type}").Output()
+		e2e.Logf("%s", available)
+		o.Expect(err1).NotTo(o.HaveOccurred())
+		o.Expect(available).To(o.Equal("Available"))
+
+		statusAvailable, err1 := oc.AsAdmin().WithoutNamespace().Run("get").Args("clusteroperator", "operator-lifecycle-manager-packageserver", "-o=jsonpath={.status.conditions[1].status}").Output()
+		e2e.Logf("%s", statusAvailable)
+		o.Expect(err1).NotTo(o.HaveOccurred())
+		o.Expect(statusAvailable).To(o.Equal("True"))
+	})
+
+	g.It("PolarionID:42073-[OTP]deployment sets neither CPU or memory request on the packageserver container", g.Label("NonHyperShiftHOST"), func() {
+		cpu, err1 := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={..containers..resources.requests.cpu}").Output()
+		e2e.Logf("%s", cpu)
+		o.Expect(err1).NotTo(o.HaveOccurred())
+		o.Expect(cpu).NotTo(o.Equal(""))
+
+		memory, err1 := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={..containers..resources.requests.memory}").Output()
+		e2e.Logf("%s", memory)
+		o.Expect(err1).NotTo(o.HaveOccurred())
+		o.Expect(memory).NotTo(o.Equal(""))
+
+		catPodnames, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", "openshift-operator-lifecycle-manager", "--selector=app=packageserver", "-o=jsonpath={.items..metadata.name}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(catPodnames).NotTo(o.BeEmpty())
+
+		lines := strings.Split(catPodnames, " ")
+		for _, line := range lines {
+			e2e.Logf("line: %v", line)
+
+			pkg1Cpu, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", line, "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.spec..resources.requests.cpu}").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Expect(pkg1Cpu).To(o.Equal(cpu))
+
+			pkg1Memory, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", line, "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.spec..resources.requests.memory}").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Expect(pkg1Memory).To(o.Equal(memory))
+		}
+	})
+
+	g.It("PolarionID:41283-[OTP][Skipped:Disconnected]Marketplace extract container request CPU or memory", func() {
+		var buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+		var subFile = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		var ogFile = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		var operatorWait = 150 * time.Second
+
+		namespace := oc.Namespace()
+		itName := g.CurrentSpecReport().FullText()
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "test-operators-og",
+			Namespace: namespace,
+			Template:  ogFile,
+		}
+		defer og.Delete(itName, dr)
+		og.Create(oc, itName, dr)
+
+		g.By("create the learn-operator CatalogSource")
+		catsrcImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "catsrc-41283",
+			Namespace:   namespace,
+			DisplayName: "QE Operators",
+			Publisher:   "OpenShift QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/learn-operator-index:v25",
+			Template:    catsrcImageTemplate,
+		}
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		g.By("Verify inside the jobs the value of spec.containers[].resources.requests field are setted")
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-41283",
+			Namespace:              namespace,
+			CatalogSourceName:      "catsrc-41283",
+			CatalogSourceNamespace: namespace,
+			IpApproval:             "Automatic",
+			Channel:                "beta",
+			OperatorPackage:        "learn",
+			SingleNamespace:        true,
+			Template:               subFile,
+		}
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		sub.Create(oc, itName, dr)
+
+		err := wait.PollUntilContextTimeout(context.TODO(), 60*time.Second, operatorWait, false, func(ctx context.Context) (bool, error) {
+			checknameCsv, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("jobs", "-n", namespace, "-o", "jsonpath={.items[*].spec.template.spec.containers[*].resources.requests.cpu}").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			e2e.Logf("%s", checknameCsv)
+			if checknameCsv == "" {
+				e2e.Logf("jobs KO Limit not setted ")
+				return false, nil
+			}
+			e2e.Logf("jobs OK Limit setted ")
+			return true, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "jobs KO Limit not setted")
+
+	})
+
+	g.It("PolarionID:23395-[OTP][Skipped:Disconnected]Deleted catalog registry pods and verify if them are recreated automatically[Disruptive]", g.Label("NonHyperShiftHOST"), func() {
+		exutil.SkipBaselineCaps(oc, "None")
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+
+		g.By("delete pod of catsrc redhat-operators")
+		_, err := oc.AsAdmin().WithoutNamespace().Run("delete").Args("pod", "--selector=olm.catalogSource=redhat-operators", "-n", "openshift-marketplace").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 180*time.Second, false, func(ctx context.Context) (bool, error) {
+			res, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "--selector=olm.catalogSource=redhat-operators", "-o=jsonpath={.items..status.phase}", "-n", "openshift-marketplace").Output()
+			if strings.Contains(res, "Running") {
+				return true, nil
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "fails to get pod of redhat-operators")
+	})
+
+	g.It("PolarionID:42069-[OTP][Skipped:Disconnected]component not found log should be debug level", g.Label("NonHyperShiftHOST"), func() {
+		var since = "--since=60s"
+		var snooze time.Duration = 90
+		var tail = "--tail=10"
+
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		itName := g.CurrentSpecReport().FullText()
+		namespace := oc.Namespace()
+
+		g.By("create the learn-operator CatalogSource")
+		catsrcImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "catsrc-42069",
+			Namespace:   namespace,
+			DisplayName: "QE Operators",
+			Publisher:   "OpenShift QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/learn-operator-index:v25",
+			Template:    catsrcImageTemplate,
+		}
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		g.By("1) Install the OperatorGroup in a random project")
+
+		ogSingleTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-42069",
+			Namespace: namespace,
+			Template:  ogSingleTemplate,
+		}
+		defer og.Delete(itName, dr)
+		og.Create(oc, itName, dr)
+
+		g.By("2) Install the learn-operator with Automatic approval")
+		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-42069",
+			Namespace:              namespace,
+			CatalogSourceName:      "catsrc-42069",
+			CatalogSourceNamespace: namespace,
+			IpApproval:             "Automatic",
+			Channel:                "beta",
+			OperatorPackage:        "learn",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+
+		nameIP := sub.GetIP(oc)
+		deteleIP, err1 := oc.AsAdmin().WithoutNamespace().Run("delete").Args("installplan", nameIP, "-n", oc.Namespace()).Output()
+		e2e.Logf("%s", deteleIP)
+		o.Expect(err1).NotTo(o.HaveOccurred())
+		o.Expect(deteleIP).To(o.ContainSubstring("deleted"))
+
+		catPodname, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", "openshift-operator-lifecycle-manager", "--selector=app=olm-operator", "-o=jsonpath={.items..metadata.name}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(catPodname).NotTo(o.BeEmpty())
+
+		waitErr := wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, snooze*time.Second, false, func(ctx context.Context) (bool, error) {
+			msg, err := oc.AsAdmin().WithoutNamespace().Run("logs").Args(catPodname, "-n", "openshift-operator-lifecycle-manager", tail, since).Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			if strings.Contains(msg, "component not found") {
+				return true, nil
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollWithErr(waitErr, "log 'component not found' is not debug level")
+
+	})
+
+	g.It("PolarionID:21534-[OTP][Skipped:Disconnected]Check OperatorGroups on console", func() {
+		ogNamespace, err1 := oc.AsAdmin().WithoutNamespace().Run("get").Args("og", "global-operators", "-n", "openshift-operators", "-o", "jsonpath={.status.namespaces}").Output()
+		e2e.Logf("%s", ogNamespace)
+		o.Expect(err1).NotTo(o.HaveOccurred())
+		o.Expect(ogNamespace).To(o.Equal("[\"\"]"))
+
+	})
+
+	g.It("PolarionID:24058-[OTP]components should have resource limits defined", func() {
+		olmUnlimited := 0
+		olmNames := []string{""}
+		olmNamespace := "openshift-operator-lifecycle-manager"
+		olmJpath := "-o=jsonpath={range .items[*]}{@.metadata.name}{','}{@.spec.containers[0].resources.requests.*}{'\\n'}"
+		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", "-n", olmNamespace, olmJpath).Output()
+		if err != nil {
+			e2e.Failf("Unable to get pod -n %v %v.", olmNamespace, olmJpath)
+		}
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(msg).NotTo(o.ContainSubstring("No resources found"))
+		lines := strings.Split(msg, "\n")
+		for _, line := range lines {
+			name := strings.Split(line, ",")
+			// e2e.Logf("Line is %v, len %v, len name %v, name0 %v, name1 %v\n", line, len(line), len(name), name[0], name[1])
+			if strings.Contains(line, "packageserver") {
+				continue
+			} else {
+				if len(line) > 1 {
+					if len(name) > 1 && len(name[1]) < 1 {
+						olmUnlimited++
+						olmNames = append(olmNames, name[0])
+					}
+				}
+			}
+		}
+		if olmUnlimited > 0 && len(olmNames) > 0 {
+			e2e.Failf("There are no limits set on %v of %v OLM components: %v", olmUnlimited, len(lines), olmNames)
+		}
+	})
+
+	g.It("PolarionID:25782-[OTP][Skipped:Disconnected]CatalogSource Status should have information on last observed state", func() {
+		var (
+			catName             = "installed-community-25782-global-operators"
+			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+			// the namespace and catName are hardcoded in the files
+			cmTemplate       = filepath.Join(buildPruningBaseDir, "cm-csv-etcd.yaml")
+			catsrcCmTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-configmap.yaml")
+		)
+
+		itName := g.CurrentSpecReport().FullText()
+
+		var (
+			cm = olmv0util.ConfigMapDescription{
+				Name:      catName,
+				Namespace: oc.Namespace(),
+				Template:  cmTemplate,
+			}
+			catsrc = olmv0util.CatalogSourceDescription{
+				Name:        catName,
+				Namespace:   oc.Namespace(),
+				DisplayName: "Community bad Operators",
+				Publisher:   "QE",
+				SourceType:  "configmap",
+				Address:     catName,
+				Template:    catsrcCmTemplate,
+			}
+		)
+
+		g.By("Create ConfigMap with bad operator manifest")
+		defer cm.Delete(itName, dr)
+		cm.Create(oc, itName, dr)
+
+		// Make sure bad configmap was created
+		g.By("Check configmap")
+		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("cm", "-n", oc.Namespace()).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(strings.Contains(msg, catName)).To(o.BeTrue())
+
+		g.By("Create catalog source")
+		defer catsrc.Delete(itName, dr)
+		catsrc.Create(oc, itName, dr)
+
+		g.By("Wait for pod to fail")
+		waitErr := wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, 180*time.Second, false, func(ctx context.Context) (bool, error) {
+			msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", "-n", oc.Namespace()).Output()
+			e2e.Logf("\n%v", msg)
+			o.Expect(err).NotTo(o.HaveOccurred())
+			if strings.Contains(msg, "CrashLoopBackOff") {
+				e2e.Logf("STEP pod is in  CrashLoopBackOff as expected")
+				return true, nil
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(waitErr, "the pod is not in CrashLoopBackOff")
+
+		g.By("Check catsrc state for TRANSIENT_FAILURE in lastObservedState")
+		waitErr = wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, 180*time.Second, false, func(ctx context.Context) (bool, error) {
+			msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("catalogsource", catName, "-n", oc.Namespace(), "-o=jsonpath={.status}").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			if strings.Contains(msg, "TRANSIENT_FAILURE") && strings.Contains(msg, "lastObservedState") {
+				msg, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("catalogsource", catName, "-n", oc.Namespace(), "-o=jsonpath={.status.connectionState.lastObservedState}").Output()
+				o.Expect(err).NotTo(o.HaveOccurred())
+				e2e.Logf("catalogsource had lastObservedState =  %v as expected ", msg)
+				return true, nil
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("catalogsource %s is not TRANSIENT_FAILURE", catName))
+		e2e.Logf("cleaning up")
+	})
+
 	g.It("PolarionID:73695-[OTP][Skipped:Disconnected]PO is disable", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:73695-[Skipped:Disconnected]PO is disable"), func() {
 
 		if !exutil.IsTechPreviewNoUpgrade(oc) {
@@ -92,15 +464,15 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, olmVersion, exutil.Ok, []string{"clusteroperator", "-o=jsonpath={.items[?(@.metadata.name==\"" + olmClusterOperatorName + "\")].status.versions[?(@.name==\"operator\")].version}"}).Check(oc)
 	})
 
-	g.It("PolarionID:29775-PolarionID:29786-[OTP][Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]"), g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:29775-PolarionID:29786-[OTP][Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:29775-PolarionID:29786-[Skipped:Disconnected]as oc user on linux to mirror catalog image[Slow][Timeout:30m]"), func() {
 		var (
 			bundleIndex1         = "quay.io/kuiwang/operators-all:v1"
 			bundleIndex2         = "quay.io/kuiwang/operators-dockerio:v1"
-			operatorAllPath      = "/tmp/operators-all-manifests-" + exutil.GetRandomString()
-			operatorDockerioPath = "/tmp/operators-dockerio-manifests-" + exutil.GetRandomString()
+			operatorAllPath      = "operators-all-manifests-" + exutil.GetRandomString()
+			operatorDockerioPath = "operators-dockerio-manifests-" + exutil.GetRandomString()
 		)
-		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr "+operatorAllPath).Output() }()
-		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr "+operatorDockerioPath).Output() }()
+		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr ./"+operatorAllPath).Output() }()
+		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr ./"+operatorDockerioPath).Output() }()
 
 		g.By("mirror to quay.io/kuiwang")
 		var output string
@@ -125,14 +497,14 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(output).To(o.ContainSubstring("operators-all-manifests"))
 
 		g.By("check mapping.txt")
-		result, err := exec.Command("bash", "-c", "cat "+operatorAllPath+"/mapping.txt|grep -E \"atlasmap-atlasmap-operator:0.1.0|quay.io/kuiwang/jmckind-argocd-operator:[a-z0-9][a-z0-9]|redhat-cop-cert-utils-operator:latest\"").Output()
+		result, err := exec.Command("bash", "-c", "cat ./"+operatorAllPath+"/mapping.txt|grep -E \"atlasmap-atlasmap-operator:0.1.0|quay.io/kuiwang/jmckind-argocd-operator:[a-z0-9][a-z0-9]|redhat-cop-cert-utils-operator:latest\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("atlasmap-atlasmap-operator:0.1.0"))
 		o.Expect(result).To(o.ContainSubstring("redhat-cop-cert-utils-operator:latest"))
 		o.Expect(result).To(o.ContainSubstring("quay.io/kuiwang/jmckind-argocd-operator"))
 
 		g.By("check icsp yaml")
-		result, err = exec.Command("bash", "-c", "cat "+operatorAllPath+"/imageContentSourcePolicy.yaml | grep -E \"quay.io/kuiwang/strimzi-operator|docker.io/strimzi/operator$\"").Output()
+		result, err = exec.Command("bash", "-c", "cat ./"+operatorAllPath+"/imageContentSourcePolicy.yaml | grep -E \"quay.io/kuiwang/strimzi-operator|docker.io/strimzi/operator$\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("- quay.io/kuiwang/strimzi-operator"))
 		o.Expect(result).To(o.ContainSubstring("source: docker.io/strimzi/operator"))
@@ -158,25 +530,25 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(output).To(o.ContainSubstring("operators-dockerio-manifests"))
 
 		g.By("check mapping.txt to localhost:5000")
-		result, err = exec.Command("bash", "-c", "cat "+operatorDockerioPath+"/mapping.txt|grep -E \"localhost:5000/atlasmap/atlasmap-operator:0.1.0|localhost:5000/strimzi/operator:[a-z0-9][a-z0-9]\"").Output()
+		result, err = exec.Command("bash", "-c", "cat ./"+operatorDockerioPath+"/mapping.txt|grep -E \"localhost:5000/atlasmap/atlasmap-operator:0.1.0|localhost:5000/strimzi/operator:[a-z0-9][a-z0-9]\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("localhost:5000/atlasmap/atlasmap-operator:0.1.0"))
 		o.Expect(result).To(o.ContainSubstring("localhost:5000/strimzi/operator"))
 
 		g.By("check icsp yaml to localhost:5000")
-		result, err = exec.Command("bash", "-c", "cat "+operatorDockerioPath+"/imageContentSourcePolicy.yaml | grep -E \"localhost:5000/strimzi/operator|docker.io/strimzi/operator$\"").Output()
+		result, err = exec.Command("bash", "-c", "cat ./"+operatorDockerioPath+"/imageContentSourcePolicy.yaml | grep -E \"localhost:5000/strimzi/operator|docker.io/strimzi/operator$\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("- localhost:5000/strimzi/operator"))
 		o.Expect(result).To(o.ContainSubstring("source: docker.io/strimzi/operator"))
 		o.Expect(result).NotTo(o.ContainSubstring("docker.io/atlasmap/atlasmap-operator"))
 	})
 
-	g.It("PolarionID:33452-[OTP][Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself"), g.Label("NonHyperShiftHOST"), func() {
+	g.It("PolarionID:33452-[OTP][Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:33452-[Skipped:Disconnected]oc adm catalog mirror does not mirror the index image itself"), func() {
 		var (
 			bundleIndex1 = "quay.io/olmqe/olm-api@sha256:71cfd4deaa493d31cd1d8255b1dce0fb670ae574f4839c778f2cfb1bf1f96995"
-			manifestPath = "/tmp/manifests-olm-api-" + exutil.GetRandomString()
+			manifestPath = "manifests-olm-api-" + exutil.GetRandomString()
 		)
-		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr "+manifestPath).Output() }()
+		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr ./"+manifestPath).Output() }()
 
 		g.By("mirror to localhost:5000/test")
 		output, err := oc.AsAdmin().WithoutNamespace().Run("adm", "catalog", "mirror").Args("--manifests-only", "--to-manifests="+manifestPath, bundleIndex1, "localhost:5000/test").Output()
@@ -184,12 +556,12 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(output).To(o.ContainSubstring("manifests-olm-api"))
 
 		g.By("check mapping.txt to localhost:5000")
-		result, err := exec.Command("bash", "-c", "cat "+manifestPath+"/mapping.txt|grep -E \"quay.io/olmqe/olm-api\"").Output()
+		result, err := exec.Command("bash", "-c", "cat ./"+manifestPath+"/mapping.txt|grep -E \"quay.io/olmqe/olm-api\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("quay.io/olmqe/olm-api"))
 
 		g.By("check icsp yaml to localhost:5000")
-		result, err = exec.Command("bash", "-c", "cat "+manifestPath+"/imageContentSourcePolicy.yaml | grep -E \"quay.io/olmqe/olm-api\"").Output()
+		result, err = exec.Command("bash", "-c", "cat ./"+manifestPath+"/imageContentSourcePolicy.yaml | grep -E \"quay.io/olmqe/olm-api\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(result).To(o.ContainSubstring("quay.io/olmqe/olm-api"))
 	})
@@ -877,6 +1249,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 			}
 		}
 	})
+
 	g.It("PolarionID:24075-[OTP][Skipped:Disconnected]The packagemanifest labels provider value should be correct", g.Label("NonHyperShiftHOST"), func() {
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
@@ -894,8 +1267,8 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 
 	g.It("PolarionID:43276-[OTP][Skipped:Disconnected]oc adm catalog mirror can mirror declaritive index images", func() {
 		indexImage := "quay.io/olmqe/etcd-index:dc-new"
-		operatorAllPath := "operators-all-manifests-" + exutil.GetRandomString()
-		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr ./"+operatorAllPath).Output() }()
+		operatorAllPath := "/tmp/operators-all-manifests-" + exutil.GetRandomString()
+		defer func() { _, _ = exec.Command("bash", "-c", "rm -fr "+operatorAllPath).Output() }()
 
 		g.By("mirror to localhost:5000")
 		output, err := oc.AsAdmin().WithoutNamespace().Run("adm", "catalog", "mirror").Args("--manifests-only", "--to-manifests="+operatorAllPath, indexImage, "localhost:5000").Output()
@@ -907,7 +1280,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(output).To(o.ContainSubstring("wrote mirroring manifests"))
 
 		g.By("check mapping.txt to localhost:5000")
-		result, err := exec.Command("bash", "-c", "cat ./"+operatorAllPath+"/mapping.txt|grep -E \"localhost:5000/olmqe/etcd-bundle|localhost:5000/olmqe/etcd-index\"").Output()
+		result, err := exec.Command("bash", "-c", "cat "+operatorAllPath+"/mapping.txt|grep -E \"localhost:5000/olmqe/etcd-bundle|localhost:5000/olmqe/etcd-index\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		e2e.Logf("mapping result:%s", result)
 
@@ -915,7 +1288,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(result).To(o.ContainSubstring("quay.io/olmqe/etcd-index:dc-new=localhost:5000/olmqe/etcd-index:dc-new"))
 
 		g.By("check icsp yaml to localhost:5000")
-		result, err = exec.Command("bash", "-c", "cat ./"+operatorAllPath+"/imageContentSourcePolicy.yaml | grep \"localhost:5000\"").Output()
+		result, err = exec.Command("bash", "-c", "cat "+operatorAllPath+"/imageContentSourcePolicy.yaml | grep \"localhost:5000\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		e2e.Logf("icsp result:%s", result)
 		o.Expect(result).To(o.ContainSubstring("- localhost:5000/coreos/etcd-operator"))
@@ -1142,6 +1515,30 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		o.Expect(err).NotTo(o.HaveOccurred())
 		e2e.Logf("Found usernames in audit log: %s", string(resultParserLog))
 		o.Expect(resultParserLog).NotTo(o.ContainSubstring("olm-operator-serviceaccount"))
+	})
+
+	g.It("PolarionID:43057-[OTP]Enable continuous heap profiling by default", g.Label("NonHyperShiftHOST"), func() {
+
+		g.By("get pod of marketplace")
+		configMaps := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "configmaps", "-l", "olm.openshift.io/pprof", "-n", "openshift-operator-lifecycle-manager")
+		o.Expect(configMaps).NotTo(o.BeEmpty())
+		e2e.Logf("%s", configMaps)
+
+		linesconfigMaps := strings.Split(configMaps, "\n")
+		for i := 1; i < len(linesconfigMaps); i++ {
+			e2e.Logf("i: %v", i)
+			configMap := strings.Split(linesconfigMaps[i], " ")
+			e2e.Logf("configMap: %v", configMap[0])
+
+			binaryConfigMap, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("configmaps", configMap[0], "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.binaryData.*}").OutputToFile("config-43057.json")
+			o.Expect(err).NotTo(o.HaveOccurred())
+			e2e.Logf("binaryConfigMap: %v", binaryConfigMap)
+
+			resultBase64, err := exec.Command("bash", "-c", fmt.Sprintf("cat %s | base64 -d", binaryConfigMap)).Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Expect(resultBase64).NotTo(o.BeEmpty())
+		}
+
 	})
 
 })

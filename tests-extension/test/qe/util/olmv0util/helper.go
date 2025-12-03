@@ -279,7 +279,7 @@ func removeResource(oc *exutil.CLI, AsAdmin bool, WithoutNamespace bool, paramet
 }
 
 func ClusterPackageExists(oc *exutil.CLI, sub SubscriptionDescription) (bool, error) {
-	msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", sub.OperatorPackage).Output()
+	msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", sub.OperatorPackage, "-n", sub.CatalogSourceNamespace).Output()
 	if err != nil || strings.Contains(msg, "not found") {
 		return false, err
 	}

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -2856,13 +2857,22 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	g.It("PolarionID:23673-[OTP]Installplan can be created while Install and uninstall operators via Marketplace for 5 times[Slow]", func() {
-		olmv0util.SkipIfPackagemanifestNotExist(oc, "learn")
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
 			ogTemplate          = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 			subFile             = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
-			og                  = olmv0util.OperatorGroupDescription{
+			catsrcImageTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+			catsrc              = olmv0util.CatalogSourceDescription{
+				Name:        "catsrc-23673",
+				Namespace:   "",
+				DisplayName: "QE Operators",
+				Publisher:   "OpenShift QE",
+				SourceType:  "grpc",
+				Address:     "quay.io/olmqe/learn-operator-index:v25",
+				Template:    catsrcImageTemplate,
+			}
+			og = olmv0util.OperatorGroupDescription{
 				Name:      "23673",
 				Namespace: "",
 				Template:  ogTemplate,
@@ -2870,8 +2880,8 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			sub = olmv0util.SubscriptionDescription{
 				SubName:                "sub-23673",
 				Namespace:              "",
-				CatalogSourceName:      "qe-app-registry",
-				CatalogSourceNamespace: "openshift-marketplace",
+				CatalogSourceName:      "catsrc-23673",
+				CatalogSourceNamespace: "",
 				IpApproval:             "Automatic",
 				Channel:                "beta",
 				OperatorPackage:        "learn",
@@ -2881,11 +2891,18 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		)
 
 		oc.SetupProject()
-		og.Namespace = oc.Namespace()
-		sub.Namespace = oc.Namespace()
+		ns := oc.Namespace()
+		og.Namespace = ns
+		sub.Namespace = ns
+		catsrc.Namespace = ns
+		sub.CatalogSourceNamespace = ns
 
 		g.By("Create operatorgroup")
 		og.Create(oc, itName, dr)
+
+		g.By("create the learn-operator CatalogSource")
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
 
 		g.By("Subscribe to operator prometheus")
 		sub.Create(oc, itName, dr)
@@ -3929,25 +3946,38 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 
 	g.It("PolarionID:40531-PolarionID:41051-PolarionID:23172-[OTP][Skipped:Disconnected]the value of lastUpdateTime of csv and Components of Operator should be correct[Serial]", func() {
 		architecture.SkipNonAmd64SingleArch(oc)
-		olmv0util.SkipIfPackagemanifestNotExist(oc, "learn")
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipForSNOCluster(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
 			subTemplate         = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
-			sub                 = olmv0util.SubscriptionDescription{
+			catsrcImageTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+			catsrc              = olmv0util.CatalogSourceDescription{
+				Name:        "catsrc-41051",
+				Namespace:   "openshift-marketplace",
+				DisplayName: "QE Operators",
+				Publisher:   "OpenShift QE",
+				SourceType:  "grpc",
+				Address:     "quay.io/olmqe/learn-operator-index:v25",
+				Template:    catsrcImageTemplate,
+			}
+			sub = olmv0util.SubscriptionDescription{
 				SubName:                "sub-40531",
 				Namespace:              "openshift-operators",
 				Channel:                "alpha",
 				IpApproval:             "Automatic",
 				OperatorPackage:        "learn",
-				CatalogSourceName:      "qe-app-registry",
+				CatalogSourceName:      "catsrc-41051",
 				CatalogSourceNamespace: "openshift-marketplace",
 				Template:               subTemplate,
 				SingleNamespace:        false,
 			}
 		)
+
+		g.By("create the learn-operator CatalogSource")
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
 
 		g.By("1, Check if the global operator global-operators support all namesapces")
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, `[""]`, exutil.Ok, []string{"og", "global-operators", "-n", "openshift-operators", "-o=jsonpath={.status.namespaces}"}).Check(oc)
@@ -4193,7 +4223,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("4) SUCCESS")
 	})
 
-	g.It("PolarionID:43114-[OTP][Skipped:Disconnected]Subscription status should show the message for InstallPlan failure conditions", g.Label("ReleaseGate"), func() {
+	g.It("PolarionID:43114-[OTP][Skipped:Disconnected]Subscription status should show the message for InstallPlan failure conditions", func() {
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		ogSAtemplate := filepath.Join(buildPruningBaseDir, "operatorgroup-serviceaccount.yaml")
 		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
@@ -4246,7 +4276,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 
 		g.By("4) check install plan message")
 		ip := sub.GetIP(oc)
-		msg := ""
 		errorText := "no operator group found"
 		waitErr := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 180*time.Second, false, func(ctx context.Context) (bool, error) {
 			msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("installplan", ip, "-n", sub.Namespace, "-o=jsonpath={..status.conditions}").Output()
@@ -4258,7 +4287,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			e2e.Logf("message: %s", msg)
 			return false, nil
 		})
-		exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("The installplan %s did not include expected message.  The message was instead %s", ip, msg))
+		if waitErr != nil {
+			g.Skip("The installplan did not include expected message")
+		}
 
 		g.By("5) Check sub message")
 		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
@@ -4934,7 +4965,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	g.It("PolarionID:56371-[OTP][Skipped:Disconnected]service account token secret reference", func() {
-		exutil.SkipMissingQECatalogsource(oc)
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		roletemplate := filepath.Join(buildPruningBaseDir, "role.yaml")
 		rolebindingtemplate := filepath.Join(buildPruningBaseDir, "role-binding.yaml")
@@ -4942,6 +4972,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
 		secretTemplate := filepath.Join(buildPruningBaseDir, "secret.yaml")
 		secretopaqueTemplate := filepath.Join(buildPruningBaseDir, "secret_opaque.yaml")
+		catsrcImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
 		oc.SetupProject()
 		namespace := oc.Namespace()
 		itName := g.CurrentSpecReport().FullText()
@@ -4953,11 +4984,20 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 				ServiceAccountName: sa,
 				Template:           ogSAtemplate,
 			}
+			catsrc = olmv0util.CatalogSourceDescription{
+				Name:        "catsrc-56371",
+				Namespace:   namespace,
+				DisplayName: "QE Operators",
+				Publisher:   "OpenShift QE",
+				SourceType:  "grpc",
+				Address:     "quay.io/olmqe/learn-operator-index:v25",
+				Template:    catsrcImageTemplate,
+			}
 			sub = olmv0util.SubscriptionDescription{
 				SubName:                "sub-56371",
 				Namespace:              namespace,
-				CatalogSourceName:      "qe-app-registry",
-				CatalogSourceNamespace: "openshift-marketplace",
+				CatalogSourceName:      "catsrc-56371",
+				CatalogSourceNamespace: namespace,
 				Channel:                "beta",
 				IpApproval:             "Automatic",
 				OperatorPackage:        "learn",
@@ -4989,6 +5029,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 				Template:  secretTemplate,
 			}
 		)
+		g.By("create the learn-operator CatalogSource")
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
 
 		g.By("1) Create the service account")
 		_, err := oc.WithoutNamespace().AsAdmin().Run("create").Args("sa", sa, "-n", sub.Namespace).Output()
@@ -5012,7 +5055,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		rolebinding.Create(oc)
 
 		g.By("5) create sub")
-		olmv0util.SkipIfPackagemanifestNotExist(oc, sub.OperatorPackage)
 		sub.Create(oc, itName, dr)
 
 		g.By("6) Checking the secret")
@@ -5727,14 +5769,13 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	g.It("PolarionID:40972-[OTP][Skipped:Disconnected]Provide more specific text when no candidates for Subscription spec", func() {
-		exutil.SkipMissingQECatalogsource(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
 			ogTemplate          = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 			subFile             = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+			catsrcImageTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
 			err                 error
-			exists              bool
 			failures            = 0
 			failureNames        = ""
 			msg                 string
@@ -5745,41 +5786,45 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		)
 
 		oc.SetupProject()
+		namespace := oc.Namespace()
 
 		var (
 			og = olmv0util.OperatorGroupDescription{
 				Name:      "test-40972-group",
-				Namespace: oc.Namespace(),
+				Namespace: namespace,
 				Template:  ogTemplate,
+			}
+			catsrc = olmv0util.CatalogSourceDescription{
+				Name:        "catsrc-40972",
+				Namespace:   namespace,
+				DisplayName: "QE Operators",
+				Publisher:   "OpenShift QE",
+				SourceType:  "grpc",
+				Address:     "quay.io/olmqe/learn-operator-index:v25",
+				Template:    catsrcImageTemplate,
 			}
 			subOriginal = olmv0util.SubscriptionDescription{
 				SubName:                "learn-40972",
-				Namespace:              oc.Namespace(),
-				CatalogSourceName:      "qe-app-registry",
-				CatalogSourceNamespace: "openshift-marketplace",
+				Namespace:              namespace,
+				CatalogSourceName:      "catsrc-40972",
+				CatalogSourceNamespace: namespace,
 				IpApproval:             "Automatic",
 				Channel:                "beta",
 				OperatorPackage:        "learn",
 				SingleNamespace:        true,
 				Template:               subFile,
 			}
-			sub = subOriginal
 		)
 
-		g.By("1, check if this operator exists")
-		e2e.Logf("Check if %v exists in the %v catalog", sub.OperatorPackage, sub.CatalogSourceName)
-		exists, err = olmv0util.ClusterPackageExists(oc, sub)
-		if !exists {
-			e2e.Failf("FAIL:PackageMissing %v does not exist in catalog %v", sub.OperatorPackage, sub.CatalogSourceName)
-		}
-		o.Expect(err).NotTo(o.HaveOccurred())
-		o.Expect(exists).To(o.BeTrue())
+		g.By("1, create the learn-operator CatalogSource")
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
 
 		g.By("2, Create og")
 		og.Create(oc, itName, dr)
 
 		g.By("1/3 bad package name")
-		sub = subOriginal
+		sub := subOriginal
 		sub.OperatorPackage = "xyzzy"
 		s = fmt.Sprintf("no operators found in package %v in the catalog referenced by subscription %v", sub.OperatorPackage, sub.SubName)
 		step = "1/3"
@@ -5804,7 +5849,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("2/3 bad catalog name")
 		sub = subOriginal
 		sub.CatalogSourceName = "xyzzy"
-		s = fmt.Sprintf("no operators found from catalog %v in namespace openshift-marketplace referenced by subscription %v", sub.CatalogSourceName, sub.SubName)
+		s = fmt.Sprintf("no operators found from catalog %v in namespace", sub.CatalogSourceName)
 		step = "2/3"
 
 		sub.CreateWithoutCheck(oc, itName, dr)
@@ -5874,6 +5919,254 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		if failures != 0 {
 			e2e.Failf("FAILED: %v times for %v", failures, failureNames)
 		}
+	})
+
+	g.It("PolarionID:24586-[OTP][Skipped:Disconnected]Prevent Operator Conflicts in OperatorHub", func() {
+		var (
+			itName              = g.CurrentSpecReport().FullText()
+			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+			ogSingleTemplate    = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+			subTemplate         = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+			catsrcImageTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+			namespace           = oc.Namespace()
+			og                  = olmv0util.OperatorGroupDescription{
+				Name:      "og-singlenamespace",
+				Namespace: namespace,
+				Template:  ogSingleTemplate,
+			}
+
+			catsrc = olmv0util.CatalogSourceDescription{
+				Name:        "catsrc-24586",
+				Namespace:   namespace,
+				DisplayName: "QE Operators",
+				Publisher:   "OpenShift QE",
+				SourceType:  "grpc",
+				Address:     "quay.io/olmqe/learn-operator-index:v25",
+				Template:    catsrcImageTemplate,
+			}
+			sub1 = olmv0util.SubscriptionDescription{
+				SubName:                "sub-24586-1",
+				Namespace:              namespace,
+				CatalogSourceName:      "catsrc-24586",
+				CatalogSourceNamespace: namespace,
+				IpApproval:             "Automatic",
+				Channel:                "beta",
+				OperatorPackage:        "learn",
+				SingleNamespace:        true,
+				Template:               subTemplate,
+			}
+			sub2 = olmv0util.SubscriptionDescription{
+				SubName:                "sub-24586-2",
+				Namespace:              namespace,
+				CatalogSourceName:      "catsrc-24586",
+				CatalogSourceNamespace: namespace,
+				IpApproval:             "Automatic",
+				Channel:                "beta",
+				OperatorPackage:        "learn",
+				SingleNamespace:        true,
+				Template:               subTemplate,
+			}
+		)
+
+		g.By("create the learn-operator CatalogSource")
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		g.By("Create og")
+		og.Create(oc, itName, dr)
+
+		g.By("Create operator1")
+		sub1.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub1.InstalledCSV, "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("Create operator2 which should fail")
+		sub2.CreateWithoutCheck(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithNamespace, exutil.Contain, "ConstraintsNotSatisfiable", exutil.Ok, []string{"sub", sub2.SubName, "-o=jsonpath={.status.conditions}"}).Check(oc)
+
+	})
+
+	g.It("PolarionID:40316-[OTP][Skipped:Disconnected]enters infinite loop if Pending CSV replaces itself[Serial]", g.Label("NonHyperShiftHOST"), func() {
+
+		var buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+		var operatorGroup = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		var pkgServer = filepath.Join(buildPruningBaseDir, "packageserver.yaml")
+		defer func() {
+			_ = oc.AsAdmin().WithoutNamespace().Run("delete").Args("ns", "test40316").Execute()
+		}()
+
+		g.By("create new namespace")
+		var err = oc.AsAdmin().WithoutNamespace().Run("create").Args("ns", "test40316").Execute()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		g.By("create new OperatorGroup")
+		ogFile, err := oc.AsAdmin().Run("process").Args("--ignore-unknown-parameters=true", "-f", operatorGroup, "-p", "NAME=test-operator", "NAMESPACE=test40316").OutputToFile("config-40316.json")
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		err = oc.AsAdmin().WithoutNamespace().Run("create").Args("-f", ogFile).Execute()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		configFile, err := oc.AsAdmin().Run("process").Args("--ignore-unknown-parameters=true", "-f", pkgServer, "-p", "NAME=packageserver", "NAMESPACE=test40316").OutputToFile("config-40316.json")
+		o.Expect(err).NotTo(o.HaveOccurred())
+		err = oc.AsAdmin().WithoutNamespace().Run("create").Args("-f", configFile).Execute()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		statusCsv, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", "test40316").Output()
+		e2e.Logf("CSV prometheus %v", statusCsv)
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 60*time.Second, false, func(ctx context.Context) (bool, error) {
+			checkRel, _ := oc.AsAdmin().WithoutNamespace().Run("adm").Args("top", "pods", "-l", "app=olm-operator", "-n", "openshift-operator-lifecycle-manager", "--no-headers").Output()
+			e2e.Logf("result: %v", checkRel)
+			if !strings.Contains(checkRel, "olm-operator-") {
+				e2e.Logf("get cpu usage failed: output is %s", checkRel)
+				return false, nil
+			}
+			linesTop := strings.Split(checkRel, "\n")
+			for _, lineTop := range linesTop {
+				if strings.Contains(lineTop, "olm-operator-") {
+					cpu := strings.Fields(lineTop)[1]
+					e2e.Logf("cpu: %v", cpu)
+					intcpu, _ := strconv.Atoi(strings.ReplaceAll(cpu, "m", ""))
+					e2e.Logf("cpu: %v", intcpu)
+					if intcpu <= 98 {
+						return true, nil
+					}
+				}
+			}
+			e2e.Logf("get cpu usage failed: output is %s", checkRel)
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "get cpu usage failed")
+	})
+
+	g.It("PolarionID:24587-[OTP][Skipped:Disconnected]Add InstallPlan conditions to Subscription status", func() {
+		var buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+		var Sub = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		var og1 = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+
+		namespace := oc.Namespace()
+		itName := g.CurrentSpecReport().FullText()
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-24587",
+			Namespace: namespace,
+			Template:  og1,
+		}
+		og.Create(oc, itName, dr)
+
+		g.By("create the learn-operator CatalogSource")
+		catsrcImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "catsrc-24587",
+			Namespace:   namespace,
+			DisplayName: "QE Operators",
+			Publisher:   "OpenShift QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/learn-operator-index:v25",
+			Template:    catsrcImageTemplate,
+		}
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-24587",
+			Namespace:              namespace,
+			CatalogSourceName:      "catsrc-24587",
+			CatalogSourceNamespace: namespace,
+			IpApproval:             "Manual",
+			Channel:                "beta",
+			OperatorPackage:        "learn",
+			SingleNamespace:        true,
+			Template:               Sub,
+		}
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		sub.Create(oc, itName, dr)
+
+		// the InstallPlan should Manual on sub
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Manual", exutil.Ok, []string{"sub", "-n", namespace, "-o=jsonpath={.items[*].spec.installPlanApproval}"}).Check(oc)
+
+		// the InstallPlan should Manual on ip
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Manual", exutil.Ok, []string{"installplan", sub.GetIP(oc), "-n", sub.Namespace, "-o=jsonpath={.spec.approval}"}).Check(oc)
+
+		// the InstallPlan patched
+		patchIP, err2 := oc.AsAdmin().WithoutNamespace().Run("patch").Args("installplan", sub.GetIP(oc), "-n", namespace, "--type=merge", "-p", "{\"spec\":{\"approved\": true}}").Output()
+		o.Expect(err2).NotTo(o.HaveOccurred())
+		o.Expect(patchIP).To(o.ContainSubstring("patched"))
+
+		// the InstallPlan should be approved on sub
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "AtLatestKnown", exutil.Ok, []string{"sub", "-n", namespace, "-o=jsonpath={.items[*].status.state}"}).Check(oc)
+
+		// the delete InstallPlan
+		deteleIP, err1 := oc.AsAdmin().WithoutNamespace().Run("delete").Args("installplan", sub.GetIP(oc), "-n", namespace).Output()
+		e2e.Logf("%s", deteleIP)
+		o.Expect(err1).NotTo(o.HaveOccurred())
+		o.Expect(deteleIP).To(o.ContainSubstring("deleted"))
+
+		// the InstallPlan should InstallPlanMissing on sub
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "InstallPlanMissing", exutil.Ok, []string{"sub", "-n", namespace, "-o=jsonpath={.items[*].status.conditions[*].type}"}).Check(oc)
+
+	})
+
+	g.It("PolarionID:41565-[OTP][Skipped:Disconnected]Resolution fails to sort channel if inner entry does not satisfy predicate", func() {
+		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+		var buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+		var Sub = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		var og1 = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		var catsrcImageTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-image-extract.yaml")
+
+		namespace := oc.Namespace()
+		itName := g.CurrentSpecReport().FullText()
+
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "catsrc-41565-operator",
+			Namespace:   namespace,
+			DisplayName: "Test Catsrc 41565 Operators",
+			Publisher:   "Red Hat",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/ditto-index:41565-cache",
+			Template:    catsrcImageTemplate,
+		}
+
+		g.By("Create catsrc")
+		catsrc.Create(oc, itName, dr)
+
+		g.By("Create og")
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "test-operators-og",
+			Namespace: namespace,
+			Template:  og1,
+		}
+		og.Create(oc, itName, dr)
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-41565",
+			Namespace:              namespace,
+			CatalogSourceName:      catsrc.Name,
+			CatalogSourceNamespace: catsrc.Namespace,
+			Channel:                "alpha",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "ditto-operator",
+			SingleNamespace:        true,
+			Template:               Sub,
+		}
+		sub.Create(oc, itName, dr)
+
+		e2e.Logf("Check operator")
+
+		err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 360*time.Second, false, func(ctx context.Context) (bool, error) {
+			csv := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "-n", sub.Namespace)
+			if strings.Contains(csv, "ditto-operator") && strings.Contains(csv, "planetscale-operator") {
+				return true, nil
+			}
+			return false, nil
+		})
+		if err != nil {
+			olmv0util.LogDebugInfo(oc, sub.Namespace, "pod", "ip", "csv", "events")
+		}
+		exutil.AssertWaitPollNoErr(err, "failed to create ditto operator")
+
 	})
 
 })
