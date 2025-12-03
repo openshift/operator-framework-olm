@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,14 +27,13 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	defer g.GinkgoRecover()
 
 	var (
-		oc = exutil.NewCLIWithoutNamespace("default")
+		oc = exutil.NewCLI("olm-a-"+exutil.GetRandomString(), exutil.KubeConfigPath())
 
 		dr = make(olmv0util.DescriberResrouce)
 	)
 
 	g.BeforeEach(func() {
 		exutil.SkipMicroshift(oc)
-		oc.SetupProject()
 		exutil.SkipNoOLMCore(oc)
 		itName := g.CurrentSpecReport().FullText()
 		dr.AddIr(itName)
@@ -1109,22 +1109,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("Delete sa of csv")
 		sa.GetDefinition(oc)
 		sa.Delete(oc)
-		var output string
-		var err error
-		errCsv := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
-			output, err = oc.WithoutNamespace().Run("get").Args("csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.reason}").Output()
-			if err != nil {
-				return false, err
-			}
-			if strings.Contains(output, "RequirementsNotMet") {
-				return true, nil
-			}
-			return false, nil
-		})
-		if strings.Contains(output, "InstallWaiting") {
-			g.Skip("skip because of slow installation")
-		}
-		exutil.AssertWaitPollNoErr(errCsv, fmt.Sprintf("csv status %v is not expected", output))
+		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithNamespace, exutil.Compare, "RequirementsNotMet", exutil.Ok, []string{"csv", sub.InstalledCSV, "-o=jsonpath={.status.reason}"}).Check(oc)
 
 		g.By("Recovery sa of csv")
 		sa.Reapply(oc)
@@ -1851,8 +1836,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 
 		g.By("install operator")
 		sub.Create(oc, itName, dr)
-		defer sub.DeleteCSV(itName, dr)
-		defer sub.Delete(itName, dr)
 
 		g.By("check if dependent operator is installed")
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
@@ -2853,6 +2836,312 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			annotation, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("CronJob", "collect-profiles", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.spec.jobTemplate.spec.template.metadata.annotations}").Output()
 			return annotation
 		}, 20*time.Second, 2*time.Second).Should(o.ContainSubstring("target.workload.openshift.io/management"))
+	})
+
+	// Newly migrated bandrade tests
+	g.It("PolarionID:41026-[OTP][Level0]OCS should only one installplan generated when creating subscription", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-LEVEL0-Critical-41026-OCS should only one installplan generated when creating subscription"), g.Label("Level0"), func() {
+		exutil.SkipMissingQECatalogsource(oc)
+		itName := g.CurrentSpecReport().FullText()
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		oc.SetupProject()
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-41026-singlenamespace",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-41026",
+			Namespace:              oc.Namespace(),
+			CatalogSourceNamespace: "openshift-marketplace",
+			IpApproval:             "Automatic",
+			Channel:                "beta",
+			OperatorPackage:        "learn",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+
+		catsrcName := "qe-app-registry"
+		if olmv0util.IsPresentResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, exutil.Present, "catsrc", "auto-release-app-registry", "-n", "openshift-marketplace") {
+			catsrcName = "auto-release-app-registry"
+		}
+		sub.CatalogSourceName = catsrcName
+
+		g.By("Create og")
+		defer og.Delete(itName, dr)
+		og.Create(oc, itName, dr)
+
+		g.By("Create operator")
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithNamespace, exutil.Compare, "Succeeded", exutil.Ok,
+			[]string{"csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("Check there is only one installplan containing this CSV")
+		err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 30*time.Second, false, func(ctx context.Context) (bool, error) {
+			ips := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "installplan", "-n", sub.Namespace, "--no-headers")
+			ipList := strings.Split(strings.TrimSpace(ips), "\n")
+			count := 0
+			for _, ip := range ipList {
+				ip = strings.TrimSpace(ip)
+				if ip == "" {
+					continue
+				}
+				fields := strings.Fields(ip)
+				if len(fields) == 0 {
+					continue
+				}
+				name := fields[0]
+				csvs := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "installplan", name, "-n", sub.Namespace, "-o=jsonpath={.spec.clusterServiceVersionNames}")
+				if strings.Contains(csvs, sub.InstalledCSV) {
+					count++
+				}
+			}
+			if count != 1 {
+				e2e.Logf("InstallPlans referencing CSV: \n%s", ips)
+				return false, nil
+			}
+			return true, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "the generated InstallPlan != 1")
+
+		g.By("Waiting for install plan Complete")
+		installPlan := sub.GetIP(oc)
+		o.Expect(installPlan).NotTo(o.BeEmpty())
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Complete", exutil.Ok,
+			[]string{"installplan", installPlan, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
+	})
+
+	g.It("PolarionID:68521-[OTP][Skipped:Disconnected]Check failureThreshold of redhat-operators catalog", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-ConnectedOnly-NonHyperShiftHOST-Medium-68521-Check failureThreshold of redhat-operators catalog"), func() {
+		architecture.SkipNonAmd64SingleArch(oc)
+		redhatOperators, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("catalogsource", "redhat-operators", "-n", "openshift-marketplace").Output()
+		if err != nil && strings.Contains(redhatOperators, "not found") {
+			g.Skip("redhat-operators catalog does not exist in the cluster")
+		}
+		o.Expect(err).NotTo(o.HaveOccurred())
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "10", exutil.Ok,
+			[]string{"pods", "-n", "openshift-marketplace", "-l", "olm.catalogSource=redhat-operators", "-o=jsonpath='{..spec.containers[0].startupProbe.failureThreshold}'"}).Check(oc)
+	})
+
+	g.It("PolarionID:68901-[OTP][Skipped:Disconnected]Packageserver pod should not crash if updateStrategy is incorrect", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-ConnectedOnly-NonHyperShiftHOST-Medium-68901-Packageserver pod should not crash if updateStrategy is incorrect"), func() {
+		itName := g.CurrentSpecReport().FullText()
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		catsrcTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image-incorrect-updatestrategy.yaml")
+
+		oc.SetupProject()
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "catsrc-68901",
+			Namespace:   oc.Namespace(),
+			DisplayName: "Test Catsrc Operators",
+			Publisher:   "Red Hat",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/nginxolm-operator-index:v1",
+			Template:    catsrcTemplate,
+		}
+		defer catsrc.Delete(itName, dr)
+		catsrc.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "InvalidIntervalError", exutil.Ok,
+			[]string{"catsrc", catsrc.Name, "-n", catsrc.Namespace, "-o=jsonpath={.status.reason}"}).Check(oc)
+
+		err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 20*time.Second, false, func(ctx context.Context) (bool, error) {
+			status, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", "openshift-operator-lifecycle-manager", "-l", "app=catalog-operator", "-o=jsonpath={..status.phase}").Output()
+			return strings.TrimSpace(status) != "Running", nil
+		})
+		exutil.AssertWaitPollWithErr(err, "catalog-operator pod crash")
+
+		replicasStr, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.status.replicas}").Output()
+		replicas, _ := strconv.Atoi(strings.TrimSpace(replicasStr))
+		err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 30*time.Second, false, func(ctx context.Context) (bool, error) {
+			status, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", "openshift-operator-lifecycle-manager", "-l", "app=packageserver", "-o=jsonpath={..status.phase}").Output()
+			expected := strings.TrimSpace(strings.Repeat("Running ", replicas))
+			return strings.TrimSpace(status) == expected, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "packageserver pods not all running")
+	})
+
+	g.It("PolarionID:24917-[OTP][Skipped:Disconnected][Disruptive]Operators in SingleNamespace should not be granted namespace list", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace Author:bandrade-Medium-24917-Operators in SingleNamespace should not be granted namespace list [Disruptive]"), func() {
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
+		oc.SetupProject()
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-24917",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		og.CreateWithCheck(oc, itName, dr)
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-24917",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      "qe-app-registry",
+			CatalogSourceNamespace: "openshift-marketplace",
+			IpApproval:             "Automatic",
+			Channel:                "beta",
+			OperatorPackage:        "learn",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		exists, err := olmv0util.ClusterPackageExists(oc, sub)
+		o.Expect(err).NotTo(o.HaveOccurred())
+		if !exists {
+			g.Skip("SKIP:PackageMissing learn does not exist in catalog qe-app-registry")
+		}
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "AtLatestKnown", exutil.Ok,
+			[]string{"sub", sub.SubName, "-n", sub.Namespace, "-o=jsonpath={.status.state}"}).Check(oc)
+
+		g.By("Check RBAC of the operator service account")
+		expectedSA := fmt.Sprintf("system:serviceaccount:%s:learn-operator", oc.Namespace())
+		msg, err := oc.AsAdmin().WithoutNamespace().Run("policy").Args("who-can", "list", "namespaces").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(strings.Contains(msg, expectedSA)).To(o.BeFalse())
+
+		token, err := exutil.GetSAToken(oc, "learn-operator", oc.Namespace())
+		o.Expect(err).NotTo(o.HaveOccurred())
+		token = strings.TrimSpace(token)
+
+		server, err := oc.AsAdmin().WithoutNamespace().Run("whoami").Args("--show-server").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		contextName, err := oc.AsAdmin().WithoutNamespace().Run("whoami").Args("--show-context").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		defer func() {
+			_, err = oc.AsAdmin().WithoutNamespace().Run("config").Args("use-context", strings.TrimSpace(contextName)).Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+		}()
+
+		_, err = oc.AsAdmin().WithoutNamespace().Run("login").Args(strings.TrimSpace(server), "--token", token).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		whoami, err := oc.AsAdmin().WithoutNamespace().Run("whoami").Args().Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(strings.Contains(whoami, expectedSA)).To(o.BeTrue())
+
+		nsOutput, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("ns").Output()
+		o.Expect(strings.Contains(nsOutput, "forbidden")).To(o.BeTrue())
+	})
+
+	g.It("PolarionID:25644-[OTP][Skipped:Disconnected]OLM collect CSV health per version", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace NonHyperShiftHOST-ConnectedOnly-Author:bandrade-Medium-25644-OLM collect CSV health per version"), func() {
+		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+		exutil.SkipBaselineCaps(oc, "None")
+
+		itName := g.CurrentSpecReport().FullText()
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		ogAllTemplate := filepath.Join(buildPruningBaseDir, "og-allns.yaml")
+		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		csvName := "etcdoperator.v0.9.4"
+
+		oc.SetupProject()
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "test-25644-group",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		ogAll := olmv0util.OperatorGroupDescription{
+			Name:      "test-25644-group",
+			Namespace: oc.Namespace(),
+			Template:  ogAllTemplate,
+		}
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-25644",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      "community-operators",
+			CatalogSourceNamespace: "openshift-marketplace",
+			IpApproval:             "Automatic",
+			Template:               subTemplate,
+			Channel:                "singlenamespace-alpha",
+			OperatorPackage:        "etcd",
+			StartingCSV:            csvName,
+			SingleNamespace:        true,
+		}
+
+		ogAll.Create(oc, itName, dr)
+		defer og.Delete(itName, dr)
+
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		sub.CreateWithoutCheck(oc, itName, dr)
+		sub.FindInstalledCSV(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Failed", exutil.Ok,
+			[]string{"csv", csvName, "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		msg, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", oc.Namespace(), csvName, "-o=jsonpath={.status.conditions..reason}").Output()
+		o.Expect(strings.Contains(msg, "UnsupportedOperatorGroup") || strings.Contains(msg, "NoOperatorGroup")).To(o.BeTrue())
+
+		msg, _ = oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", oc.Namespace(), csvName, "-o=jsonpath={.status.conditions..message}").Output()
+		o.Expect(strings.Contains(msg, "InstallModeType not supported") || strings.Contains(msg, "csv in namespace with no operatorgroup")).To(o.BeTrue())
+
+		olmToken, err := exutil.GetSAToken(oc, "olm-operator", "openshift-operator-lifecycle-manager")
+		o.Expect(err).NotTo(o.HaveOccurred())
+		olmToken = strings.TrimSpace(olmToken)
+
+		olmPodname, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", "openshift-operator-lifecycle-manager", "--selector=app=olm-operator", "-o=jsonpath={.items..metadata.name}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		olmPodname = strings.TrimSpace(olmPodname)
+
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 150*time.Second, false, func(ctx context.Context) (bool, error) {
+			metrics, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(olmPodname, "-n", "openshift-operator-lifecycle-manager", "-i", "--", "curl", "-k", "-H", fmt.Sprintf("Authorization: Bearer %v", olmToken), "https://localhost:8443/metrics").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			next := false
+			for _, s := range strings.Fields(metrics) {
+				if next {
+					return strings.TrimSpace(s) != "", nil
+				}
+				if strings.Contains(s, "csv_abnormal{") && strings.Contains(s, csvName) && strings.Contains(s, oc.Namespace()) {
+					next = true
+				}
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "csv_abnormal metric is not created")
+
+		og.Delete(itName, dr)
+		og.Create(oc, itName, dr)
+
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok,
+			[]string{"csv", csvName, "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		msg, _ = oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", oc.Namespace(), csvName, "-o=jsonpath={.status.reason}").Output()
+		o.Expect(strings.Contains(msg, "InstallSucceeded")).To(o.BeTrue())
+		msg, _ = oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", oc.Namespace(), csvName, "-o=jsonpath={.status.message}").Output()
+		o.Expect(strings.Contains(msg, "completed with no errors")).To(o.BeTrue())
+
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 120*time.Second, false, func(ctx context.Context) (bool, error) {
+			podMsg, podErr := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", "-n", oc.Namespace()).Output()
+			o.Expect(podErr).NotTo(o.HaveOccurred())
+			return strings.Contains(podMsg, "etcd-operator") && strings.Contains(podMsg, "Running") && strings.Contains(podMsg, "3/3"), nil
+		})
+		exutil.AssertWaitPollNoErr(err, "etcd-operator pod is not running as 3")
+
+		err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 150*time.Second, false, func(ctx context.Context) (bool, error) {
+			metrics, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(olmPodname, "-n", "openshift-operator-lifecycle-manager", "-i", "--", "curl", "-k", "-H", fmt.Sprintf("Authorization: Bearer %v", olmToken), "https://localhost:8443/metrics").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			next := false
+			for _, s := range strings.Fields(metrics) {
+				if next {
+					return strings.TrimSpace(s) != "", nil
+				}
+				if strings.Contains(s, "csv_succeeded{") && strings.Contains(s, csvName) && strings.Contains(s, oc.Namespace()) {
+					next = true
+				}
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "csv_succeeded metric is not created")
 	})
 
 })
