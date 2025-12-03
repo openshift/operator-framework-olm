@@ -495,9 +495,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		})
 		if err != nil {
 			message, _ := oc.AsAdmin().Run("get").Args("installplan", installPlan, "-n", sub.Namespace, "-o=jsonpath={.status.message}").Output()
-			e2e.Logf(message)
+			e2e.Logf("%s", message)
 			conditions, _ := oc.AsAdmin().Run("get").Args("installplan", installPlan, "-n", sub.Namespace, "-o=jsonpath-as-json={.status.conditions}").Output()
-			e2e.Logf(conditions)
+			e2e.Logf("%s", conditions)
 		}
 		exutil.AssertWaitPollNoErr(err, "cannot create resource not in install plan message")
 
