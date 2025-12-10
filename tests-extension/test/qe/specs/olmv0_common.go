@@ -876,4 +876,92 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		}
 	})
 
+	g.It("PolarionID:24916-[OTP][Skipped:Disconnected]Operators in AllNamespaces should be granted namespace list", func() {
+		buildDir := exutil.FixturePath("testdata", "olm")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup.yaml")
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-24916",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		og.Create(oc, g.CurrentSpecReport().FullText(), dr)
+
+		g.By("og should contain name of all namespaces")
+		output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("og", og.Name, "-n", oc.Namespace(), "-o=jsonpath={.status.namespaces}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		if !strings.Contains(output, "openshift-") || !strings.Contains(output, oc.Namespace()) {
+			e2e.Failf("The namespaces of the OperatorGroup status is incorrect. It should contain all namespaces, but got: %s", output)
+		}
+	})
+
+	g.It("PolarionID:24771-[OTP]OLM should support for user defined ServiceAccount for OperatorGroup", func() {
+		buildDir := exutil.FixturePath("testdata", "olm")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup-serviceaccount.yaml")
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:               "og-24771",
+			Namespace:          oc.Namespace(),
+			Template:           ogTemplate,
+			ServiceAccountName: "scoped-24771",
+		}
+
+		g.By("Create OperatorGroup")
+		og.Create(oc, g.CurrentSpecReport().FullText(), dr)
+
+		g.By("Check OperatorGroup Status")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "ServiceAccountNotFound", exutil.Ok, []string{"og", og.Name, "-n", og.Namespace, "-o=jsonpath={.status.conditions..reason}"}).Check(oc)
+	})
+
+	g.It("PolarionID:24772-[OTP]OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission", func() {
+		buildDir := exutil.FixturePath("testdata", "olm")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup-serviceaccount.yaml")
+		og := olmv0util.OperatorGroupDescription{
+			Name:               "og-24772",
+			Namespace:          oc.Namespace(),
+			Template:           ogTemplate,
+			ServiceAccountName: "scoped-24772",
+		}
+
+		g.By("Create OperatorGroup")
+		og.Create(oc, g.CurrentSpecReport().FullText(), dr)
+
+		g.By("Check OperatorGroup Status")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "ServiceAccountNotFound", exutil.Ok, []string{"og", og.Name, "-n", og.Namespace, "-o=jsonpath={.status.conditions..reason}"}).Check(oc)
+	})
+
+	g.It("PolarionID:24886-[OTP]OLM should support for user defined ServiceAccount permission changes", func() {
+		buildDir := exutil.FixturePath("testdata", "olm")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup-serviceaccount.yaml")
+		sa := "scoped-24886"
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:               "og-24886",
+			Namespace:          oc.Namespace(),
+			Template:           ogTemplate,
+			ServiceAccountName: sa,
+		}
+
+		g.By("Create OperatorGroup")
+		og.Create(oc, g.CurrentSpecReport().FullText(), dr)
+
+		g.By("Verify ServiceAccountNotFound")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "ServiceAccountNotFound", exutil.Ok, []string{"og", og.Name, "-n", og.Namespace, "-o=jsonpath={.status.conditions..reason}"}).Check(oc)
+
+		g.By("Create ServiceAccount")
+		_, err := oc.WithoutNamespace().AsAdmin().Run("create").Args("sa", sa, "-n", og.Namespace).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		g.By("Verify status clears")
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 360*time.Second, false, func(ctx context.Context) (bool, error) {
+			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("og", og.Name, "-n", og.Namespace, "-o=jsonpath={.status.conditions..reason}").Output()
+			if err != nil {
+				e2e.Logf("Fail to get og: %s, error: %s and try again", og.Name, err)
+				return false, nil
+			}
+			return strings.TrimSpace(output) == "", nil
+		})
+		exutil.AssertWaitPollNoErr(err, "The error ServiceAccountNotFound still be reported in status")
+	})
+
 })
