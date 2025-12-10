@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 
 	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
@@ -151,7 +152,34 @@ func (catsrc *CatalogSourceDescription) CreateWithCheck(oc *exutil.CLI, itName s
 	// Create the catalog source resource
 	catsrc.Create(oc, itName, dr)
 	// Wait for catalog source to reach READY state
-	err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 180*time.Second, false, func(ctx context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
+		status, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("catsrc", catsrc.Name, "-n", catsrc.Namespace, "-o=jsonpath={.status..lastObservedState}").Output()
+		if strings.Compare(status, "READY") != 0 {
+			e2e.Logf("catsrc %s lastObservedState is %s, not READY", catsrc.Name, status)
+			return false, nil
+		}
+		return true, nil
+	})
+	// Collect debug information if catalog source fails to become ready
+	if err != nil {
+		output, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("catsrc", catsrc.Name, "-n", catsrc.Namespace, "-o=jsonpath={.status}").Output()
+		e2e.Logf("CatalogSource status: %s", output)
+		LogDebugInfo(oc, catsrc.Namespace, "pod")
+		events, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("events", "-n", catsrc.Namespace).Output()
+		e2e.Logf("events: %s", events)
+		if strings.Contains(events, "ErrImagePull") {
+			g.Skip("catalog is not ready due to ErrImagePull, skip.")
+		}
+	}
+	exutil.AssertWaitPollNoErr(err, fmt.Sprintf("catsrc %s lastObservedState is not READY", catsrc.Name))
+	e2e.Logf("catsrc %s lastObservedState is READY", catsrc.Name)
+}
+
+func (catsrc *CatalogSourceDescription) CreateWithAssert(oc *exutil.CLI, itName string, dr DescriberResrouce) {
+	// Create the catalog source resource
+	catsrc.Create(oc, itName, dr)
+	// Wait for catalog source to reach READY state
+	err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
 		status, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("catsrc", catsrc.Name, "-n", catsrc.Namespace, "-o=jsonpath={.status..lastObservedState}").Output()
 		if strings.Compare(status, "READY") != 0 {
 			e2e.Logf("catsrc %s lastObservedState is %s, not READY", catsrc.Name, status)
