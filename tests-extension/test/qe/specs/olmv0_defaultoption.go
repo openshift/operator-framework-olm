@@ -331,7 +331,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		}
 	})
 
-	g.It("PolarionID:31693-ConnectedOnly-Author:bandrade-Medium-Check CSV information on the PackageManifest", g.Label("original-name:[sig-operator][Jira:OLM] OLM should ConnectedOnly-Author:bandrade-Medium-31693-Check CSV information on the PackageManifest"), func() {
+	g.It("PolarionID:31693-[OTP][Skipped:Disconnected]Check CSV information on the PackageManifest", func() {
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
@@ -350,7 +350,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		o.Expect(err).NotTo(o.HaveOccurred())
 	})
 
-	g.It("PolarionID:54038-ConnectedOnly-Author:bandrade-Medium-Comply with Operator Anti-Affinity definition", g.Label("original-name:[sig-operator][Jira:OLM] OLM should ConnectedOnly-Author:bandrade-Medium-54038-Comply with Operator Anti-Affinity definition"), func() {
+	g.It("PolarionID:54038-[OTP][Skipped:Disconnected]Comply with Operator Anti-Affinity definition", func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 		exutil.SkipBaselineCaps(oc, "None")
@@ -424,7 +424,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		}
 	})
 
-	g.It("PolarionID:54036-ConnectedOnly-Author:bandrade-Medium-Comply with Operator NodeAffinity definition", g.Label("original-name:[sig-operator][Jira:OLM] OLM should ConnectedOnly-Author:bandrade-Medium-54036-Comply with Operator NodeAffinity definition"), func() {
+	g.It("PolarionID:54036-[OTP][Skipped:Disconnected]Comply with Operator NodeAffinity definition", func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 		exutil.SkipBaselineCaps(oc, "None")
@@ -494,7 +494,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		o.Expect(firstNode).To(o.Equal(deployedNode))
 	})
 
-	g.It("PolarionID:24850-Author:bandrade-Medium-Allow users to edit the deployment of an active CSV", g.Label("original-name:[sig-operator][Jira:OLM] OLM should Author:bandrade-Medium-24850-Allow users to edit the deployment of an active CSV"), func() {
+	g.It("PolarionID:24850-[OTP]Allow users to edit the deployment of an active CSV", func() {
 		exutil.SkipMissingQECatalogsource(oc)
 		dr := make(olmv0util.DescriberResrouce)
 		itName := g.CurrentSpecReport().FullText()
@@ -539,7 +539,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		o.Expect(podName).NotTo(o.Equal(podNameAfterPatch))
 	})
 
-	g.It("PolarionID:24387-Author:bandrade-ConnectedOnly-High-Any CRD upgrade is allowed if there is only one owner in a cluster [Disruptive]", g.Label("original-name:[sig-operator][Jira:OLM] OLM should Author:bandrade-ConnectedOnly-High-24387-Any CRD upgrade is allowed if there is only one owner in a cluster [Disruptive]"), func() {
+	g.It("PolarionID:24387-[OTP][Skipped:Disconnected]Any CRD upgrade is allowed if there is only one owner in a cluster [Disruptive]", func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
@@ -612,7 +612,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		o.Expect(crdYamlOutput).To(o.ContainSubstring("propertyIncludedTest"))
 	})
 
-	g.It("PolarionID:42970-Author:bandrade-Medium-OperatorGroup status indicates cardinality conflicts - SingleNamespace", g.Label("original-name:[sig-operator][Jira:OLM] OLM should Author:bandrade-Medium-42970-OperatorGroup status indicates cardinality conflicts - SingleNamespace"), func() {
+	g.It("PolarionID:42970-[OTP]OperatorGroup status indicates cardinality conflicts - SingleNamespace", func() {
 		buildDir := exutil.FixturePath("testdata", "olm")
 		ogTemplate := filepath.Join(buildDir, "operatorgroup.yaml")
 
@@ -650,7 +650,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		exutil.AssertWaitPollNoErr(err, "The error MultipleOperatorGroupsFound still be reported in status")
 	})
 
-	g.It("PolarionID:42972-Author:bandrade-Medium-OperatorGroup status should indicate if the SA named in spec not found", g.Label("original-name:[sig-operator][Jira:OLM] OLM should Author:bandrade-Medium-42972-OperatorGroup status should indicate if the SA named in spec not found"), func() {
+	g.It("PolarionID:42972-[OTP]OperatorGroup status should indicate if the SA named in spec not found", func() {
 		buildDir := exutil.FixturePath("testdata", "olm")
 		ogTemplate := filepath.Join(buildDir, "operatorgroup-serviceaccount.yaml")
 		sa := "scoped-42972"
@@ -684,7 +684,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		exutil.AssertWaitPollNoErr(err, "The error ServiceAccountNotFound still be reported in status")
 	})
 
-	g.It("PolarionID:21130-Author:bandrade-Medium-Fetching non-existent `PackageManifest` should return 404", g.Label("original-name:[sig-operator][Jira:OLM] OLM should Author:bandrade-Medium-21130-Fetching non-existent `PackageManifest` should return 404"), func() {
+	g.It("PolarionID:21130-[OTP]Fetching non-existent `PackageManifest` should return 404", func() {
 		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", "--all-namespaces", "--no-headers").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		packageserverLines := strings.Split(msg, "\n")
@@ -697,7 +697,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		}
 	})
 
-	g.It("PolarionID:24057-NonHyperShiftHOST-Author:bandrade-Low-Have terminationMessagePolicy defined as FallbackToLogsOnError", g.Label("original-name:[sig-operator][Jira:OLM] OLM should NonHyperShiftHOST-Author:bandrade-Low-24057-Have terminationMessagePolicy defined as FallbackToLogsOnError"), func() {
+	g.It("PolarionID:24057-[OTP]Have terminationMessagePolicy defined as FallbackToLogsOnError", func() {
 		labels := [...]string{"app=packageserver", "app=catalog-operator", "app=olm-operator"}
 		for _, l := range labels {
 			msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-o=jsonpath={range .items[*].spec}{.containers[*].name}{\"\\t\"}", "-n", "openshift-operator-lifecycle-manager", "-l", l).Output()
@@ -714,7 +714,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		}
 	})
 
-	g.It("PolarionID:49130-NonHyperShiftHOST-ConnectedOnly-Author:bandrade-Medium-Default CatalogSources deployed by marketplace do not have toleration for tainted nodes", g.Label("original-name:[sig-operator][Jira:OLM] OLM should NonHyperShiftHOST-ConnectedOnly-Author:bandrade-Medium-49130-Default CatalogSources deployed by marketplace do not have toleration for tainted nodes"), func() {
+	g.It("PolarionID:49130-[OTP][Skipped:Disconnected]Default CatalogSources deployed by marketplace do not have toleration for tainted nodes", func() {
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
@@ -758,7 +758,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		}
 	})
 
-	g.It("PolarionID:32613-ConnectedOnly-Author:bandrade-High-Operators won't install if the CSV dependency is already installed", g.Label("original-name:[sig-operator][Jira:OLM] OLM should ConnectedOnly-Author:bandrade-High-32613-Operators won't install if the CSV dependency is already installed"), func() {
+	g.It("PolarionID:32613-[OTP][Skipped:Disconnected]Operators won't install if the CSV dependency is already installed", func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 		exutil.SkipBaselineCaps(oc, "None")
@@ -826,7 +826,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "prometheus-beta-community-operators-openshift-marketplace exists", exutil.Ok, []string{"subs", "prometheus-32613", "-n", oc.Namespace(), "-o=jsonpath={.status.conditions..message}"}).Check(oc)
 	})
 
-	g.It("PolarionID:24055-ConnectedOnly-Author:bandrade-Low-Check for defaultChannel mandatory field when having multiple channels", g.Label("original-name:[sig-operator][Jira:OLM] OLM should ConnectedOnly-Author:bandrade-Low-24055-Check for defaultChannel mandatory field when having multiple channels"), func() {
+	g.It("PolarionID:24055-[OTP][Skipped:Disconnected]Check for defaultChannel mandatory field when having multiple channels", func() {
 		olmBaseDir := exutil.FixturePath("testdata", "olm")
 		cmWithoutDefault := filepath.Join(olmBaseDir, "configmap-without-defaultchannel.yaml")
 		cmWithDefault := filepath.Join(olmBaseDir, "configmap-with-defaultchannel.yaml")

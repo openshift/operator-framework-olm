@@ -876,7 +876,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		}
 	})
 
-	g.It("PolarionID:24916-Author:bandrade-ConnectedOnly-Medium-Operators in AllNamespaces should be granted namespace list", g.Label("original-name:[sig-operator][Jira:OLM] OLM for an end user handle common object Author:bandrade-ConnectedOnly-Medium-24916-Operators in AllNamespaces should be granted namespace list"), func() {
+	g.It("PolarionID:24916-[OTP][Skipped:Disconnected]Operators in AllNamespaces should be granted namespace list", func() {
 		buildDir := exutil.FixturePath("testdata", "olm")
 		ogTemplate := filepath.Join(buildDir, "operatorgroup.yaml")
 
@@ -895,7 +895,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		}
 	})
 
-	g.It("PolarionID:24771-Author:bandrade-Medium-OLM should support for user defined ServiceAccount for OperatorGroup", g.Label("original-name:[sig-operator][Jira:OLM] OLM for an end user handle common object Author:bandrade-Medium-24771-OLM should support for user defined ServiceAccount for OperatorGroup"), func() {
+	g.It("PolarionID:24771-[OTP]OLM should support for user defined ServiceAccount for OperatorGroup", func() {
 		buildDir := exutil.FixturePath("testdata", "olm")
 		ogTemplate := filepath.Join(buildDir, "operatorgroup-serviceaccount.yaml")
 
@@ -913,7 +913,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "ServiceAccountNotFound", exutil.Ok, []string{"og", og.Name, "-n", og.Namespace, "-o=jsonpath={.status.conditions..reason}"}).Check(oc)
 	})
 
-	g.It("PolarionID:24772-Author:bandrade-Medium-OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission", g.Label("original-name:[sig-operator][Jira:OLM] OLM for an end user handle common object Author:bandrade-Medium-24772-OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission"), func() {
+	g.It("PolarionID:24772-[OTP]OLM should support for user defined ServiceAccount for OperatorGroup with fine grained permission", func() {
 		buildDir := exutil.FixturePath("testdata", "olm")
 		ogTemplate := filepath.Join(buildDir, "operatorgroup-serviceaccount.yaml")
 		og := olmv0util.OperatorGroupDescription{
@@ -930,7 +930,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "ServiceAccountNotFound", exutil.Ok, []string{"og", og.Name, "-n", og.Namespace, "-o=jsonpath={.status.conditions..reason}"}).Check(oc)
 	})
 
-	g.It("PolarionID:24886-Author:bandrade-Medium-OLM should support for user defined ServiceAccount permission changes", g.Label("original-name:[sig-operator][Jira:OLM] OLM for an end user handle common object Author:bandrade-Medium-24886-OLM should support for user defined ServiceAccount permission changes"), func() {
+	g.It("PolarionID:24886-[OTP]OLM should support for user defined ServiceAccount permission changes", func() {
 		buildDir := exutil.FixturePath("testdata", "olm")
 		ogTemplate := filepath.Join(buildDir, "operatorgroup-serviceaccount.yaml")
 		sa := "scoped-24886"
