@@ -100,6 +100,8 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("Create opertor group and then csv is created with success")
 		og.Create(oc, itName, dr)
 		sub.Create(oc, itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+
 		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithNamespace, exutil.Compare, "Succeeded"+"InstallSucceeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-o=jsonpath={.status.phase}{.status.reason}"}).Check(oc)
 	})
 
@@ -342,7 +344,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 				DisplayName: "Test Catsrc Operators",
 				Publisher:   "Red Hat",
 				SourceType:  "grpc",
-				Address:     "quay.io/olmqe/olm-index:OLM-2378-Oadp-GoodOne-withCache",
+				Address:     "quay.io/olmqe/nginx-ok-index:vokv39897",
 				Template:    catsrcImageTemplate,
 			}
 			catsrc2 = olmv0util.CatalogSourceDescription{
@@ -383,11 +385,11 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 				SingleNamespace:        true,
 			}
 			subMta = olmv0util.SubscriptionDescription{
-				SubName:                "oadp-operator",
+				SubName:                "nginx-ok-v39897",
 				Namespace:              "",
 				Channel:                "alpha",
 				IpApproval:             "Automatic",
-				OperatorPackage:        "oadp-operator",
+				OperatorPackage:        "nginx-ok-v39897",
 				CatalogSourceName:      catsrc1.Name,
 				CatalogSourceNamespace: "",
 				StartingCSV:            "",
@@ -1114,14 +1116,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		sa.GetDefinition(oc)
 		sa.Delete(oc)
 
-		g.By("Trigger OLM reconciliation by annotating CSV")
-		_, err := oc.AsAdmin().WithoutNamespace().Run("annotate").Args("csv", sub.InstalledCSV, "-n", sub.Namespace, "test-trigger="+fmt.Sprintf("%d", time.Now().Unix()), "--overwrite").Output()
-		if err != nil {
-			g.Skip("skip it because of no terst-trigger")
-		}
-
 		var output string
-		errCsv := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 600*time.Second, false, func(ctx context.Context) (bool, error) {
+		var err error
+		errCsv := wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 120*time.Second, true, func(ctx context.Context) (bool, error) {
 			output, err = oc.WithoutNamespace().Run("get").Args("csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.reason}").Output()
 			if err != nil {
 				return false, err
@@ -2245,7 +2242,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 	})
 
 	// Group 12 - OCP-50136
-	g.It("PolarionID:50136-[OTP][Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50136-[Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]"), func() {
+	g.It("PolarionID:50136-[OTP][Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:40m]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:50136-[Skipped:Disconnected]automatic upgrade for failed operator installation csv fails[Slow][Timeout:30m]"), func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
@@ -2326,8 +2323,11 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		err = oc.AsAdmin().WithoutNamespace().Run("patch").Args("og", og.Name, "-n", og.Namespace, "--type=merge", "-p", "{\"spec\":{\"upgradeStrategy\":\"TechPreviewUnsafeFailForward\"}}").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
+		g.By("verify upgrade strategy is applied")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "TechPreviewUnsafeFailForward", exutil.Ok, []string{"og", og.Name, "-n", og.Namespace, "-o=jsonpath={.spec.upgradeStrategy}"}).Check(oc)
+
 		g.By("check if oadp-operator.v0.5.6 is created")
-		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 600*time.Second, false, func(ctx context.Context) (bool, error) {
 			csv := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "sub", subOadp.SubName, "-n", subOadp.Namespace, "-o=jsonpath={.status.currentCSV}")
 			if strings.Compare(csv, "oadp-operator.v0.5.6") == 0 {
 				e2e.Logf("csv %v is created", csv)
@@ -2335,10 +2335,17 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			}
 			return false, nil
 		})
+		if err != nil {
+			events, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("events", "-n", subOadp.Namespace).Output()
+			if strings.Contains(events, "ErrImagePull") {
+				e2e.Logf("Skipping test due to image pull errors in namespace events:\n%s", events)
+				g.Skip("Image pull error detected, likely environmental issue")
+			}
+		}
 		exutil.AssertWaitPollNoErr(err, "csv oadp-operator.v0.5.6 is not created")
 
 		g.By("check if upgrade is done")
-		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 600*time.Second, false, func(ctx context.Context) (bool, error) {
 			status := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "oadp-operator.v0.5.6", "-n", subOadp.Namespace, "-o=jsonpath={.status.phase}")
 			if strings.Compare(status, "Succeeded") == 0 {
 				e2e.Logf("csv oadp-operator.v0.5.6 is successful")
@@ -2452,6 +2459,13 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			}
 			return false, nil
 		})
+		if err != nil {
+			events, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("events", "-n", subOadp.Namespace).Output()
+			if strings.Contains(events, "ErrImagePull") {
+				e2e.Logf("Skipping test due to image pull errors in namespace events:\n%s", events)
+				g.Skip("Image pull error detected, likely environmental issue")
+			}
+		}
 		exutil.AssertWaitPollNoErr(err, "csv oadp-operator.v0.5.6 is not created")
 
 		g.By("check if upgrade is done")

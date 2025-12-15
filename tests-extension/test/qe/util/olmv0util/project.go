@@ -4,6 +4,8 @@
 package olmv0util
 
 import (
+	"strings"
+
 	o "github.com/onsi/gomega"
 
 	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
@@ -79,12 +81,30 @@ func (p *ProjectDescription) Label(oc *exutil.CLI, label string) {
 
 // Delete removes the project from the cluster
 // This method performs a standard project deletion
+// It gracefully handles transient network errors during cleanup to avoid test failures
 //
 // Parameters:
 //   - oc: OpenShift CLI client for executing commands
 func (p *ProjectDescription) Delete(oc *exutil.CLI) {
-	_, err := exutil.OcAction(oc, "delete", exutil.AsAdmin, exutil.WithoutNamespace, "project", p.Name)
-	o.Expect(err).NotTo(o.HaveOccurred())
+	output, err := exutil.OcAction(oc, "delete", exutil.AsAdmin, exutil.WithoutNamespace, "project", p.Name, "--ignore-not-found")
+	if err != nil {
+		// Check if error is due to resource already deleted
+		if strings.Contains(output, "NotFound") || strings.Contains(output, "No resources found") {
+			e2e.Logf("Project %s already deleted", p.Name)
+			return
+		}
+		// Check if error is a transient network issue (should not fail cleanup)
+		if strings.Contains(output, "TLS handshake timeout") ||
+			strings.Contains(output, "connection refused") ||
+			strings.Contains(output, "connection reset") ||
+			strings.Contains(output, "i/o timeout") ||
+			strings.Contains(output, "EOF") {
+			e2e.Logf("Transient network error during project %s deletion (ignored during cleanup): %v", p.Name, err)
+			return
+		}
+		// For other errors, still fail the test
+		o.Expect(err).NotTo(o.HaveOccurred())
+	}
 }
 
 // DeleteWithForce performs a forced deletion of the project and all its resources
