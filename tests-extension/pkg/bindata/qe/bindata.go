@@ -35,6 +35,10 @@
 // test/qe/testdata/olm/etcd-subscription-manual.yaml
 // test/qe/testdata/olm/etcd-subscription.yaml
 // test/qe/testdata/olm/mc-workload-partition.yaml
+// test/qe/testdata/olm/microshift/catalogsource-image-restricted.yaml
+// test/qe/testdata/olm/microshift/og-all.yaml
+// test/qe/testdata/olm/microshift/og-single.yaml
+// test/qe/testdata/olm/microshift/olm-subscription.yaml
 // test/qe/testdata/olm/og-allns.yaml
 // test/qe/testdata/olm/og-multins.yaml
 // test/qe/testdata/olm/olm-proxy-subscription.yaml
@@ -6580,6 +6584,115 @@ func testQeTestdataOlmMcWorkloadPartitionYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/qe/testdata/olm/mc-workload-partition.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testQeTestdataOlmMicroshiftCatalogsourceImageRestrictedYaml = []byte(`
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: ${NAME}
+  namespace: ${NAMESPACE}
+spec:
+  image: ${ADDRESS}
+  displayName: ${DISPLAYNAME}
+  grpcPodConfig:
+    securityContextConfig: restricted
+  icon:
+    base64data: ""
+    mediatype: ""
+  publisher: ${PUBLISHER}
+  sourceType: ${SOURCETYPE}
+`)
+
+func testQeTestdataOlmMicroshiftCatalogsourceImageRestrictedYamlBytes() ([]byte, error) {
+	return _testQeTestdataOlmMicroshiftCatalogsourceImageRestrictedYaml, nil
+}
+
+func testQeTestdataOlmMicroshiftCatalogsourceImageRestrictedYaml() (*asset, error) {
+	bytes, err := testQeTestdataOlmMicroshiftCatalogsourceImageRestrictedYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/qe/testdata/olm/microshift/catalogsource-image-restricted.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testQeTestdataOlmMicroshiftOgAllYaml = []byte(`kind: OperatorGroup
+apiVersion: operators.coreos.com/v1
+metadata:
+  name: ${NAME}
+  namespace: ${NAMESPACE}
+`)
+
+func testQeTestdataOlmMicroshiftOgAllYamlBytes() ([]byte, error) {
+	return _testQeTestdataOlmMicroshiftOgAllYaml, nil
+}
+
+func testQeTestdataOlmMicroshiftOgAllYaml() (*asset, error) {
+	bytes, err := testQeTestdataOlmMicroshiftOgAllYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/qe/testdata/olm/microshift/og-all.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testQeTestdataOlmMicroshiftOgSingleYaml = []byte(`kind: OperatorGroup
+apiVersion: operators.coreos.com/v1
+metadata:
+  name: ${NAME}
+  namespace: ${NAMESPACE}
+spec:
+  targetNamespaces:
+  - ${NAMESPACE}
+`)
+
+func testQeTestdataOlmMicroshiftOgSingleYamlBytes() ([]byte, error) {
+	return _testQeTestdataOlmMicroshiftOgSingleYaml, nil
+}
+
+func testQeTestdataOlmMicroshiftOgSingleYaml() (*asset, error) {
+	bytes, err := testQeTestdataOlmMicroshiftOgSingleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/qe/testdata/olm/microshift/og-single.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testQeTestdataOlmMicroshiftOlmSubscriptionYaml = []byte(`apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ${SUBNAME}
+  namespace: ${SUBNAMESPACE}
+spec:
+  channel: ${CHANNEL}
+  installPlanApproval: ${APPROVAL}
+  name: ${OPERATORNAME}
+  source: ${SOURCENAME}
+  sourceNamespace: ${SOURCENAMESPACE}
+  startingCSV: ${STARTINGCSV}
+`)
+
+func testQeTestdataOlmMicroshiftOlmSubscriptionYamlBytes() ([]byte, error) {
+	return _testQeTestdataOlmMicroshiftOlmSubscriptionYaml, nil
+}
+
+func testQeTestdataOlmMicroshiftOlmSubscriptionYaml() (*asset, error) {
+	bytes, err := testQeTestdataOlmMicroshiftOlmSubscriptionYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/qe/testdata/olm/microshift/olm-subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -17952,6 +18065,10 @@ var _bindata = map[string]func() (*asset, error){
 	"test/qe/testdata/olm/etcd-subscription-manual.yaml":                                                         testQeTestdataOlmEtcdSubscriptionManualYaml,
 	"test/qe/testdata/olm/etcd-subscription.yaml":                                                                testQeTestdataOlmEtcdSubscriptionYaml,
 	"test/qe/testdata/olm/mc-workload-partition.yaml":                                                            testQeTestdataOlmMcWorkloadPartitionYaml,
+	"test/qe/testdata/olm/microshift/catalogsource-image-restricted.yaml":                                        testQeTestdataOlmMicroshiftCatalogsourceImageRestrictedYaml,
+	"test/qe/testdata/olm/microshift/og-all.yaml":                                                                testQeTestdataOlmMicroshiftOgAllYaml,
+	"test/qe/testdata/olm/microshift/og-single.yaml":                                                             testQeTestdataOlmMicroshiftOgSingleYaml,
+	"test/qe/testdata/olm/microshift/olm-subscription.yaml":                                                      testQeTestdataOlmMicroshiftOlmSubscriptionYaml,
 	"test/qe/testdata/olm/og-allns.yaml":                                                                         testQeTestdataOlmOgAllnsYaml,
 	"test/qe/testdata/olm/og-multins.yaml":                                                                       testQeTestdataOlmOgMultinsYaml,
 	"test/qe/testdata/olm/olm-proxy-subscription.yaml":                                                           testQeTestdataOlmOlmProxySubscriptionYaml,
@@ -18140,28 +18257,34 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"etcd-subscription-manual.yaml":                     {testQeTestdataOlmEtcdSubscriptionManualYaml, map[string]*bintree{}},
 					"etcd-subscription.yaml":                            {testQeTestdataOlmEtcdSubscriptionYaml, map[string]*bintree{}},
 					"mc-workload-partition.yaml":                        {testQeTestdataOlmMcWorkloadPartitionYaml, map[string]*bintree{}},
-					"og-allns.yaml":                                     {testQeTestdataOlmOgAllnsYaml, map[string]*bintree{}},
-					"og-multins.yaml":                                   {testQeTestdataOlmOgMultinsYaml, map[string]*bintree{}},
-					"olm-proxy-subscription.yaml":                       {testQeTestdataOlmOlmProxySubscriptionYaml, map[string]*bintree{}},
-					"olm-subscription.yaml":                             {testQeTestdataOlmOlmSubscriptionYaml, map[string]*bintree{}},
-					"operator.yaml":                                     {testQeTestdataOlmOperatorYaml, map[string]*bintree{}},
-					"operatorgroup-serviceaccount.yaml":                 {testQeTestdataOlmOperatorgroupServiceaccountYaml, map[string]*bintree{}},
-					"operatorgroup-upgradestrategy.yaml":                {testQeTestdataOlmOperatorgroupUpgradestrategyYaml, map[string]*bintree{}},
-					"operatorgroup.yaml":                                {testQeTestdataOlmOperatorgroupYaml, map[string]*bintree{}},
-					"opsrc.yaml":                                        {testQeTestdataOlmOpsrcYaml, map[string]*bintree{}},
-					"packageserver.yaml":                                {testQeTestdataOlmPackageserverYaml, map[string]*bintree{}},
-					"platform_operator.yaml":                            {testQeTestdataOlmPlatform_operatorYaml, map[string]*bintree{}},
-					"prometheus-antiaffinity.yaml":                      {testQeTestdataOlmPrometheusAntiaffinityYaml, map[string]*bintree{}},
-					"prometheus-nodeaffinity.yaml":                      {testQeTestdataOlmPrometheusNodeaffinityYaml, map[string]*bintree{}},
-					"role-binding.yaml":                                 {testQeTestdataOlmRoleBindingYaml, map[string]*bintree{}},
-					"role.yaml":                                         {testQeTestdataOlmRoleYaml, map[string]*bintree{}},
-					"scc.yaml":                                          {testQeTestdataOlmSccYaml, map[string]*bintree{}},
-					"scoped-sa-etcd.yaml":                               {testQeTestdataOlmScopedSaEtcdYaml, map[string]*bintree{}},
-					"scoped-sa-fine-grained-roles.yaml":                 {testQeTestdataOlmScopedSaFineGrainedRolesYaml, map[string]*bintree{}},
-					"scoped-sa-roles.yaml":                              {testQeTestdataOlmScopedSaRolesYaml, map[string]*bintree{}},
-					"secret.yaml":                                       {testQeTestdataOlmSecretYaml, map[string]*bintree{}},
-					"secret_opaque.yaml":                                {testQeTestdataOlmSecret_opaqueYaml, map[string]*bintree{}},
-					"vpa-crd.yaml":                                      {testQeTestdataOlmVpaCrdYaml, map[string]*bintree{}},
+					"microshift": {nil, map[string]*bintree{
+						"catalogsource-image-restricted.yaml": {testQeTestdataOlmMicroshiftCatalogsourceImageRestrictedYaml, map[string]*bintree{}},
+						"og-all.yaml":                         {testQeTestdataOlmMicroshiftOgAllYaml, map[string]*bintree{}},
+						"og-single.yaml":                      {testQeTestdataOlmMicroshiftOgSingleYaml, map[string]*bintree{}},
+						"olm-subscription.yaml":               {testQeTestdataOlmMicroshiftOlmSubscriptionYaml, map[string]*bintree{}},
+					}},
+					"og-allns.yaml":                      {testQeTestdataOlmOgAllnsYaml, map[string]*bintree{}},
+					"og-multins.yaml":                    {testQeTestdataOlmOgMultinsYaml, map[string]*bintree{}},
+					"olm-proxy-subscription.yaml":        {testQeTestdataOlmOlmProxySubscriptionYaml, map[string]*bintree{}},
+					"olm-subscription.yaml":              {testQeTestdataOlmOlmSubscriptionYaml, map[string]*bintree{}},
+					"operator.yaml":                      {testQeTestdataOlmOperatorYaml, map[string]*bintree{}},
+					"operatorgroup-serviceaccount.yaml":  {testQeTestdataOlmOperatorgroupServiceaccountYaml, map[string]*bintree{}},
+					"operatorgroup-upgradestrategy.yaml": {testQeTestdataOlmOperatorgroupUpgradestrategyYaml, map[string]*bintree{}},
+					"operatorgroup.yaml":                 {testQeTestdataOlmOperatorgroupYaml, map[string]*bintree{}},
+					"opsrc.yaml":                         {testQeTestdataOlmOpsrcYaml, map[string]*bintree{}},
+					"packageserver.yaml":                 {testQeTestdataOlmPackageserverYaml, map[string]*bintree{}},
+					"platform_operator.yaml":             {testQeTestdataOlmPlatform_operatorYaml, map[string]*bintree{}},
+					"prometheus-antiaffinity.yaml":       {testQeTestdataOlmPrometheusAntiaffinityYaml, map[string]*bintree{}},
+					"prometheus-nodeaffinity.yaml":       {testQeTestdataOlmPrometheusNodeaffinityYaml, map[string]*bintree{}},
+					"role-binding.yaml":                  {testQeTestdataOlmRoleBindingYaml, map[string]*bintree{}},
+					"role.yaml":                          {testQeTestdataOlmRoleYaml, map[string]*bintree{}},
+					"scc.yaml":                           {testQeTestdataOlmSccYaml, map[string]*bintree{}},
+					"scoped-sa-etcd.yaml":                {testQeTestdataOlmScopedSaEtcdYaml, map[string]*bintree{}},
+					"scoped-sa-fine-grained-roles.yaml":  {testQeTestdataOlmScopedSaFineGrainedRolesYaml, map[string]*bintree{}},
+					"scoped-sa-roles.yaml":               {testQeTestdataOlmScopedSaRolesYaml, map[string]*bintree{}},
+					"secret.yaml":                        {testQeTestdataOlmSecretYaml, map[string]*bintree{}},
+					"secret_opaque.yaml":                 {testQeTestdataOlmSecret_opaqueYaml, map[string]*bintree{}},
+					"vpa-crd.yaml":                       {testQeTestdataOlmVpaCrdYaml, map[string]*bintree{}},
 				}},
 				"opm": {nil, map[string]*bintree{
 					"45409_include.yaml": {testQeTestdataOpm45409_includeYaml, map[string]*bintree{}},
