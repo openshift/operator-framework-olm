@@ -625,7 +625,7 @@ github.com/openshift/client-go/config/informers/externalversions/internalinterfa
 github.com/openshift/client-go/config/listers/config/v1
 github.com/openshift/client-go/config/listers/config/v1alpha1
 github.com/openshift/client-go/config/listers/config/v1alpha2
-# github.com/operator-framework/api v0.36.0 => ./staging/api
+# github.com/operator-framework/api v0.37.0 => ./staging/api
 ## explicit; go 1.24.6
 github.com/operator-framework/api/crds
 github.com/operator-framework/api/pkg/constraints
