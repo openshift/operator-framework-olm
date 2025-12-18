@@ -1,11 +1,11 @@
-FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.24-openshift-4.22 AS builder-rhel8
+FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.25-openshift-4.22 AS builder-rhel8
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 WORKDIR /src
 COPY . .
 RUN make build/registry cross
 
-FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24-openshift-4.22 AS builder
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.25-openshift-4.22 AS builder
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 WORKDIR /src
