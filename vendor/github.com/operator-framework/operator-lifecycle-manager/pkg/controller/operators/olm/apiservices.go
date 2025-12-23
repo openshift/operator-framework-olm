@@ -220,17 +220,21 @@ func (a *Operator) isAPIServiceBackendDisrupted(csv *v1alpha1.ClusterServiceVers
 		// 2. UpdatedReplicas < Replicas: Rollout in progress
 		// 3. Generation != ObservedGeneration: Spec changed but not yet observed
 		// 4. AvailableReplicas < desired: Not all replicas are available yet
+		desiredReplicas := int32(1)
+		if deployment.Spec.Replicas != nil {
+			desiredReplicas = *deployment.Spec.Replicas
+		}
 		isRollingOut := deployment.Status.UnavailableReplicas > 0 ||
 			deployment.Status.UpdatedReplicas < deployment.Status.Replicas ||
 			deployment.Generation != deployment.Status.ObservedGeneration ||
-			deployment.Status.AvailableReplicas < *deployment.Spec.Replicas
+			deployment.Status.AvailableReplicas < desiredReplicas
 
 		if isRollingOut {
 			a.logger.Debugf("Deployment %s is rolling out or has unavailable replicas (unavailable=%d, updated=%d/%d, available=%d/%d, generation=%d/%d), likely due to pod disruption",
 				deploymentSpec.Name,
 				deployment.Status.UnavailableReplicas,
 				deployment.Status.UpdatedReplicas, deployment.Status.Replicas,
-				deployment.Status.AvailableReplicas, *deployment.Spec.Replicas,
+				deployment.Status.AvailableReplicas, desiredReplicas,
 				deployment.Status.ObservedGeneration, deployment.Generation)
 
 			// Check pod status to confirm disruption
@@ -251,7 +255,7 @@ func (a *Operator) isAPIServiceBackendDisrupted(csv *v1alpha1.ClusterServiceVers
 			// hasn't been created yet. This is expected disruption during upgrade.
 			// According to the OpenShift contract: "A component must not report Available=False
 			// during the course of a normal upgrade."
-			if len(pods) == 0 && *deployment.Spec.Replicas == 1 && isRollingOut {
+			if len(pods) == 0 && desiredReplicas == 1 && isRollingOut {
 				a.logger.Infof("Single-replica deployment %s is rolling out with no pods yet - expected disruption during upgrade, will not mark CSV as Failed", deploymentSpec.Name)
 				return true
 			}
@@ -293,7 +297,7 @@ func (a *Operator) isAPIServiceBackendDisrupted(csv *v1alpha1.ClusterServiceVers
 								// due to PodAntiAffinity preventing new pod from scheduling while old pod is terminating.
 								// This is especially common in single-node clusters or control plane scenarios.
 								// Per OpenShift contract: "A component must not report Available=False during normal upgrade."
-								if *deployment.Spec.Replicas == 1 && isRollingOut {
+								if desiredReplicas == 1 && isRollingOut {
 									a.logger.Infof("Pod %s is unschedulable during single-replica rollout - likely PodAntiAffinity conflict, treating as expected disruption", pod.Name)
 									isExpectedDisruption = true
 								} else {
@@ -389,7 +393,7 @@ func (a *Operator) isAPIServiceBackendDisrupted(csv *v1alpha1.ClusterServiceVers
 			// "A component must not report Available=False during the course of a normal upgrade."
 			// Single-replica deployments inherently have unavailability during rollout,
 			// but this is acceptable and should not trigger Available=False.
-			if !foundRealFailure && *deployment.Spec.Replicas == 1 && isRollingOut {
+			if !foundRealFailure && desiredReplicas == 1 && isRollingOut {
 				a.logger.Infof("Single-replica deployment %s is rolling out - treating as expected disruption per Available contract", deploymentSpec.Name)
 				return true
 			}
@@ -467,12 +471,19 @@ func (a *Operator) areAPIServicesAvailable(csv *v1alpha1.ClusterServiceVersion) 
 		if !install.IsAPIServiceAvailable(apiService) {
 			a.logger.Debugf("APIService not available for %s", desc.GetName())
 
-			// Check if this unavailability is due to expected pod disruption
-			// If so, we should not immediately mark as failed or trigger Progressing=True
-			if a.isAPIServiceBackendDisrupted(csv, desc.GetName()) {
-				a.logger.Infof("APIService %s unavailable due to pod disruption (e.g., node reboot), will retry", desc.GetName())
-				// Return an error to trigger retry, but don't mark as definitively unavailable
-				return false, olmerrors.NewRetryableError(fmt.Errorf("APIService %s temporarily unavailable due to pod disruption", desc.GetName()))
+			// Only check for pod disruption when CSV is in Succeeded phase.
+			// During Installing phase, deployment rollout is expected and should not
+			// trigger the disruption detection logic.
+			// The disruption detection is specifically for cluster upgrades/reboots
+			// when a previously healthy CSV becomes temporarily unavailable.
+			if csv.Status.Phase == v1alpha1.CSVPhaseSucceeded {
+				// Check if this unavailability is due to expected pod disruption
+				// If so, we should not immediately mark as failed or trigger Progressing=True
+				if a.isAPIServiceBackendDisrupted(csv, desc.GetName()) {
+					a.logger.Infof("APIService %s unavailable due to pod disruption (e.g., node reboot), will retry", desc.GetName())
+					// Return an error to trigger retry, but don't mark as definitively unavailable
+					return false, olmerrors.NewRetryableError(fmt.Errorf("APIService %s temporarily unavailable due to pod disruption", desc.GetName()))
+				}
 			}
 
 			return false, nil
