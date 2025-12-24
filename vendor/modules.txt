@@ -328,8 +328,8 @@ github.com/golang-migrate/migrate/v4/source/iofs
 # github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 ## explicit; go 1.20
 github.com/golang/groupcache/lru
-# github.com/golang/mock v1.6.0
-## explicit; go 1.11
+# github.com/golang/mock v1.7.0-rc.1
+## explicit; go 1.15
 github.com/golang/mock/mockgen
 github.com/golang/mock/mockgen/model
 # github.com/golang/protobuf v1.5.4
@@ -477,14 +477,6 @@ github.com/klauspost/pgzip
 # github.com/kylelemons/godebug v1.1.0
 ## explicit; go 1.11
 github.com/kylelemons/godebug/diff
-# github.com/letsencrypt/boulder v0.0.0-20250624003606-5ddd5acf990d
-## explicit; go 1.24.0
-github.com/letsencrypt/boulder/core
-github.com/letsencrypt/boulder/core/proto
-github.com/letsencrypt/boulder/goodkey
-github.com/letsencrypt/boulder/identifier
-github.com/letsencrypt/boulder/probs
-github.com/letsencrypt/boulder/revocation
 # github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de
 ## explicit
 github.com/liggitt/tabwriter
@@ -566,6 +558,8 @@ github.com/munnerz/goautoneg
 # github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f
 ## explicit
 github.com/mxk/go-flowrate/flowrate
+# github.com/nxadm/tail v1.4.11
+## explicit; go 1.13
 # github.com/onsi/ginkgo/v2 v2.27.5
 ## explicit; go 1.23.0
 github.com/onsi/ginkgo/v2/config
@@ -849,14 +843,14 @@ github.com/russross/blackfriday/v2
 # github.com/secure-systems-lab/go-securesystemslib v0.9.1
 ## explicit; go 1.23.0
 github.com/secure-systems-lab/go-securesystemslib/encrypted
-# github.com/sigstore/fulcio v1.7.1
-## explicit; go 1.24.0
+# github.com/sigstore/fulcio v1.8.3
+## explicit; go 1.25.0
 github.com/sigstore/fulcio/pkg/certificate
-# github.com/sigstore/protobuf-specs v0.4.3
+# github.com/sigstore/protobuf-specs v0.5.0
 ## explicit; go 1.22.0
 github.com/sigstore/protobuf-specs/gen/pb-go/common/v1
-# github.com/sigstore/sigstore v1.9.5
-## explicit; go 1.23.0
+# github.com/sigstore/sigstore v1.10.0
+## explicit; go 1.25.0
 github.com/sigstore/sigstore/pkg/cryptoutils
 github.com/sigstore/sigstore/pkg/signature
 github.com/sigstore/sigstore/pkg/signature/options
@@ -904,9 +898,6 @@ github.com/stretchr/testify/require
 # github.com/tidwall/btree v1.8.1
 ## explicit; go 1.20
 github.com/tidwall/btree
-# github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399
-## explicit
-github.com/titanous/rocacheck
 # github.com/ulikunitz/xz v0.5.15
 ## explicit; go 1.12
 github.com/ulikunitz/xz
@@ -969,7 +960,7 @@ go.opencensus.io/trace/tracestate
 ## explicit; go 1.24.0
 go.opentelemetry.io/auto/sdk
 go.opentelemetry.io/auto/sdk/internal/telemetry
-# go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0
+# go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0
 ## explicit; go 1.23.0
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/internal
@@ -992,10 +983,10 @@ go.opentelemetry.io/otel/semconv/internal
 go.opentelemetry.io/otel/semconv/v1.12.0
 go.opentelemetry.io/otel/semconv/v1.17.0
 go.opentelemetry.io/otel/semconv/v1.21.0
-go.opentelemetry.io/otel/semconv/v1.30.0
 go.opentelemetry.io/otel/semconv/v1.37.0
 go.opentelemetry.io/otel/semconv/v1.37.0/httpconv
 go.opentelemetry.io/otel/semconv/v1.37.0/otelconv
+go.opentelemetry.io/otel/semconv/v1.37.0/rpcconv
 # go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.38.0
 ## explicit; go 1.23.0
 go.opentelemetry.io/otel/exporters/otlp/otlptrace
@@ -1118,7 +1109,7 @@ go.podman.io/storage/pkg/unshare
 # go.uber.org/multierr v1.11.0
 ## explicit; go 1.19
 go.uber.org/multierr
-# go.uber.org/zap v1.27.0
+# go.uber.org/zap v1.27.1
 ## explicit; go 1.19
 go.uber.org/zap
 go.uber.org/zap/buffer
@@ -1145,7 +1136,6 @@ golang.org/x/crypto/hkdf
 golang.org/x/crypto/internal/alias
 golang.org/x/crypto/internal/poly1305
 golang.org/x/crypto/nacl/secretbox
-golang.org/x/crypto/ocsp
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
 golang.org/x/crypto/openpgp/elgamal
@@ -1155,7 +1145,6 @@ golang.org/x/crypto/openpgp/s2k
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/salsa20/salsa
 golang.org/x/crypto/scrypt
-golang.org/x/crypto/sha3
 # golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 ## explicit; go 1.23.0
 golang.org/x/exp/maps
