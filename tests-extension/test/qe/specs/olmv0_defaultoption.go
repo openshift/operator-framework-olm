@@ -20,6 +20,7 @@ import (
 
 	// TODO: Add github package to vendor to enable GitHub API tests
 	// "github.com/google/go-github/v60/github"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 
@@ -65,6 +66,8 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 
 	// Polarion ID: 83027
 	g.It("PolarionID:83027-[OTP]-Unnecessary churn with operatorgroup clusterrole management[Serial]", func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+
 		dr := make(olmv0util.DescriberResrouce)
 		itName := g.CurrentSpecReport().FullText()
 		dr.AddIr(itName)
@@ -328,6 +331,559 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 				}
 			}
 		}
+	})
+
+	g.It("PolarionID:31693-[OTP][Skipped:Disconnected]Check CSV information on the PackageManifest", func() {
+		exutil.SkipBaselineCaps(oc, "None")
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+
+		g.By("The relatedImages should exist")
+		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", "-n", "openshift-marketplace", "prometheus", "-o=jsonpath={.status.channels[?(.name=='beta')].currentCSVDesc.relatedImages}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(msg).NotTo(o.BeEmpty())
+
+		g.By("The minKubeVersion should exist")
+		msg, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", "-n", "openshift-marketplace", "prometheus", "-o=jsonpath={.status.channels[?(.name=='beta')].currentCSVDesc.minKubeVersion}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(msg).NotTo(o.BeEmpty())
+
+		g.By("nativeAPI is optional for prometheus")
+		_, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", "-n", "openshift-marketplace", "prometheus", "-o=jsonpath={.status.channels[?(.name=='beta')].currentCSVDesc.nativeAPIs}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+	})
+
+	g.It("PolarionID:54038-[OTP][Skipped:Disconnected]Comply with Operator Anti-Affinity definition", func() {
+		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+		exutil.SkipBaselineCaps(oc, "None")
+
+		buildDir := exutil.FixturePath("testdata", "olm")
+		subFile := filepath.Join(buildDir, "olm-subscription.yaml")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup.yaml")
+		prometheusCR := filepath.Join(buildDir, "prometheus-antiaffinity.yaml")
+
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "test-og-54038",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-54038",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      "community-operators",
+			CatalogSourceNamespace: "openshift-marketplace",
+			Channel:                "beta",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "prometheus",
+			SingleNamespace:        true,
+			Template:               subFile,
+		}
+
+		workerNodes, _ := exutil.GetSchedulableLinuxWorkerNodes(oc)
+		firstNode := workerNodes[0]
+
+		exists, _ := olmv0util.ClusterPackageExists(oc, sub)
+		if !exists {
+			g.Skip("SKIP:PackageMissing prometheus does not exist in catalog community-operators")
+		}
+		if exutil.IsSNOCluster(oc) {
+			g.Skip("SNO cluster - skipping test ...")
+		}
+		if strings.TrimSpace(firstNode.Name) == "" {
+			g.Skip("Skipping because there's no cluster with READY state")
+		}
+
+		g.By("Install the OperatorGroup in a random project")
+		og.CreateWithCheck(oc, itName, dr)
+		g.By("Install the Prometheus with Automatic approval")
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("Add app label")
+		_, err := oc.AsAdmin().WithoutNamespace().Run("label").Args("node", firstNode.Name, "app_54038=dev", "--overwrite").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		defer func() {
+			_, _ = oc.AsAdmin().WithoutNamespace().Run("label").Args("node", firstNode.Name, "app_54038-").Output()
+		}()
+
+		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("nodes", "--show-labels", "--no-headers").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		e2e.Logf("Node labels %s", msg)
+
+		g.By("Install the Prometheus CR")
+		_, err = oc.WithoutNamespace().AsAdmin().Run("create").Args("-f", prometheusCR, "-n", oc.Namespace()).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Available", exutil.Ok, []string{"Prometheus", "example", "-n", oc.Namespace(), "-o=jsonpath={.status.conditions[0].type}"}).Check(oc)
+
+		g.By("Ensure that pod is not scheduled in the node with the defined label")
+		deployedNode := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "pods", "prometheus-example-0", "-n", oc.Namespace(), "-o=jsonpath={.spec.nodeName}")
+		if firstNode.Name == deployedNode {
+			e2e.Failf("Prometheus is deployed in the same node of app_54038 label. Node: %s . Node Labels: %s", deployedNode, msg)
+		}
+	})
+
+	g.It("PolarionID:54036-[OTP][Skipped:Disconnected]Comply with Operator NodeAffinity definition", func() {
+		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+		exutil.SkipBaselineCaps(oc, "None")
+
+		buildDir := exutil.FixturePath("testdata", "olm")
+		subFile := filepath.Join(buildDir, "olm-subscription.yaml")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup.yaml")
+		prometheusCRTemplate := filepath.Join(buildDir, "prometheus-nodeaffinity.yaml")
+
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "test-og-54036",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-54036",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      "community-operators",
+			CatalogSourceNamespace: "openshift-marketplace",
+			Channel:                "beta",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "prometheus",
+			SingleNamespace:        true,
+			Template:               subFile,
+		}
+
+		workerNodes, _ := exutil.GetSchedulableLinuxWorkerNodes(oc)
+		firstNode := ""
+		for _, worker := range workerNodes {
+			for _, con := range worker.Status.Conditions {
+				_, ok := worker.Labels["node-role.kubernetes.io/edge"]
+				if con.Type == "Ready" && con.Status == "True" && !ok {
+					firstNode = worker.Name
+				}
+			}
+		}
+		if exutil.IsSNOCluster(oc) || firstNode == "" {
+			g.Skip("SNO cluster - skipping test ...")
+		}
+		if strings.TrimSpace(firstNode) == "" {
+			g.Skip("Skipping because there's no cluster with READY state")
+		}
+
+		g.By("Install the OperatorGroup in a random project")
+		og.CreateWithCheck(oc, itName, dr)
+
+		exists, _ := olmv0util.ClusterPackageExists(oc, sub)
+		if !exists {
+			g.Skip("SKIP:PackageMissing learn does not exist in catalog qe-app-registry")
+		}
+
+		g.By("Install the Prometheus with Automatic approval")
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("Install the Prometheus CR")
+		err := olmv0util.ApplyResourceFromTemplate(oc, "--ignore-unknown-parameters=true", "-f", prometheusCRTemplate, "-p", "NODE_NAME="+firstNode, "NAMESPACE="+oc.Namespace())
+		o.Expect(err).NotTo(o.HaveOccurred())
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Available", exutil.Ok, []string{"Prometheus", "example", "-n", oc.Namespace(), "-o=jsonpath={.status.conditions[0].type}"}).Check(oc)
+
+		g.By("Ensure that pod is scaled in the specified node")
+		deployedNode := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "pods", "prometheus-example-0", "-n", oc.Namespace(), "-o=jsonpath={.spec.nodeName}")
+		o.Expect(firstNode).To(o.Equal(deployedNode))
+	})
+
+	g.It("PolarionID:24850-[OTP]Allow users to edit the deployment of an active CSV", func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
+		buildDir := exutil.FixturePath("testdata", "olm")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup.yaml")
+		subTemplate := filepath.Join(buildDir, "olm-subscription.yaml")
+		catsrcTemplate := filepath.Join(buildDir, "catalogsource-image.yaml")
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-24850",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		og.CreateWithCheck(oc, itName, dr)
+
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "catsrc-24850",
+			Namespace:   oc.Namespace(),
+			DisplayName: "QE Operators",
+			Publisher:   "OpenShift QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/learn-operator-index:v25",
+			Template:    catsrcTemplate,
+		}
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-24850",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      catsrc.Name,
+			CatalogSourceNamespace: catsrc.Namespace,
+			IpApproval:             "Automatic",
+			Channel:                "beta",
+			OperatorPackage:        "learn",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("Get pod name")
+		podName, err := oc.AsAdmin().Run("get").Args("pods", "-l", "name=learn-operator", "-n", oc.Namespace(), "-o=jsonpath={.items..metadata.name}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		g.By("Patch the deploy object by adding an environment variable")
+		_, err = oc.AsAdmin().WithoutNamespace().Run("set").Args("env", "deploy/learn-operator", "A=B", "-n", oc.Namespace()).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		g.By("Get restarted pod name")
+		podNameAfterPatch, err := oc.AsAdmin().Run("get").Args("pods", "-l", "name=learn-operator", "-n", oc.Namespace(), "-o=jsonpath={.items..metadata.name}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(podName).NotTo(o.Equal(podNameAfterPatch))
+	})
+
+	g.It("PolarionID:24387-[OTP][Skipped:Disconnected]Any CRD upgrade is allowed if there is only one owner in a cluster [Disruptive]", func() {
+		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipBaselineCaps(oc, "None")
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+
+		buildDir := exutil.FixturePath("testdata", "olm")
+		csTemplate := filepath.Join(buildDir, "catalogsource-image.yaml")
+		subFile := filepath.Join(buildDir, "olm-subscription.yaml")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup.yaml")
+
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
+		cs := olmv0util.CatalogSourceDescription{
+			Name:        "cs-24387",
+			Namespace:   "openshift-marketplace",
+			DisplayName: "OLM QE Operators",
+			Publisher:   "bandrade",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/etcd-index-24387:5.0",
+			Template:    csTemplate,
+		}
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "test-og-24387",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "etcd",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      "community-operators",
+			CatalogSourceNamespace: "openshift-marketplace",
+			Channel:                "singlenamespace-alpha",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "etcd",
+			SingleNamespace:        true,
+			Template:               subFile,
+			StartingCSV:            "etcdoperator.v0.9.4",
+		}
+		subModified := olmv0util.SubscriptionDescription{
+			SubName:                "etcd",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      cs.Name,
+			CatalogSourceNamespace: "openshift-marketplace",
+			IpApproval:             "Automatic",
+			Template:               subFile,
+			Channel:                "singlenamespace-alpha",
+			OperatorPackage:        "etcd",
+			StartingCSV:            "etcdoperator.v0.9.4",
+			SingleNamespace:        true,
+		}
+
+		e2e.Logf("Check if %v exists in the %v catalog", sub.OperatorPackage, sub.CatalogSourceName)
+		exists, err := olmv0util.ClusterPackageExists(oc, sub)
+		if !exists {
+			g.Skip("SKIP:PackageMissing etcd does not exist in catalog community-operators")
+		}
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		defer cs.Delete(itName, dr)
+		cs.Create(oc, itName, dr)
+		og.CreateWithCheck(oc, itName, dr)
+		sub.Create(oc, itName, dr)
+		sub.Delete(itName, dr)
+		sub.DeleteCSV(itName, dr)
+
+		subModified.Create(oc, itName, dr)
+		crdYamlOutput, err := oc.AsAdmin().Run("get").Args("crd", "etcdclusters.etcd.database.coreos.com", "-o=yaml").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(crdYamlOutput).To(o.ContainSubstring("propertyIncludedTest"))
+	})
+
+	g.It("PolarionID:42970-[OTP]OperatorGroup status indicates cardinality conflicts - SingleNamespace", func() {
+		buildDir := exutil.FixturePath("testdata", "olm")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup.yaml")
+
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+		ns := oc.Namespace()
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-42970",
+			Namespace: ns,
+			Template:  ogTemplate,
+		}
+		og1 := olmv0util.OperatorGroupDescription{
+			Name:      "og-42970-1",
+			Namespace: ns,
+			Template:  ogTemplate,
+		}
+
+		og.Create(oc, itName, dr)
+		og1.Create(oc, itName, dr)
+
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "MultipleOperatorGroupsFound", exutil.Ok, []string{"og", og.Name, "-n", ns, "-o=jsonpath={.status.conditions..reason}"}).Check(oc)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "MultipleOperatorGroupsFound", exutil.Ok, []string{"og", og1.Name, "-n", ns, "-o=jsonpath={.status.conditions..reason}"}).Check(oc)
+
+		og1.Delete(itName, dr)
+		err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 360*time.Second, false, func(ctx context.Context) (bool, error) {
+			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("og", og.Name, "-n", ns, "-o=jsonpath={.status.conditions..reason}").Output()
+			if err != nil {
+				e2e.Logf("Fail to get og: %s, error: %s and try again", og.Name, err)
+				return false, nil
+			}
+			return strings.TrimSpace(output) == "", nil
+		})
+		exutil.AssertWaitPollNoErr(err, "The error MultipleOperatorGroupsFound still be reported in status")
+	})
+
+	g.It("PolarionID:42972-[OTP]OperatorGroup status should indicate if the SA named in spec not found", func() {
+		buildDir := exutil.FixturePath("testdata", "olm")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup-serviceaccount.yaml")
+		sa := "scoped-42972"
+
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
+		ns := oc.Namespace()
+		og := olmv0util.OperatorGroupDescription{
+			Name:               "og-42972",
+			Namespace:          ns,
+			Template:           ogTemplate,
+			ServiceAccountName: sa,
+		}
+
+		og.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "ServiceAccountNotFound", exutil.Ok, []string{"og", og.Name, "-n", ns, "-o=jsonpath={.status.conditions..reason}"}).Check(oc)
+
+		_, err := oc.WithoutNamespace().AsAdmin().Run("create").Args("sa", sa, "-n", ns).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 360*time.Second, false, func(ctx context.Context) (bool, error) {
+			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("og", og.Name, "-n", ns, "-o=jsonpath={.status.conditions..reason}").Output()
+			if err != nil {
+				e2e.Logf("Fail to get og: %s, error: %s and try again", og.Name, err)
+				return false, nil
+			}
+			return strings.TrimSpace(output) == "", nil
+		})
+		exutil.AssertWaitPollNoErr(err, "The error ServiceAccountNotFound still be reported in status")
+	})
+
+	g.It("PolarionID:21130-[OTP]Fetching non-existent PackageManifest should return 404", func() {
+		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", "--all-namespaces", "--no-headers").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		packageserverLines := strings.Split(msg, "\n")
+		if len(packageserverLines) > 0 {
+			raw, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", "a_package_that_not_exists", "-o", "yaml", "--loglevel=8").Output()
+			o.Expect(err).To(o.HaveOccurred())
+			o.Expect(raw).To(o.ContainSubstring("\"code\": 404"))
+		} else {
+			e2e.Failf("No packages to evaluate if 404 works when a PackageManifest does not exist")
+		}
+	})
+
+	g.It("PolarionID:24057-[OTP]Have terminationMessagePolicy defined as FallbackToLogsOnError", g.Label("NonHyperShiftHOST"), func() {
+		labels := [...]string{"app=packageserver", "app=catalog-operator", "app=olm-operator"}
+		for _, l := range labels {
+			msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-o=jsonpath={range .items[*].spec}{.containers[*].name}{\"\\t\"}", "-n", "openshift-operator-lifecycle-manager", "-l", l).Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			amountOfContainers := len(strings.Split(msg, "\t"))
+			msg, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-o=jsonpath={range .items[*].spec}{.containers[*].terminationMessagePolicy}{\"\\t\"}", "-n", "openshift-operator-lifecycle-manager", "-l", l).Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			reg := regexp.MustCompile("FallbackToLogsOnError")
+			withPolicy := len(reg.FindAllStringIndex(msg, -1))
+			o.Expect(amountOfContainers).To(o.Equal(withPolicy))
+			if amountOfContainers != withPolicy {
+				e2e.Failf("OLM does not have all containers definied with FallbackToLogsOnError terminationMessagePolicy")
+			}
+		}
+	})
+
+	g.It("PolarionID:49130-[OTP][Skipped:Disconnected]Default CatalogSources deployed by marketplace do not have toleration for tainted nodes", g.Label("NonHyperShiftHOST"), func() {
+		exutil.SkipBaselineCaps(oc, "None")
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+
+		catalogSources := map[string]string{
+			"certified-operators": "Certified Operators",
+			"community-operators": "Community Operators",
+			"redhat-operators":    "Red Hat Operators",
+		}
+
+		for catalog, label := range catalogSources {
+			rawPods, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
+				"pods", "-n", "openshift-marketplace",
+				"-l", fmt.Sprintf("olm.catalogSource=%s", catalog),
+				"-o", "name").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+
+			pods := strings.Split(strings.TrimSpace(rawPods), "\n")
+			if len(pods) == 0 || pods[0] == "" {
+				e2e.Logf("No pods found for %s, skipping...", label)
+				continue
+			}
+
+			found := false
+			for _, name := range pods {
+				output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(name, "-n", "openshift-marketplace", "-o=jsonpath={.spec.tolerations}").Output()
+				if err != nil && apierrors.IsNotFound(err) {
+					e2e.Logf("pod %v does not exist", name)
+					continue
+				}
+				o.Expect(err).NotTo(o.HaveOccurred())
+				if !strings.Contains(output, "node-role.kubernetes.io/master") || !strings.Contains(output, "tolerationSeconds\":120") {
+					e2e.Logf("pod %v with incorrect tolerations found: %v", name, output)
+					found = true
+					break
+				}
+			}
+
+			if found {
+				e2e.Failf("Pod with incorrect tolerations found for %s", label)
+			}
+		}
+	})
+
+	g.It("PolarionID:32613-[OTP][Skipped:Disconnected]Operators won't install if the CSV dependency is already installed", func() {
+		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+		exutil.SkipBaselineCaps(oc, "None")
+
+		buildDir := exutil.FixturePath("testdata", "olm")
+		csTemplate := filepath.Join(buildDir, "catalogsource-image.yaml")
+		ogTemplate := filepath.Join(buildDir, "operatorgroup.yaml")
+		subTemplate := filepath.Join(buildDir, "olm-subscription.yaml")
+
+		cs := olmv0util.CatalogSourceDescription{
+			Name:        "prometheus-dependency-cs",
+			Namespace:   "openshift-marketplace",
+			DisplayName: "OLM QE",
+			Publisher:   "OLM QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/etcd-prometheus-dependency-index:11.0",
+			Template:    csTemplate,
+		}
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+		defer cs.Delete(itName, dr)
+		cs.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "READY", exutil.Ok, []string{"catsrc", cs.Name, "-n", cs.Namespace, "-o=jsonpath={.status..lastObservedState}"}).Check(oc)
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-32613",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		og.CreateWithCheck(oc, itName, dr)
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-32613",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      "prometheus-dependency-cs",
+			CatalogSourceNamespace: "openshift-marketplace",
+			Channel:                "singlenamespace-alpha",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "etcd-service-monitor",
+			StartingCSV:            "etcdoperator.v0.9.4",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.4", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("Assert that prometheus dependency is resolved")
+		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", oc.Namespace()).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(msg).To(o.ContainSubstring("prometheus"))
+
+		sub = olmv0util.SubscriptionDescription{
+			SubName:                "prometheus-32613",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      "community-operators",
+			CatalogSourceNamespace: "openshift-marketplace",
+			IpApproval:             "Automatic",
+			Channel:                "beta",
+			OperatorPackage:        "prometheus",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		sub.CreateWithoutCheck(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "prometheus-beta-community-operators-openshift-marketplace exists", exutil.Ok, []string{"subs", "prometheus-32613", "-n", oc.Namespace(), "-o=jsonpath={.status.conditions..message}"}).Check(oc)
+	})
+
+	g.It("PolarionID:24055-[OTP][Skipped:Disconnected]Check for defaultChannel mandatory field when having multiple channels", func() {
+		olmBaseDir := exutil.FixturePath("testdata", "olm")
+		cmWithoutDefault := filepath.Join(olmBaseDir, "configmap-without-defaultchannel.yaml")
+		cmWithDefault := filepath.Join(olmBaseDir, "configmap-with-defaultchannel.yaml")
+		csNamespaced := filepath.Join(olmBaseDir, "catalogsource-namespace.yaml")
+
+		namespace := "scenario3"
+		defer olmv0util.RemoveNamespace(namespace, oc)
+
+		_, err := oc.WithoutNamespace().AsAdmin().Run("create").Args("ns", namespace).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		_, err = oc.WithoutNamespace().AsAdmin().Run("create").Args("-f", cmWithoutDefault).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		cs := olmv0util.CatalogSourceDescription{
+			Name:      "scenario3",
+			Namespace: "scenario3",
+		}
+		_, err = oc.WithoutNamespace().AsAdmin().Run("create").Args("-f", csNamespaced).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		cs.SetSCCRestricted(oc)
+
+		err = wait.PollUntilContextTimeout(context.TODO(), 30*time.Second, 180*time.Second, false, func(ctx context.Context) (bool, error) {
+			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-l", "olm.catalogSource=scenario3", "-n", "scenario3").Output()
+			if err != nil {
+				return false, nil
+			}
+			return strings.Contains(output, "CrashLoopBackOff"), nil
+		})
+		exutil.AssertWaitPollNoErr(err, "pod of olm.catalogSource=scenario3 is not CrashLoopBackOff")
+
+		_, err = oc.WithoutNamespace().AsAdmin().Run("apply").Args("-f", cmWithDefault).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		err = wait.PollUntilContextTimeout(context.TODO(), 30*time.Second, 180*time.Second, false, func(ctx context.Context) (bool, error) {
+			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-l", "olm.catalogSource=scenario3", "-n", "scenario3").Output()
+			if err != nil {
+				return false, nil
+			}
+			return strings.Contains(output, "Running"), nil
+		})
+		exutil.AssertWaitPollNoErr(err, "pod of olm.catalogSource=scenario3 is not running")
 	})
 
 	// Polarion ID: 72017
