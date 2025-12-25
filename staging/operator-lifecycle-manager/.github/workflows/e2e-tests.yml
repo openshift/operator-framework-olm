@@ -17,7 +17,7 @@ jobs:
       sha: ${{ steps.vars.outputs.sha }}
     steps:
       # checkout code and setup go
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
@@ -27,7 +27,7 @@ jobs:
       - name: Save image
         run: docker save quay.io/operator-framework/olm:local -o olm-image.tar
       - name: Upload Docker image as artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: olm-image.tar
           path: olm-image.tar
@@ -49,14 +49,14 @@ jobs:
       E2E_KUBECONFIG_ROOT: ${{ github.workspace }}/kubeconfigs
     steps:
       # checkout code and setup go
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
 
       # load the olm image
       - name: Load OLM Docker image
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: olm-image.tar
           path: .
@@ -103,7 +103,7 @@ jobs:
       # archive test results
       - name: Archive Test Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-test-output-${{ (github.event.pull_request.head.sha || github.sha) }}-${{ github.run_id }}-${{ matrix.parallel-id }}
           path: ${{ env.ARTIFACT_DIR }}/*
@@ -136,14 +136,14 @@ jobs:
       E2E_KUBECONFIG_ROOT: ${{ github.workspace }}/kubeconfigs
     steps:
       # checkout code and setup go
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
 
       # load the olm image
       - name: Load OLM Docker image
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: olm-image.tar
           path: .
@@ -186,7 +186,7 @@ jobs:
       # archive test results
       - name: Archive Test Artifacts
         if: ${{ always() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-test-output-${{ (github.event.pull_request.head.sha || github.sha) }}-${{ github.run_id }}-flakes
           path: ${{ env.ARTIFACT_DIR }}/*
