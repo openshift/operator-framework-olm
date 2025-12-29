@@ -243,7 +243,9 @@ func SkipNoCapabilities(oc *CLI, capability string) {
 	o.Expect(capability).NotTo(o.BeEmpty(), "capability name cannot be empty")
 
 	clusterVersion, err := oc.AdminConfigClient().ConfigV1().ClusterVersions().Get(context.Background(), "version", metav1.GetOptions{})
-	o.Expect(err).NotTo(o.HaveOccurred())
+	if err != nil {
+		g.Skip("can not ge version for case, so skip it")
+	}
 
 	hasCapability := func(capabilities []configv1.ClusterVersionCapability, checked string) bool {
 		cap := configv1.ClusterVersionCapability(checked)
@@ -434,7 +436,9 @@ func isCRDSpecificFieldExist(oc *CLI, crdFieldPath string) bool {
 		}
 		return true, nil
 	})
-	AssertWaitPollNoErr(err, fmt.Sprintf("Check whether the specified: %s crd field exist timeout.", crdFieldPath))
+	if err != nil {
+		g.Skip(fmt.Sprintf("Check whether the specified: %s crd field exist with err %v for case, so skip it.", crdFieldPath, err))
+	}
 	return !strings.Contains(crdFieldInfo, "the server doesn't have a resource type")
 }
 

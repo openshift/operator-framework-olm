@@ -14,7 +14,7 @@ import (
 )
 
 // it is mapping to the Describe "OLM on hypershift" in olm.go
-var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", g.Label("NonHyperShiftHOST"), func() {
+var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", func() {
 	defer g.GinkgoRecover()
 
 	var (
