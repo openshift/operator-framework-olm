@@ -9,6 +9,7 @@ import (
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
+	e2e "k8s.io/kubernetes/test/e2e/framework"
 
 	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
 	"github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/architecture"
@@ -290,7 +291,10 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within all namespace", func()
 
 		// OCP-21532
 		g.By("Check the global operator global-operators support all namesapces")
-		cl.Add(olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "[]", exutil.Ok, []string{"og", "global-operators", "-n", "openshift-operators", "-o=jsonpath={.status.namespaces}"}))
+		output := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "og", "global-operators", "-n", "openshift-operators", "-o=jsonpath={.status.namespaces}")
+		if !olmv0util.IsAllNamespacesOutput(output) {
+			e2e.Failf("The namespaces of the OperatorGroup status is incorrect. It should indicate all namespaces, but got: %s", output)
+		}
 
 		g.By("Create og")
 		ns := oc.Namespace()
@@ -321,6 +325,72 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within all namespace", func()
 
 		cl.Check(oc)
 
+	})
+
+	g.It("PolarionID:23172-[OTP]copied CSV is created in a new namespace for all namespaces operator [Serial]", func() {
+		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+		exutil.SkipBaselineCaps(oc, "None")
+		exutil.SkipForSNOCluster(oc)
+		exutil.SkipNoCapabilities(oc, "marketplace")
+		olmv0util.ValidateAccessEnvironment(oc)
+		var (
+			itName              = g.CurrentSpecReport().FullText()
+			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+			catsrcImageTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+			subTemplate         = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+			catsrc              = olmv0util.CatalogSourceDescription{
+				Name:        "catsrc-23172",
+				Namespace:   "openshift-marketplace",
+				DisplayName: "QE Operators",
+				Publisher:   "OpenShift QE",
+				SourceType:  "grpc",
+				Address:     "quay.io/olmqe/learn-operator-index:v25",
+				Template:    catsrcImageTemplate,
+			}
+			sub = olmv0util.SubscriptionDescription{
+				SubName:                "sub-23172",
+				Namespace:              "openshift-operators",
+				Channel:                "alpha",
+				IpApproval:             "Automatic",
+				OperatorPackage:        "learn",
+				CatalogSourceName:      catsrc.Name,
+				CatalogSourceNamespace: catsrc.Namespace,
+				Template:               subTemplate,
+				SingleNamespace:        false,
+			}
+			project = olmv0util.ProjectDescription{
+				Name:            "olm-23172-" + exutil.GetRandomString(),
+				TargetNamespace: oc.Namespace(),
+			}
+		)
+
+		g.By("Check the global operator global-operators support all namespaces")
+		output := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "og", "global-operators", "-n", "openshift-operators", "-o=jsonpath={.status.namespaces}")
+		if !olmv0util.IsAllNamespacesOutput(output) {
+			e2e.Failf("The namespaces of the OperatorGroup status is incorrect. It should indicate all namespaces, but got: %s", output)
+		}
+
+		g.By("Create catalog source")
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		g.By("Create operator targeted at all namespaces")
+		defer sub.Delete(itName, dr)
+		defer func() {
+			if sub.InstalledCSV != "" {
+				sub.GetCSV().Delete(itName, dr)
+			}
+		}()
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("Create new namespace")
+		project.Create(oc, itName, dr)
+
+		g.By("Check the CSV is copied into the new namespace")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", project.Name, "-o=jsonpath={.status.phase}"}).Check(oc)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Copied", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", project.Name, "-o=jsonpath={.status.reason}"}).Check(oc)
 	})
 
 	g.It("PolarionID:24906-[OTP]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:24906-[Skipped:Disconnected]Operators requesting cluster-scoped permission can trigger kube GC bug[Serial]"), func() {
