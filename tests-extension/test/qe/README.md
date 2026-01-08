@@ -527,6 +527,11 @@ Use " [command] --help" for more information about a command.
    
    /payload-aggregate periodic-ci-openshift-release-master-ci-<release version>-e2e-gcp-ovn-serial 5
    ```
+4. **For ReleaseGate cases** contributing to openshift-tests:
+   Test blocking jobs
+   ```bash
+   # Example: /payload-aggregate periodic-ci-openshift-release-master-ci-4.21-e2e-azure-ovn-upgrade 5
+   ```
 
 ## Test Case Migration Mapping
 
