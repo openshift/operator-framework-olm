@@ -1389,6 +1389,21 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 
 	})
 
+	g.It("PolarionID:25674-[OTP]restart the marketplace-operator [Disruptive]", g.Label("NonHyperShiftHOST"), func() {
+		exutil.SkipNoCapabilities(oc, "marketplace")
+
+		g.By("delete pod of marketplace")
+		_, err := exutil.OcAction(oc, "delete", exutil.AsAdmin, exutil.WithoutNamespace, "pod", "--selector=name=marketplace-operator", "-n", "openshift-marketplace", "--ignore-not-found")
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		_, _ = exec.Command("bash", "-c", "sleep 10").Output()
+
+		g.By("pod of marketplace restart")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "TrueFalseFalse", exutil.Ok, []string{"clusteroperator", "marketplace",
+			"-o=jsonpath={.status.conditions[?(@.type==\"Available\")].status}{.status.conditions[?(@.type==\"Progressing\")].status}{.status.conditions[?(@.type==\"Degraded\")].status}"}).Check(oc)
+
+	})
+
 	g.It("PolarionID:43642-[OTP][Skipped:Disconnected]Alert rule is configured to check catalogsource_ready in openshift-marketplace", g.Label("NonHyperShiftHOST"), func() {
 		exutil.SkipBaselineCaps(oc, "None")
 		exutil.SkipIfDisableDefaultCatalogsource(oc)

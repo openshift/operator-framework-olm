@@ -207,3 +207,49 @@ func (catsrc *CatalogSourceDescription) Delete(itName string, dr DescriberResrou
 	e2e.Logf("delete carsrc %s, ns is %s", catsrc.Name, catsrc.Namespace)
 	dr.GetIr(itName).Remove(catsrc.Name, "catsrc", catsrc.Namespace)
 }
+
+// CheckCatalogSourcesReady checks if all CatalogSources in openshift-marketplace namespace are in READY state
+// If any CatalogSource is not READY, it skips the test with a descriptive message
+//
+// This function is typically called before creating a Subscription to ensure all catalog sources
+// are healthy and ready to serve operator bundles. This helps avoid test failures due to
+// catalog source connectivity or availability issues.
+//
+// Parameters:
+//   - oc: OpenShift CLI client for executing commands
+//
+// Behavior:
+//   - Retrieves all CatalogSources from openshift-marketplace namespace
+//   - Checks the lastObservedState of each catalog source
+//   - Skips the test if any catalog source is not in READY state
+//   - Logs a message if all catalog sources are ready
+func CheckCatalogSourcesReady(oc *exutil.CLI) {
+	g.By("Checking if all CatalogSources in openshift-marketplace are READY")
+	catsrcStates, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("catalogsource", "-n", "openshift-marketplace", "-o=jsonpath={range .items[*]}{.metadata.name}{\"=\"}{.status.connectionState.lastObservedState}{\":\"}{end}").Output()
+	if err != nil && !strings.Contains(err.Error(), "No resources found") {
+		e2e.Logf("Warning: Failed to get CatalogSource states: %v", err)
+	}
+	if catsrcStates != "" {
+		allReady := true
+		notReadyCatsrcs := []string{}
+		catsrcList := strings.Split(strings.TrimSuffix(catsrcStates, ":"), ":")
+		for _, catsrc := range catsrcList {
+			if catsrc == "" {
+				continue
+			}
+			parts := strings.Split(catsrc, "=")
+			if len(parts) == 2 {
+				name := parts[0]
+				state := parts[1]
+				if state != "READY" {
+					allReady = false
+					notReadyCatsrcs = append(notReadyCatsrcs, fmt.Sprintf("%s(%s)", name, state))
+				}
+			}
+		}
+		if !allReady {
+			g.Skip(fmt.Sprintf("Skipping test: CatalogSources in openshift-marketplace are not all READY. Not ready: %s", strings.Join(notReadyCatsrcs, ", ")))
+		}
+		e2e.Logf("All CatalogSources in openshift-marketplace are READY")
+	}
+}

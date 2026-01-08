@@ -72,6 +72,9 @@ func (sub *SubscriptionDescription) Update(oc *exutil.CLI, itName string, dr Des
 // the method is to just create sub, and save it to dr, do not check its state.
 // Note that, this func doesn't get the installedCSV, this may lead to your operator CSV won't be deleted when calling sub.deleteCSV()
 func (sub *SubscriptionDescription) CreateWithoutCheck(oc *exutil.CLI, itName string, dr DescriberResrouce) {
+	// Check if all CatalogSources in openshift-marketplace are READY before creating subscription
+	CheckCatalogSourcesReady(oc)
+
 	//isAutomatic := strings.Compare(sub.IpApproval, "Automatic") == 0
 
 	//startingCSV is not necessary. And, if there are multi same package from different CatalogSource, it will lead to error.
@@ -397,6 +400,9 @@ type SubscriptionDescriptionProxy struct {
 
 // the method is to just create sub with proxy, and save it to dr, do not check its state.
 func (sub *SubscriptionDescriptionProxy) CreateWithoutCheck(oc *exutil.CLI, itName string, dr DescriberResrouce) {
+	// Check if all CatalogSources in openshift-marketplace are READY before creating subscription
+	CheckCatalogSourcesReady(oc)
+
 	e2e.Logf("install subscriptionDescriptionProxy")
 	err := ApplyResourceFromTemplate(oc, "--ignore-unknown-parameters=true", "-f", sub.Template, "-p", "SUBNAME="+sub.SubName, "SUBNAMESPACE="+sub.Namespace, "CHANNEL="+sub.Channel,
 		"APPROVAL="+sub.IpApproval, "OPERATORNAME="+sub.OperatorPackage, "SOURCENAME="+sub.CatalogSourceName, "SOURCENAMESPACE="+sub.CatalogSourceNamespace, "STARTINGCSV="+sub.StartingCSV,
