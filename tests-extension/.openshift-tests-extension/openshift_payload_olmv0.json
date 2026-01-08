@@ -472,6 +472,21 @@
     }
   },
   {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:25674-[OTP]restart the marketplace-operator [Serial][Disruptive]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
     "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:43642-[OTP][Skipped:Disconnected]Alert rule is configured to check catalogsource_ready in openshift-marketplace",
     "labels": {
       "Extended": {},

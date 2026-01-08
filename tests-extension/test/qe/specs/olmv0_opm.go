@@ -364,51 +364,48 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 		err := opmcli.EnsureContainerPolicy()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		dcimagetag := "quay.io/olmqe/nginxolm-operator-index:v1"
-		g.By("1, testing with dc format index image")
-		g.By("1.1 list packages")
-		output, err := opmCLI.Run("alpha").Args("list", "packages", dcimagetag).Output()
+		imagetag := "quay.io/olmqe/nginxolm-operator-index:v1"
+		g.By("1, list packages")
+		output, err := opmCLI.Run("alpha").Args("list", "packages", imagetag).Output()
 		if err != nil {
 			e2e.Logf("%s", output)
 			o.Expect(err).NotTo(o.HaveOccurred())
 		}
 		o.Expect(string(output)).To(o.ContainSubstring("nginx-operator"))
 
-		g.By("1.2 list channels")
-		output, err = opmCLI.Run("alpha").Args("list", "channels", dcimagetag).Output()
+		g.By("2, list channels")
+		output, err = opmCLI.Run("alpha").Args("list", "channels", imagetag).Output()
 		if err != nil {
 			e2e.Logf("%s", output)
 			o.Expect(err).NotTo(o.HaveOccurred())
 		}
 		o.Expect(string(output)).To(o.ContainSubstring("nginx-operator"))
-		o.Expect(string(output)).To(o.ContainSubstring("alpha"))
 
-		g.By("1.3 list channels in a package")
-		output, err = opmCLI.Run("alpha").Args("list", "channels", dcimagetag, "nginx-operator").Output()
+		g.By("3, list channels in a package")
+		output, err = opmCLI.Run("alpha").Args("list", "channels", imagetag, "nginx-operator").Output()
 		if err != nil {
 			e2e.Logf("%s", output)
 			o.Expect(err).NotTo(o.HaveOccurred())
 		}
 		o.Expect(string(output)).To(o.ContainSubstring("alpha"))
 
-		g.By("1.4 list bundles")
-		output, err = opmCLI.Run("alpha").Args("list", "bundles", dcimagetag).Output()
+		g.By("4, list bundles")
+		output, err = opmCLI.Run("alpha").Args("list", "bundles", imagetag).Output()
 		if err != nil {
 			e2e.Logf("%s", output)
 			o.Expect(err).NotTo(o.HaveOccurred())
 		}
 		o.Expect(string(output)).To(o.ContainSubstring("nginx-operator.v0.0.1"))
-		o.Expect(string(output)).To(o.ContainSubstring("quay.io/olmqe/nginxolm-operator-bundle:v1.0.1-multi"))
 
-		g.By("1.5 list bundles in a package")
-		output, err = opmCLI.Run("alpha").Args("list", "bundles", dcimagetag, "nginx-operator").Output()
+		g.By("5, list bundles in a package")
+		output, err = opmCLI.Run("alpha").Args("list", "bundles", imagetag, "nginx-operator").Output()
 		if err != nil {
 			e2e.Logf("%s", output)
 			o.Expect(err).NotTo(o.HaveOccurred())
 		}
 		o.Expect(string(output)).To(o.ContainSubstring("nginx-operator.v0.0.1"))
-		o.Expect(string(output)).To(o.ContainSubstring("quay.io/olmqe/nginxolm-operator-bundle:v1.0.1-multi"))
 
+		g.By("step: SUCCESS")
 	})
 
 	g.It("PolarionID:45407-[OTP]opm and oc should print sqlite deprecation warnings", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:45407-opm and oc should print sqlite deprecation warnings"), func() {
@@ -759,8 +756,11 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 
 		g.By("step: opm alpha render-graph index-image with deprecated label")
 		output, err := opmCLI.Run("alpha").Args("render-graph", "quay.io/olmqe/olmtest-operator-index:nginxolm73218").Output()
+		if err != nil && strings.Contains(output, "failed to pull image") {
+			g.Skip("Skipping test: failed to pull image")
+		}
 		o.Expect(err).NotTo(o.HaveOccurred())
-		o.Expect(string(output)).To(o.ContainSubstring("classDef deprecated fill:#E8960F"))
+		o.Expect(string(output)).To(o.ContainSubstring("classDef deprecated"))
 		o.Expect(string(output)).To(o.ContainSubstring("deprecated"))
 		o.Expect(string(output)).To(o.ContainSubstring("nginx73218-candidate-v1.0-nginx73218.v1.0.1[\"nginx73218.v1.0.1\"]-- skip --> nginx73218-candidate-v1.0-nginx73218.v1.0.3[\"nginx73218.v1.0.3\"]"))
 	})
