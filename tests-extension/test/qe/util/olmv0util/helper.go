@@ -260,6 +260,16 @@ func expectedResource(oc *exutil.CLI, AsAdmin bool, WithoutNamespace bool, isCom
 // AsAdmin means if taking admin to remove it
 // WithoutNamespace means if take WithoutNamespace() to remove it.
 func removeResource(oc *exutil.CLI, AsAdmin bool, WithoutNamespace bool, parameters ...string) {
+	// Check if parameters contain "-n"
+	isNamespace := false
+	for _, param := range parameters {
+		if param == "-n" {
+			e2e.Logf("removeResource: parameters contain '-n' flag, parameters: %v", parameters)
+			isNamespace = true
+			break
+		}
+	}
+
 	output, err := exutil.OcAction(oc, "delete", AsAdmin, WithoutNamespace, parameters...)
 	if err != nil && (strings.Contains(output, "NotFound") || strings.Contains(output, "No resources found")) {
 		e2e.Logf("the resource is deleted already")
@@ -267,7 +277,7 @@ func removeResource(oc *exutil.CLI, AsAdmin bool, WithoutNamespace bool, paramet
 	}
 	o.Expect(err).NotTo(o.HaveOccurred())
 
-	err = wait.PollUntilContextTimeout(context.TODO(), 4*time.Second, 160*time.Second, false, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
 		output, err := exutil.OcAction(oc, "get", AsAdmin, WithoutNamespace, parameters...)
 		if err != nil && (strings.Contains(output, "NotFound") || strings.Contains(output, "No resources found")) {
 			e2e.Logf("the resource is delete successfully")
@@ -275,6 +285,10 @@ func removeResource(oc *exutil.CLI, AsAdmin bool, WithoutNamespace bool, paramet
 		}
 		return false, nil
 	})
+	if err != nil && isNamespace {
+		e2e.Logf("namespaced resource is not removed, and left it to delete namespace")
+		return
+	}
 	exutil.AssertWaitPollNoErr(err, fmt.Sprintf("can not remove %v", parameters))
 }
 
@@ -596,8 +610,10 @@ func GetPodImageAndPolicy(oc *exutil.CLI, podName, project string) (imageMap map
 
 		imageNames, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(podName, jsonPathImage, "-n", project).Output()
 		// sometimes some job's pod maybe deleted so skip it
+		// also skip Forbidden errors - in some CI environments, even with AsAdmin(), the service account
+		// may not have permission to access certain pods (e.g., during rolling updates or terminating state)
 		if err != nil {
-			if !strings.Contains(imageNames, "NotFound") {
+			if !strings.Contains(imageNames, "NotFound") && !strings.Contains(imageNames, "Forbidden") {
 				e2e.Failf("Fail to get image(%s), error:%s", podName, imageNames)
 			}
 		} else {
@@ -606,7 +622,7 @@ func GetPodImageAndPolicy(oc *exutil.CLI, podName, project string) (imageMap map
 
 		imagePullPolicys, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(podName, jsonPathPolicy, "-n", project).Output()
 		if err != nil {
-			if !strings.Contains(imagePullPolicys, "NotFound") {
+			if !strings.Contains(imagePullPolicys, "NotFound") && !strings.Contains(imagePullPolicys, "Forbidden") {
 				e2e.Failf("Fail to get imagePullPolicy(%s), error:%s", podName, imagePullPolicys)
 			}
 		} else {

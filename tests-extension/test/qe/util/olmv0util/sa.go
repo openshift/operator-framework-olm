@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 
 	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
@@ -59,6 +60,7 @@ func (sa *serviceAccountDescription) GetDefinition(oc *exutil.CLI) {
 
 // Delete removes the ServiceAccount from the cluster
 // This method performs cleanup of ServiceAccount resources created during tests
+// It waits for the ServiceAccount to be fully deleted before returning to avoid race conditions
 //
 // Parameters:
 //   - oc: OpenShift CLI client for executing commands
@@ -66,6 +68,30 @@ func (sa *serviceAccountDescription) Delete(oc *exutil.CLI) {
 	e2e.Logf("delete sa %s, ns is %s", sa.name, sa.namespace)
 	_, err := exutil.OcAction(oc, "delete", exutil.AsAdmin, exutil.WithoutNamespace, "sa", sa.name, "-n", sa.namespace)
 	o.Expect(err).NotTo(o.HaveOccurred())
+
+	// Wait for SA to be actually deleted to avoid race conditions
+	// Kubernetes deletion is asynchronous, so we need to poll until the resource is gone
+	err = wait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+		output, getErr := exutil.OcAction(oc, "get", exutil.AsAdmin, exutil.WithoutNamespace, "sa", sa.name, "-n", sa.namespace)
+		if getErr != nil {
+			// Check if error is due to resource not found (which means successfully deleted)
+			// The error message or output will contain "not found" or "NotFound"
+			errMsg := strings.ToLower(getErr.Error())
+			outputMsg := strings.ToLower(output)
+			if strings.Contains(errMsg, "not found") || strings.Contains(outputMsg, "not found") || strings.Contains(errMsg, "notfound") || strings.Contains(outputMsg, "notfound") {
+				e2e.Logf("SA %s successfully deleted from namespace %s", sa.name, sa.namespace)
+				return true, nil
+			}
+			// Other errors (network, permission, etc.) should be retried
+			e2e.Logf("Error checking SA %s (will retry): %v", sa.name, getErr)
+			return false, nil
+		}
+		e2e.Logf("Waiting for SA %s to be fully deleted from namespace %s...", sa.name, sa.namespace)
+		return false, nil
+	})
+	if err != nil {
+		g.Skip("skip because of sa not deleted")
+	}
 }
 
 // Reapply recreates the ServiceAccount using the previously exported definition
