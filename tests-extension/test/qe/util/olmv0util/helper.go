@@ -53,6 +53,15 @@ func convertLMtoJSON(content string) string {
 	return strings.TrimSuffix(jb.String(), ",") + "]"
 }
 
+func IsAllNamespacesOutput(output string) bool {
+	normalized := strings.TrimSpace(output)
+	if normalized == "" {
+		return true
+	}
+	normalized = strings.Trim(normalized, "[]\"")
+	return strings.TrimSpace(normalized) == ""
+}
+
 // the method is to update z version of kube version of platform.
 func GenerateUpdatedKubernatesVersion(oc *exutil.CLI) string {
 	subKubeVersions := strings.Split(getKubernetesVersion(oc), ".")
