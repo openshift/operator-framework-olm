@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/server"
 
 	"k8s.io/apimachinery/pkg/fields"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -17,7 +19,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -30,8 +31,8 @@ import (
 const (
 	defaultName                 = "packageserver"
 	defaultNamespace            = "openshift-operator-lifecycle-manager"
-	defaultMetricsPort          = "0"
-	defaultHealthCheckPort      = ":8080"
+	defaultMetricsPort          = "0" // Disable controller-runtime metrics (using pkg/lib/server instead)
+	defaultHealthCheckPort      = ""  // Disable controller-runtime health (using pkg/lib/server instead)
 	defaultPprofPort            = ":6060"
 	defaultInterval             = ""
 	leaderElectionConfigmapName = "packageserver-controller-lock"
@@ -75,11 +76,43 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	tlsCertPath, err := cmd.Flags().GetString("tls-cert")
+	if err != nil {
+		return err
+	}
+	tlsKeyPath, err := cmd.Flags().GetString("tls-key")
+	if err != nil {
+		return err
+	}
+	clientCAPath, err := cmd.Flags().GetString("client-ca")
+	if err != nil {
+		return err
+	}
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	setupLog := ctrl.Log.WithName("setup")
 
 	restConfig := ctrl.GetConfigOrDie()
+
+	// Create logrus logger for the server library
+	logger := logrus.New()
+
+	// Start HTTPS server with metrics/health endpoints
+	listenAndServe, err := server.GetListenAndServeFunc(
+		server.WithLogger(logger),
+		server.WithTLS(&tlsCertPath, &tlsKeyPath, &clientCAPath),
+		server.WithKubeConfig(restConfig),
+	)
+	if err != nil {
+		setupLog.Error(err, "failed to setup health/metric/pprof service")
+		return err
+	}
+
+	go func() {
+		if err := listenAndServe(); err != nil {
+			setupLog.Error(err, "server error")
+		}
+	}()
 	le := leaderelection.GetLeaderElectionConfig(setupLog, restConfig, !disableLeaderElection)
 
 	packageserverCSVFields := fields.Set{"metadata.name": name}
@@ -136,14 +169,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
-		setupLog.Error(err, "failed to establish a readyz check")
-		return err
-	}
-	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
-		setupLog.Error(err, "failed to establish a healthz check")
-		return err
-	}
+	// Health checks are now handled by pkg/lib/server (not controller-runtime)
 	// +kubebuilder:scaffold:builder
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
