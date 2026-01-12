@@ -537,6 +537,6 @@ When discussing whether a feature needs testing:
 
 ### Build and Run
 
-- **Before PR**: Run `make bindata && make build && make update-metadata`
+- **Before PR**: Run `make bindata && make build && make update-metadata && make verify`
 - **Local Testing**: Use `./bin/olmv0-tests-ext list -o names | grep <id>` to find test names
 - **Test File Changes**: If adding test files under `test/qe/specs/`, they auto-get `Extended` label
