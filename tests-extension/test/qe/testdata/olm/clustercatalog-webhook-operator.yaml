@@ -1,0 +1,19 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: clustercatalog-webhook-operator-template
+parameters:
+  - name: NAME
+  - name: IMAGE
+objects:
+  - apiVersion: olm.operatorframework.io/v1
+    kind: ClusterCatalog
+    metadata:
+      name: ${NAME}
+      labels:
+        olm.operatorframework.io/metadata.name: ${NAME}
+    spec:
+      source:
+        type: Image
+        image:
+          ref: ${IMAGE}
