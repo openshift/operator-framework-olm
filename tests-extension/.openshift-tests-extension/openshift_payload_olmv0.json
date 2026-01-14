@@ -2769,5 +2769,17 @@
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 webhook operator PolarionID:83979-[Skipped:Disconnected]ClusterExtension installs webhook-operator and webhooks work",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
   }
 ]
