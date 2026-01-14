@@ -242,7 +242,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within all namespace", func()
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", subCockroachdb.InstalledCSV, "-n", subCockroachdb.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
 	})
 
-	g.It("PolarionID:21484-PolarionID:21532-[OTP]watch special or all namespace by operator group", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21484-PolarionID:21532-[Skipped:Disconnected]watch special or all namespace by operator group"), func() {
+	g.It("PolarionID:21484-PolarionID:21532-[OTP]watch special or all namespace by operator group", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within all namespace PolarionID:21484-PolarionID:21532-[Skipped:Disconnected]watch special or all namespace by operator group"), func() {
 		architecture.SkipArchitectures(oc, architecture.PPC64LE, architecture.S390X, architecture.MULTI)
 		exutil.SkipNoCapabilities(oc, "marketplace")
 		olmv0util.ValidateAccessEnvironment(oc)
