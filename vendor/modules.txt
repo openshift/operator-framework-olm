@@ -747,6 +747,8 @@ github.com/operator-framework/operator-registry/alpha/action/migrations
 github.com/operator-framework/operator-registry/alpha/declcfg
 github.com/operator-framework/operator-registry/alpha/model
 github.com/operator-framework/operator-registry/alpha/property
+github.com/operator-framework/operator-registry/alpha/template
+github.com/operator-framework/operator-registry/alpha/template/api
 github.com/operator-framework/operator-registry/alpha/template/basic
 github.com/operator-framework/operator-registry/alpha/template/converter
 github.com/operator-framework/operator-registry/alpha/template/semver
