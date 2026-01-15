@@ -3175,11 +3175,14 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
 		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 		csImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
-
 		cs := olmv0util.CatalogSourceDescription{
 			Name:        "ocp-47149",
 			Namespace:   oc.Namespace(),
@@ -3189,7 +3192,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			Address:     "quay.io/olmqe/etcd-47149:1.0",
 			Template:    csImageTemplate,
 		}
-		itName := g.CurrentSpecReport().FullText()
 		cs.CreateWithCheck(oc, itName, dr)
 
 		og := olmv0util.OperatorGroupDescription{
@@ -3235,11 +3237,14 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		olmv0util.ValidateAccessEnvironment(oc)
 		architecture.SkipNonAmd64SingleArch(oc)
 
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
 		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 		csImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
-
 		cs := olmv0util.CatalogSourceDescription{
 			Name:        "ocp-47181",
 			Namespace:   oc.Namespace(),
@@ -3249,7 +3254,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			Address:     "quay.io/olmqe/etcd-47181:1.0",
 			Template:    csImageTemplate,
 		}
-		itName := g.CurrentSpecReport().FullText()
 		cs.CreateWithCheck(oc, itName, dr)
 
 		og := olmv0util.OperatorGroupDescription{
@@ -3281,11 +3285,14 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		architecture.SkipNonAmd64SingleArch(oc)
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
 		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 		csImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
-
 		cs := olmv0util.CatalogSourceDescription{
 			Name:        "ocp-47179",
 			Namespace:   oc.Namespace(),
@@ -3295,7 +3302,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			Address:     "quay.io/olmqe/etcd-47179:1.0",
 			Template:    csImageTemplate,
 		}
-		itName := g.CurrentSpecReport().FullText()
 		cs.CreateWithCheck(oc, itName, dr)
 
 		og := olmv0util.OperatorGroupDescription{
