@@ -12,7 +12,7 @@ WORKDIR /src
 COPY . .
 RUN make build/registry cross
 
-FROM registry.ci.openshift.org/ocp/4.22:base-rhel9
+FROM registry.ci.openshift.org/ocp/4.22:base-rhel9-minimal
 ENTRYPOINT ["sh", "-c", "echo 'Running this image is not supported' && exit 1"]
 # clear any default CMD
 CMD []
