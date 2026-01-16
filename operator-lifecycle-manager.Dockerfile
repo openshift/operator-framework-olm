@@ -26,7 +26,7 @@ RUN make build/olm bin/cpb && \
        cp ./bin/olmv0-tests-ext /tmp/build/olmv0-tests-ext && \
        gzip -f /tmp/build/olmv0-tests-ext
 
-FROM registry.ci.openshift.org/ocp/4.22:base-rhel9
+FROM registry.ci.openshift.org/ocp/4.22:base-rhel9-minimal
 
 ADD manifests/ /manifests
 LABEL io.openshift.release.operator=true
