@@ -19,6 +19,9 @@ func newStartCmd() *cobra.Command {
 	cmd.Flags().String("interval", defaultInterval, "configures the wakeup interval for the packageserver csc resource")
 	cmd.Flags().String("metrics", defaultMetricsPort, "configures the metrics port that the process exposes")
 	cmd.Flags().Bool("disable-leader-election", false, "configures whether leader election will be disabled")
+	cmd.Flags().String("tls-cert", "", "path to use for certificate key (requires tls-key)")
+	cmd.Flags().String("tls-key", "", "path to use for private key (requires tls-cert)")
+	cmd.Flags().String("client-ca", "", "path to watch for client ca bundle")
 
 	return cmd
 }
