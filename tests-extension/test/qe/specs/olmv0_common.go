@@ -1360,4 +1360,170 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		exutil.AssertWaitPollNoErr(err, "The error ServiceAccountNotFound still be reported in status")
 	})
 
+	g.It("PolarionID:85743-[OTP]metrics endpoints should be properly secured", g.Label("NonHyperShiftHOST"), func() {
+		var (
+			olmNamespace = "openshift-operator-lifecycle-manager"
+			operators    = []struct {
+				name               string
+				epName             string
+				deploymentSelector string
+			}{
+				{
+					name:               "catalog-operator",
+					epName:             "catalog-operator-metrics",
+					deploymentSelector: "app=catalog-operator",
+				},
+				{
+					name:               "olm-operator",
+					epName:             "olm-operator-metrics",
+					deploymentSelector: "app=olm-operator",
+				},
+				{
+					name:               "package-server-manager",
+					epName:             "package-server-manager-metrics",
+					deploymentSelector: "app=package-server-manager",
+				},
+			}
+		)
+
+		g.By("Check if openshift-operator-lifecycle-manager namespace exists")
+		_, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("namespace", olmNamespace).Output()
+		if err != nil {
+			g.Skip(fmt.Sprintf("Skipping test: namespace %s does not exist", olmNamespace))
+		}
+
+		g.By("Check services exist in openshift-operator-lifecycle-manager namespace")
+		services, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("service", "-n", olmNamespace, "-o=jsonpath={.items[*].metadata.name}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(services).NotTo(o.BeEmpty())
+		e2e.Logf("Found services: %s", services)
+
+		g.By("Get prometheus-k8s service account token")
+		token, err := exutil.GetSAToken(oc, "prometheus-k8s", "openshift-monitoring")
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(token).NotTo(o.BeEmpty())
+
+		for _, operator := range operators {
+			g.By(fmt.Sprintf("Testing %s metrics endpoint", operator.name))
+
+			// Get pod name
+			podName, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", olmNamespace, "--selector="+operator.deploymentSelector, "-o=jsonpath={.items[0].metadata.name}").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Expect(podName).NotTo(o.BeEmpty())
+			e2e.Logf("Found pod: %s", podName)
+
+			// Get service ClusterIP
+			svcIP, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("service", operator.epName, "-n", olmNamespace, "-o=jsonpath={.spec.clusterIP}").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Expect(svcIP).NotTo(o.BeEmpty())
+
+			// Get service port
+			svcPort, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("service", operator.epName, "-n", olmNamespace, "-o=jsonpath={.spec.ports[0].port}").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Expect(svcPort).NotTo(o.BeEmpty())
+
+			metricsURL := fmt.Sprintf("https://%s:%s/metrics", svcIP, svcPort)
+			e2e.Logf("Metrics URL: %s", metricsURL)
+
+			g.By(fmt.Sprintf("Test %s unauthorized access - should return Unauthorized", operator.name))
+			unauthorizedOutput, _ := oc.AsAdmin().WithoutNamespace().Run("exec").Args(podName, "-n", olmNamespace, "--", "curl", "-s", "-k", metricsURL).Output()
+			o.Expect(unauthorizedOutput).To(o.ContainSubstring("Unauthorized"))
+			e2e.Logf("Unauthorized access correctly returned: Unauthorized")
+
+			g.By(fmt.Sprintf("Test %s authorized access - should return metrics", operator.name))
+			authHeader := fmt.Sprintf("Authorization: Bearer %s", token)
+			authorizedOutput, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(podName, "-n", olmNamespace, "--", "curl", "-s", "-k", "-H", authHeader, metricsURL).Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Expect(authorizedOutput).NotTo(o.ContainSubstring("Unauthorized"))
+			o.Expect(authorizedOutput).To(o.ContainSubstring("# HELP"))
+			o.Expect(authorizedOutput).To(o.ContainSubstring("# TYPE"))
+			e2e.Logf("Authorized access successfully returned metrics for %s", operator.name)
+		}
+	})
+
+	g.It("PolarionID:85745-[OTP]marketplace-operator-metrics endpoint should require client certificate", g.Label("NonHyperShiftHOST"), func() {
+		var (
+			marketplaceNamespace = "openshift-marketplace"
+			monitoringNamespace  = "openshift-monitoring"
+			epName               = "marketplace-operator-metrics"
+		)
+
+		g.By("Check if openshift-marketplace namespace exists")
+		_, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("namespace", marketplaceNamespace).Output()
+		if err != nil {
+			g.Skip(fmt.Sprintf("Skipping test: namespace %s does not exist", marketplaceNamespace))
+		}
+
+		exutil.SkipNoCapabilities(oc, "marketplace")
+
+		g.By("Check marketplace-operator-metrics service exists")
+		_, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("service", epName, "-n", marketplaceNamespace).Output()
+		if err != nil {
+			g.Skip(fmt.Sprintf("Skipping test: service %s does not exist in namespace %s", epName, marketplaceNamespace))
+		}
+		e2e.Logf("Found service: %s in namespace: %s", epName, marketplaceNamespace)
+
+		g.By("Get marketplace-operator-metrics service ClusterIP and port")
+		svcIP, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("service", epName, "-n", marketplaceNamespace, "-o=jsonpath={.spec.clusterIP}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(svcIP).NotTo(o.BeEmpty())
+		e2e.Logf("Service ClusterIP: %s", svcIP)
+
+		svcPort, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("service", epName, "-n", marketplaceNamespace, "-o=jsonpath={.spec.ports[?(@.name==\"https-metrics\")].port}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(svcPort).NotTo(o.BeEmpty())
+		e2e.Logf("Service Port (https-metrics): %s", svcPort)
+
+		metricsURL := fmt.Sprintf("https://%s:%s/metrics", svcIP, svcPort)
+		e2e.Logf("Metrics URL: %s", metricsURL)
+
+		g.By("Get marketplace-operator pod name")
+		marketplacePodName, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", marketplaceNamespace, "--selector=name=marketplace-operator", "-o=jsonpath={.items[0].metadata.name}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(marketplacePodName).NotTo(o.BeEmpty())
+		e2e.Logf("Marketplace operator pod: %s", marketplacePodName)
+
+		g.By("Test unauthorized access from marketplace-operator pod - should fail with certificate required error")
+		unauthorizedOutput, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(marketplacePodName, "-n", marketplaceNamespace, "--", "curl", "-k", metricsURL).Output()
+		if err != nil {
+			e2e.Logf("Expected error on unauthorized access: %v", err)
+		}
+		o.Expect(unauthorizedOutput).To(o.Or(
+			o.ContainSubstring("certificate required"),
+			o.ContainSubstring("tlsv13 alert certificate required"),
+		))
+		e2e.Logf("Unauthorized access correctly failed with certificate error")
+
+		g.By("Get prometheus-k8s pod name")
+		prometheusPodName, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", monitoringNamespace, "--selector=app.kubernetes.io/name=prometheus", "-o=jsonpath={.items[0].metadata.name}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(prometheusPodName).NotTo(o.BeEmpty())
+		e2e.Logf("Prometheus pod: %s", prometheusPodName)
+
+		g.By("Test unauthorized access from prometheus pod without client cert - should fail")
+		unauthorizedPromOutput, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(prometheusPodName, "-n", monitoringNamespace, "-c", "prometheus", "--", "curl", "-k", metricsURL).Output()
+		if err != nil {
+			e2e.Logf("Expected error on unauthorized access from prometheus: %v", err)
+		}
+		o.Expect(unauthorizedPromOutput).To(o.Or(
+			o.ContainSubstring("certificate required"),
+			o.ContainSubstring("tlsv13 alert certificate required"),
+		))
+		e2e.Logf("Unauthorized access from prometheus correctly failed with certificate error")
+
+		g.By("Test authorized access from prometheus pod with client certificate - should succeed")
+		authorizedOutput, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(
+			prometheusPodName, "-n", monitoringNamespace, "-c", "prometheus", "--",
+			"curl", "-k",
+			"--key", "/etc/prometheus/secrets/metrics-client-certs/tls.key",
+			"--cert", "/etc/prometheus/secrets/metrics-client-certs/tls.crt",
+			metricsURL,
+		).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(authorizedOutput).NotTo(o.ContainSubstring("certificate required"))
+		o.Expect(authorizedOutput).To(o.ContainSubstring("# HELP"))
+		o.Expect(authorizedOutput).To(o.ContainSubstring("# TYPE"))
+		e2e.Logf("Authorized access with client certificate successfully returned metrics")
+	})
+
 })
