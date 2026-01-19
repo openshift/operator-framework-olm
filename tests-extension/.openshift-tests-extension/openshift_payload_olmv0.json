@@ -586,6 +586,36 @@
     "environmentSelector": {}
   },
   {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:85743-[OTP]metrics endpoints should be properly secured",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:85745-[OTP]marketplace-operator-metrics endpoint should require client certificate",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
     "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[OTP][Skipped:Disconnected]catalogsource with invalid name is created",
     "originalName": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[Skipped:Disconnected]catalogsource with invalid name is created",
     "labels": {
