@@ -752,6 +752,7 @@ github.com/operator-framework/operator-registry/alpha/template/api
 github.com/operator-framework/operator-registry/alpha/template/basic
 github.com/operator-framework/operator-registry/alpha/template/converter
 github.com/operator-framework/operator-registry/alpha/template/semver
+github.com/operator-framework/operator-registry/alpha/template/substitutes
 github.com/operator-framework/operator-registry/cmd/configmap-server
 github.com/operator-framework/operator-registry/cmd/initializer
 github.com/operator-framework/operator-registry/cmd/opm
