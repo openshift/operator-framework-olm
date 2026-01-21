@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -12,6 +13,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
+
+// certPoolGetter is an interface for getting a certificate pool
+type certPoolGetter interface {
+	GetCertPool() *x509.CertPool
+}
 
 // Option applies a configuration option to the given config.
 type Option func(s *serverConfig)
@@ -83,6 +89,10 @@ func (sc *serverConfig) getAddress(tlsEnabled bool) string {
 	return ":8080"
 }
 
+func (sc *serverConfig) clientCAEnabled() bool {
+	return sc.clientCAPath != nil && *sc.clientCAPath != ""
+}
+
 func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 	tlsEnabled, err := sc.tlsEnabled()
 	if err != nil {
@@ -116,15 +126,23 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 		return nil, fmt.Errorf("error creating cert file watcher: %v", err)
 	}
 	csw.Run(context.Background())
-	certPoolStore, err := filemonitor.NewCertPoolStore(*sc.clientCAPath)
-	if err != nil {
-		return nil, fmt.Errorf("certificate monitoring for client-ca failed: %v", err)
+
+	// Only setup client CA monitoring if clientCAPath is provided
+	var certPoolStore certPoolGetter
+	if sc.clientCAEnabled() {
+		cps, err := filemonitor.NewCertPoolStore(*sc.clientCAPath)
+		if err != nil {
+			return nil, fmt.Errorf("certificate monitoring for client-ca failed: %v", err)
+		}
+		cpsw, err := filemonitor.NewWatch(sc.logger, []string{filepath.Dir(*sc.clientCAPath)}, cps.HandleCABundleUpdate)
+		if err != nil {
+			return nil, fmt.Errorf("error creating cert file watcher: %v", err)
+		}
+		cpsw.Run(context.Background())
+		certPoolStore = cps
+	} else {
+		sc.logger.Info("No client CA provided, client certificate verification disabled")
 	}
-	cpsw, err := filemonitor.NewWatch(sc.logger, []string{filepath.Dir(*sc.clientCAPath)}, certPoolStore.HandleCABundleUpdate)
-	if err != nil {
-		return nil, fmt.Errorf("error creating cert file watcher: %v", err)
-	}
-	cpsw.Run(context.Background())
 
 	s.TLSConfig = &tls.Config{
 		GetCertificate: func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -135,11 +153,15 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 			if cert := certStore.GetCertificate(); cert != nil {
 				certs = append(certs, *cert)
 			}
-			return &tls.Config{
+			tlsCfg := &tls.Config{
 				Certificates: certs,
-				ClientCAs:    certPoolStore.GetCertPool(),
-				ClientAuth:   tls.VerifyClientCertIfGiven,
-			}, nil
+			}
+			// Only configure client CA verification if certPoolStore is available
+			if certPoolStore != nil {
+				tlsCfg.ClientCAs = certPoolStore.GetCertPool()
+				tlsCfg.ClientAuth = tls.VerifyClientCertIfGiven
+			}
+			return tlsCfg, nil
 		},
 	}
 	return func() error {
