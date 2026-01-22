@@ -192,33 +192,6 @@ spec:
       serviceAccountName: olm-operator-serviceaccount
       priorityClassName: "system-cluster-critical"
       containers:
-        - args:
-          - --secure-listen-address=0.0.0.0:8443
-          - --upstream=http://127.0.0.1:9090/
-          - --tls-cert-file=/etc/tls/private/tls.crt
-          - --tls-private-key-file=/etc/tls/private/tls.key
-          - --logtostderr=true
-          image: quay.io/openshift/origin-kube-rbac-proxy:latest
-          imagePullPolicy: IfNotPresent
-          name: kube-rbac-proxy
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
-          ports:
-          - containerPort: 8443
-            name: metrics
-            protocol: TCP
-          resources:
-            requests:
-              memory: 20Mi
-              cpu: 10m
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: FallbackToLogsOnError
-          volumeMounts:
-          - mountPath: /etc/tls/private
-            name: package-server-manager-serving-cert
         - name: package-server-manager
           securityContext:
             allowPrivilegeEscalation: false
@@ -233,7 +206,12 @@ spec:
             - \$(PACKAGESERVER_NAME)
             - --namespace
             - \$(PACKAGESERVER_NAMESPACE)
-            - "--metrics=:9090"
+            - --tls-cert
+            - /etc/tls/private/tls.crt
+            - --tls-key
+            - /etc/tls/private/tls.key
+            - --client-ca
+            - /etc/tls/private/tls.crt
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
           imagePullPolicy: IfNotPresent
           env:
@@ -253,17 +231,27 @@ spec:
             requests:
               cpu: 10m
               memory: 10Mi
+          ports:
+          - containerPort: 8443
+            name: metrics
+            protocol: TCP
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 8080
+              port: 8443
+              scheme: HTTPS
             initialDelaySeconds: 30
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 8080
+              port: 8443
+              scheme: HTTPS
             initialDelaySeconds: 30
           terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+          - name: package-server-manager-serving-cert
+            mountPath: "/etc/tls/private"
+            readOnly: true
       nodeSelector:
         kubernetes.io/os: linux
         node-role.kubernetes.io/master: ""
