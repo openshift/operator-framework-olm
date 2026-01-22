@@ -625,6 +625,9 @@ github.com/openshift/client-go/config/informers/externalversions/internalinterfa
 github.com/openshift/client-go/config/listers/config/v1
 github.com/openshift/client-go/config/listers/config/v1alpha1
 github.com/openshift/client-go/config/listers/config/v1alpha2
+# github.com/openshift/library-go v0.0.0-20260108135436-db8dbd64c462
+## explicit; go 1.24.0
+github.com/openshift/library-go/pkg/crypto
 # github.com/operator-framework/api v0.37.0 => ./staging/api
 ## explicit; go 1.24.6
 github.com/operator-framework/api/crds
@@ -695,6 +698,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/projection
 github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver/solver
 github.com/operator-framework/operator-lifecycle-manager/pkg/feature
+github.com/operator-framework/operator-lifecycle-manager/pkg/lib/apiserver
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/catalogsource
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clients
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/codec
@@ -716,6 +720,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/pkg/
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubernetes/plugin/pkg/auth/authorizer/rbac
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/kubestate
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/labeler
+github.com/operator-framework/operator-lifecycle-manager/pkg/lib/openshiftconfig
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorstatus
