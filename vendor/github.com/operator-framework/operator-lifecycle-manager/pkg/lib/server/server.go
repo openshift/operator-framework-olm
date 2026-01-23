@@ -3,10 +3,12 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
 	"path/filepath"
 
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/apiserver"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/filemonitor"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/profile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -15,6 +17,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 )
+
+// certPoolGetter is an interface for getting a certificate pool
+type certPoolGetter interface {
+	GetCertPool() *x509.CertPool
+}
 
 // Option applies a configuration option to the given config.
 type Option func(s *serverConfig)
@@ -52,13 +59,20 @@ func WithKubeConfig(config *rest.Config) Option {
 	}
 }
 
+func WithAPIServerTLSQuerier(querier apiserver.Querier) Option {
+	return func(sc *serverConfig) {
+		sc.apiServerTLSQuerier = querier
+	}
+}
+
 type serverConfig struct {
-	logger       *logrus.Logger
-	tlsCertPath  *string
-	tlsKeyPath   *string
-	clientCAPath *string
-	kubeConfig   *rest.Config
-	debug        bool
+	logger              *logrus.Logger
+	tlsCertPath         *string
+	tlsKeyPath          *string
+	clientCAPath        *string
+	kubeConfig          *rest.Config
+	apiServerTLSQuerier apiserver.Querier
+	debug               bool
 }
 
 func (sc *serverConfig) apply(options []Option) {
@@ -69,12 +83,13 @@ func (sc *serverConfig) apply(options []Option) {
 
 func defaultServerConfig() serverConfig {
 	return serverConfig{
-		tlsCertPath:  nil,
-		tlsKeyPath:   nil,
-		clientCAPath: nil,
-		kubeConfig:   nil,
-		logger:       nil,
-		debug:        false,
+		tlsCertPath:         nil,
+		tlsKeyPath:          nil,
+		clientCAPath:        nil,
+		kubeConfig:          nil,
+		logger:              nil,
+		apiServerTLSQuerier: nil,
+		debug:               false,
 	}
 }
 func (sc *serverConfig) tlsEnabled() (bool, error) {
@@ -92,6 +107,10 @@ func (sc *serverConfig) getAddress(tlsEnabled bool) string {
 		return ":8443"
 	}
 	return ":8080"
+}
+
+func (sc *serverConfig) clientCAEnabled() bool {
+	return sc.clientCAPath != nil && *sc.clientCAPath != ""
 }
 
 func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
@@ -168,15 +187,23 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 		return nil, fmt.Errorf("error creating cert file watcher: %v", err)
 	}
 	csw.Run(context.Background())
-	certPoolStore, err := filemonitor.NewCertPoolStore(*sc.clientCAPath)
-	if err != nil {
-		return nil, fmt.Errorf("certificate monitoring for client-ca failed: %v", err)
+
+	// Only setup client CA monitoring if clientCAPath is provided
+	var certPoolStore certPoolGetter
+	if sc.clientCAEnabled() {
+		cps, err := filemonitor.NewCertPoolStore(*sc.clientCAPath)
+		if err != nil {
+			return nil, fmt.Errorf("certificate monitoring for client-ca failed: %v", err)
+		}
+		cpsw, err := filemonitor.NewWatch(sc.logger, []string{filepath.Dir(*sc.clientCAPath)}, cps.HandleCABundleUpdate)
+		if err != nil {
+			return nil, fmt.Errorf("error creating cert file watcher: %v", err)
+		}
+		cpsw.Run(context.Background())
+		certPoolStore = cps
+	} else {
+		sc.logger.Info("No client CA provided, client certificate verification disabled")
 	}
-	cpsw, err := filemonitor.NewWatch(sc.logger, []string{filepath.Dir(*sc.clientCAPath)}, certPoolStore.HandleCABundleUpdate)
-	if err != nil {
-		return nil, fmt.Errorf("error creating cert file watcher: %v", err)
-	}
-	cpsw.Run(context.Background())
 
 	s.TLSConfig = &tls.Config{
 		GetCertificate: func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -187,11 +214,23 @@ func (sc serverConfig) getListenAndServeFunc() (func() error, error) {
 			if cert := certStore.GetCertificate(); cert != nil {
 				certs = append(certs, *cert)
 			}
-			return &tls.Config{
+			tlsCfg := &tls.Config{
 				Certificates: certs,
-				ClientCAs:    certPoolStore.GetCertPool(),
-				ClientAuth:   tls.VerifyClientCertIfGiven,
-			}, nil
+			}
+			// Only configure client CA verification if certPoolStore is available
+			if certPoolStore != nil {
+				tlsCfg.ClientCAs = certPoolStore.GetCertPool()
+				tlsCfg.ClientAuth = tls.VerifyClientCertIfGiven
+			}
+
+			// Overlay cluster-wide TLS security profile settings if available
+			if sc.apiServerTLSQuerier != nil {
+				if err := sc.apiServerTLSQuerier.QueryTLSConfig(tlsCfg); err != nil {
+					sc.logger.WithError(err).Warn("Failed to query APIServer TLS config, using defaults")
+				}
+			}
+
+			return tlsCfg, nil
 		},
 		NextProtos: []string{"http/1.1"}, // Disable HTTP/2 for security
 	}

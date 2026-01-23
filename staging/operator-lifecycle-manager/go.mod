@@ -20,6 +20,7 @@ require (
 	github.com/onsi/gomega v1.39.0
 	github.com/openshift/api v0.0.0-20251111193948-50e2ece149d7
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
+	github.com/openshift/library-go v0.0.0-20260108135436-db8dbd64c462
 	github.com/operator-framework/api v0.37.0
 	github.com/operator-framework/operator-registry v1.61.0
 	github.com/otiai10/copy v1.14.1
@@ -27,7 +28,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.67.5
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
