@@ -19,6 +19,7 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/catalog"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/catalogtemplate"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/apiserver"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorstatus"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/server"
@@ -63,10 +64,28 @@ func (o *options) run(ctx context.Context, logger *logrus.Logger) error {
 		return fmt.Errorf("error configuring client: %s", err.Error())
 	}
 
+	configClient, err := configv1client.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("error configuring client: %s", err.Error())
+	}
+	opClient := operatorclient.NewClientFromConfig(o.kubeconfig, logger)
+	crClient, err := client.NewClient(o.kubeconfig)
+	if err != nil {
+		return fmt.Errorf("error configuring client: %s", err.Error())
+	}
+
+	// Setup APIServer TLS configuration for HTTPS servers
+	apiServerTLSQuerier, apiServerFactory, err := apiserver.SetupAPIServerTLSConfig(logger, config)
+	if err != nil {
+		return fmt.Errorf("error setting up APIServer TLS configuration: %w", err)
+	}
+
+	// Setup metrics/health server with TLS configuration
 	listenAndServe, err := server.GetListenAndServeFunc(
 		server.WithLogger(logger),
 		server.WithTLS(&o.tlsCertPath, &o.tlsKeyPath, &o.clientCAPath),
 		server.WithKubeConfig(config),
+		server.WithAPIServerTLSQuerier(apiServerTLSQuerier),
 		server.WithDebug(o.debug),
 	)
 	if err != nil {
@@ -78,16 +97,6 @@ func (o *options) run(ctx context.Context, logger *logrus.Logger) error {
 			logger.Error(err)
 		}
 	}()
-
-	configClient, err := configv1client.NewForConfig(config)
-	if err != nil {
-		return fmt.Errorf("error configuring client: %s", err.Error())
-	}
-	opClient := operatorclient.NewClientFromConfig(o.kubeconfig, logger)
-	crClient, err := client.NewClient(o.kubeconfig)
-	if err != nil {
-		return fmt.Errorf("error configuring client: %s", err.Error())
-	}
 
 	workloadUserID := int64(-1)
 	if o.setWorkloadUserID {
@@ -138,6 +147,11 @@ func (o *options) run(ctx context.Context, logger *logrus.Logger) error {
 
 	opCatalogTemplate.Run(ctx)
 	<-opCatalogTemplate.Ready()
+
+	// Start APIServer TLS informer factory if on OpenShift
+	if apiServerFactory != nil {
+		apiServerFactory.Start(ctx.Done())
+	}
 
 	if o.writeStatusName != "" {
 		operatorstatus.MonitorClusterStatus(o.writeStatusName, op.AtLevel(), op.Done(), opClient, configClient, crClient, logger)

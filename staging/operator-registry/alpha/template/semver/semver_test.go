@@ -26,38 +26,38 @@ func TestLinkChannels(t *testing.T) {
 	// }
 
 	minimumChannelEntries := []entryTuple{
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v0.1.0", parent: "stable-v0.1", index: 0, version: semver.MustParse("0.1.0")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v0.1.0", parent: "stable-v0.1", index: 0, version: semver.MustParse("0.1.0")},
 	}
 
 	majorChannelEntries := []entryTuple{
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v0.1.0", parent: "stable-v0", index: 0, version: semver.MustParse("0.1.0")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v0.1.1", parent: "stable-v0", index: 1, version: semver.MustParse("0.1.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.1.0", parent: "stable-v1", index: 0, version: semver.MustParse("1.1.0")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.2.1", parent: "stable-v1", index: 1, version: semver.MustParse("1.2.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.3.1", parent: "stable-v1", index: 2, version: semver.MustParse("1.3.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.1.0", parent: "stable-v2", index: 0, version: semver.MustParse("2.1.0")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.1.1", parent: "stable-v2", index: 1, version: semver.MustParse("2.1.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.3.1", parent: "stable-v2", index: 2, version: semver.MustParse("2.3.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.3.2", parent: "stable-v2", index: 3, version: semver.MustParse("2.3.2")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v0.1.0", parent: "stable-v0", index: 0, version: semver.MustParse("0.1.0")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v0.1.1", parent: "stable-v0", index: 1, version: semver.MustParse("0.1.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v1.1.0", parent: "stable-v1", index: 0, version: semver.MustParse("1.1.0")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v1.2.1", parent: "stable-v1", index: 1, version: semver.MustParse("1.2.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v1.3.1", parent: "stable-v1", index: 2, version: semver.MustParse("1.3.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v2.1.0", parent: "stable-v2", index: 0, version: semver.MustParse("2.1.0")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v2.1.1", parent: "stable-v2", index: 1, version: semver.MustParse("2.1.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v2.3.1", parent: "stable-v2", index: 2, version: semver.MustParse("2.3.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v2.3.2", parent: "stable-v2", index: 3, version: semver.MustParse("2.3.2")},
 	}
 
 	majorChannelEntriesLastXChange := []entryTuple{
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v0.1.0", parent: "stable-v0", index: 0, version: semver.MustParse("0.1.0")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v0.1.1", parent: "stable-v0", index: 1, version: semver.MustParse("0.1.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.1.0", parent: "stable-v1", index: 0, version: semver.MustParse("1.1.0")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.2.1", parent: "stable-v1", index: 1, version: semver.MustParse("1.2.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.3.1", parent: "stable-v1", index: 2, version: semver.MustParse("1.3.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.1.0", parent: "stable-v2", index: 0, version: semver.MustParse("2.1.0")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v0.1.0", parent: "stable-v0", index: 0, version: semver.MustParse("0.1.0")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v0.1.1", parent: "stable-v0", index: 1, version: semver.MustParse("0.1.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v1.1.0", parent: "stable-v1", index: 0, version: semver.MustParse("1.1.0")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v1.2.1", parent: "stable-v1", index: 1, version: semver.MustParse("1.2.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v1.3.1", parent: "stable-v1", index: 2, version: semver.MustParse("1.3.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v2.1.0", parent: "stable-v2", index: 0, version: semver.MustParse("2.1.0")},
 	}
 
 	majorChannelEntriesLastArchChange := []entryTuple{
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.1.0", parent: "stable-v1", index: 0, version: semver.MustParse("1.1.0")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.2.1", parent: "stable-v1", index: 1, version: semver.MustParse("1.2.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v1.3.1", parent: "stable-v1", index: 2, version: semver.MustParse("1.3.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.1.0", parent: "stable-v2", index: 0, version: semver.MustParse("2.1.0")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.1.1", parent: "stable-v2", index: 1, version: semver.MustParse("2.1.1")},
-		{arch: stableChannelArchetype, kind: majorStreamType, name: "a-v2.3.1", parent: "stable-v2", index: 2, version: semver.MustParse("2.3.1")},
-		{arch: candidateChannelArchetype, kind: majorStreamType, name: "a-v2.3.2", parent: "candidate-v2", index: 0, version: semver.MustParse("2.3.2")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v1.1.0", parent: "stable-v1", index: 0, version: semver.MustParse("1.1.0")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v1.2.1", parent: "stable-v1", index: 1, version: semver.MustParse("1.2.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v1.3.1", parent: "stable-v1", index: 2, version: semver.MustParse("1.3.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v2.1.0", parent: "stable-v2", index: 0, version: semver.MustParse("2.1.0")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v2.1.1", parent: "stable-v2", index: 1, version: semver.MustParse("2.1.1")},
+		{arch: stableChannelArchetype, kind: MajorStreamType, name: "a-v2.3.1", parent: "stable-v2", index: 2, version: semver.MustParse("2.3.1")},
+		{arch: candidateChannelArchetype, kind: MajorStreamType, name: "a-v2.3.2", parent: "candidate-v2", index: 0, version: semver.MustParse("2.3.2")},
 	}
 
 	majorGeneratedUnlinkedChannels := map[string]*declcfg.Channel{
@@ -306,7 +306,7 @@ func TestLinkChannels(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sv := &semverTemplate{pkg: "a", GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels}
+			sv := &SemverTemplateData{pkg: "a", GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels}
 			diff := gocmp.Diff(tt.out, sv.linkChannels(tt.unlinkedChannels, tt.channelEntries))
 			if diff != "" {
 				t.Errorf("unexpected channel diff (-expected +received):\n%s", diff)
@@ -472,7 +472,7 @@ func TestGenerateChannels(t *testing.T) {
 		generateMinorChannels bool
 		generateMajorChannels bool
 		defaultChannel        string
-		channelTypePreference streamType
+		channelTypePreference StreamType
 		out                   []declcfg.Channel
 	}{
 		{
@@ -480,7 +480,7 @@ func TestGenerateChannels(t *testing.T) {
 			generateMinorChannels: true,
 			generateMajorChannels: false,
 			defaultChannel:        "stable-v3.1",
-			channelTypePreference: minorStreamType,
+			channelTypePreference: MinorStreamType,
 			out:                   minorLinkedChannels,
 		},
 		{
@@ -488,7 +488,7 @@ func TestGenerateChannels(t *testing.T) {
 			generateMinorChannels: false,
 			generateMajorChannels: true,
 			defaultChannel:        "stable-v3",
-			channelTypePreference: majorStreamType,
+			channelTypePreference: MajorStreamType,
 			out:                   majorLinkedChannels,
 		},
 		{
@@ -496,7 +496,7 @@ func TestGenerateChannels(t *testing.T) {
 			generateMinorChannels: true,
 			generateMajorChannels: true,
 			defaultChannel:        "stable-v3.1",
-			channelTypePreference: minorStreamType,
+			channelTypePreference: MinorStreamType,
 			out:                   combinedLinkedChannels,
 		},
 		{
@@ -504,7 +504,7 @@ func TestGenerateChannels(t *testing.T) {
 			generateMinorChannels: true,
 			generateMajorChannels: true,
 			defaultChannel:        "stable-v3",
-			channelTypePreference: majorStreamType,
+			channelTypePreference: MajorStreamType,
 			out:                   combinedLinkedChannels,
 		},
 		{
@@ -512,7 +512,7 @@ func TestGenerateChannels(t *testing.T) {
 			generateMinorChannels: true,
 			generateMajorChannels: false,
 			defaultChannel:        "stable-v3.1",
-			channelTypePreference: majorStreamType,
+			channelTypePreference: MajorStreamType,
 			out:                   minorLinkedChannels,
 		},
 		{
@@ -520,17 +520,17 @@ func TestGenerateChannels(t *testing.T) {
 			generateMinorChannels: false,
 			generateMajorChannels: true,
 			defaultChannel:        "stable-v3",
-			channelTypePreference: minorStreamType,
+			channelTypePreference: MinorStreamType,
 			out:                   majorLinkedChannels,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sv := &semverTemplate{GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels, pkg: "a", DefaultChannelTypePreference: tt.channelTypePreference}
-			diff := gocmp.Diff(tt.out, sv.generateChannels(&channelOperatorVersions))
-			if diff != "" {
-				t.Errorf("unexpected channel diff (-expected +received):\n%s", diff)
+			sv := &SemverTemplateData{GenerateMajorChannels: tt.generateMajorChannels, GenerateMinorChannels: tt.generateMinorChannels, pkg: "a", DefaultChannelTypePreference: tt.channelTypePreference}
+			out := sv.generateChannels(&channelOperatorVersions)
+			if diff := gocmp.Diff(tt.out, out); diff != "" {
+				t.Errorf("unexpected generated channels (-expected +received):\n%s", diff)
 			}
 			require.Equal(t, tt.defaultChannel, sv.defaultChannel)
 		})
@@ -540,15 +540,15 @@ func TestGenerateChannels(t *testing.T) {
 func TestGetVersionsFromStandardChannel(t *testing.T) {
 	tests := []struct {
 		name        string
-		sv          semverTemplate
+		sv          SemverTemplateData
 		outVersions bundleVersions
 		dc          declcfg.DeclarativeConfig
 	}{
 		{
 			name: "sunny day case",
-			sv: semverTemplate{
-				Stable: semverTemplateChannelBundles{
-					[]semverTemplateBundleEntry{
+			sv: SemverTemplateData{
+				Stable: channelBundles{
+					[]bundleEntry{
 						{Image: "repo/origin/a-v0.1.0"},
 						{Image: "repo/origin/a-v0.1.1"},
 						{Image: "repo/origin/a-v1.1.0"},
@@ -605,16 +605,16 @@ func TestGetVersionsFromStandardChannel(t *testing.T) {
 			iosv := tt.sv
 			versions, err := iosv.getVersionsFromStandardChannels(&tt.dc, buildBundleList(tt.sv))
 			require.NoError(t, err)
-			require.EqualValues(t, tt.outVersions, *versions)
-			require.EqualValues(t, "a", iosv.pkg) // verify that we learned the package name and stashed it in the receiver
+			require.Equal(t, tt.outVersions, *versions)
+			require.Equal(t, "a", iosv.pkg) // verify that we learned the package name and stashed it in the receiver
 		})
 	}
 }
 
 func TestBailOnVersionBuildMetadata(t *testing.T) {
-	sv := semverTemplate{
-		Stable: semverTemplateChannelBundles{
-			[]semverTemplateBundleEntry{
+	sv := SemverTemplateData{
+		Stable: channelBundles{
+			[]bundleEntry{
 				{Image: "repo/origin/a-v0.1.0"},
 				{Image: "repo/origin/a-v0.1.1"},
 				{Image: "repo/origin/a-v1.1.0"},
@@ -694,13 +694,13 @@ stable:
 	type testCase struct {
 		name       string
 		input      string
-		assertions func(*testing.T, *semverTemplate, error)
+		assertions func(*testing.T, *SemverTemplateData, error)
 	}
 	testCases := []testCase{
 		{
 			name:  "valid",
 			input: fmt.Sprintf(templateFstr, "true", "true", "minor"),
-			assertions: func(t *testing.T, template *semverTemplate, err error) {
+			assertions: func(t *testing.T, template *SemverTemplateData, err error) {
 				require.NotNil(t, template)
 				require.NoError(t, err)
 			},
@@ -738,7 +738,7 @@ invalid:
     bundles:
         - image: quay.io/foo/olm:testoperator.v1.0.1
 `,
-			assertions: func(t *testing.T, template *semverTemplate, err error) {
+			assertions: func(t *testing.T, template *SemverTemplateData, err error) {
 				require.Nil(t, template)
 				require.EqualError(t, err, `error unmarshaling JSON: while decoding JSON: json: unknown field "invalid"`)
 			},
@@ -746,7 +746,7 @@ invalid:
 		{
 			name:  "generate/default mismatch, minor/major",
 			input: fmt.Sprintf(templateFstr, "true", "false", "minor"),
-			assertions: func(t *testing.T, template *semverTemplate, err error) {
+			assertions: func(t *testing.T, template *SemverTemplateData, err error) {
 				require.Nil(t, template)
 				require.ErrorContains(t, err, "schema attribute mismatch")
 			},
@@ -754,7 +754,7 @@ invalid:
 		{
 			name:  "generate/default mismatch, major/minor",
 			input: fmt.Sprintf(templateFstr, "false", "true", "major"),
-			assertions: func(t *testing.T, template *semverTemplate, err error) {
+			assertions: func(t *testing.T, template *SemverTemplateData, err error) {
 				require.Nil(t, template)
 				require.ErrorContains(t, err, "schema attribute mismatch")
 			},
@@ -762,7 +762,7 @@ invalid:
 		{
 			name:  "unknown defaultchanneltypepreference",
 			input: fmt.Sprintf(templateFstr, "false", "true", "foo"),
-			assertions: func(t *testing.T, template *semverTemplate, err error) {
+			assertions: func(t *testing.T, template *SemverTemplateData, err error) {
 				require.Nil(t, template)
 				require.ErrorContains(t, err, "unknown DefaultChannelTypePreference")
 			},
