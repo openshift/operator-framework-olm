@@ -133,9 +133,9 @@ func main() {
 	// create a config that validates we're creating objects with labels
 	validatingConfig := validatingroundtripper.Wrap(config, mgr.GetScheme())
 
-	versionedConfigClient, err := configclientset.NewForConfig(config)
+	operatorConfigClient, err := configclientset.NewForConfig(config)
 	if err != nil {
-		logger.WithError(err).Fatal("error configuring openshift proxy client")
+		logger.WithError(err).Fatal("error configuring openshift config client for operator")
 	}
 	configClient, err := configv1client.NewForConfig(config)
 	if err != nil {
@@ -189,7 +189,7 @@ func main() {
 		olm.WithMetadataClient(metadataClient),
 		olm.WithOperatorClient(opClient),
 		olm.WithRestConfig(validatingConfig),
-		olm.WithConfigClient(versionedConfigClient),
+		olm.WithConfigClient(operatorConfigClient),
 		olm.WithProtectedCopiedCSVNamespaces(*protectedCopiedCSVNamespaces),
 		olm.WithOpenshiftConfigAPIExists(openshiftConfigAPIExists),
 	)
