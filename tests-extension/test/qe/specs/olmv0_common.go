@@ -49,6 +49,232 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		dr.RmIr(itName)
 	})
 
+	g.It("PolarionID:87188-Central TLS Profile Consistency", g.Label("NonHyperShiftHOST"), func() {
+		var (
+			olmNamespace         = "openshift-operator-lifecycle-manager"
+			marketplaceNamespace = "openshift-marketplace"
+			tlsLogMessage        = "APIServer TLS configuration changed: profile=Intermediate (default), minVersion=TLS 1.2, cipherCount=9"
+		)
+
+		// Define deployments and their namespaces
+		type deploymentInfo struct {
+			name      string
+			namespace string
+		}
+		deployments := []deploymentInfo{
+			{name: "package-server-manager", namespace: olmNamespace},
+			{name: "catalog-operator", namespace: olmNamespace},
+			{name: "olm-operator", namespace: olmNamespace},
+			{name: "marketplace-operator", namespace: marketplaceNamespace},
+		}
+
+		// Define routes to create
+		type routeInfo struct {
+			routeName   string
+			serviceName string
+			port        string
+			namespace   string
+		}
+		routes := []routeInfo{
+			{routeName: "marketplace-metrics", serviceName: "marketplace-operator-metrics", port: "8081", namespace: marketplaceNamespace},
+			{routeName: "catalog-metrics", serviceName: "catalog-operator-metrics", port: "8443", namespace: olmNamespace},
+			{routeName: "olm-metrics", serviceName: "olm-operator-metrics", port: "8443", namespace: olmNamespace},
+			{routeName: "psm-metrics", serviceName: "package-server-manager-metrics", port: "8443", namespace: olmNamespace},
+		}
+
+		g.By("1) Check deployment logs for TLS configuration message")
+		for _, dep := range deployments {
+			e2e.Logf("Checking logs for deployment %s in namespace %s", dep.name, dep.namespace)
+			logs, err := oc.AsAdmin().WithoutNamespace().Run("logs").Args(fmt.Sprintf("deployment/%s", dep.name), "-n", dep.namespace).Output()
+			if err != nil {
+				e2e.Failf("Failed to get logs from deployment %s in namespace %s: %v", dep.name, dep.namespace, err)
+			}
+			if !strings.Contains(logs, tlsLogMessage) {
+				e2e.Failf("Deployment %s logs do not contain expected TLS message: %s", dep.name, tlsLogMessage)
+			}
+			e2e.Logf("Deployment %s contains the expected TLS configuration message", dep.name)
+		}
+
+		g.By("2) Create passthrough routes for metrics endpoints")
+		// Cleanup routes after test
+		defer func() {
+			for _, route := range routes {
+				_, _ = oc.AsAdmin().WithoutNamespace().Run("delete").Args("route", route.routeName, "-n", route.namespace, "--ignore-not-found").Output()
+			}
+		}()
+
+		var routeHosts []string
+		for _, route := range routes {
+			e2e.Logf("Creating route %s for service %s in namespace %s", route.routeName, route.serviceName, route.namespace)
+			_, err := oc.AsAdmin().WithoutNamespace().Run("create").Args("route", "passthrough", route.routeName,
+				"--service="+route.serviceName, "--port="+route.port, "-n", route.namespace).Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+
+			// Get route host
+			routeHost, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("route", route.routeName, "-n", route.namespace, "-o=jsonpath={.spec.host}").Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			o.Expect(routeHost).NotTo(o.BeEmpty())
+			routeHosts = append(routeHosts, routeHost)
+			e2e.Logf("Route %s created with host: %s", route.routeName, routeHost)
+		}
+
+		g.By("3) Verify TLS 1.2 connection works with Intermediate profile (should NOT contain NONE)")
+		for i, routeHost := range routeHosts {
+			e2e.Logf("Testing TLS 1.2 connection to route: %s", routeHost)
+			opensslCmd := fmt.Sprintf("echo | openssl s_client -connect %s:443 -tls1_2 2>&1 | grep -E 'Protocol|Cipher'", routeHost)
+			output, err := exec.Command("bash", "-c", opensslCmd).Output()
+			if err != nil {
+				e2e.Logf("openssl command error (may be expected): %v", err)
+			}
+			outputStr := string(output)
+			e2e.Logf("TLS 1.2 connection output for %s: %s", routes[i].routeName, outputStr)
+
+			// With Intermediate profile, TLS 1.2 should work - should NOT contain "(NONE)"
+			if strings.Contains(outputStr, "(NONE)") {
+				e2e.Failf("TLS 1.2 connection to %s failed unexpectedly with Intermediate profile. Output contains (NONE): %s", routes[i].routeName, outputStr)
+			}
+			e2e.Logf("TLS 1.2 connection to %s works correctly with Intermediate profile", routes[i].routeName)
+		}
+
+		g.By("4) Update TLS configuration to Modern profile")
+		// Save original TLS profile and restore after test
+		originalTLSProfile, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("apiserver", "cluster", "-o=jsonpath={.spec.tlsSecurityProfile}").Output()
+		e2e.Logf("Original TLS profile: %s", originalTLSProfile)
+
+		defer func() {
+			g.By("Restoring original TLS configuration")
+			if originalTLSProfile == "" {
+				// Remove tlsSecurityProfile if it was not set originally
+				_, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args("apiserver", "cluster", "--type=json",
+					"-p", `[{"op": "remove", "path": "/spec/tlsSecurityProfile"}]`).Output()
+			} else {
+				// Restore original profile
+				patchJSON := fmt.Sprintf(`{"spec":{"tlsSecurityProfile":%s}}`, originalTLSProfile)
+				exutil.PatchResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "apiserver", "cluster", "-p", patchJSON, "--type=merge")
+			}
+			e2e.Logf("TLS configuration restored")
+
+			// Wait for deployments to be ready after restore
+			time.Sleep(30 * time.Second)
+		}()
+
+		// Patch to Modern profile
+		_, err = oc.AsAdmin().WithoutNamespace().Run("patch").Args("apiserver", "cluster", "--type=merge",
+			"-p", `{"spec":{"tlsSecurityProfile":{"type":"Modern","modern":{}}}}`).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		e2e.Logf("TLS configuration updated to Modern profile")
+
+		// Wait for TLS configuration to propagate to deployments
+		g.By("Waiting for TLS configuration to propagate to deployments")
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
+			for _, dep := range deployments {
+				logs, err := oc.AsAdmin().WithoutNamespace().Run("logs").Args(fmt.Sprintf("deployment/%s", dep.name), "-n", dep.namespace, "--since=2m").Output()
+				if err != nil {
+					e2e.Logf("Failed to get logs for %s, retrying...", dep.name)
+					return false, nil
+				}
+				// Look for Modern profile message in logs
+				if !strings.Contains(logs, "profile=Modern") {
+					e2e.Logf("Deployment %s has not yet received Modern TLS profile, retrying...", dep.name)
+					return false, nil
+				}
+			}
+			return true, nil
+		})
+		if err != nil {
+			e2e.Logf("Warning: Timed out waiting for Modern TLS profile to propagate, continuing with test...")
+		}
+
+		g.By("5) Verify TLS 1.2 connection fails with Modern profile (should contain NONE)")
+		for i, routeHost := range routeHosts {
+			e2e.Logf("Testing TLS 1.2 connection to route with Modern profile: %s", routeHost)
+			opensslCmd := fmt.Sprintf("echo | openssl s_client -connect %s:443 -tls1_2 2>&1 | grep -E 'Protocol|Cipher'", routeHost)
+			output, err := exec.Command("bash", "-c", opensslCmd).Output()
+			if err != nil {
+				e2e.Logf("openssl command error (expected with Modern profile): %v", err)
+			}
+			outputStr := string(output)
+			e2e.Logf("TLS 1.2 connection output for %s with Modern profile: %s", routes[i].routeName, outputStr)
+
+			// With Modern profile, TLS 1.2 should NOT work - should contain "(NONE)" indicating no cipher negotiated
+			if !strings.Contains(outputStr, "(NONE)") {
+				e2e.Failf("TLS 1.2 connection to %s should have failed with Modern profile but succeeded. Output does not contain (NONE): %s", routes[i].routeName, outputStr)
+			}
+			e2e.Logf("TLS 1.2 connection to %s correctly rejected with Modern profile", routes[i].routeName)
+		}
+
+		g.By("6) Get metrics using appropriate authentication method")
+
+		// Get token for OLM operators (catalog, olm, psm)
+		token, err := exutil.GetSAToken(oc, "prometheus-k8s", "openshift-monitoring")
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(token).NotTo(o.BeEmpty())
+		e2e.Logf("Got prometheus-k8s token for OLM operator metrics")
+
+		// Get client certificates for marketplace metrics
+		g.By("Extract client certificates from metrics-client-certs secret")
+		clientCert, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("secret", "metrics-client-certs", "-n", "openshift-monitoring", "-o=jsonpath={.data.tls\\.crt}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(clientCert).NotTo(o.BeEmpty())
+
+		clientKey, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("secret", "metrics-client-certs", "-n", "openshift-monitoring", "-o=jsonpath={.data.tls\\.key}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(clientKey).NotTo(o.BeEmpty())
+
+		// Decode and write certificates to temp files
+		certFile := "/tmp/metrics-client-87188.crt"
+		keyFile := "/tmp/metrics-client-87188.key"
+
+		decodeCertCmd := fmt.Sprintf("echo '%s' | base64 -d > %s", clientCert, certFile)
+		_, err = exec.Command("bash", "-c", decodeCertCmd).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		decodeKeyCmd := fmt.Sprintf("echo '%s' | base64 -d > %s", clientKey, keyFile)
+		_, err = exec.Command("bash", "-c", decodeKeyCmd).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		// Cleanup temp files after test
+		defer func() {
+			_, _ = exec.Command("rm", "-f", certFile, keyFile).Output()
+		}()
+
+		e2e.Logf("Client certificates extracted successfully")
+
+		for i, routeHost := range routeHosts {
+			e2e.Logf("Fetching metrics from route: %s", routeHost)
+			metricsURL := fmt.Sprintf("https://%s/metrics", routeHost)
+
+			var curlCmd string
+			var metricsOutput []byte
+
+			// Use different authentication method based on the route
+			if routes[i].routeName == "marketplace-metrics" {
+				// Marketplace metrics requires client certificate authentication
+				curlCmd = fmt.Sprintf("curl -k --cert %s --key %s --tlsv1.3 %s", certFile, keyFile, metricsURL)
+				e2e.Logf("Using client certificate authentication for marketplace metrics")
+			} else {
+				// OLM operators (catalog, olm, psm) use bearer token authentication
+				curlCmd = fmt.Sprintf("curl -k -H 'Authorization: Bearer %s' --tlsv1.3 %s", token, metricsURL)
+				e2e.Logf("Using bearer token authentication for %s", routes[i].routeName)
+			}
+
+			metricsOutput, err = exec.Command("bash", "-c", curlCmd).Output()
+			if err != nil {
+				e2e.Logf("Failed to fetch metrics from %s: %v", routes[i].routeName, err)
+				continue
+			}
+
+			metricsStr := string(metricsOutput)
+			if strings.Contains(metricsStr, "# HELP") || strings.Contains(metricsStr, "# TYPE") {
+				e2e.Logf("Successfully retrieved metrics from %s", routes[i].routeName)
+			} else {
+				e2e.Logf("Metrics response from %s (first 500 chars): %s", routes[i].routeName, metricsStr[:min(500, len(metricsStr))])
+			}
+		}
+
+		e2e.Logf("TLS Profile Consistency test completed successfully")
+	})
+
 	g.It("PolarionID:22259-[OTP][Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:22259-[Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]"), func() {
 
 		exutil.SkipForSNOCluster(oc)
