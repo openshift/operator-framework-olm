@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/apiserver"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/server"
 
 	"k8s.io/apimachinery/pkg/fields"
@@ -97,11 +98,19 @@ func run(cmd *cobra.Command, args []string) error {
 	// Create logrus logger for the server library
 	logger := logrus.New()
 
+	// Setup APIServer TLS configuration for HTTPS servers
+	apiServerTLSQuerier, apiServerFactory, err := apiserver.SetupAPIServerTLSConfig(logger, restConfig)
+	if err != nil {
+		setupLog.Error(err, "failed to setup APIServer TLS configuration")
+		return err
+	}
+
 	// Start HTTPS server with metrics/health endpoints
 	listenAndServe, err := server.GetListenAndServeFunc(
 		server.WithLogger(logger),
 		server.WithTLS(&tlsCertPath, &tlsKeyPath, &clientCAPath),
 		server.WithKubeConfig(restConfig),
+		server.WithAPIServerTLSQuerier(apiServerTLSQuerier),
 	)
 	if err != nil {
 		setupLog.Error(err, "failed to setup health/metric/pprof service")
@@ -171,8 +180,17 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Health checks are now handled by pkg/lib/server (not controller-runtime)
 	// +kubebuilder:scaffold:builder
+
+	// Set up signal handler context
+	ctx := ctrl.SetupSignalHandler()
+
+	// Start APIServer informer factory if on OpenShift
+	if apiServerFactory != nil {
+		apiServerFactory.Start(ctx.Done())
+	}
+
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		return err
 	}
