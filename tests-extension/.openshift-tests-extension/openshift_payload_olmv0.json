@@ -118,6 +118,18 @@
     "environmentSelector": {}
   },
   {
+    "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:24818-[OTP]Checking OLM descriptors",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
     "name": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:22259-[OTP][Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]",
     "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:22259-[Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]",
     "labels": {
@@ -1308,6 +1320,54 @@
     "environmentSelector": {}
   },
   {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:43073-[OTP][Skipped:Disconnected]Indicate dependency class in resolution constraint text",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:47149-[OTP][Skipped:Disconnected]Conjunctive constraint of one package and one GVK",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:47181-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:47179-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
     "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:20981-[OTP]-contain the source commit id",
     "labels": {
       "Extended": {},
@@ -1519,6 +1579,48 @@
     "source": "openshift:payload:olmv0",
     "lifecycle": "blocking",
     "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:24917-[OTP]Operators in SingleNamespace should not be granted namespace list [Serial][Disruptive]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:25644-[OTP]OLM collect CSV health per version",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:27680-[OTP][Skipped:Disconnected]OLM Bundle support for Prometheus Types [Serial]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
   },
   {
     "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:22200-[OTP][Skipped:Disconnected]add minimum kube version to CSV [Slow]",
@@ -2443,6 +2545,48 @@
     "source": "openshift:payload:olmv0",
     "lifecycle": "blocking",
     "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:41026-[Level0][OTP]OCS should only one installplan generated when creating subscription",
+    "labels": {
+      "Extended": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:68521-[OTP][Skipped:Disconnected]Check failureThreshold of redhat-operators catalog",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
+    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:68901-[OTP][Skipped:Disconnected]Packageserver pod should not crash if updateStrategy is incorrect",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
   },
   {
     "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43185-[OTP]DC based opm subcommands out of alpha",
