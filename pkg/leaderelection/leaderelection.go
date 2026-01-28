@@ -10,6 +10,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -30,6 +31,14 @@ const (
 	defaultSingleNodeLeaseDuration = 270 * time.Second
 	defaultSingleNodeRenewDeadline = 240 * time.Second
 	defaultSingleNodeRetryPeriod   = 60 * time.Second
+
+)
+
+var (
+	// Retry configuration for fetching infrastructure status
+	// These are variables to allow overriding in tests
+	infraStatusRetryInterval = 2 * time.Second
+	infraStatusRetryTimeout  = 30 * time.Second
 )
 
 var (
@@ -43,7 +52,7 @@ var (
 func GetLeaderElectionConfig(log logr.Logger, restConfig *rest.Config, enabled bool) (defaultConfig configv1.LeaderElection) {
 	client, err := client.New(restConfig, client.Options{})
 	if err != nil {
-		log.Error(err, "unable to create client, using HA cluster values for leader election")
+		log.Error(err, "unable to create client to detect SNO cluster, defaulting to HA leader election values")
 		return defaultLeaderElectionConfig
 	}
 	configv1.AddToScheme(client.Scheme())
@@ -54,11 +63,25 @@ func getLeaderElectionConfig(log logr.Logger, client client.Client, enabled bool
 	config = defaultLeaderElectionConfig
 	config.Disable = !enabled
 	if enabled {
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second*3))
+		var infra *configv1.InfrastructureStatus
+		var lastErr error
+
+		ctx, cancel := context.WithTimeout(context.Background(), infraStatusRetryTimeout)
 		defer cancel()
-		infra, err := getClusterInfraStatus(ctx, client)
+
+		err := wait.PollUntilContextTimeout(ctx, infraStatusRetryInterval, infraStatusRetryTimeout, true, func(ctx context.Context) (bool, error) {
+			var err error
+			infra, err = getClusterInfraStatus(ctx, client)
+			if err != nil {
+				lastErr = err
+				log.Info("retrying to detect SNO cluster", "error", err)
+				return false, nil // retry
+			}
+			return true, nil // success
+		})
+
 		if err != nil {
-			log.Error(err, "unable to get cluster infrastructure status, using HA cluster values for leader election")
+			log.Error(lastErr, "unable to detect SNO cluster, defaulting to HA leader election values")
 			return
 		}
 		if infra != nil && infra.ControlPlaneTopology == configv1.SingleReplicaTopologyMode {
