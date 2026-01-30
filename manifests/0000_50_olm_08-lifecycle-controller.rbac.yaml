@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: operator-lifecycle-manager-lifecycle-controller
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+rules:
+  # Watch CatalogSources cluster-wide
+  - apiGroups: ["operators.coreos.com"]
+    resources: ["catalogsources"]
+    verbs: ["get", "list", "watch"]
+  # Watch catalog pods cluster-wide
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # Manage lifecycle-server deployments
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server services
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server serviceaccounts
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server clusterrolebindings
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterrolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Required to grant these permissions to lifecycle-server via CRB
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+  # Leader election
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: operator-lifecycle-manager-lifecycle-controller
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: operator-lifecycle-manager-lifecycle-controller
+subjects:
+  - kind: ServiceAccount
+    name: lifecycle-controller
+    namespace: openshift-operator-lifecycle-manager
