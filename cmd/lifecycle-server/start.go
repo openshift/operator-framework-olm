@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/authentication/authenticatorfactory"
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
 	"k8s.io/apiserver/pkg/endpoints/filters"
@@ -28,7 +29,7 @@ import (
 const (
 	defaultFBCPath     = "/catalog/configs"
 	defaultListenAddr  = ":8443"
-	defaultHealthAddr  = "localhost:8081"
+	defaultHealthAddr  = ":8081"
 	defaultTLSCertPath = "/var/run/secrets/serving-cert/tls.crt"
 	defaultTLSKeyPath  = "/var/run/secrets/serving-cert/tls.key"
 	shutdownTimeout    = 10 * time.Second
@@ -97,9 +98,16 @@ func run(_ *cobra.Command, _ []string) error {
 
 	// Create delegating authenticator (uses TokenReview)
 	authnConfig := authenticatorfactory.DelegatingAuthenticatorConfig{
-		Anonymous:               nil, // disable anonymous auth
-		TokenAccessReviewClient: kubeClient.AuthenticationV1(),
-		CacheTTL:                2 * time.Minute,
+		Anonymous:                nil, // disable anonymous auth
+		TokenAccessReviewClient:  kubeClient.AuthenticationV1(),
+		TokenAccessReviewTimeout: 10 * time.Second,
+		CacheTTL:                 2 * time.Minute,
+		WebhookRetryBackoff: &wait.Backoff{
+			Duration: 500 * time.Millisecond,
+			Factor:   1.5,
+			Jitter:   0.2,
+			Steps:    5,
+		},
 	}
 	authenticator, _, err := authnConfig.New()
 	if err != nil {
@@ -111,6 +119,12 @@ func run(_ *cobra.Command, _ []string) error {
 		SubjectAccessReviewClient: kubeClient.AuthorizationV1(),
 		AllowCacheTTL:             5 * time.Minute,
 		DenyCacheTTL:              30 * time.Second,
+		WebhookRetryBackoff: &wait.Backoff{
+			Duration: 500 * time.Millisecond,
+			Factor:   1.5,
+			Jitter:   0.2,
+			Steps:    5,
+		},
 	}
 	authorizer, err := authzConfig.New()
 	if err != nil {

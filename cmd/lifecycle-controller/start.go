@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -25,6 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsfilters "sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -39,7 +41,7 @@ import (
 
 const (
 	defaultMetricsAddr     = ":8443"
-	defaultHealthCheckAddr = "localhost:8081"
+	defaultHealthCheckAddr = ":8081"
 	leaderElectionID       = "lifecycle-controller-lock"
 
 	// Leader election defaults per OpenShift conventions
@@ -97,6 +99,57 @@ type tlsConfig struct {
 	cipherSuiteStrings []string
 }
 
+// TLSConfigProvider provides thread-safe access to dynamically updated TLS configuration.
+// It implements controllers.TLSConfigProvider interface.
+type TLSConfigProvider struct {
+	mu     sync.RWMutex
+	config *tlsConfig
+}
+
+// NewTLSConfigProvider creates a new TLSConfigProvider with the given initial config.
+func NewTLSConfigProvider(initial *tlsConfig) *TLSConfigProvider {
+	return &TLSConfigProvider{config: initial}
+}
+
+// Get returns the current TLS configuration.
+func (p *TLSConfigProvider) Get() *tlsConfig {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.config
+}
+
+// Update sets a new TLS configuration.
+func (p *TLSConfigProvider) Update(cfg *tlsConfig) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.config = cfg
+}
+
+// GetMinVersion returns the current TLS minimum version string.
+func (p *TLSConfigProvider) GetMinVersion() string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.config.minVersionString
+}
+
+// GetCipherSuites returns the current TLS cipher suites.
+func (p *TLSConfigProvider) GetCipherSuites() []string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.config.cipherSuiteStrings
+}
+
+// GetConfigForClient returns a TLS config callback for dynamic TLS configuration.
+func (p *TLSConfigProvider) GetConfigForClient() func(*tls.ClientHelloInfo) (*tls.Config, error) {
+	return func(*tls.ClientHelloInfo) (*tls.Config, error) {
+		cfg := p.Get()
+		return &tls.Config{
+			MinVersion:   cfg.minVersion,
+			CipherSuites: cfg.cipherSuites,
+		}, nil
+	}
+}
+
 // getInitialTLSConfig reads the APIServer "cluster" resource and extracts TLS settings.
 // Falls back to Intermediate profile defaults if the resource doesn't exist.
 func getInitialTLSConfig(ctx context.Context, c client.Client, log logr.Logger) (*tlsConfig, error) {
@@ -104,7 +157,7 @@ func getInitialTLSConfig(ctx context.Context, c client.Client, log logr.Logger) 
 	err := c.Get(ctx, types.NamespacedName{Name: clusterAPIServerName}, &apiServer)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			log.Info("APIServer 'cluster' not found, using Intermediate TLS profile defaults")
+			log.Info("APIServer 'cluster' not found, using TLS profile defaults")
 			minVersion, cipherSuites := apiserver.GetSecurityProfileConfig(nil)
 			return &tlsConfig{
 				minVersion:         minVersion,
@@ -225,6 +278,9 @@ func run(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
+	// Create a TLS config provider for dynamic updates
+	tlsProvider := NewTLSConfigProvider(initialTLSConfig)
+
 	// Leader election timing defaults
 	leaseDuration := defaultLeaseDuration
 	renewDeadline := defaultRenewDeadline
@@ -238,8 +294,8 @@ func run(_ *cobra.Command, _ []string) error {
 			FilterProvider: metricsfilters.WithAuthenticationAndAuthorization,
 			TLSOpts: []func(*tls.Config){
 				func(cfg *tls.Config) {
-					cfg.MinVersion = initialTLSConfig.minVersion
-					cfg.CipherSuites = initialTLSConfig.cipherSuites
+					// Use GetConfigForClient for dynamic TLS configuration
+					cfg.GetConfigForClient = tlsProvider.GetConfigForClient()
 				},
 			},
 		},
@@ -269,23 +325,23 @@ func run(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if err := (&controllers.LifecycleControllerReconciler{
+	// Create channel for TLS config change notifications
+	// The apiServerWatcher sends events to this channel after updating the TLS provider
+	tlsChangeChan := make(chan event.GenericEvent)
+	tlsChangeSource := source.Channel(tlsChangeChan, &handler.EnqueueRequestForObject{})
+
+	reconciler := &controllers.LifecycleControllerReconciler{
 		Client:                     mgr.GetClient(),
 		Log:                        ctrl.Log.WithName("controllers").WithName("lifecycle-controller"),
 		Scheme:                     mgr.GetScheme(),
 		ServerImage:                serverImage,
 		CatalogSourceLabelSelector: labelSelector,
 		CatalogSourceFieldSelector: fieldSelector,
-		TLSMinVersion:              initialTLSConfig.minVersionString,
-		TLSCipherSuites:            initialTLSConfig.cipherSuiteStrings,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "lifecycle-controller")
-		return err
+		TLSConfigProvider:          tlsProvider,
 	}
 
-	// Set up APIServer watcher to exit on TLS config change
-	if err := setupAPIServerWatcher(mgr, initialTLSConfig, setupLog); err != nil {
-		setupLog.Error(err, "failed to setup APIServer watcher")
+	if err := reconciler.SetupWithManager(mgr, tlsChangeSource); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "lifecycle-controller")
 		return err
 	}
 
@@ -297,11 +353,14 @@ func run(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// Set up signal handler context
-	signalCtx := ctrl.SetupSignalHandler()
+	// Set up APIServer watcher to update TLS config and trigger CatalogSource reconciliation
+	if err := setupAPIServerWatcher(mgr, tlsProvider, tlsChangeChan, setupLog); err != nil {
+		setupLog.Error(err, "failed to setup APIServer watcher")
+		return err
+	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(signalCtx); err != nil {
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		return err
 	}
@@ -309,20 +368,20 @@ func run(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-// apiServerWatcher watches the APIServer "cluster" resource and exits if TLS config changes
+// apiServerWatcher watches the APIServer "cluster" resource and updates TLS config dynamically
 type apiServerWatcher struct {
-	client         client.Client
-	log            logr.Logger
-	initialMinVer  uint16
-	initialCiphers []uint16
+	client        client.Client
+	log           logr.Logger
+	tlsProvider   *TLSConfigProvider
+	tlsChangeChan chan<- event.GenericEvent
 }
 
-func setupAPIServerWatcher(mgr manager.Manager, initialCfg *tlsConfig, log logr.Logger) error {
+func setupAPIServerWatcher(mgr manager.Manager, tlsProvider *TLSConfigProvider, tlsChangeChan chan<- event.GenericEvent, log logr.Logger) error {
 	watcher := &apiServerWatcher{
-		client:         mgr.GetClient(),
-		log:            log.WithName("apiserver-watcher"),
-		initialMinVer:  initialCfg.minVersion,
-		initialCiphers: initialCfg.cipherSuites,
+		client:        mgr.GetClient(),
+		log:           log.WithName("apiserver-watcher"),
+		tlsProvider:   tlsProvider,
+		tlsChangeChan: tlsChangeChan,
 	}
 
 	// Create a controller that watches APIServer and triggers reconcile
@@ -344,32 +403,64 @@ func (w *apiServerWatcher) Reconcile(ctx context.Context, req reconcile.Request)
 		return reconcile.Result{}, nil
 	}
 
+	var newConfig *tlsConfig
+
 	var apiServer configv1.APIServer
 	if err := w.client.Get(ctx, req.NamespacedName, &apiServer); err != nil {
 		if errors.IsNotFound(err) {
-			// APIServer deleted - check if we had a non-default config
-			defaultMin, defaultCiphers := apiserver.GetSecurityProfileConfig(nil)
-			if w.initialMinVer != defaultMin || !cipherSuitesEqual(w.initialCiphers, defaultCiphers) {
-				w.log.Info("APIServer 'cluster' deleted and initial config was non-default, exiting to pick up new defaults")
-				os.Exit(0)
+			// APIServer deleted - use defaults
+			w.log.Info("APIServer 'cluster' deleted, using TLS profile defaults")
+			minVersion, cipherSuites := apiserver.GetSecurityProfileConfig(nil)
+			newConfig = &tlsConfig{
+				minVersion:         minVersion,
+				cipherSuites:       cipherSuites,
+				minVersionString:   tlsVersionToString(minVersion),
+				cipherSuiteStrings: cipherSuiteIDsToNames(cipherSuites),
 			}
-			return reconcile.Result{}, nil
+		} else {
+			return reconcile.Result{}, err
 		}
+	} else {
+		// Get current TLS config from APIServer
+		minVersion, cipherSuites := apiserver.GetSecurityProfileConfig(apiServer.Spec.TLSSecurityProfile)
+		newConfig = &tlsConfig{
+			minVersion:         minVersion,
+			cipherSuites:       cipherSuites,
+			minVersionString:   tlsVersionToString(minVersion),
+			cipherSuiteStrings: cipherSuiteIDsToNames(cipherSuites),
+		}
+	}
+
+	// Check if config changed
+	currentConfig := w.tlsProvider.Get()
+	if currentConfig.minVersion == newConfig.minVersion && cipherSuitesEqual(currentConfig.cipherSuites, newConfig.cipherSuites) {
+		// No change
+		return reconcile.Result{}, nil
+	}
+
+	w.log.Info("TLS security profile changed, updating configuration and triggering reconciliation",
+		"oldMinVersion", currentConfig.minVersionString,
+		"newMinVersion", newConfig.minVersionString,
+		"oldCipherCount", len(currentConfig.cipherSuites),
+		"newCipherCount", len(newConfig.cipherSuites),
+	)
+
+	// Update the provider
+	w.tlsProvider.Update(newConfig)
+
+	// Trigger reconciliation of all CatalogSources to update lifecycle-server deployments
+	var catalogSources operatorsv1alpha1.CatalogSourceList
+	if err := w.client.List(ctx, &catalogSources); err != nil {
+		w.log.Error(err, "failed to list CatalogSources for reconciliation")
 		return reconcile.Result{}, err
 	}
 
-	// Get current TLS config
-	currentMinVer, currentCiphers := apiserver.GetSecurityProfileConfig(apiServer.Spec.TLSSecurityProfile)
+	w.log.Info("triggering reconciliation for CatalogSources", "count", len(catalogSources.Items))
 
-	// Compare with initial config
-	if w.initialMinVer != currentMinVer || !cipherSuitesEqual(w.initialCiphers, currentCiphers) {
-		w.log.Info("TLS security profile changed, exiting to pick up new configuration",
-			"oldMinVersion", tlsVersionToString(w.initialMinVer),
-			"newMinVersion", tlsVersionToString(currentMinVer),
-			"oldCipherCount", len(w.initialCiphers),
-			"newCipherCount", len(currentCiphers),
-		)
-		os.Exit(0)
+	// Send events to trigger reconciliation
+	for i := range catalogSources.Items {
+		cs := &catalogSources.Items[i]
+		w.tlsChangeChan <- event.GenericEvent{Object: cs}
 	}
 
 	return reconcile.Result{}, nil

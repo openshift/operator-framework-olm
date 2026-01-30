@@ -17,6 +17,10 @@ metadata:
     release.openshift.io/feature-set: "TechPreviewNoUpgrade"
     capability.openshift.io/name: "OperatorLifecycleManager"
 rules:
+  # Read APIServer for TLS security profile configuration
+  - apiGroups: ["config.openshift.io"]
+    resources: ["apiservers"]
+    verbs: ["get", "list", "watch"]
   # Watch CatalogSources cluster-wide
   - apiGroups: ["operators.coreos.com"]
     resources: ["catalogsources"]
@@ -36,6 +40,10 @@ rules:
   # Manage lifecycle-server serviceaccounts
   - apiGroups: [""]
     resources: ["serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server networkpolicies
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # Manage lifecycle-server clusterrolebindings
   - apiGroups: ["rbac.authorization.k8s.io"]

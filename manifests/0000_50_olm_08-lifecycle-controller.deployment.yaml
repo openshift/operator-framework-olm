@@ -4,7 +4,7 @@ metadata:
   name: lifecycle-controller
   namespace: openshift-operator-lifecycle-manager
   labels:
-    app: lifecycle-controller
+    app: olm-lifecycle-controller
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
     release.openshift.io/feature-set: "TechPreviewNoUpgrade"
@@ -15,7 +15,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: lifecycle-controller
+      app: olm-lifecycle-controller
   template:
     metadata:
       annotations:
@@ -23,7 +23,7 @@ spec:
         openshift.io/required-scc: restricted-v2
         kubectl.kubernetes.io/default-container: lifecycle-controller
       labels:
-        app: lifecycle-controller
+        app: olm-lifecycle-controller
     spec:
       securityContext:
         runAsNonRoot: true

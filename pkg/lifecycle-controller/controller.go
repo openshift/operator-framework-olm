@@ -26,6 +26,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -42,17 +43,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const (
-	catalogLabelKey          = "olm.catalogSource"
-	fieldManager             = "lifecycle-controller"
-	clusterRoleName          = "operator-lifecycle-manager-lifecycle-server"
-	clusterRoleBindingName   = "operator-lifecycle-manager-lifecycle-server"
-	lifecycleServerLabelKey  = "olm.lifecycle-server"
-	lifecycleServerLabelVal  = "true"
-	resourceBaseName         = "lifecycle-server"
+	catalogLabelKey        = "olm.catalogSource"
+	catalogNameLabelKey    = "olm.lifecycle-server/catalog-name"
+	fieldManager           = "lifecycle-controller"
+	clusterRoleName        = "operator-lifecycle-manager-lifecycle-server"
+	clusterRoleBindingName = "operator-lifecycle-manager-lifecycle-server"
+	appLabelKey            = "app"
+	appLabelVal            = "olm-lifecycle-server"
+	resourceBaseName       = "lifecycle-server"
 )
+
+// TLSConfigProvider provides access to dynamically updated TLS configuration.
+type TLSConfigProvider interface {
+	GetMinVersion() string
+	GetCipherSuites() []string
+}
 
 // LifecycleControllerReconciler reconciles CatalogSources and manages lifecycle-server resources
 type LifecycleControllerReconciler struct {
@@ -62,8 +71,7 @@ type LifecycleControllerReconciler struct {
 	ServerImage                string
 	CatalogSourceLabelSelector labels.Selector
 	CatalogSourceFieldSelector fields.Selector
-	TLSMinVersion              string
-	TLSCipherSuites            []string
+	TLSConfigProvider          TLSConfigProvider
 }
 
 // matchesCatalogSource checks if a CatalogSource matches both label and field selectors
@@ -184,6 +192,13 @@ func (r *LifecycleControllerReconciler) ensureResources(ctx context.Context, log
 		return err
 	}
 
+	// Apply NetworkPolicy (in catalog's namespace)
+	np := r.buildNetworkPolicy(name, cs)
+	if err := r.Patch(ctx, np, client.Apply, client.FieldOwner(fieldManager), client.ForceOwnership); err != nil {
+		log.Error(err, "failed to apply networkpolicy")
+		return err
+	}
+
 	log.Info("applied resources", "name", name, "namespace", cs.Namespace, "imageRef", imageRef, "nodeName", nodeName)
 	return nil
 }
@@ -237,7 +252,7 @@ func (r *LifecycleControllerReconciler) reconcileClusterRoleBinding(ctx context.
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterRoleBindingName,
 			Labels: map[string]string{
-				lifecycleServerLabelKey: lifecycleServerLabelVal,
+				appLabelKey: appLabelVal,
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
@@ -324,8 +339,8 @@ func (r *LifecycleControllerReconciler) buildServiceAccount(name string, cs *ope
 			Name:      name,
 			Namespace: cs.Namespace,
 			Labels: map[string]string{
-				lifecycleServerLabelKey: lifecycleServerLabelVal,
-				"catalog-name":          cs.Name,
+				appLabelKey:         appLabelVal,
+				catalogNameLabelKey: cs.Name,
 			},
 		},
 	}
@@ -342,8 +357,8 @@ func (r *LifecycleControllerReconciler) buildService(name string, cs *operatorsv
 			Name:      name,
 			Namespace: cs.Namespace,
 			Labels: map[string]string{
-				lifecycleServerLabelKey: lifecycleServerLabelVal,
-				"catalog-name":          cs.Name,
+				appLabelKey:         appLabelVal,
+				catalogNameLabelKey: cs.Name,
 			},
 			Annotations: map[string]string{
 				"service.beta.openshift.io/serving-cert-secret-name": fmt.Sprintf("%s-tls", name),
@@ -351,8 +366,8 @@ func (r *LifecycleControllerReconciler) buildService(name string, cs *operatorsv
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				lifecycleServerLabelKey: lifecycleServerLabelVal,
-				"catalog-name":          cs.Name,
+				appLabelKey:         appLabelVal,
+				catalogNameLabelKey: cs.Name,
 			},
 			Ports: []corev1.ServicePort{
 				{
@@ -370,8 +385,8 @@ func (r *LifecycleControllerReconciler) buildService(name string, cs *operatorsv
 // buildDeployment creates a Deployment for a lifecycle-server
 func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operatorsv1alpha1.CatalogSource, imageRef, nodeName string) *appsv1.Deployment {
 	podLabels := map[string]string{
-		lifecycleServerLabelKey: lifecycleServerLabelVal,
-		"catalog-name":          cs.Name,
+		appLabelKey:         appLabelVal,
+		catalogNameLabelKey: cs.Name,
 	}
 
 	// Determine the catalog directory inside the image
@@ -409,8 +424,8 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: podLabels,
 					Annotations: map[string]string{
-						"target.workload.openshift.io/management":  `{"effect": "PreferredDuringScheduling"}`,
-						"openshift.io/required-scc":                "restricted-v2",
+						"target.workload.openshift.io/management": `{"effect": "PreferredDuringScheduling"}`,
+						"openshift.io/required-scc":               "restricted-v2",
 						"kubectl.kubernetes.io/default-container": "lifecycle-server",
 					},
 				},
@@ -543,6 +558,62 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 	}
 }
 
+// buildNetworkPolicy creates a NetworkPolicy for a lifecycle-server
+func (r *LifecycleControllerReconciler) buildNetworkPolicy(name string, cs *operatorsv1alpha1.CatalogSource) *networkingv1.NetworkPolicy {
+	tcp := corev1.ProtocolTCP
+	udp := corev1.ProtocolUDP
+	return &networkingv1.NetworkPolicy{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "networking.k8s.io/v1",
+			Kind:       "NetworkPolicy",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: cs.Namespace,
+			Labels: map[string]string{
+				appLabelKey:         appLabelVal,
+				catalogNameLabelKey: cs.Name,
+			},
+		},
+		Spec: networkingv1.NetworkPolicySpec{
+			PodSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					appLabelKey:         appLabelVal,
+					catalogNameLabelKey: cs.Name,
+				},
+			},
+			Ingress: []networkingv1.NetworkPolicyIngressRule{
+				{
+					Ports: []networkingv1.NetworkPolicyPort{
+						{Port: ptr.To(intstr.FromInt32(8443)), Protocol: &tcp},
+					},
+				},
+			},
+			Egress: []networkingv1.NetworkPolicyEgressRule{
+				{
+					// API server
+					Ports: []networkingv1.NetworkPolicyPort{
+						{Port: ptr.To(intstr.FromInt32(6443)), Protocol: &tcp},
+					},
+				},
+				{
+					// DNS
+					Ports: []networkingv1.NetworkPolicyPort{
+						{Port: ptr.To(intstr.FromInt32(53)), Protocol: &tcp},
+						{Port: ptr.To(intstr.FromInt32(53)), Protocol: &udp},
+						{Port: ptr.To(intstr.FromInt32(5353)), Protocol: &tcp},
+						{Port: ptr.To(intstr.FromInt32(5353)), Protocol: &udp},
+					},
+				},
+			},
+			PolicyTypes: []networkingv1.PolicyType{
+				networkingv1.PolicyTypeIngress,
+				networkingv1.PolicyTypeEgress,
+			},
+		},
+	}
+}
+
 // buildLifecycleServerArgs builds the command-line arguments for lifecycle-server
 func (r *LifecycleControllerReconciler) buildLifecycleServerArgs(fbcPath string) []string {
 	args := []string{
@@ -550,12 +621,14 @@ func (r *LifecycleControllerReconciler) buildLifecycleServerArgs(fbcPath string)
 		fmt.Sprintf("--fbc-path=%s", fbcPath),
 	}
 
-	if r.TLSMinVersion != "" {
-		args = append(args, fmt.Sprintf("--tls-min-version=%s", r.TLSMinVersion))
-	}
+	if r.TLSConfigProvider != nil {
+		if minVersion := r.TLSConfigProvider.GetMinVersion(); minVersion != "" {
+			args = append(args, fmt.Sprintf("--tls-min-version=%s", minVersion))
+		}
 
-	if len(r.TLSCipherSuites) > 0 {
-		args = append(args, fmt.Sprintf("--tls-cipher-suites=%s", strings.Join(r.TLSCipherSuites, ",")))
+		if cipherSuites := r.TLSConfigProvider.GetCipherSuites(); len(cipherSuites) > 0 {
+			args = append(args, fmt.Sprintf("--tls-cipher-suites=%s", strings.Join(cipherSuites, ",")))
+		}
 	}
 
 	return args
@@ -603,12 +676,13 @@ func nodeAffinityForNode(nodeName string) *corev1.Affinity {
 
 // LifecycleServerLabelSelector returns a label selector matching lifecycle-server deployments
 func LifecycleServerLabelSelector() labels.Selector {
-	return labels.SelectorFromSet(labels.Set{lifecycleServerLabelKey: lifecycleServerLabelVal})
+	return labels.SelectorFromSet(labels.Set{appLabelKey: appLabelVal})
 }
 
-// SetupWithManager sets up the controller with the Manager
-func (r *LifecycleControllerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+// SetupWithManager sets up the controller with the Manager.
+// tlsChangeSource is an optional channel source that triggers reconciliation when TLS config changes.
+func (r *LifecycleControllerReconciler) SetupWithManager(mgr ctrl.Manager, tlsChangeSource source.Source) error {
+	builder := ctrl.NewControllerManagedBy(mgr).
 		For(&operatorsv1alpha1.CatalogSource{}).
 		// Watch Pods to detect catalog pod changes
 		Watches(&corev1.Pod{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
@@ -638,10 +712,10 @@ func (r *LifecycleControllerReconciler) SetupWithManager(mgr ctrl.Manager) error
 				return nil
 			}
 			// Only watch our deployments
-			if deploy.Labels[lifecycleServerLabelKey] != lifecycleServerLabelVal {
+			if deploy.Labels[appLabelKey] != appLabelVal {
 				return nil
 			}
-			csName := deploy.Labels["catalog-name"]
+			csName := deploy.Labels[catalogNameLabelKey]
 			if csName == "" {
 				return nil
 			}
@@ -653,6 +727,12 @@ func (r *LifecycleControllerReconciler) SetupWithManager(mgr ctrl.Manager) error
 					},
 				},
 			}
-		})).
-		Complete(r)
+		}))
+
+	// Add TLS change source if provided
+	if tlsChangeSource != nil {
+		builder = builder.WatchesRawSource(tlsChangeSource)
+	}
+
+	return builder.Complete(r)
 }
