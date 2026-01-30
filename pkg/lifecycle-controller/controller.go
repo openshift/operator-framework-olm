@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -44,21 +45,37 @@ import (
 )
 
 const (
-	catalogLabelKey         = "olm.catalogSource"
-	fieldManager            = "lifecycle-controller"
-	clusterRoleName         = "operator-lifecycle-manager-lifecycle-server"
-	clusterRoleBindingName  = "operator-lifecycle-manager-lifecycle-server"
-	lifecycleServerLabelKey = "olm.lifecycle-server"
-	resourceBaseName        = "lifecycle-server"
+	catalogLabelKey          = "olm.catalogSource"
+	fieldManager             = "lifecycle-controller"
+	clusterRoleName          = "operator-lifecycle-manager-lifecycle-server"
+	clusterRoleBindingName   = "operator-lifecycle-manager-lifecycle-server"
+	lifecycleServerLabelKey  = "olm.lifecycle-server"
+	lifecycleServerLabelVal  = "true"
+	resourceBaseName         = "lifecycle-server"
 )
 
 // LifecycleControllerReconciler reconciles CatalogSources and manages lifecycle-server resources
 type LifecycleControllerReconciler struct {
 	client.Client
-	Log                   logr.Logger
-	Scheme                *runtime.Scheme
-	ServerImage           string
-	CatalogSourceSelector labels.Selector
+	Log                        logr.Logger
+	Scheme                     *runtime.Scheme
+	ServerImage                string
+	CatalogSourceLabelSelector labels.Selector
+	CatalogSourceFieldSelector fields.Selector
+	TLSMinVersion              string
+	TLSCipherSuites            []string
+}
+
+// matchesCatalogSource checks if a CatalogSource matches both label and field selectors
+func (r *LifecycleControllerReconciler) matchesCatalogSource(cs *operatorsv1alpha1.CatalogSource) bool {
+	if !r.CatalogSourceLabelSelector.Matches(labels.Set(cs.Labels)) {
+		return false
+	}
+	fieldSet := fields.Set{
+		"metadata.name":      cs.Name,
+		"metadata.namespace": cs.Namespace,
+	}
+	return r.CatalogSourceFieldSelector.Matches(fieldSet)
 }
 
 // Reconcile watches CatalogSources and manages lifecycle-server resources per catalog
@@ -83,8 +100,8 @@ func (r *LifecycleControllerReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	// Check if CatalogSource matches our selector
-	if !r.CatalogSourceSelector.Matches(labels.Set(cs.Labels)) {
+	// Check if CatalogSource matches our selectors
+	if !r.matchesCatalogSource(&cs) {
 		// CatalogSource doesn't match, cleanup any existing resources
 		if err := r.cleanupResources(ctx, log, cs.Namespace, cs.Name); err != nil {
 			return ctrl.Result{}, err
@@ -184,7 +201,7 @@ func (r *LifecycleControllerReconciler) reconcileClusterRoleBinding(ctx context.
 	var subjects []rbacv1.Subject
 	for i := range allCatalogSources.Items {
 		cs := &allCatalogSources.Items[i]
-		if !r.CatalogSourceSelector.Matches(labels.Set(cs.Labels)) {
+		if !r.matchesCatalogSource(cs) {
 			continue
 		}
 		// Check if SA exists (only add if we've created resources for this catalog)
@@ -220,7 +237,7 @@ func (r *LifecycleControllerReconciler) reconcileClusterRoleBinding(ctx context.
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterRoleBindingName,
 			Labels: map[string]string{
-				lifecycleServerLabelKey: "true",
+				lifecycleServerLabelKey: lifecycleServerLabelVal,
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
@@ -307,7 +324,7 @@ func (r *LifecycleControllerReconciler) buildServiceAccount(name string, cs *ope
 			Name:      name,
 			Namespace: cs.Namespace,
 			Labels: map[string]string{
-				lifecycleServerLabelKey: "true",
+				lifecycleServerLabelKey: lifecycleServerLabelVal,
 				"catalog-name":          cs.Name,
 			},
 		},
@@ -325,20 +342,23 @@ func (r *LifecycleControllerReconciler) buildService(name string, cs *operatorsv
 			Name:      name,
 			Namespace: cs.Namespace,
 			Labels: map[string]string{
-				lifecycleServerLabelKey: "true",
+				lifecycleServerLabelKey: lifecycleServerLabelVal,
 				"catalog-name":          cs.Name,
+			},
+			Annotations: map[string]string{
+				"service.beta.openshift.io/serving-cert-secret-name": fmt.Sprintf("%s-tls", name),
 			},
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				lifecycleServerLabelKey: "true",
+				lifecycleServerLabelKey: lifecycleServerLabelVal,
 				"catalog-name":          cs.Name,
 			},
 			Ports: []corev1.ServicePort{
 				{
-					Name:       "https",
+					Name:       "api",
 					Port:       8443,
-					TargetPort: intstr.FromString("https"),
+					TargetPort: intstr.FromString("api"),
 					Protocol:   corev1.ProtocolTCP,
 				},
 			},
@@ -350,7 +370,7 @@ func (r *LifecycleControllerReconciler) buildService(name string, cs *operatorsv
 // buildDeployment creates a Deployment for a lifecycle-server
 func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operatorsv1alpha1.CatalogSource, imageRef, nodeName string) *appsv1.Deployment {
 	podLabels := map[string]string{
-		lifecycleServerLabelKey: "true",
+		lifecycleServerLabelKey: lifecycleServerLabelVal,
 		"catalog-name":          cs.Name,
 	}
 
@@ -360,8 +380,8 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 		catalogDir = cs.Spec.GrpcPodConfig.ExtractContent.CatalogDir
 	}
 
-	catalogMountPath := fmt.Sprintf("/catalogs/%s/%s", cs.Namespace, cs.Name)
-	fbcPath := fmt.Sprintf("%s%s", catalogMountPath, catalogDir)
+	const catalogMountPath = "/catalog"
+	fbcPath := catalogMountPath + catalogDir
 
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -403,25 +423,8 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 					},
 					ServiceAccountName: name,
 					PriorityClassName:  "system-cluster-critical",
-					// Prefer scheduling on the same node as the catalog pod
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{
-								{
-									Weight: 100,
-									Preference: corev1.NodeSelectorTerm{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/hostname",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{nodeName},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
+					// Prefer scheduling on the same node as the catalog pod (only if nodeName is known)
+					Affinity: nodeAffinityForNode(nodeName),
 					NodeSelector: map[string]string{
 						"kubernetes.io/os": "linux",
 					},
@@ -450,7 +453,7 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 							Image:           r.ServerImage,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Command:         []string{"/bin/lifecycle-server"},
-							Args:            []string{"start", fmt.Sprintf("--fbc-path=%s", fbcPath)},
+							Args:            r.buildLifecycleServerArgs(fbcPath),
 							Env: []corev1.EnvVar{
 								{
 									Name:  "GOMEMLIMIT",
@@ -459,8 +462,8 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 							},
 							Ports: []corev1.ContainerPort{
 								{
-									Name:          "http",
-									ContainerPort: 8080,
+									Name:          "api",
+									ContainerPort: 8443,
 								},
 								{
 									Name:          "health",
@@ -473,12 +476,17 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 									MountPath: catalogMountPath,
 									ReadOnly:  true,
 								},
+								{
+									Name:      "serving-cert",
+									MountPath: "/var/run/secrets/serving-cert",
+									ReadOnly:  true,
+								},
 							},
 							LivenessProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									HTTPGet: &corev1.HTTPGetAction{
 										Path:   "/healthz",
-										Port:   intstr.FromInt(8081),
+										Port:   intstr.FromString("health"),
 										Scheme: corev1.URISchemeHTTP,
 									},
 								},
@@ -488,7 +496,7 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 								ProbeHandler: corev1.ProbeHandler{
 									HTTPGet: &corev1.HTTPGetAction{
 										Path:   "/healthz",
-										Port:   intstr.FromInt(8081),
+										Port:   intstr.FromString("health"),
 										Scheme: corev1.URISchemeHTTP,
 									},
 								},
@@ -498,35 +506,6 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 								Requests: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("10m"),
 									corev1.ResourceMemory: resource.MustParse("50Mi"),
-								},
-							},
-							SecurityContext: &corev1.SecurityContext{
-								AllowPrivilegeEscalation: ptr.To(false),
-								ReadOnlyRootFilesystem:   ptr.To(true),
-								Capabilities: &corev1.Capabilities{
-									Drop: []corev1.Capability{"ALL"},
-								},
-							},
-							TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
-						},
-						{
-							Name:            "kube-rbac-proxy",
-							Image:           "quay.io/brancz/kube-rbac-proxy:v0.18.0",
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Args: []string{
-								"--upstream=http://127.0.0.1:8080/",
-								"--secure-listen-address=0.0.0.0:8443",
-							},
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          "https",
-									ContainerPort: 8443,
-								},
-							},
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("10m"),
-									corev1.ResourceMemory: resource.MustParse("20Mi"),
 								},
 							},
 							SecurityContext: &corev1.SecurityContext{
@@ -549,6 +528,14 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 								},
 							},
 						},
+						{
+							Name: "serving-cert",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: fmt.Sprintf("%s-tls", name),
+								},
+							},
+						},
 					},
 				},
 			},
@@ -556,16 +543,67 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 	}
 }
 
+// buildLifecycleServerArgs builds the command-line arguments for lifecycle-server
+func (r *LifecycleControllerReconciler) buildLifecycleServerArgs(fbcPath string) []string {
+	args := []string{
+		"start",
+		fmt.Sprintf("--fbc-path=%s", fbcPath),
+	}
+
+	if r.TLSMinVersion != "" {
+		args = append(args, fmt.Sprintf("--tls-min-version=%s", r.TLSMinVersion))
+	}
+
+	if len(r.TLSCipherSuites) > 0 {
+		args = append(args, fmt.Sprintf("--tls-cipher-suites=%s", strings.Join(r.TLSCipherSuites, ",")))
+	}
+
+	return args
+}
+
 // imageID extracts digest from pod status (handles extract-content mode)
 func imageID(pod *corev1.Pod) string {
-	if len(pod.Status.InitContainerStatuses) == 2 {
-		// Extract content mode: use init container [1]
-		return pod.Status.InitContainerStatuses[1].ImageID
+	// In extract-content mode, look for the "extract-content" init container
+	for i := range pod.Status.InitContainerStatuses {
+		if pod.Status.InitContainerStatuses[i].Name == "extract-content" {
+			return pod.Status.InitContainerStatuses[i].ImageID
+		}
 	}
+	// Fallback to the first container (standard grpc mode)
 	if len(pod.Status.ContainerStatuses) > 0 {
 		return pod.Status.ContainerStatuses[0].ImageID
 	}
 	return ""
+}
+
+// nodeAffinityForNode returns a node affinity preferring the given node, or nil if nodeName is empty
+func nodeAffinityForNode(nodeName string) *corev1.Affinity {
+	if nodeName == "" {
+		return nil
+	}
+	return &corev1.Affinity{
+		NodeAffinity: &corev1.NodeAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{
+				{
+					Weight: 100,
+					Preference: corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      "kubernetes.io/hostname",
+								Operator: corev1.NodeSelectorOpIn,
+								Values:   []string{nodeName},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// LifecycleServerLabelSelector returns a label selector matching lifecycle-server deployments
+func LifecycleServerLabelSelector() labels.Selector {
+	return labels.SelectorFromSet(labels.Set{lifecycleServerLabelKey: lifecycleServerLabelVal})
 }
 
 // SetupWithManager sets up the controller with the Manager
@@ -600,7 +638,7 @@ func (r *LifecycleControllerReconciler) SetupWithManager(mgr ctrl.Manager) error
 				return nil
 			}
 			// Only watch our deployments
-			if deploy.Labels[lifecycleServerLabelKey] != "true" {
+			if deploy.Labels[lifecycleServerLabelKey] != lifecycleServerLabelVal {
 				return nil
 			}
 			csName := deploy.Labels["catalog-name"]

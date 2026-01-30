@@ -18,54 +18,30 @@ package server
 
 import (
 	"net/http"
-	"regexp"
 
-	"github.com/sirupsen/logrus"
+	"github.com/go-logr/logr"
 )
 
-const apiPrefix = "/api/"
-
-// pathRegex matches /api/<version>/lifecycles/<packageName>.json
-// version pattern: v[1-9][0-9]*((?:alpha|beta)[1-9][0-9]*)?
-// Matches: v1, v1alpha1, v1beta1, v200beta300
-// Does not match: 1, v0, v1beta0
-var pathRegex = regexp.MustCompile(`^/api/(v[1-9][0-9]*(?:(?:alpha|beta)[1-9][0-9]*)?)/lifecycles/([^/]+)\.json$`)
-
 // NewHandler creates a new HTTP handler for the lifecycle API
-func NewHandler(data LifecycleIndex, log *logrus.Logger) http.Handler {
+func NewHandler(data LifecycleIndex, log logr.Logger) http.Handler {
 	mux := http.NewServeMux()
 
-	// Handle GET /api/<version>/lifecycles/<packageName>.json
-	mux.HandleFunc(apiPrefix, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
+	// GET /api/{version}/lifecycles/{package}
+	mux.HandleFunc("GET /api/{version}/lifecycles/{package}", func(w http.ResponseWriter, r *http.Request) {
+		version := r.PathValue("version")
+		pkg := r.PathValue("package")
 
 		// If no lifecycle data is available, return 503 Service Unavailable
 		if len(data) == 0 {
-			log.Debug("no lifecycle data available, returning 503")
+			log.V(1).Info("no lifecycle data available, returning 503")
 			http.Error(w, "No lifecycle data available", http.StatusServiceUnavailable)
 			return
 		}
 
-		// Parse the path
-		matches := pathRegex.FindStringSubmatch(r.URL.Path)
-		if matches == nil {
-			http.NotFound(w, r)
-			return
-		}
-
-		version := matches[1]  // e.g., "v1alpha1"
-		pkg := matches[2]      // package name
-
 		// Look up version in index
 		versionData, ok := data[version]
 		if !ok {
-			log.WithFields(logrus.Fields{
-				"version": version,
-				"package": pkg,
-			}).Debug("version not found")
+			log.V(1).Info("version not found", "version", version, "package", pkg)
 			http.NotFound(w, r)
 			return
 		}
@@ -73,34 +49,16 @@ func NewHandler(data LifecycleIndex, log *logrus.Logger) http.Handler {
 		// Look up package in version
 		rawJSON, ok := versionData[pkg]
 		if !ok {
-			log.WithFields(logrus.Fields{
-				"version": version,
-				"package": pkg,
-			}).Debug("package not found")
+			log.V(1).Info("package not found", "version", version, "package", pkg)
 			http.NotFound(w, r)
 			return
 		}
 
-		log.WithFields(logrus.Fields{
-			"version": version,
-			"package": pkg,
-		}).Debug("returning lifecycle data")
+		log.V(1).Info("returning lifecycle data", "version", version, "package", pkg)
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(rawJSON)
-	})
-
-	// List available versions at /api/
-	mux.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		// Redirect /api to /api/
-		if r.URL.Path == "/api" {
-			http.Redirect(w, r, "/api/", http.StatusMovedPermanently)
-			return
+		if _, err := w.Write(rawJSON); err != nil {
+			log.V(1).Error(err, "failed to write response")
 		}
 	})
 

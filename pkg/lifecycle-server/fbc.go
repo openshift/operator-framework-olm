@@ -26,10 +26,13 @@ import (
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 )
 
-// schemaVersionRegex matches lifecycle schema versions like v1, v1alpha1, v2beta3, etc.
+// versionPattern matches API versions like v1, v1alpha1, v2beta3
 // Matches: v1, v1alpha1, v1beta1, v200beta300
 // Does not match: 1, v0, v1beta0
-var schemaVersionRegex = regexp.MustCompile(`^io\.openshift\.operators\.lifecycles\.(v[1-9][0-9]*(?:(?:alpha|beta)[1-9][0-9]*)?)$`)
+const versionPattern = `v[1-9][0-9]*(?:(?:alpha|beta)[1-9][0-9]*)?`
+
+// schemaVersionRegex matches lifecycle schema versions in FBC blobs
+var schemaVersionRegex = regexp.MustCompile(`^io\.openshift\.operators\.lifecycles\.(` + versionPattern + `)$`)
 
 // LifecycleIndex maps schema version -> package name -> raw JSON blob
 type LifecycleIndex map[string]map[string]json.RawMessage
