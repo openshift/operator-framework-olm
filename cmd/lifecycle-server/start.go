@@ -3,24 +3,18 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
+	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/spf13/cobra"
-
-	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apiserver/pkg/authentication/authenticatorfactory"
-	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
-	"k8s.io/apiserver/pkg/endpoints/filters"
-	"k8s.io/apiserver/pkg/endpoints/request"
-	"k8s.io/client-go/kubernetes"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/client-go/rest"
-	cliflag "k8s.io/component-base/cli/flag"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
+
 	"k8s.io/klog/v2"
 
 	server "github.com/openshift/operator-framework-olm/pkg/lifecycle-server"
@@ -36,13 +30,13 @@ const (
 )
 
 var (
-	fbcPath         string
-	listenAddr      string
-	healthAddr      string
-	tlsCertPath     string
-	tlsKeyPath      string
-	tlsMinVersion   string
-	tlsCipherSuites []string
+	fbcPath            string
+	listenAddr         string
+	healthAddr         string
+	tlsCertPath        string
+	tlsKeyPath         string
+	tlsMinVersionStr   string
+	tlsCipherSuiteStrs []string
 )
 
 func newStartCmd() *cobra.Command {
@@ -58,77 +52,67 @@ func newStartCmd() *cobra.Command {
 	cmd.Flags().StringVar(&healthAddr, "health", defaultHealthAddr, "address to listen on for health checks")
 	cmd.Flags().StringVar(&tlsCertPath, "tls-cert", defaultTLSCertPath, "path to TLS certificate")
 	cmd.Flags().StringVar(&tlsKeyPath, "tls-key", defaultTLSKeyPath, "path to TLS private key")
-	cmd.Flags().StringVar(&tlsMinVersion, "tls-min-version", "", "minimum TLS version (VersionTLS12 or VersionTLS13)")
-	cmd.Flags().StringSliceVar(&tlsCipherSuites, "tls-cipher-suites", nil, "comma-separated list of cipher suites")
+	cmd.Flags().StringVar(&tlsMinVersionStr, "tls-min-version", "", "minimum TLS version")
+	cmd.Flags().StringSliceVar(&tlsCipherSuiteStrs, "tls-cipher-suites", nil, "comma-separated list of cipher suites")
 
 	return cmd
+}
+
+func parseTLSFlags(minVersionStr string, cipherSuiteStrs []string) (*tls.Config, error) {
+	cert, err := tls.LoadX509KeyPair(tlsCertPath, tlsKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load TLS certificate: %w", err)
+	}
+
+	minVersion, err := crypto.TLSVersion(minVersionStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid TLS minimum version: %s", minVersionStr)
+	}
+
+	var (
+		cipherSuites    []uint16
+		cipherSuiteErrs []error
+	)
+	for _, tlsCipherSuiteStr := range cipherSuiteStrs {
+		tlsCipherSuite, err := crypto.CipherSuite(tlsCipherSuiteStr)
+		if err != nil {
+			cipherSuiteErrs = append(cipherSuiteErrs, err)
+		} else {
+			cipherSuites = append(cipherSuites, tlsCipherSuite)
+		}
+	}
+	if len(cipherSuiteErrs) != 0 {
+		return nil, fmt.Errorf("invalid TLS cipher suites: %v", errors.Join(cipherSuiteErrs...))
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   minVersion,
+		CipherSuites: cipherSuites,
+	}, nil
 }
 
 func run(_ *cobra.Command, _ []string) error {
 	log := klog.NewKlogr()
 	log.Info("starting lifecycle-server")
 
-	// Parse TLS configuration
-	var tlsMinVersionID uint16
-	var err error
-	if tlsMinVersion != "" {
-		tlsMinVersionID, err = cliflag.TLSVersion(tlsMinVersion)
-		if err != nil {
-			return fmt.Errorf("invalid tls-min-version: %w", err)
-		}
-	}
-
-	var tlsCipherSuiteIDs []uint16
-	if len(tlsCipherSuites) > 0 {
-		tlsCipherSuiteIDs, err = cliflag.TLSCipherSuites(tlsCipherSuites)
-		if err != nil {
-			return fmt.Errorf("invalid tls-cipher-suites: %w", err)
-		}
+	tlsConfig, err := parseTLSFlags(tlsMinVersionStr, tlsCipherSuiteStrs)
+	if err != nil {
+		return fmt.Errorf("failed to parse tls flags: %w", err)
 	}
 
 	// Create Kubernetes client for authn/authz
-	config, err := rest.InClusterConfig()
+	restCfg := ctrl.GetConfigOrDie()
+	httpClient, err := rest.HTTPClientFor(restCfg)
 	if err != nil {
-		return fmt.Errorf("failed to get in-cluster config: %w", err)
-	}
-	kubeClient, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return fmt.Errorf("failed to create kubernetes client: %w", err)
+		log.Error(err, "failed to create http client")
+		return err
 	}
 
-	// Create delegating authenticator (uses TokenReview)
-	authnConfig := authenticatorfactory.DelegatingAuthenticatorConfig{
-		Anonymous:                nil, // disable anonymous auth
-		TokenAccessReviewClient:  kubeClient.AuthenticationV1(),
-		TokenAccessReviewTimeout: 10 * time.Second,
-		CacheTTL:                 2 * time.Minute,
-		WebhookRetryBackoff: &wait.Backoff{
-			Duration: 500 * time.Millisecond,
-			Factor:   1.5,
-			Jitter:   0.2,
-			Steps:    5,
-		},
-	}
-	authenticator, _, err := authnConfig.New()
+	authnzFilter, err := filters.WithAuthenticationAndAuthorization(restCfg, httpClient)
 	if err != nil {
-		return fmt.Errorf("failed to create authenticator: %w", err)
-	}
-
-	// Create delegating authorizer (uses SubjectAccessReview)
-	authzConfig := authorizerfactory.DelegatingAuthorizerConfig{
-		SubjectAccessReviewClient: kubeClient.AuthorizationV1(),
-		AllowCacheTTL:             5 * time.Minute,
-		DenyCacheTTL:              30 * time.Second,
-		WebhookRetryBackoff: &wait.Backoff{
-			Duration: 500 * time.Millisecond,
-			Factor:   1.5,
-			Jitter:   0.2,
-			Steps:    5,
-		},
-	}
-	authorizer, err := authzConfig.New()
-	if err != nil {
-		return fmt.Errorf("failed to create authorizer: %w", err)
+		log.Error(err, "failed to create authorization filter")
+		return err
 	}
 
 	// Load lifecycle data from FBC
@@ -139,105 +123,96 @@ func run(_ *cobra.Command, _ []string) error {
 		data = make(server.LifecycleIndex)
 	}
 	log.Info("loaded lifecycle data",
-		"blobCount", server.CountBlobs(data),
-		"versionCount", len(data),
-		"versions", server.ListVersions(data),
+		"packageCount", data.CountPackages(),
+		"blobCount", data.CountBlobs(),
+		"versions", data.ListVersions(),
 	)
 
-	// Create HTTP handler with authn/authz middleware
+	// Create HTTP apiHandler with authn/authz middleware
 	baseHandler := server.NewHandler(data, log)
-
-	// Wrap with authorization
-	authorizedHandler := filters.WithAuthorization(baseHandler, authorizer, nil)
-
-	// Wrap with authentication
-	handler := filters.WithAuthentication(
-		authorizedHandler,
-		authenticator,
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		}),
-		nil,
-		nil,
-	)
-
-	// Wrap with request info (required by authorization filter)
-	requestInfoResolver := &request.RequestInfoFactory{
-		APIPrefixes:          sets.NewString("api"),
-		GrouplessAPIPrefixes: sets.NewString("api"),
+	apiHandler, err := authnzFilter(log, baseHandler)
+	if err != nil {
+		log.Error(err, "failed to create api handler")
+		return err
 	}
-	handler = filters.WithRequestInfo(handler, requestInfoResolver)
 
-	// Create health handler (no auth required)
+	// Create health apiHandler (no auth required)
 	healthHandler := http.NewServeMux()
 	healthHandler.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
 
-	// Load TLS certificate
-	cert, err := tls.LoadX509KeyPair(tlsCertPath, tlsKeyPath)
-	if err != nil {
-		return fmt.Errorf("failed to load TLS certificate: %w", err)
-	}
-
-	// Create TLS config
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tlsMinVersionID,
-		CipherSuites: tlsCipherSuiteIDs,
-	}
-
 	// Create servers
-	apiServer := &http.Server{
-		Addr:      listenAddr,
-		Handler:   handler,
-		TLSConfig: tlsConfig,
+	apiServer := cancelableServer{
+		Server: &http.Server{
+			Addr:      listenAddr,
+			Handler:   apiHandler,
+			TLSConfig: tlsConfig,
+		},
+		ShutdownTimeout: shutdownTimeout,
 	}
-	healthServer := &http.Server{
-		Addr:    healthAddr,
-		Handler: healthHandler,
+	healthServer := cancelableServer{
+		Server: &http.Server{
+			Addr:    healthAddr,
+			Handler: healthHandler,
+		},
+		ShutdownTimeout: shutdownTimeout,
 	}
 
-	// Start servers
-	errCh := make(chan error, 2)
-	go func() {
-		log.Info("starting API server (HTTPS)", "addr", listenAddr)
-		// Cert paths are empty since TLSConfig already has certificates loaded
-		if err := apiServer.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-			errCh <- fmt.Errorf("API server error: %w", err)
+	eg, ctx := errgroup.WithContext(ctrl.SetupSignalHandler())
+	eg.Go(func() error {
+		if err := apiServer.ListenAndServeTLS(ctx, "", ""); err != nil {
+			return fmt.Errorf("api server error: %w", err)
 		}
-	}()
-	go func() {
-		log.Info("starting health server", "addr", healthAddr)
-		if err := healthServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errCh <- fmt.Errorf("health server error: %w", err)
+		return nil
+	})
+	eg.Go(func() error {
+		if err := healthServer.ListenAndServe(ctx); err != nil {
+			return fmt.Errorf("health server error: %w", err)
 		}
-	}()
+		return nil
+	})
+	return eg.Wait()
+}
 
-	// Wait for shutdown signal
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+type cancelableServer struct {
+	*http.Server
+	ShutdownTimeout time.Duration
+}
+
+func (s *cancelableServer) ListenAndServe(ctx context.Context) error {
+	return s.listenAndServe(ctx,
+		func() error {
+			return s.Server.ListenAndServe()
+		},
+		s.Server.Shutdown,
+	)
+}
+func (s *cancelableServer) ListenAndServeTLS(ctx context.Context, certFile, keyFile string) error {
+	return s.listenAndServe(ctx,
+		func() error {
+			return s.Server.ListenAndServeTLS(certFile, keyFile)
+		},
+		s.Server.Shutdown,
+	)
+}
+
+func (s *cancelableServer) listenAndServe(ctx context.Context, runFunc func() error, cancelFunc func(context.Context) error) error {
+	errChan := make(chan error)
+	go func() {
+		errChan <- runFunc()
+	}()
 
 	select {
-	case sig := <-sigCh:
-		log.Info("received shutdown signal", "signal", sig)
-	case err := <-errCh:
-		log.Error(err, "server error")
+	case err := <-errChan:
 		return err
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), s.ShutdownTimeout)
+		defer cancel()
+		if err := cancelFunc(shutdownCtx); err != nil {
+			return err
+		}
+		return nil
 	}
-
-	// Graceful shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
-	defer cancel()
-
-	log.Info("shutting down servers")
-	if err := apiServer.Shutdown(ctx); err != nil {
-		log.Error(err, "API server shutdown error")
-	}
-	if err := healthServer.Shutdown(ctx); err != nil {
-		log.Error(err, "health server shutdown error")
-	}
-
-	return nil
 }

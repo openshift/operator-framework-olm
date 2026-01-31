@@ -64,21 +64,3 @@ func NewHandler(data LifecycleIndex, log logr.Logger) http.Handler {
 
 	return mux
 }
-
-// CountBlobs returns the total number of blobs in the index
-func CountBlobs(index LifecycleIndex) int {
-	count := 0
-	for _, packages := range index {
-		count += len(packages)
-	}
-	return count
-}
-
-// ListVersions returns the list of versions available in the index
-func ListVersions(index LifecycleIndex) []string {
-	versions := make([]string, 0, len(index))
-	for v := range index {
-		versions = append(versions, v)
-	}
-	return versions
-}

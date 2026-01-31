@@ -11,13 +11,13 @@ import (
 func main() {
 	rootCmd := &cobra.Command{
 		Use:   "lifecycle-controller",
-		Short: "Lifecycle Controller for OLM",
+		Short: "Lifecycle Metadata Controller for OLM",
 	}
 
 	rootCmd.AddCommand(newStartCmd())
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "encountered an error while executing the binary: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error running lifecycle-controller: %v\n", err)
 		os.Exit(1)
 	}
 }

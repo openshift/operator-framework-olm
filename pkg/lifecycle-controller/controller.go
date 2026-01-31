@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/openshift/library-go/pkg/crypto"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -57,12 +58,6 @@ const (
 	resourceBaseName       = "lifecycle-server"
 )
 
-// TLSConfigProvider provides access to dynamically updated TLS configuration.
-type TLSConfigProvider interface {
-	GetMinVersion() string
-	GetCipherSuites() []string
-}
-
 // LifecycleControllerReconciler reconciles CatalogSources and manages lifecycle-server resources
 type LifecycleControllerReconciler struct {
 	client.Client
@@ -71,7 +66,7 @@ type LifecycleControllerReconciler struct {
 	ServerImage                string
 	CatalogSourceLabelSelector labels.Selector
 	CatalogSourceFieldSelector fields.Selector
-	TLSConfigProvider          TLSConfigProvider
+	TLSConfigProvider          *TLSConfigProvider
 }
 
 // matchesCatalogSource checks if a CatalogSource matches both label and field selectors
@@ -622,12 +617,9 @@ func (r *LifecycleControllerReconciler) buildLifecycleServerArgs(fbcPath string)
 	}
 
 	if r.TLSConfigProvider != nil {
-		if minVersion := r.TLSConfigProvider.GetMinVersion(); minVersion != "" {
-			args = append(args, fmt.Sprintf("--tls-min-version=%s", minVersion))
-		}
-
-		if cipherSuites := r.TLSConfigProvider.GetCipherSuites(); len(cipherSuites) > 0 {
-			args = append(args, fmt.Sprintf("--tls-cipher-suites=%s", strings.Join(cipherSuites, ",")))
+		if cfg := r.TLSConfigProvider.Get(); cfg != nil {
+			args = append(args, fmt.Sprintf("--tls-min-version=%s", crypto.TLSVersionToNameOrDie(cfg.MinVersion)))
+			args = append(args, fmt.Sprintf("--tls-cipher-suites=%s", strings.Join(crypto.CipherSuitesToNamesOrDie(cfg.CipherSuites), ",")))
 		}
 	}
 

@@ -3,13 +3,20 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 func main() {
-	cmd := newStartCmd()
+	rootCmd := &cobra.Command{
+		Use:   "lifecycle-server",
+		Short: "Lifecycle Metadata Server for OLM",
+	}
 
-	if err := cmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "encountered an error while executing the binary: %v\n", err)
+	rootCmd.AddCommand(newStartCmd())
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "error running lifecycle-server: %v\n", err)
 		os.Exit(1)
 	}
 }

@@ -24,6 +24,7 @@ import (
 	"sync"
 
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // versionPattern matches API versions like v1, v1alpha1, v2beta3
@@ -83,4 +84,32 @@ func LoadLifecycleData(fbcPath string) (LifecycleIndex, error) {
 	}
 
 	return result, nil
+}
+
+// CountBlobs returns the total number of blobs in the index
+func (index LifecycleIndex) CountBlobs() int {
+	count := 0
+	for _, packages := range index {
+		count += len(packages)
+	}
+	return count
+}
+
+func (index LifecycleIndex) CountPackages() int {
+	pkgs := sets.New[string]()
+	for _, packages := range index {
+		for pkg := range packages {
+			pkgs.Insert(pkg)
+		}
+	}
+	return pkgs.Len()
+}
+
+// ListVersions returns the list of versions available in the index
+func (index LifecycleIndex) ListVersions() []string {
+	versions := make([]string, 0, len(index))
+	for v := range index {
+		versions = append(versions, v)
+	}
+	return versions
 }
