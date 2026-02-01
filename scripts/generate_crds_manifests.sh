@@ -18,13 +18,11 @@ export GOFLAGS="-mod=vendor"
 source .bingo/variables.env
 
 YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
-CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
 
 ver=${OLM_VERSION:-"0.0.0-dev"}
 tmpdir="$(mktemp -p . -d 2>/dev/null || mktemp -d ./tmpdir.XXXXXXX)"
 chartdir="${tmpdir}/chart"
 crddir="${chartdir}/crds"
-crdsrcdir="${tmpdir}/operators"
 
 SED="sed"
 if ! command -v ${SED} &> /dev/null; then
@@ -44,21 +42,15 @@ fi
 
 cp -R "${ROOT_DIR}/staging/operator-lifecycle-manager/deploy/chart/" "${chartdir}"
 cp "${ROOT_DIR}"/values*.yaml "${tmpdir}"
-cp -R "${ROOT_DIR}/staging/api/pkg/operators/" ${crdsrcdir}
 rm -rf ./manifests/* ${crddir}/*
 
 trap "rm -rf ${tmpdir}" EXIT
 
-${CONTROLLER_GEN} crd:crdVersions=v1 output:crd:dir=${crddir} paths=${crdsrcdir}/...
-${CONTROLLER_GEN} schemapatch:manifests=${crddir} output:dir=${crddir} paths=${crdsrcdir}/...
+# Copy upstream CRDs directly instead of regenerating with controller-gen
+cp "${ROOT_DIR}"/staging/api/crds/*.yaml "${crddir}/"
 
-${YQ} w --inplace ${crddir}/operators.coreos.com_clusterserviceversions.yaml spec.versions[0].schema.openAPIV3Schema.properties.spec.properties.install.properties.spec.properties.deployments.items.properties.spec.properties.template.properties.spec.properties.containers.items.properties.ports.items.properties.protocol.default TCP
-${YQ} w --inplace ${crddir}/operators.coreos.com_clusterserviceversions.yaml spec.versions[0].schema.openAPIV3Schema.properties.spec.properties.install.properties.spec.properties.deployments.items.properties.spec.properties.template.properties.spec.properties.initContainers.items.properties.ports.items.properties.protocol.default TCP
-${YQ} w --inplace ${crddir}/operators.coreos.com_clusterserviceversions.yaml spec.versions[0].schema.openAPIV3Schema.properties.spec.properties.install.properties.spec.properties.deployments.items.properties.spec.properties.template.properties.metadata.x-kubernetes-preserve-unknown-fields true
-${YQ} d --inplace ${crddir}/operators.coreos.com_operatorconditions.yaml 'spec.versions[*].schema.openAPIV3Schema.properties.spec.properties.overrides.items.required(.==lastTransitionTime)'
-
+# Rename CRD files to match OpenShift manifest naming convention
 for f in ${crddir}/*.yaml ; do
-    ${YQ} d --inplace $f status
     mv -v "$f" "${crddir}/0000_50_olm_00-$(basename $f | ${SED} 's/^.*_\([^.]\+\)\.yaml/\1.crd.yaml/')"
 done
 
