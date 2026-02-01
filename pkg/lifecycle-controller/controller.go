@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"sort"
 	"strings"
@@ -619,7 +620,9 @@ func (r *LifecycleControllerReconciler) buildLifecycleServerArgs(fbcPath string)
 	if r.TLSConfigProvider != nil {
 		if cfg := r.TLSConfigProvider.Get(); cfg != nil {
 			args = append(args, fmt.Sprintf("--tls-min-version=%s", crypto.TLSVersionToNameOrDie(cfg.MinVersion)))
-			args = append(args, fmt.Sprintf("--tls-cipher-suites=%s", strings.Join(crypto.CipherSuitesToNamesOrDie(cfg.CipherSuites), ",")))
+			if cfg.MinVersion <= tls.VersionTLS12 {
+				args = append(args, fmt.Sprintf("--tls-cipher-suites=%s", strings.Join(crypto.CipherSuitesToNamesOrDie(cfg.CipherSuites), ",")))
+			}
 		}
 	}
 
