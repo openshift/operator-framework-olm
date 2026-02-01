@@ -549,6 +549,233 @@ subjects:
   name: system:authenticated
 EOF
 
+cat << EOF > manifests/0000_50_olm_08-lifecycle-controller.deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  labels:
+    app: olm-lifecycle-controller
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: olm-lifecycle-controller
+  template:
+    metadata:
+      annotations:
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        openshift.io/required-scc: restricted-v2
+        kubectl.kubernetes.io/default-container: lifecycle-controller
+      labels:
+        app: olm-lifecycle-controller
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: lifecycle-controller
+      priorityClassName: "system-cluster-critical"
+      containers:
+        - name: lifecycle-controller
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          command:
+            - /bin/lifecycle-controller
+          args:
+            - start
+          image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RELEASE_VERSION
+              value: "0.0.1-snapshot"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: LIFECYCLE_SERVER_IMAGE
+              value: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
+            - name: GOMEMLIMIT
+              value: "5MiB"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 10Mi
+          ports:
+            - containerPort: 8081
+              name: health
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+              scheme: HTTP
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+              scheme: HTTP
+            initialDelaySeconds: 30
+          terminationMessagePolicy: FallbackToLogsOnError
+      nodeSelector:
+        kubernetes.io/os: linux
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 120
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 120
+EOF
+
+cat << EOF > manifests/0000_50_olm_08-lifecycle-controller.networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+spec:
+  podSelector:
+    matchLabels:
+      app: olm-lifecycle-controller
+  ingress:
+    - ports:
+        - port: 8443
+          protocol: TCP
+  egress:
+    - ports:
+        - port: 6443
+          protocol: TCP
+    - ports:
+        - port: 53
+          protocol: TCP
+        - port: 53
+          protocol: UDP
+        - port: 5353
+          protocol: TCP
+        - port: 5353
+          protocol: UDP
+  policyTypes:
+    - Ingress
+    - Egress
+EOF
+
+cat << EOF > manifests/0000_50_olm_08-lifecycle-controller.rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: operator-lifecycle-manager-lifecycle-controller
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+rules:
+  # Read APIServer for TLS security profile configuration
+  - apiGroups: ["config.openshift.io"]
+    resources: ["apiservers"]
+    verbs: ["get", "list", "watch"]
+  # Watch CatalogSources cluster-wide
+  - apiGroups: ["operators.coreos.com"]
+    resources: ["catalogsources"]
+    verbs: ["get", "list", "watch"]
+  # Watch catalog pods cluster-wide
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # Manage lifecycle-server deployments
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server services
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server serviceaccounts
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server networkpolicies
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server clusterrolebindings
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterrolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Required to grant these permissions to lifecycle-server via CRB
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+  # Leader election
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: operator-lifecycle-manager-lifecycle-controller
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: operator-lifecycle-manager-lifecycle-controller
+subjects:
+  - kind: ServiceAccount
+    name: lifecycle-controller
+    namespace: openshift-operator-lifecycle-manager
+EOF
+
+cat << EOF > manifests/0000_50_olm_09-lifecycle-server.rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: operator-lifecycle-manager-lifecycle-server
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+rules:
+  # Required by kube-rbac-proxy for authn/authz
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+EOF
+
+
 add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"
 
 hypershift_manifests_dir="${ROOT_DIR}/manifests"
