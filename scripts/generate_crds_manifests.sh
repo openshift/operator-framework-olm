@@ -512,6 +512,12 @@ spec:
             secret:
               secretName: pprof-cert
           restartPolicy: Never
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+          tolerations:
+          - key: node-role.kubernetes.io/master
+            operator: Exists
+            effect: NoSchedule
 EOF
 
 cat << EOF > manifests/0000_50_olm_15-csv-viewer.rbac.yaml
