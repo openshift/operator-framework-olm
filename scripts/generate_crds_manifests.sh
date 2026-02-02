@@ -291,6 +291,7 @@ metadata:
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
     release.openshift.io/create-only: "true"
+    release.openshift.io/delete: "true"
   name: collect-profiles-config
   namespace: openshift-operator-lifecycle-manager
 data:
@@ -306,6 +307,7 @@ metadata:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
+    release.openshift.io/delete: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
 rules:
@@ -323,6 +325,7 @@ metadata:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
+    release.openshift.io/delete: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
 subjects:
@@ -341,6 +344,7 @@ metadata:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
+    release.openshift.io/delete: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
 EOF
@@ -354,6 +358,7 @@ metadata:
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
     release.openshift.io/create-only: "true"
+    release.openshift.io/delete: "true"
     openshift.io/owning-component: "Operator Framework / operator-lifecycle-manager"
   name: pprof-cert
   namespace: openshift-operator-lifecycle-manager
@@ -371,6 +376,7 @@ metadata:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
+    release.openshift.io/delete: "true"
   name: collect-profiles
   namespace: openshift-operator-lifecycle-manager
 spec:
@@ -562,3 +568,11 @@ ${SED} -i '/- --writeStatusName/,+3d' ${ROOT_DIR}/microshift-manifests/0000_50_o
 
 # Replace the namespace openshift, as it doesn't exist on microshift, in the rbac file
 ${SED} -i 's/  namespace: openshift/  namespace: openshift-operator-lifecycle-manager/g' ${ROOT_DIR}/microshift-manifests/0000_50_olm_15-csv-viewer.rbac.yaml
+
+# Deleting manifests from CVO takes multiple releases. an annotation was added in 4.22 development to remove the collect-profiles
+# resources from the CVO payload. For microshift, since there is no CVO payload and no in process upgrade, let's delete these now.
+# In 4.23 development, the CVO manifests should be deleted and this step should be removed.
+rm -f "${ROOT_DIR}/microshift-manifests/0000_50_olm_07-collect-profiles.cronjob.yaml"
+rm -f "${ROOT_DIR}/microshift-manifests/0000_50_olm_00-pprof-config.yaml"
+rm -f "${ROOT_DIR}/microshift-manifests/0000_50_olm_00-pprof-rbac.yaml"
+rm -f "${ROOT_DIR}/microshift-manifests/0000_50_olm_00-pprof-secret.yaml"
