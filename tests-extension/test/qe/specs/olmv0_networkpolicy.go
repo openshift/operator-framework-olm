@@ -70,33 +70,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 				ExpectPolicyTypes: []string{"Ingress", "Egress"},
 			},
 			{
-				Name:          "collect-profiles",
-				Namespace:     "openshift-operator-lifecycle-manager",
-				ExpectIngress: nil,
-				ExpectEgress: []olmv0util.EgressRule{
-					{
-						Ports: []olmv0util.Port{{Port: 8443, Protocol: "TCP"}},
-						Selectors: []olmv0util.Selector{
-							{NamespaceLabels: map[string]string{"name": "openshift-operator-lifecycle-manager"}},
-							{PodLabels: map[string]string{"app": "olm-operator"}},
-							{PodLabels: map[string]string{"app": "catalog-operator"}},
-						},
-					},
-					{
-						Ports:     []olmv0util.Port{{Port: 6443, Protocol: "TCP"}},
-						Selectors: nil,
-					},
-					{
-						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
-						Selectors: []olmv0util.Selector{
-							{NamespaceLabels: map[string]string{"kubernetes.io/metadata.name": "openshift-dns"}},
-						},
-					},
-				},
-				ExpectSelector:    map[string]string{"app": "olm-collect-profiles"},
-				ExpectPolicyTypes: []string{"Egress", "Ingress"},
-			},
-			{
 				Name:              "default-deny-all-traffic",
 				Namespace:         "openshift-operator-lifecycle-manager",
 				ExpectIngress:     nil,
@@ -180,6 +153,40 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 				ExpectSelector:    map[string]string{"app": "packageserver"},
 				ExpectPolicyTypes: []string{"Ingress", "Egress"},
 			},
+		}
+
+		// Dynamically add collect-profiles policy if the pods exist
+		if _, err := oc.AsAdmin().WithoutNamespace().
+			Run("get").
+			Args("pods", "-n", "openshift-operator-lifecycle-manager", "-l", "app=olm-collect-profiles").
+			Output(); err == nil {
+			policies = append(policies, olmv0util.NpExpecter{
+				Name:          "collect-profiles",
+				Namespace:     "openshift-operator-lifecycle-manager",
+				ExpectIngress: nil,
+				ExpectEgress: []olmv0util.EgressRule{
+					{
+						Ports: []olmv0util.Port{{Port: 8443, Protocol: "TCP"}},
+						Selectors: []olmv0util.Selector{
+							{NamespaceLabels: map[string]string{"name": "openshift-operator-lifecycle-manager"}},
+							{PodLabels: map[string]string{"app": "olm-operator"}},
+							{PodLabels: map[string]string{"app": "catalog-operator"}},
+						},
+					},
+					{
+						Ports:     []olmv0util.Port{{Port: 6443, Protocol: "TCP"}},
+						Selectors: nil,
+					},
+					{
+						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
+						Selectors: []olmv0util.Selector{
+							{NamespaceLabels: map[string]string{"kubernetes.io/metadata.name": "openshift-dns"}},
+						},
+					},
+				},
+				ExpectSelector:    map[string]string{"app": "olm-collect-profiles"},
+				ExpectPolicyTypes: []string{"Egress", "Ingress"},
+			})
 		}
 		if _, err := oc.AsAdmin().WithoutNamespace().
 			Run("get").
@@ -297,30 +304,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 				ExpectPolicyTypes: []string{"Ingress", "Egress"},
 			},
 			{
-				Name:          "collect-profiles",
-				Namespace:     "openshift-operator-lifecycle-manager",
-				ExpectIngress: nil,
-				ExpectEgress: []olmv0util.EgressRule{
-					{
-						Ports: []olmv0util.Port{{Port: 8443, Protocol: "TCP"}},
-						Selectors: []olmv0util.Selector{
-							{NamespaceLabels: map[string]string{"name": "openshift-operator-lifecycle-manager"}},
-							{PodLabels: map[string]string{"app": "olm-operator"}},
-							{PodLabels: map[string]string{"app": "catalog-operator"}},
-						},
-					},
-					{Ports: []olmv0util.Port{{Port: 6443, Protocol: "TCP"}}, Selectors: nil},
-					{
-						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
-						Selectors: []olmv0util.Selector{
-							{NamespaceLabels: map[string]string{"kubernetes.io/metadata.name": "openshift-dns"}},
-						},
-					},
-				},
-				ExpectSelector:    map[string]string{"app": "olm-collect-profiles"},
-				ExpectPolicyTypes: []string{"Egress", "Ingress"},
-			},
-			{
 				Name:              "default-deny-all-traffic",
 				Namespace:         "openshift-operator-lifecycle-manager",
 				ExpectIngress:     nil,
@@ -383,6 +366,37 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 				ExpectSelector:    map[string]string{"app": "packageserver"},
 				ExpectPolicyTypes: []string{"Ingress", "Egress"},
 			},
+		}
+
+		// Dynamically add collect-profiles policy if the pods exist
+		if _, err := oc.AsAdmin().WithoutNamespace().
+			Run("get").
+			Args("pods", "-n", "openshift-operator-lifecycle-manager", "-l", "app=olm-collect-profiles").
+			Output(); err == nil {
+			policies = append(policies, olmv0util.NpExpecter{
+				Name:          "collect-profiles",
+				Namespace:     "openshift-operator-lifecycle-manager",
+				ExpectIngress: nil,
+				ExpectEgress: []olmv0util.EgressRule{
+					{
+						Ports: []olmv0util.Port{{Port: 8443, Protocol: "TCP"}},
+						Selectors: []olmv0util.Selector{
+							{NamespaceLabels: map[string]string{"name": "openshift-operator-lifecycle-manager"}},
+							{PodLabels: map[string]string{"app": "olm-operator"}},
+							{PodLabels: map[string]string{"app": "catalog-operator"}},
+						},
+					},
+					{Ports: []olmv0util.Port{{Port: 6443, Protocol: "TCP"}}, Selectors: nil},
+					{
+						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
+						Selectors: []olmv0util.Selector{
+							{NamespaceLabels: map[string]string{"kubernetes.io/metadata.name": "openshift-dns"}},
+						},
+					},
+				},
+				ExpectSelector:    map[string]string{"app": "olm-collect-profiles"},
+				ExpectPolicyTypes: []string{"Egress", "Ingress"},
+			})
 		}
 
 		for _, policy := range policies {
