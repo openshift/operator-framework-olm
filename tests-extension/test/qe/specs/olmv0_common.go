@@ -49,6 +49,38 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		dr.RmIr(itName)
 	})
 
+	g.It("PolarionID:24818-[OTP]Checking OLM descriptors", func() {
+		olmErr := 0
+		olmErrDescriptor := []string{""}
+		hasOperatorSource := true
+		if output, err := oc.AsAdmin().WithoutNamespace().Run("api-resources").Args("--no-headers").Output(); err == nil {
+			if !strings.Contains(output, "operatorsources") {
+				hasOperatorSource = false
+			}
+		}
+		olmExplains := []string{"InstallPlan", "ClusterServiceVersion", "Subscription", "CatalogSource", "OperatorSource", "OperatorGroup", "PackageManifest"}
+		for _, olmExplain := range olmExplains {
+			if olmExplain == "OperatorSource" && !hasOperatorSource {
+				e2e.Logf("skip explain for %s: resource type not found", olmExplain)
+				continue
+			}
+			msg, err := oc.AsAdmin().WithoutNamespace().Run("explain").Args(olmExplain).Output()
+			if err != nil {
+				olmErr++
+				olmErrDescriptor = append(olmErrDescriptor, olmExplain)
+			}
+			o.Expect(err).NotTo(o.HaveOccurred())
+			if strings.Contains(msg, "<empty>") {
+				olmErr++
+				olmErrDescriptor = append(olmErrDescriptor, olmExplain)
+			}
+		}
+		if olmErr != 0 {
+			// fmt.Printf("explain errors: %d\n", olmErr)
+			e2e.Failf("%v errors in explaining the following OLM descriptors: %v", olmErr, olmErrDescriptor)
+		}
+	})
+
 	g.It("PolarionID:22259-[OTP][Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:22259-[Skipped:Disconnected]marketplace operator CR status on a running cluster[Serial]"), func() {
 
 		exutil.SkipForSNOCluster(oc)

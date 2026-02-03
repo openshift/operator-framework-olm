@@ -106,6 +106,352 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithNamespace, exutil.Compare, "Succeeded"+"InstallSucceeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-o=jsonpath={.status.phase}{.status.reason}"}).Check(oc)
 	})
 
+	g.It("PolarionID:24917-[OTP]Operators in SingleNamespace should not be granted namespace list [Disruptive]", g.Label("NonHyperShiftHOST"), func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+		itName := g.CurrentSpecReport().FullText()
+		ns := oc.Namespace()
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		ogSingleTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		catsrcImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+
+		g.By("Install the OperatorGroup in a random project")
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-24917",
+			Namespace: ns,
+			Template:  ogSingleTemplate,
+		}
+		defer og.Delete(itName, dr)
+		og.CreateWithCheck(oc, itName, dr)
+
+		g.By("create the learn-operator CatalogSource")
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "catsrc-24917",
+			Namespace:   ns,
+			DisplayName: "QE Operators",
+			Publisher:   "OpenShift QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/learn-operator-index:v25",
+			Template:    catsrcImageTemplate,
+		}
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		g.By("Install the learn-operator with Automatic approval")
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-24917",
+			Namespace:              ns,
+			CatalogSourceName:      catsrc.Name,
+			CatalogSourceNamespace: ns,
+			IpApproval:             "Automatic",
+			Channel:                "beta",
+			OperatorPackage:        "learn",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", ns, "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("check if this operator's SA can list all namespaces")
+		expectedSA := fmt.Sprintf("system:serviceaccount:%s:learn-operator", ns)
+		msg, err := oc.AsAdmin().WithoutNamespace().Run("policy").Args("who-can", "list", "namespaces").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(strings.Contains(msg, expectedSA)).To(o.BeFalse())
+
+		g.By("verify this SA user should NOT have the permission to list all namespaces")
+		canI, err := oc.AsAdmin().WithoutNamespace().Run("auth").Args("can-i", "list", "namespaces", "--as", expectedSA).Output()
+		if err != nil {
+			if exitErr, ok := err.(*exutil.ExitError); ok {
+				canI = exitErr.StdErr
+			} else {
+				o.Expect(err).NotTo(o.HaveOccurred())
+			}
+		}
+		o.Expect(strings.Contains(canI, "no")).To(o.BeTrue())
+	})
+
+	g.It("PolarionID:25644-[OTP]OLM collect CSV health per version", func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+		var (
+			caseID              = "25644"
+			itName              = g.CurrentSpecReport().FullText()
+			ns                  = oc.Namespace()
+			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+			ogSingleTemplate    = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+			catsrcImageTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+			subTemplate         = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+			csvName             = ""
+			metricsURL          = "https://localhost:8443/metrics"
+		)
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-" + caseID,
+			Namespace: ns,
+			Template:  ogSingleTemplate,
+		}
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "catsrc-" + caseID,
+			Namespace:   ns,
+			DisplayName: "QE Operators",
+			Publisher:   "OpenShift QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/learn-operator-index:v25",
+			Template:    catsrcImageTemplate,
+		}
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-" + caseID,
+			Namespace:              ns,
+			CatalogSourceName:      catsrc.Name,
+			CatalogSourceNamespace: ns,
+			IpApproval:             "Automatic",
+			Channel:                "beta",
+			OperatorPackage:        "learn",
+			StartingCSV:            csvName,
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+
+		g.By("create the learn-operator CatalogSource")
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		g.By("Get currentCSV from packagemanifest")
+		err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 180*time.Second, false, func(ctx context.Context) (bool, error) {
+			currentCSV, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", sub.OperatorPackage, "-n", ns, "-o=jsonpath={.status.channels[?(@.name==\""+sub.Channel+"\")].currentCSV}").Output()
+			if err != nil {
+				e2e.Logf("waiting for packagemanifest %s currentCSV: %v", sub.OperatorPackage, err)
+				return false, nil
+			}
+			currentCSV = strings.TrimSpace(currentCSV)
+			if currentCSV == "" {
+				e2e.Logf("packagemanifest %s currentCSV is empty", sub.OperatorPackage)
+				return false, nil
+			}
+			csvName = currentCSV
+			return true, nil
+		})
+		exutil.AssertWaitPollNoErr(err, fmt.Sprintf("failed to get currentCSV for %s from packagemanifest", sub.OperatorPackage))
+		sub.StartingCSV = csvName
+		sub.InstalledCSV = csvName
+
+		g.By("Create subscription without OperatorGroup to trigger NoOperatorGroup")
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		sub.CreateWithoutCheck(oc, itName, dr)
+
+		g.By("Wait for CSV to be created")
+		csvCreated := false
+		err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 180*time.Second, false, func(ctx context.Context) (bool, error) {
+			err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", csvName, "-n", ns).Execute()
+			if err != nil {
+				e2e.Logf("waiting for csv %s to be created: %v", csvName, err)
+				return false, nil
+			}
+			return true, nil
+		})
+		if err == nil {
+			csvCreated = true
+		} else {
+			reason, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("sub", sub.SubName, "-n", ns, "-o=jsonpath={.status.conditions..reason}").Output()
+			message, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("sub", sub.SubName, "-n", ns, "-o=jsonpath={.status.conditions..message}").Output()
+			e2e.Logf("subscription conditions reason: %q, message: %q", strings.TrimSpace(reason), strings.TrimSpace(message))
+			e2e.Logf("csv %s not created without OperatorGroup, proceed with OperatorGroup creation", csvName)
+		}
+
+		abnormalReason := ""
+		skipAbnormalMetric := false
+		if csvCreated {
+			err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 180*time.Second, false, func(ctx context.Context) (bool, error) {
+				reason, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", csvName, "-n", ns, "-o=jsonpath={.status.conditions..reason}").Output()
+				if err != nil {
+					e2e.Logf("waiting for csv %s to report NoOperatorGroup: %v", csvName, err)
+					return false, nil
+				}
+				if strings.Contains(strings.ToLower(reason), "operatorgroup") {
+					abnormalReason = strings.TrimSpace(reason)
+					return true, nil
+				}
+				return false, nil
+			})
+			exutil.AssertWaitPollNoErr(err, fmt.Sprintf("csv %s did not report OperatorGroup-related reason", csvName))
+
+			o.Expect(abnormalReason).NotTo(o.BeEmpty())
+			o.Expect(strings.Contains(abnormalReason, "OperatorGroup")).To(o.BeTrue())
+
+			sub.InstalledCSV = csvName
+			dr.GetIr(itName).Add(olmv0util.NewResource(oc, "csv", csvName, exutil.RequireNS, ns))
+		} else {
+			skipAbnormalMetric = true
+		}
+
+		olmToken, err := exutil.GetSAToken(oc, "prometheus-k8s", "openshift-monitoring")
+		o.Expect(err).NotTo(o.HaveOccurred())
+		olmToken = strings.TrimSpace(olmToken)
+
+		olmPodname, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", "openshift-operator-lifecycle-manager", "--selector=app=olm-operator", "-o=jsonpath={.items[0].metadata.name}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		olmPodname = strings.TrimSpace(olmPodname)
+		o.Expect(olmPodname).NotTo(o.BeEmpty())
+
+		if skipAbnormalMetric {
+			g.By("Skip csv_abnormal metric check because CSV was not created without OperatorGroup")
+		} else {
+			g.By("Check csv_abnormal metric for OperatorGroup-related reason")
+			err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 150*time.Second, false, func(ctx context.Context) (bool, error) {
+				metrics, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(olmPodname, "-n", "openshift-operator-lifecycle-manager", "-i", "--", "curl", "-k", "-H", fmt.Sprintf("Authorization: Bearer %s", olmToken), metricsURL).Output()
+				if err != nil {
+					e2e.Logf("failed to get olm-operator metrics: %v", err)
+					return false, nil
+				}
+				for _, line := range strings.Split(metrics, "\n") {
+					if strings.HasPrefix(line, "csv_abnormal{") &&
+						strings.Contains(line, csvName) &&
+						strings.Contains(line, fmt.Sprintf("namespace=\"%s\"", ns)) &&
+						strings.Contains(line, fmt.Sprintf("reason=\"%s\"", abnormalReason)) {
+						fields := strings.Fields(line)
+						if len(fields) > 1 && fields[1] != "" {
+							e2e.Logf("csv_abnormal metric found: %s", line)
+							return true, nil
+						}
+					}
+				}
+				return false, nil
+			})
+			exutil.AssertWaitPollNoErr(err, "csv_abnormal metric is not created")
+		}
+
+		g.By("Create OperatorGroup for single namespace")
+		defer og.Delete(itName, dr)
+		og.Create(oc, itName, dr)
+
+		g.By("Wait for subscription to report installedCSV")
+		sub.FindInstalledCSVWithSkip(oc, itName, dr, true)
+		if sub.InstalledCSV != "" {
+			csvName = sub.InstalledCSV
+		}
+
+		g.By("Wait for CSV to become Succeeded")
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
+			phase, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", csvName, "-n", ns, "-o=jsonpath={.status.phase}").Output()
+			if err != nil {
+				e2e.Logf("waiting for csv %s to succeed: %v", csvName, err)
+				return false, nil
+			}
+			if strings.Contains(phase, "Succeeded") {
+				return true, nil
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(err, fmt.Sprintf("csv %s did not reach Succeeded phase", csvName))
+
+		g.By("Check csv_succeeded metric")
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 150*time.Second, false, func(ctx context.Context) (bool, error) {
+			metrics, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(olmPodname, "-n", "openshift-operator-lifecycle-manager", "-i", "--", "curl", "-k", "-H", fmt.Sprintf("Authorization: Bearer %s", olmToken), metricsURL).Output()
+			if err != nil {
+				e2e.Logf("failed to get olm-operator metrics: %v", err)
+				return false, nil
+			}
+			for _, line := range strings.Split(metrics, "\n") {
+				if strings.HasPrefix(line, "csv_succeeded{") &&
+					strings.Contains(line, csvName) &&
+					strings.Contains(line, fmt.Sprintf("namespace=\"%s\"", ns)) {
+					fields := strings.Fields(line)
+					if len(fields) > 1 && fields[1] != "" {
+						e2e.Logf("csv_succeeded metric found: %s", line)
+						return true, nil
+					}
+				}
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "csv_succeeded metric is not created")
+	})
+
+	g.It("PolarionID:27680-[OTP][Skipped:Disconnected]OLM Bundle support for Prometheus Types [Serial]", g.Label("NonHyperShiftHOST"), func() {
+		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+		exutil.SkipBaselineCaps(oc, "None")
+
+		var (
+			itName              = g.CurrentSpecReport().FullText()
+			ns                  = oc.Namespace()
+			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+			csImageTemplate     = filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+			ogSingleTemplate    = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+			subTemplate         = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+			csvName             = "etcdoperator.v0.9.4"
+		)
+
+		g.By("Start to create the CatalogSource CR")
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "prometheus-dependency-27680",
+			Namespace:   oc.Namespace(),
+			DisplayName: "OLM QE",
+			Publisher:   "OLM QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/etcd-prometheus-dependency-index:11.0",
+			Template:    csImageTemplate,
+		}
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		g.By("Install the OperatorGroup in a random project")
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-27680",
+			Namespace: ns,
+			Template:  ogSingleTemplate,
+		}
+		defer og.Delete(itName, dr)
+		og.CreateWithCheck(oc, itName, dr)
+
+		g.By("Install the etcdoperator v0.9.4 with Automatic approval")
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "sub-27680",
+			Namespace:              ns,
+			CatalogSourceName:      catsrc.Name,
+			CatalogSourceNamespace: catsrc.Namespace,
+			Channel:                "singlenamespace-alpha",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "etcd-service-monitor",
+			StartingCSV:            csvName,
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", csvName, "-n", ns, "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("Assert that prometheus dependency is resolved")
+		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", ns).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(msg).To(o.ContainSubstring("prometheus"))
+
+		g.By("Assert that ServiceMonitor is created")
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 2*time.Minute, false, func(ctx context.Context) (bool, error) {
+			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("ServiceMonitor", "my-servicemonitor", "-n", ns).Output()
+			if err != nil {
+				e2e.Logf("waiting for ServiceMonitor: %v", err)
+				return false, nil
+			}
+			return strings.Contains(output, "my-servicemonitor"), nil
+		})
+		exutil.AssertWaitPollNoErr(err, "ServiceMonitor was not created")
+
+		g.By("Assert that PrometheusRule is created")
+		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 2*time.Minute, false, func(ctx context.Context) (bool, error) {
+			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("PrometheusRule", "my-prometheusrule", "-n", ns).Output()
+			if err != nil {
+				e2e.Logf("waiting for PrometheusRule: %v", err)
+				return false, nil
+			}
+			return strings.Contains(output, "my-prometheusrule"), nil
+		})
+		exutil.AssertWaitPollNoErr(err, "PrometheusRule was not created")
+	})
+
 	g.It("PolarionID:22200-[OTP][Skipped:Disconnected]add minimum kube version to CSV [Slow]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:22200-[Skipped:Disconnected]add minimum kube version to CSV [Slow]"), func() {
 		checkArch := architecture.ClusterArchitecture(oc)
 		e2e.Logf("the curent arch is %v", checkArch.String())
@@ -6191,6 +6537,141 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		}
 		exutil.AssertWaitPollNoErr(err, "failed to create ditto operator")
 
+	})
+
+	g.It("PolarionID:41026-[Level0][OTP]OCS should only one installplan generated when creating subscription", func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+		var (
+			itName              = g.CurrentSpecReport().FullText()
+			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+			ogSingleTemplate    = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+			subTemplate         = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+			catsrcImageTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+			ns                  = oc.Namespace()
+
+			og = olmv0util.OperatorGroupDescription{
+				Name:      "og-41026",
+				Namespace: ns,
+				Template:  ogSingleTemplate,
+			}
+			catsrc = olmv0util.CatalogSourceDescription{
+				Name:        "catsrc-41026",
+				Namespace:   ns,
+				DisplayName: "QE Operators",
+				Publisher:   "OpenShift QE",
+				SourceType:  "grpc",
+				Address:     "quay.io/olmqe/learn-operator-index:v25",
+				Template:    catsrcImageTemplate,
+			}
+			sub = olmv0util.SubscriptionDescription{
+				SubName:                "sub-41026",
+				Namespace:              ns,
+				CatalogSourceName:      "catsrc-41026",
+				CatalogSourceNamespace: ns,
+				Channel:                "beta",
+				IpApproval:             "Automatic",
+				OperatorPackage:        "learn",
+				StartingCSV:            "learn-operator.v0.0.3",
+				SingleNamespace:        true,
+				Template:               subTemplate,
+			}
+		)
+
+		og.CreateWithCheck(oc, itName, dr)
+
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		sub.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "learn-operator.v0.0.3", "-n", ns, "-o=jsonpath={.status.phase}"}).Check(oc)
+
+		g.By("Check there is only one installplan")
+		err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 30*time.Second, false, func(ctx context.Context) (bool, error) {
+			ips := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "installplan", "-n", ns, "--no-headers")
+			if strings.TrimSpace(ips) == "" {
+				return false, nil
+			}
+			ipList := strings.Split(strings.TrimSpace(ips), "\n")
+			count := 0
+			for _, ip := range ipList {
+				name := strings.Fields(ip)
+				if len(name) == 0 {
+					continue
+				}
+				csvs := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "installplan", name[0], "-n", ns, "-o=jsonpath={.spec.clusterServiceVersionNames}")
+				if strings.Contains(csvs, sub.StartingCSV) {
+					count++
+				}
+			}
+			if count != 1 {
+				return false, nil
+			}
+			return true, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "the generated InstallPlan != 1")
+
+		g.By("Waiting for install plan Complete")
+		installPlan := sub.GetIP(oc)
+		o.Expect(installPlan).NotTo(o.BeEmpty())
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Complete", exutil.Ok, []string{"installplan", installPlan, "-n", ns, "-o=jsonpath={.status.phase}"}).Check(oc)
+	})
+
+	g.It("PolarionID:68521-[OTP][Skipped:Disconnected]Check failureThreshold of redhat-operators catalog", g.Label("NonHyperShiftHOST"), func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+		architecture.SkipNonAmd64SingleArch(oc)
+		redhatOperators, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("catalogsource", "redhat-operators", "-n", "openshift-marketplace").Output()
+		if err != nil {
+			if strings.Contains(redhatOperators, "not found") {
+				g.Skip("redhat-operators catalog does not exist in the cluster")
+			}
+			o.Expect(err).NotTo(o.HaveOccurred())
+		}
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "10", exutil.Ok, []string{"pods", "-n", "openshift-marketplace", "-l", "olm.catalogSource=redhat-operators", "-o=jsonpath={..spec.containers[0].startupProbe.failureThreshold}"}).Check(oc)
+	})
+
+	g.It("PolarionID:68901-[OTP][Skipped:Disconnected]Packageserver pod should not crash if updateStrategy is incorrect", g.Label("NonHyperShiftHOST"), func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+		var (
+			itName              = g.CurrentSpecReport().FullText()
+			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
+			catsrcImageTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-image-incorrect-updatestrategy.yaml")
+			catsrc              = olmv0util.CatalogSourceDescription{
+				Name:        "catsrc-68901",
+				Namespace:   oc.Namespace(),
+				DisplayName: "Test Catsrc Operators",
+				Publisher:   "Red Hat",
+				SourceType:  "grpc",
+				Address:     "quay.io/olmqe/nginxolm-operator-index:v1",
+				Template:    catsrcImageTemplate,
+			}
+		)
+
+		defer catsrc.Delete(itName, dr)
+		catsrc.Create(oc, itName, dr)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "InvalidIntervalError", exutil.Ok, []string{"catsrc", catsrc.Name, "-n", catsrc.Namespace, "-o=jsonpath={.status.reason}"}).Check(oc)
+
+		waitErr := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 20*time.Second, false, func(ctx context.Context) (bool, error) {
+			status, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", "openshift-operator-lifecycle-manager", "-l", "app=catalog-operator", "-o=jsonpath={..status.phase}").Output()
+			if strings.Compare(status, "Running") != 0 {
+				return true, nil
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollWithErr(waitErr, "catalog-operator pod crash")
+
+		replicasStr, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment", "packageserver", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.status.replicas}").Output()
+		replicas, _ := strconv.Atoi(strings.TrimSpace(replicasStr))
+		err := wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 30*time.Second, false, func(ctx context.Context) (bool, error) {
+			status, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", "openshift-operator-lifecycle-manager", "-l", "app=packageserver", "-o=jsonpath={..status.phase}").Output()
+			expected := strings.TrimSpace(strings.Repeat("Running ", replicas))
+			if strings.TrimSpace(status) == expected {
+				return true, nil
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(err, "packageserver pods not all running")
 	})
 
 })
