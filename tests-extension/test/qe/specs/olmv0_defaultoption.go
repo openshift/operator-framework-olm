@@ -1086,7 +1086,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 	// Polarion ID: 68681
 	g.It("PolarionID:68681-[OTP][Skipped:Disconnected]pods with no controller true ownerReferences", g.Label("NonHyperShiftHOST"), func() {
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
-		defaultCatalogSources := []string{"certified-operators", "community-operators", "redhat-marketplace", "redhat-operators"}
+		defaultCatalogSources := []string{"certified-operators", "community-operators", "redhat-operators"}
 		g.By("1) check default catalog sources' pods if labeled with controller: true")
 		for _, cs := range defaultCatalogSources {
 			controller, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-l", fmt.Sprintf("olm.catalogSource=%s", cs), "-o=jsonpath={.items[0].metadata.ownerReferences[0].controller}", "-n", "openshift-marketplace").Output()
@@ -1102,7 +1102,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 	// Polarion ID: 59413
 	g.It("PolarionID:59413-[OTP][Skipped:Disconnected]Default CatalogSource aren't created in restricted mode [Serial]", g.Label("NonHyperShiftHOST"), func() {
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
-		defaultCatalogSources := []string{"certified-operators", "community-operators", "redhat-marketplace", "redhat-operators"}
+		defaultCatalogSources := []string{"certified-operators", "community-operators", "redhat-operators"}
 		g.By("step 1 -> check if the SCC is restricted")
 		for _, cs := range defaultCatalogSources {
 			SCC, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("catalogsource", cs, "-o=jsonpath={.spec.grpcPodConfig.securityContextConfig}", "-n", "openshift-marketplace").Output()
@@ -2139,7 +2139,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		if err != nil {
 			e2e.Failf("Fail to get the CatalogSource in openshift-marketplace project")
 		}
-		defaultCatalogs := []string{"certified-operators", "community-operators", "redhat-marketplace", "redhat-operators"}
+		defaultCatalogs := []string{"certified-operators", "community-operators", "redhat-operators"}
 		for i, catalog := range defaultCatalogs {
 			g.By(fmt.Sprintf("%d) check CatalogSource: %s", i+1, catalog))
 			if strings.Contains(catalogs, catalog) {
@@ -2893,7 +2893,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		o.Expect(msg).To(o.ContainSubstring("grpc"))
 		// o.Expect(msg).To(o.ContainSubstring("certified-operators"))
 		// o.Expect(msg).To(o.ContainSubstring("community-operators"))
-		// o.Expect(msg).To(o.ContainSubstring("redhat-marketplace"))
 		// o.Expect(msg).To(o.ContainSubstring("redhat-operators"))
 		g.By("3) Check the Packagemanifest")
 		msg, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", "-n", "openshift-marketplace").Output()
