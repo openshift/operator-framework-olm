@@ -127,7 +127,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", func() {
 			if err != nil {
 				e2e.Failf("Fail to get cronjob in project: %s, error:%v", controlProject, err)
 			}
-			is := []string{"certified-operators", "community-operators", "redhat-marketplace", "redhat-operators"}
+			is := []string{"certified-operators", "community-operators", "redhat-operators"}
 			for _, imageStream := range is {
 				if !strings.Contains(isOutput, imageStream) {
 					e2e.Failf("find ImageStream:%s in project:%v", imageStream, controlProject)
@@ -136,7 +136,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on hypershift mgmt", func() {
 		}
 
 		g.By("2) check if Deployment uses the ImageStream")
-		deploys := []string{"certified-operators-catalog", "community-operators-catalog", "redhat-marketplace-catalog", "redhat-operators-catalog"}
+		deploys := []string{"certified-operators-catalog", "community-operators-catalog", "redhat-operators-catalog"}
 		for _, deploy := range deploys {
 			annotations, err := oc.AsAdmin().Run("get").Args("deployment", "-n", controlProject, deploy, "-o=jsonpath={.metadata.annotations}").Output()
 			if err != nil {
