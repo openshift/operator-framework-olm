@@ -2015,20 +2015,35 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		sub.ApproveSpecificIP(oc, itName, dr, "etcdoperator.v0.9.2", "Complete")
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.2", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
 
-		// olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": " "}]'
-		g.By("5, this operator's olm.maxOpenShiftVersion is empty, so it should block the upgrade")
-		olmv0util.CheckUpgradeStatus(oc, "False")
-
-		g.By("6, apprrove this etcdoperator.v0.9.4, it should be in Complete state")
-		sub.ApproveSpecificIP(oc, itName, dr, "etcdoperator.v0.9.4", "Complete")
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.4", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
-		// olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.9"}]'
-		g.By("7, 4.9.0-xxx upgraded to 4.10.0-xxx < 4.10.0, or 4.9.1 upgraded to 4.9.x < 4.10.0, so it should NOT block 4.9 upgrade, but block 4.10+ upgrade")
+		// Get current OCP version for later checks
 		currentVersion, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("clusterversion", "version", "-o=jsonpath={.status.desired.version}").Output()
 		if err != nil {
 			e2e.Failf("Fail to get the OCP version")
 		}
 		v, _ := semver.ParseTolerant(currentVersion)
+
+		// olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": " "}]'
+		g.By("5, this operator's olm.maxOpenShiftVersion is empty, so it should block the upgrade")
+		olmv0util.CheckUpgradeStatus(oc, "False")
+		// [OCP-87276] For OCP 4.22, check the Upgradeable message contains specific error about parsing failure
+		// Use Major.Minor comparison to handle nightly/prerelease versions correctly
+		if v.Major == 4 && v.Minor == 22 {
+			g.By("5-1, [OCP-87276] OCP 4.22: check message contains 'upgrades to 4.23' and parsing error")
+			olmv0util.CheckUpgradeMessage(oc, "upgrades to 4.23 or major version upgrades to 5.0")
+			olmv0util.CheckUpgradeMessage(oc, "has invalid olm.maxOpenShiftVersion properties")
+		}
+
+		g.By("6, apprrove this etcdoperator.v0.9.4, it should be in Complete state")
+		sub.ApproveSpecificIP(oc, itName, dr, "etcdoperator.v0.9.4", "Complete")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.4", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+		// [OCP-87276] For OCP 4.22, check the Upgradeable message after upgrading to v0.9.4 (maxOpenShiftVersion: 4.9)
+		if v.Major == 4 && v.Minor == 22 {
+			g.By("6-1, [OCP-87276] OCP 4.22: check message contains 'upgrades to 4.23' and 'maximum supported OCP version'")
+			olmv0util.CheckUpgradeMessage(oc, "upgrades to 4.23 or major version upgrades to 5.0")
+			olmv0util.CheckUpgradeMessage(oc, "maximum supported OCP version")
+		}
+		// olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.9"}]'
+		g.By("7, 4.9.0-xxx upgraded to 4.10.0-xxx < 4.10.0, or 4.9.1 upgraded to 4.9.x < 4.10.0, so it should NOT block 4.9 upgrade, but block 4.10+ upgrade")
 		maxVersion, _ := semver.ParseTolerant("4.9")
 		// current version > the operator's max version: 4.9
 		if v.Compare(maxVersion) > 0 {

@@ -404,7 +404,8 @@ func CheckUpgradeStatus(oc *exutil.CLI, expectedStatus string) {
 	err := wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, 60*time.Second, false, func(ctx context.Context) (bool, error) {
 		upgradeable, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("co", "operator-lifecycle-manager", "-o=jsonpath={.status.conditions[?(@.type==\"Upgradeable\")].status}").Output()
 		if err != nil {
-			e2e.Failf("Fail to get the Upgradeable status of the OLM: %v", err)
+			e2e.Logf("Fail to get the Upgradeable status of the OLM: %v, try next round", err)
+			return false, nil
 		}
 		if upgradeable != expectedStatus {
 			return false, nil
@@ -413,6 +414,27 @@ func CheckUpgradeStatus(oc *exutil.CLI, expectedStatus string) {
 		return true, nil
 	})
 	exutil.AssertWaitPollNoErr(err, fmt.Sprintf("Upgradeable status of the OLM %s is not expected", expectedStatus))
+}
+
+// CheckUpgradeMessage checks the Upgradeable message contains expected text
+func CheckUpgradeMessage(oc *exutil.CLI, expectedMessageSubstring string) {
+	e2e.Logf("Check the Upgradeable message of the OLM, expected message to contain: %s", expectedMessageSubstring)
+	err := wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, 60*time.Second, false, func(ctx context.Context) (bool, error) {
+		message, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("co", "operator-lifecycle-manager", "-o=jsonpath={.status.conditions[?(@.type==\"Upgradeable\")].message}").Output()
+		if err != nil {
+			e2e.Logf("Fail to get the Upgradeable message of the OLM: %v, try next round", err)
+			return false, nil
+		}
+
+		if !strings.Contains(message, expectedMessageSubstring) {
+			e2e.Logf("Expected message to contain '%s', but got: %s", expectedMessageSubstring, message)
+			return false, nil
+		}
+
+		e2e.Logf("The Upgradeable message contains expected text: %s", expectedMessageSubstring)
+		return true, nil
+	})
+	exutil.AssertWaitPollNoErr(err, fmt.Sprintf("Upgradeable message doesn't contain expected text: %s", expectedMessageSubstring))
 }
 
 func notInList(target string, strArray []string) bool {
