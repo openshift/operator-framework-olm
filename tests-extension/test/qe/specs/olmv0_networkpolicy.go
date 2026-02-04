@@ -156,10 +156,10 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 		}
 
 		// Dynamically add collect-profiles policy if the pods exist
-		if _, err := oc.AsAdmin().WithoutNamespace().
+		if output, err := oc.AsAdmin().WithoutNamespace().
 			Run("get").
-			Args("pods", "-n", "openshift-operator-lifecycle-manager", "-l", "app=olm-collect-profiles").
-			Output(); err == nil {
+			Args("pods", "-n", "openshift-operator-lifecycle-manager", "-l", "app=olm-collect-profiles", "-o", "name").
+			Output(); err == nil && strings.Contains(output, "collect-profiles") {
 			policies = append(policies, olmv0util.NpExpecter{
 				Name:          "collect-profiles",
 				Namespace:     "openshift-operator-lifecycle-manager",
@@ -369,10 +369,10 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 		}
 
 		// Dynamically add collect-profiles policy if the pods exist
-		if _, err := oc.AsAdmin().WithoutNamespace().
+		if output, err := oc.AsAdmin().WithoutNamespace().
 			Run("get").
-			Args("pods", "-n", "openshift-operator-lifecycle-manager", "-l", "app=olm-collect-profiles").
-			Output(); err == nil {
+			Args("pods", "-n", "openshift-operator-lifecycle-manager", "-l", "app=olm-collect-profiles", "-o", "name").
+			Output(); err == nil && strings.Contains(output, "collect-profiles") {
 			policies = append(policies, olmv0util.NpExpecter{
 				Name:          "collect-profiles",
 				Namespace:     "openshift-operator-lifecycle-manager",
