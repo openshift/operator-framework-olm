@@ -621,7 +621,7 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runtime-spec v1.3.0
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
-# github.com/openshift/api v0.0.0-20260203111218-618697272d69
+# github.com/openshift/api v0.0.0-20260204104751-e09e5a4ebcd0
 ## explicit; go 1.24.0
 github.com/openshift/api/config/v1
 github.com/openshift/api/config/v1alpha1
@@ -646,7 +646,7 @@ github.com/openshift/client-go/config/informers/externalversions/internalinterfa
 github.com/openshift/client-go/config/listers/config/v1
 github.com/openshift/client-go/config/listers/config/v1alpha1
 github.com/openshift/client-go/config/listers/config/v1alpha2
-# github.com/openshift/library-go v0.0.0-20260203175009-3067285722b9
+# github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a
 ## explicit; go 1.24.0
 github.com/openshift/library-go/pkg/crypto
 # github.com/operator-framework/api v0.39.0 => ./staging/api
@@ -767,7 +767,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/stor
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/version
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
-# github.com/operator-framework/operator-registry v1.62.0 => ./staging/operator-registry
+# github.com/operator-framework/operator-registry v1.63.0 => ./staging/operator-registry
 ## explicit; go 1.25.3
 github.com/operator-framework/operator-registry/alpha/action
 github.com/operator-framework/operator-registry/alpha/action/migrations

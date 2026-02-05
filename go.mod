@@ -12,10 +12,10 @@ require (
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.12.1
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.28.1
-	github.com/openshift/api v0.0.0-20260203111218-618697272d69
+	github.com/openshift/api v0.0.0-20260204104751-e09e5a4ebcd0
 	github.com/operator-framework/api v0.39.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
-	github.com/operator-framework/operator-registry v1.62.0
+	github.com/operator-framework/operator-registry v1.63.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
@@ -160,7 +160,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.3.0 // indirect
 	github.com/openshift/client-go v0.0.0-20260108185524-48f4ccfc4e13 // indirect
-	github.com/openshift/library-go v0.0.0-20260203175009-3067285722b9 // indirect
+	github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a // indirect
 	github.com/otiai10/copy v1.14.1 // indirect
 	github.com/otiai10/mint v1.6.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
