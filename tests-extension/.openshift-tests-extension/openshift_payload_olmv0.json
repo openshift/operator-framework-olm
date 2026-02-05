@@ -2469,6 +2469,22 @@
     }
   },
   {
+    "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:40945-[OTP][Skipped:Disconnected] opm render community operator index to local yaml",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {},
+      "opm": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
     "name": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43248-[OTP]Support ignoring files when loading declarative configs",
     "originalName": "[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43248-Support ignoring files when loading declarative configs",
     "labels": {
