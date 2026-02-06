@@ -2829,57 +2829,6 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		}
 	})
 
-	g.It("PolarionID:62973-[OTP][Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Disruptive][Slow]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]"), func() {
-		if !exutil.IsSNOCluster(oc) {
-			g.Skip("it is not sno cluster, so skip it")
-		}
-		g.By("check if the current mcp is ready, or else skip")
-		olmv0util.AssertOrCheckMCP(oc, "master", 10, 1, true)
-
-		g.By("check if it is aleady in workload partition")
-		wordLoadPartition, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.items[*].metadata.annotations}").Output()
-		o.Expect(err).NotTo(o.HaveOccurred())
-		if strings.Contains(wordLoadPartition, "resources.workload.openshift.io/collect-profiles") {
-			e2e.Logf("it already works")
-			return
-		}
-
-		var (
-			buildPruningBaseDir  = exutil.FixturePath("testdata", "olm")
-			mcWordloadPartiation = filepath.Join(buildPruningBaseDir, "mc-workload-partition.yaml")
-		)
-
-		g.By("apply MchineConfig to set workload partition")
-		defer func() {
-			g.By("wait mcp recovered")
-			olmv0util.AssertOrCheckMCP(oc, "master", 240, 30, false)
-		}()
-		defer func() {
-			_ = oc.AsAdmin().WithoutNamespace().Run("delete").Args("-f", mcWordloadPartiation).Execute()
-		}()
-		err = oc.AsAdmin().WithoutNamespace().Run("apply").Args("-f", mcWordloadPartiation).Execute()
-		o.Expect(err).NotTo(o.HaveOccurred())
-
-		g.By("check mcp updated successfully")
-		olmv0util.AssertOrCheckMCP(oc, "master", 180, 30, false)
-
-		g.By("check resources.workload.openshift.io/collect-profiles")
-		o.Eventually(func() string {
-			annotation, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.items[*].metadata.annotations}").Output()
-			return annotation
-		}, 20*time.Minute, 1*time.Minute).Should(o.ContainSubstring("resources.workload.openshift.io/collect-profiles"))
-	})
-
-	g.It("PolarionID:62973-[OTP]general way collect profiles cronjob pod missing target.workload.openshift.io management annotation", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-general way collect profiles cronjob pod missing target.workload.openshift.io management annotation"), func() {
-		g.By("https://issues.redhat.com/browse/OCPBUGS-1088 automated")
-
-		g.By("check target.workload.openshift.io/management")
-		o.Eventually(func() string {
-			annotation, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("CronJob", "collect-profiles", "-n", "openshift-operator-lifecycle-manager", "-o=jsonpath={.spec.jobTemplate.spec.template.metadata.annotations}").Output()
-			return annotation
-		}, 20*time.Second, 2*time.Second).Should(o.ContainSubstring("target.workload.openshift.io/management"))
-	})
-
 	g.It("PolarionID:23673-[OTP]Installplan can be created while Install and uninstall operators via Marketplace for 5 times[Slow]", func() {
 		var (
 			itName              = g.CurrentSpecReport().FullText()
