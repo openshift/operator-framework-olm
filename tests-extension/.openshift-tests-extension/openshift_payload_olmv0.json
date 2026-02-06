@@ -2045,40 +2045,6 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[OTP][Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]",
-    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {},
-      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
-    "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[OTP]general way collect profiles cronjob pod missing target.workload.openshift.io management annotation",
-    "originalName": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-general way collect profiles cronjob pod missing target.workload.openshift.io management annotation",
-    "labels": {
-      "Extended": {},
-      "NonHyperShiftHOST": {},
-      "original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-general way collect profiles cronjob pod missing target.workload.openshift.io management annotation": {}
-    },
-    "resources": {
-      "isolation": {}
-    },
-    "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
-    "environmentSelector": {
-      "exclude": "topology==\"External\""
-    }
-  },
-  {
     "name": "[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:23673-[OTP]Installplan can be created while Install and uninstall operators via Marketplace for 5 times[Slow]",
     "labels": {
       "Extended": {}
