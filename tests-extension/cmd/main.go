@@ -270,8 +270,10 @@ func main() {
 	// 3 - Remove the test in your test file.
 	// 4 - Run make build-update
 	ext.IgnoreObsoleteTests(
-	// "[sig-operator] OLMv0 should pass a trivial sanity check",
-	// Add more removed test names below
+		// "[sig-operator] OLMv0 should pass a trivial sanity check",
+		// Add more removed test names below
+		"[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[OTP][Skipped:Disconnected]dedicated way collect profiles cronjob pod missing target.workload.openshift.io management annotation[Serial][Disruptive][Slow]",
+		"[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:62973-[OTP]general way collect profiles cronjob pod missing target.workload.openshift.io management annotation",
 	)
 
 	// Initialize the environment before running any tests.
