@@ -541,15 +541,15 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
 
 		g.By("Get pod name")
-		podName, err := oc.AsAdmin().Run("get").Args("pods", "-l", "name=learn-operator", "-n", oc.Namespace(), "-o=jsonpath={.items..metadata.name}").Output()
+		podName, err := oc.WithoutNamespace().Run("get").Args("pods", "-l", "name=learn-operator", "-n", oc.Namespace(), "-o=jsonpath={.items..metadata.name}").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		g.By("Patch the deploy object by adding an environment variable")
-		_, err = oc.AsAdmin().WithoutNamespace().Run("set").Args("env", "deploy/learn-operator", "A=B", "-n", oc.Namespace()).Output()
+		_, err = oc.WithoutNamespace().Run("set").Args("env", "deploy/learn-operator", "A=B", "-n", oc.Namespace()).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		g.By("Get restarted pod name")
-		podNameAfterPatch, err := oc.AsAdmin().Run("get").Args("pods", "-l", "name=learn-operator", "-n", oc.Namespace(), "-o=jsonpath={.items..metadata.name}").Output()
+		podNameAfterPatch, err := oc.WithoutNamespace().Run("get").Args("pods", "-l", "name=learn-operator", "-n", oc.Namespace(), "-o=jsonpath={.items..metadata.name}").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(podName).NotTo(o.Equal(podNameAfterPatch))
 	})
@@ -1100,11 +1100,27 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 	})
 
 	// Polarion ID: 59413
+	// Polarion ID: 59413
 	g.It("PolarionID:59413-[OTP][Skipped:Disconnected]Default CatalogSource aren't created in restricted mode [Serial]", g.Label("NonHyperShiftHOST"), func() {
 		exutil.SkipIfDisableDefaultCatalogsource(oc)
 		defaultCatalogSources := []string{"certified-operators", "community-operators", "redhat-operators"}
-		g.By("step 1 -> check if the SCC is restricted")
+		existingCatalogSources, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("catalogsource", "-n", "openshift-marketplace", "-o=jsonpath={.items[*].metadata.name}").Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		existingSet := map[string]bool{}
+		for _, name := range strings.Fields(existingCatalogSources) {
+			existingSet[name] = true
+		}
+		availableCatalogSources := []string{}
 		for _, cs := range defaultCatalogSources {
+			if existingSet[cs] {
+				availableCatalogSources = append(availableCatalogSources, cs)
+			}
+		}
+		if len(availableCatalogSources) == 0 {
+			g.Skip("no default CatalogSources found in openshift-marketplace")
+		}
+		g.By("step 1 -> check if the SCC is restricted")
+		for _, cs := range availableCatalogSources {
 			SCC, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("catalogsource", cs, "-o=jsonpath={.spec.grpcPodConfig.securityContextConfig}", "-n", "openshift-marketplace").Output()
 			if err != nil {
 				e2e.Failf("fail to get %s's SCC, error:%v", cs, err)
@@ -1114,11 +1130,11 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			}
 		}
 		g.By("step 2 -> change the default SCC to legacy")
-		for _, cs := range defaultCatalogSources {
+		for _, cs := range availableCatalogSources {
 			olmv0util.PatchResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "-n", "openshift-marketplace", "catalogsource", cs, "-p", "{\"spec\":{\"grpcPodConfig\": {\"securityContextConfig\": \"legacy\"}}}", "--type=merge")
 		}
 		g.By("step 3 -> check if SCC reset the restricted")
-		for _, cs := range defaultCatalogSources {
+		for _, cs := range availableCatalogSources {
 			SCC, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("catalogsource", cs, "-o=jsonpath={.spec.grpcPodConfig.securityContextConfig}", "-n", "openshift-marketplace").Output()
 			if err != nil {
 				e2e.Failf("fail to get %s's SCC, error:%v", cs, err)
@@ -3131,6 +3147,214 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", ns).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(msg).To(o.ContainSubstring("learn-operator.v0.0.3"))
+	})
+
+	// Polarion ID: 43073
+	g.It("PolarionID:43073-[OTP][Skipped:Disconnected]Indicate dependency class in resolution constraint text", func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+		architecture.SkipNonAmd64SingleArch(oc)
+
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		csImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		ogSingleTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+
+		catsrc := olmv0util.CatalogSourceDescription{
+			Name:        "cs-43073",
+			Namespace:   oc.Namespace(),
+			DisplayName: "OLM QE Operators",
+			Publisher:   "bandrade",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/bundle-with-dep-error-index:4.0",
+			Template:    csImageTemplate,
+		}
+		defer catsrc.Delete(itName, dr)
+		catsrc.CreateWithCheck(oc, itName, dr)
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "og-43073",
+			Namespace: oc.Namespace(),
+			Template:  ogSingleTemplate,
+		}
+		og.CreateWithCheck(oc, itName, dr)
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "lib-bucket-provisioner-43073",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      catsrc.Name,
+			CatalogSourceNamespace: catsrc.Namespace,
+			Channel:                "alpha",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "lib-bucket-provisioner",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
+		sub.CreateWithoutCheck(oc, itName, dr)
+
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "ConstraintsNotSatisfiable", exutil.Ok, []string{"subs", sub.SubName, "-n", oc.Namespace(), "-o=jsonpath={.status.conditions[?(@.type==\"ResolutionFailed\")].reason}"}).Check(oc)
+	})
+
+	// Polarion ID: 47149
+	g.It("PolarionID:47149-[OTP][Skipped:Disconnected]Conjunctive constraint of one package and one GVK", func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		csImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		cs := olmv0util.CatalogSourceDescription{
+			Name:        "ocp-47149",
+			Namespace:   oc.Namespace(),
+			DisplayName: "ocp-47149",
+			Publisher:   "OLM QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/etcd-47149:1.0",
+			Template:    csImageTemplate,
+		}
+		cs.CreateWithCheck(oc, itName, dr)
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "test-og-47149",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		og.CreateWithCheck(oc, itName, dr)
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "etcd",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      cs.Name,
+			CatalogSourceNamespace: cs.Namespace,
+			Channel:                "singlenamespace-alpha",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "etcd",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		sub.Create(oc, itName, dr)
+
+		waitErr := wait.PollUntilContextTimeout(context.TODO(), 15*time.Second, 360*time.Second, false, func(ctx context.Context) (bool, error) {
+			csvList, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", sub.Namespace).Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			lines := strings.Split(csvList, "\n")
+			for _, line := range lines {
+				if strings.Contains(line, "prometheusoperator") {
+					if strings.Contains(line, "Succeeded") {
+						return true, nil
+					}
+					return false, nil
+				}
+			}
+			return false, nil
+		})
+		exutil.AssertWaitPollNoErr(waitErr, "csv prometheusoperator is not Succeeded")
+		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.4", "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
+	})
+
+	// Polarion ID: 47181
+	g.It("PolarionID:47181-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK", func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+		architecture.SkipNonAmd64SingleArch(oc)
+
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		csImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		cs := olmv0util.CatalogSourceDescription{
+			Name:        "ocp-47181",
+			Namespace:   oc.Namespace(),
+			DisplayName: "ocp-47181",
+			Publisher:   "OLM QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/etcd-47181:1.0",
+			Template:    csImageTemplate,
+		}
+		cs.CreateWithCheck(oc, itName, dr)
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "test-og-47181",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		og.CreateWithCheck(oc, itName, dr)
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "etcd",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      cs.Name,
+			CatalogSourceNamespace: cs.Namespace,
+			Channel:                "singlenamespace-alpha",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "etcd",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		sub.Create(oc, itName, dr)
+
+		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
+	})
+
+	// Polarion ID: 47179
+	g.It("PolarionID:47179-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK", func() {
+		olmv0util.ValidateAccessEnvironment(oc)
+		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
+
+		dr := make(olmv0util.DescriberResrouce)
+		itName := g.CurrentSpecReport().FullText()
+		dr.AddIr(itName)
+
+		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
+		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+		csImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		cs := olmv0util.CatalogSourceDescription{
+			Name:        "ocp-47179",
+			Namespace:   oc.Namespace(),
+			DisplayName: "ocp-47179",
+			Publisher:   "OLM QE",
+			SourceType:  "grpc",
+			Address:     "quay.io/olmqe/etcd-47179:1.0",
+			Template:    csImageTemplate,
+		}
+		cs.CreateWithCheck(oc, itName, dr)
+
+		og := olmv0util.OperatorGroupDescription{
+			Name:      "test-og-47179",
+			Namespace: oc.Namespace(),
+			Template:  ogTemplate,
+		}
+		og.CreateWithCheck(oc, itName, dr)
+
+		sub := olmv0util.SubscriptionDescription{
+			SubName:                "etcd",
+			Namespace:              oc.Namespace(),
+			CatalogSourceName:      cs.Name,
+			CatalogSourceNamespace: cs.Namespace,
+			Channel:                "singlenamespace-alpha",
+			IpApproval:             "Automatic",
+			OperatorPackage:        "etcd",
+			SingleNamespace:        true,
+			Template:               subTemplate,
+		}
+		sub.Create(oc, itName, dr)
+
+		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithoutNamespace, exutil.Contain, "red-hat-camel-k-operator", exutil.Ok, []string{"csv", "-n", sub.Namespace}).Check(oc)
 	})
 
 	// Polarion ID: 20981
