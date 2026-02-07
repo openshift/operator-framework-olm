@@ -59,9 +59,16 @@ func newStartCmd() *cobra.Command {
 }
 
 func parseTLSFlags(minVersionStr string, cipherSuiteStrs []string) (*tls.Config, error) {
-	cert, err := tls.LoadX509KeyPair(tlsCertPath, tlsKeyPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load TLS certificate: %w", err)
+	// Using a function to load the keypair each time means that we automatically pick up the new certificate when it reloads.
+	getCertificate := func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
+		cert, err := tls.LoadX509KeyPair(tlsCertPath, tlsKeyPath)
+		if err != nil {
+			return nil, err
+		}
+		return &cert, nil
+	}
+	if _, err := getCertificate(nil); err != nil {
+		return nil, fmt.Errorf("unable to load TLS certificate: %v", err)
 	}
 
 	minVersion, err := crypto.TLSVersion(minVersionStr)
@@ -86,9 +93,9 @@ func parseTLSFlags(minVersionStr string, cipherSuiteStrs []string) (*tls.Config,
 	}
 
 	return &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   minVersion,
-		CipherSuites: cipherSuites,
+		GetCertificate: getCertificate,
+		MinVersion:     minVersion,
+		CipherSuites:   cipherSuites,
 	}, nil
 }
 

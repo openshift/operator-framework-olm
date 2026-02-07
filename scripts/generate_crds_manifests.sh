@@ -553,7 +553,10 @@ metadata:
     release.openshift.io/feature-set: "TechPreviewNoUpgrade"
 spec:
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   replicas: 1
   selector:
     matchLabels:
@@ -585,6 +588,8 @@ spec:
           args:
             - start
             - --catalog-source-field-selector=metadata.namespace=openshift-marketplace,metadata.name=redhat-operators
+            - --tls-cert=/var/run/secrets/serving-cert/tls.crt
+            - --tls-key=/var/run/secrets/serving-cert/tls.key
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
           imagePullPolicy: IfNotPresent
           env:
@@ -605,6 +610,13 @@ spec:
           ports:
             - containerPort: 8081
               name: health
+            - containerPort: 8443
+              name: metrics
+              protocol: TCP
+          volumeMounts:
+            - name: serving-cert
+              mountPath: /var/run/secrets/serving-cert
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /healthz
@@ -633,6 +645,30 @@ spec:
           key: node.kubernetes.io/not-ready
           operator: Exists
           tolerationSeconds: 120
+      volumes:
+        - name: serving-cert
+          secret:
+            secretName: lifecycle-controller-serving-cert
+EOF
+
+cat << EOF > manifests/0000_50_olm_08-lifecycle-controller.service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+    service.beta.openshift.io/serving-cert-secret-name: lifecycle-controller-serving-cert
+spec:
+  ports:
+    - name: metrics
+      port: 8443
+      protocol: TCP
+      targetPort: metrics
+  selector:
+    app: olm-lifecycle-controller
+  type: ClusterIP
 EOF
 
 cat << EOF > manifests/0000_50_olm_08-lifecycle-controller.networkpolicy.yaml

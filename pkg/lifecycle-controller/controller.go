@@ -24,7 +24,9 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/library-go/pkg/crypto"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -59,8 +61,8 @@ const (
 	resourceBaseName       = "lifecycle-server"
 )
 
-// LifecycleControllerReconciler reconciles CatalogSources and manages lifecycle-server resources
-type LifecycleControllerReconciler struct {
+// LifecycleServerReconciler reconciles CatalogSources and manages lifecycle-server resources
+type LifecycleServerReconciler struct {
 	client.Client
 	Log                        logr.Logger
 	Scheme                     *runtime.Scheme
@@ -71,7 +73,7 @@ type LifecycleControllerReconciler struct {
 }
 
 // matchesCatalogSource checks if a CatalogSource matches both label and field selectors
-func (r *LifecycleControllerReconciler) matchesCatalogSource(cs *operatorsv1alpha1.CatalogSource) bool {
+func (r *LifecycleServerReconciler) matchesCatalogSource(cs *operatorsv1alpha1.CatalogSource) bool {
 	if !r.CatalogSourceLabelSelector.Matches(labels.Set(cs.Labels)) {
 		return false
 	}
@@ -83,7 +85,7 @@ func (r *LifecycleControllerReconciler) matchesCatalogSource(cs *operatorsv1alph
 }
 
 // Reconcile watches CatalogSources and manages lifecycle-server resources per catalog
-func (r *LifecycleControllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *LifecycleServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("catalogSource", req.NamespacedName)
 
 	log.Info("handling reconciliation request")
@@ -139,7 +141,7 @@ func (r *LifecycleControllerReconciler) Reconcile(ctx context.Context, req ctrl.
 }
 
 // getCatalogPodInfo gets the image digest and node name from the catalog's running pod
-func (r *LifecycleControllerReconciler) getCatalogPodInfo(ctx context.Context, cs *operatorsv1alpha1.CatalogSource) (string, string, error) {
+func (r *LifecycleServerReconciler) getCatalogPodInfo(ctx context.Context, cs *operatorsv1alpha1.CatalogSource) (string, string, error) {
 	var pods corev1.PodList
 	if err := r.List(ctx, &pods,
 		client.InNamespace(cs.Namespace),
@@ -164,7 +166,7 @@ func (r *LifecycleControllerReconciler) getCatalogPodInfo(ctx context.Context, c
 }
 
 // ensureResources creates or updates namespace-scoped resources for a CatalogSource
-func (r *LifecycleControllerReconciler) ensureResources(ctx context.Context, log logr.Logger, cs *operatorsv1alpha1.CatalogSource, imageRef, nodeName string) error {
+func (r *LifecycleServerReconciler) ensureResources(ctx context.Context, log logr.Logger, cs *operatorsv1alpha1.CatalogSource, imageRef, nodeName string) error {
 	name := resourceName(cs.Name)
 
 	// Apply ServiceAccount (in catalog's namespace)
@@ -200,7 +202,7 @@ func (r *LifecycleControllerReconciler) ensureResources(ctx context.Context, log
 }
 
 // reconcileClusterRoleBinding maintains a single CRB with all lifecycle-server ServiceAccounts
-func (r *LifecycleControllerReconciler) reconcileClusterRoleBinding(ctx context.Context, log logr.Logger) error {
+func (r *LifecycleServerReconciler) reconcileClusterRoleBinding(ctx context.Context, log logr.Logger) error {
 	// List all matching CatalogSources
 	var allCatalogSources operatorsv1alpha1.CatalogSourceList
 	if err := r.List(ctx, &allCatalogSources); err != nil {
@@ -269,7 +271,7 @@ func (r *LifecycleControllerReconciler) reconcileClusterRoleBinding(ctx context.
 }
 
 // cleanupResources deletes namespace-scoped resources for a CatalogSource
-func (r *LifecycleControllerReconciler) cleanupResources(ctx context.Context, log logr.Logger, csNamespace, csName string) error {
+func (r *LifecycleServerReconciler) cleanupResources(ctx context.Context, log logr.Logger, csNamespace, csName string) error {
 	name := resourceName(csName)
 	log = log.WithValues("resourceName", name, "namespace", csNamespace)
 
@@ -325,7 +327,7 @@ func resourceName(csName string) string {
 }
 
 // buildServiceAccount creates a ServiceAccount for a lifecycle-server
-func (r *LifecycleControllerReconciler) buildServiceAccount(name string, cs *operatorsv1alpha1.CatalogSource) *corev1.ServiceAccount {
+func (r *LifecycleServerReconciler) buildServiceAccount(name string, cs *operatorsv1alpha1.CatalogSource) *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -343,7 +345,7 @@ func (r *LifecycleControllerReconciler) buildServiceAccount(name string, cs *ope
 }
 
 // buildService creates a Service for a lifecycle-server
-func (r *LifecycleControllerReconciler) buildService(name string, cs *operatorsv1alpha1.CatalogSource) *corev1.Service {
+func (r *LifecycleServerReconciler) buildService(name string, cs *operatorsv1alpha1.CatalogSource) *corev1.Service {
 	return &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -379,7 +381,7 @@ func (r *LifecycleControllerReconciler) buildService(name string, cs *operatorsv
 }
 
 // buildDeployment creates a Deployment for a lifecycle-server
-func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operatorsv1alpha1.CatalogSource, imageRef, nodeName string) *appsv1.Deployment {
+func (r *LifecycleServerReconciler) buildDeployment(name string, cs *operatorsv1alpha1.CatalogSource, imageRef, nodeName string) *appsv1.Deployment {
 	podLabels := map[string]string{
 		appLabelKey:         appLabelVal,
 		catalogNameLabelKey: cs.Name,
@@ -409,8 +411,8 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 			Strategy: appsv1.DeploymentStrategy{
 				Type: appsv1.RollingUpdateDeploymentStrategyType,
 				RollingUpdate: &appsv1.RollingUpdateDeployment{
-					MaxUnavailable: ptr.To(intstr.FromInt(1)),
-					MaxSurge:       ptr.To(intstr.FromInt(1)),
+					MaxUnavailable: ptr.To(intstr.FromInt32(0)),
+					MaxSurge:       ptr.To(intstr.FromInt32(1)),
 				},
 			},
 			Selector: &metav1.LabelSelector{
@@ -555,7 +557,7 @@ func (r *LifecycleControllerReconciler) buildDeployment(name string, cs *operato
 }
 
 // buildNetworkPolicy creates a NetworkPolicy for a lifecycle-server
-func (r *LifecycleControllerReconciler) buildNetworkPolicy(name string, cs *operatorsv1alpha1.CatalogSource) *networkingv1.NetworkPolicy {
+func (r *LifecycleServerReconciler) buildNetworkPolicy(name string, cs *operatorsv1alpha1.CatalogSource) *networkingv1.NetworkPolicy {
 	tcp := corev1.ProtocolTCP
 	udp := corev1.ProtocolUDP
 	return &networkingv1.NetworkPolicy{
@@ -611,21 +613,19 @@ func (r *LifecycleControllerReconciler) buildNetworkPolicy(name string, cs *oper
 }
 
 // buildLifecycleServerArgs builds the command-line arguments for lifecycle-server
-func (r *LifecycleControllerReconciler) buildLifecycleServerArgs(fbcPath string) []string {
+func (r *LifecycleServerReconciler) buildLifecycleServerArgs(fbcPath string) []string {
 	args := []string{
 		"start",
 		fmt.Sprintf("--fbc-path=%s", fbcPath),
 	}
 
 	if r.TLSConfigProvider != nil {
-		if cfg := r.TLSConfigProvider.Get(); cfg != nil {
-			args = append(args, fmt.Sprintf("--tls-min-version=%s", crypto.TLSVersionToNameOrDie(cfg.MinVersion)))
-			if cfg.MinVersion <= tls.VersionTLS12 {
-				args = append(args, fmt.Sprintf("--tls-cipher-suites=%s", strings.Join(crypto.CipherSuitesToNamesOrDie(cfg.CipherSuites), ",")))
-			}
+		cfg, _ := r.TLSConfigProvider.Get()
+		args = append(args, fmt.Sprintf("--tls-min-version=%s", crypto.TLSVersionToNameOrDie(cfg.MinVersion)))
+		if cfg.MinVersion <= tls.VersionTLS12 {
+			args = append(args, fmt.Sprintf("--tls-cipher-suites=%s", strings.Join(crypto.CipherSuitesToNamesOrDie(cfg.CipherSuites), ",")))
 		}
 	}
-
 	return args
 }
 
@@ -675,8 +675,8 @@ func LifecycleServerLabelSelector() labels.Selector {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-// tlsChangeSource is an optional channel source that triggers reconciliation when TLS config changes.
-func (r *LifecycleControllerReconciler) SetupWithManager(mgr ctrl.Manager, tlsChangeSource source.Source) error {
+// tlsChangeSource is an optional channel source that triggers reconciliation when TLS profileSpec changes.
+func (r *LifecycleServerReconciler) SetupWithManager(mgr ctrl.Manager, tlsProfileChan <-chan event.TypedGenericEvent[configv1.TLSProfileSpec]) error {
 	builder := ctrl.NewControllerManagedBy(mgr).
 		For(&operatorsv1alpha1.CatalogSource{}).
 		// Watch Pods to detect catalog pod changes
@@ -725,9 +725,21 @@ func (r *LifecycleControllerReconciler) SetupWithManager(mgr ctrl.Manager, tlsCh
 		}))
 
 	// Add TLS change source if provided
-	if tlsChangeSource != nil {
-		builder = builder.WatchesRawSource(tlsChangeSource)
-	}
+	builder = builder.WatchesRawSource(source.Channel(tlsProfileChan, handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, _ configv1.TLSProfileSpec) []reconcile.Request {
+		// Trigger reconciliation of all CatalogSources to update lifecycle-server deployments
+		var catalogSources operatorsv1alpha1.CatalogSourceList
+		if err := mgr.GetClient().List(ctx, &catalogSources); err != nil {
+			r.Log.Error(err, "failed to list CatalogSources to requeue for TLS reconfiguration; CatalogSources will not receive new TLS configuration until their next reconciliation")
+			return nil
+		}
+
+		// Send events to trigger reconciliation
+		var requests []reconcile.Request
+		for _, obj := range catalogSources.Items {
+			requests = append(requests, reconcile.Request{client.ObjectKeyFromObject(&obj)})
+		}
+		return requests
+	})))
 
 	return builder.Complete(r)
 }
