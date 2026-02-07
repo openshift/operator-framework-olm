@@ -335,6 +335,7 @@ func resourceName(csName string) string {
 	if len(name) > 63 {
 		name = name[:63]
 	}
+	name = strings.TrimRight(name, "-")
 	return strings.ToLower(name)
 }
 
