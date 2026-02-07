@@ -625,7 +625,10 @@ func (r *LifecycleServerReconciler) buildNetworkPolicy(name string, cs *operator
 	}
 }
 
-// buildLifecycleServerArgs builds the command-line arguments for lifecycle-server
+// buildLifecycleServerArgs builds the command-line arguments for lifecycle-server.
+// TLS settings are passed as CLI args rather than dynamically watched because
+// cluster TLS profile changes are expected to be rare. When a change occurs,
+// the controller rebuilds the Deployment with updated args, causing a rolling restart.
 func (r *LifecycleServerReconciler) buildLifecycleServerArgs(fbcPath string) []string {
 	args := []string{
 		"start",
