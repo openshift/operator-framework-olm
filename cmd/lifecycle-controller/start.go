@@ -251,30 +251,28 @@ func setupTLSProfileWatcher(mgr manager.Manager, cfg *startConfig) (chan event.T
 		return tlsChangeChan, nil
 	}
 
-	if cfg.EnableTLSProfileWatcher {
-		log := ctrl.Log.WithName("tls-profile")
-		tlsProfileReconciler := tlsutil.SecurityProfileWatcher{
-			Client:                mgr.GetClient(),
-			InitialTLSProfileSpec: cfg.InitialTLSProfileSpec,
-			OnProfileChange: func(ctx context.Context, oldTLSProfileSpec, newTLSProfileSpec configv1.TLSProfileSpec) {
-				cfg.TLSConfigProvider.UpdateProfile(newTLSProfileSpec)
-				_, unsupportedCiphers := cfg.TLSConfigProvider.Get()
-				if len(unsupportedCiphers) > 0 {
-					log.Info("ignoring unsupported ciphers found in TLS profile", "unsupportedCiphers", unsupportedCiphers)
-				}
+	log := ctrl.Log.WithName("tls-profile")
+	tlsProfileReconciler := tlsutil.SecurityProfileWatcher{
+		Client:                mgr.GetClient(),
+		InitialTLSProfileSpec: cfg.InitialTLSProfileSpec,
+		OnProfileChange: func(ctx context.Context, oldTLSProfileSpec, newTLSProfileSpec configv1.TLSProfileSpec) {
+			cfg.TLSConfigProvider.UpdateProfile(newTLSProfileSpec)
+			_, unsupportedCiphers := cfg.TLSConfigProvider.Get()
+			if len(unsupportedCiphers) > 0 {
+				log.Info("ignoring unsupported ciphers found in TLS profile", "unsupportedCiphers", unsupportedCiphers)
+			}
 
-				log.Info("applying new TLS profile spec",
-					"minVersion", newTLSProfileSpec.MinTLSVersion,
-					"cipherSuites", newTLSProfileSpec.Ciphers,
-				)
+			log.Info("applying new TLS profile spec",
+				"minVersion", newTLSProfileSpec.MinTLSVersion,
+				"cipherSuites", newTLSProfileSpec.Ciphers,
+			)
 
-				tlsChangeChan <- event.TypedGenericEvent[configv1.TLSProfileSpec]{Object: newTLSProfileSpec}
-			},
-		}
+			tlsChangeChan <- event.TypedGenericEvent[configv1.TLSProfileSpec]{Object: newTLSProfileSpec}
+		},
+	}
 
-		if err := tlsProfileReconciler.SetupWithManager(mgr); err != nil {
-			return nil, err
-		}
+	if err := tlsProfileReconciler.SetupWithManager(mgr); err != nil {
+		return nil, err
 	}
 	return tlsChangeChan, nil
 }
