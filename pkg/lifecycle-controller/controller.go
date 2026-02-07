@@ -277,6 +277,8 @@ func (r *LifecycleServerReconciler) cleanupResources(ctx context.Context, log lo
 	name := resourceName(csName)
 	log = log.WithValues("resourceName", name, "namespace", csNamespace)
 
+	var deleted bool
+
 	// Delete Deployment
 	deploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -287,6 +289,8 @@ func (r *LifecycleServerReconciler) cleanupResources(ctx context.Context, log lo
 	if err := r.Delete(ctx, deploy); err != nil && !errors.IsNotFound(err) {
 		log.Error(err, "failed to delete deployment")
 		return err
+	} else if err == nil {
+		deleted = true
 	}
 
 	// Delete Service
@@ -299,6 +303,8 @@ func (r *LifecycleServerReconciler) cleanupResources(ctx context.Context, log lo
 	if err := r.Delete(ctx, svc); err != nil && !errors.IsNotFound(err) {
 		log.Error(err, "failed to delete service")
 		return err
+	} else if err == nil {
+		deleted = true
 	}
 
 	// Delete NetworkPolicy
@@ -311,6 +317,8 @@ func (r *LifecycleServerReconciler) cleanupResources(ctx context.Context, log lo
 	if err := r.Delete(ctx, np); err != nil && !errors.IsNotFound(err) {
 		log.Error(err, "failed to delete networkpolicy")
 		return err
+	} else if err == nil {
+		deleted = true
 	}
 
 	// Delete ServiceAccount
@@ -323,9 +331,13 @@ func (r *LifecycleServerReconciler) cleanupResources(ctx context.Context, log lo
 	if err := r.Delete(ctx, sa); err != nil && !errors.IsNotFound(err) {
 		log.Error(err, "failed to delete serviceaccount")
 		return err
+	} else if err == nil {
+		deleted = true
 	}
 
-	log.Info("cleaned up resources")
+	if deleted {
+		log.Info("cleaned up resources")
+	}
 	return nil
 }
 
