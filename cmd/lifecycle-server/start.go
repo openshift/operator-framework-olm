@@ -206,7 +206,7 @@ func (s *cancelableServer) ListenAndServeTLS(ctx context.Context, certFile, keyF
 }
 
 func (s *cancelableServer) listenAndServe(ctx context.Context, runFunc func() error, cancelFunc func(context.Context) error) error {
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 	go func() {
 		errChan <- runFunc()
 	}()
