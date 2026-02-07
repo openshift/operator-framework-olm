@@ -44,8 +44,10 @@ import (
 
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
@@ -690,12 +692,45 @@ func LifecycleServerLabelSelector() labels.Selector {
 	return labels.SelectorFromSet(labels.Set{appLabelKey: appLabelVal})
 }
 
+// catalogPodPredicate filters pod events to only those where fields relevant
+// to the reconciler have changed: Status.Phase, container ImageIDs, or Spec.NodeName.
+func catalogPodPredicate() predicate.Predicate {
+	return predicate.Funcs{
+		CreateFunc: func(e event.CreateEvent) bool { return true },
+		DeleteFunc: func(e event.DeleteEvent) bool { return true },
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldPod, ok := e.ObjectOld.(*corev1.Pod)
+			if !ok {
+				return false
+			}
+			newPod, ok := e.ObjectNew.(*corev1.Pod)
+			if !ok {
+				return false
+			}
+			if oldPod.Status.Phase != newPod.Status.Phase {
+				return true
+			}
+			if oldPod.Spec.NodeName != newPod.Spec.NodeName {
+				return true
+			}
+			if imageID(oldPod) != imageID(newPod) {
+				return true
+			}
+			return false
+		},
+		GenericFunc: func(e event.GenericEvent) bool { return true },
+	}
+}
+
 // SetupWithManager sets up the controller with the Manager.
 // tlsChangeSource is an optional channel source that triggers reconciliation when TLS profileSpec changes.
 func (r *LifecycleServerReconciler) SetupWithManager(mgr ctrl.Manager, tlsProfileChan <-chan event.TypedGenericEvent[configv1.TLSProfileSpec]) error {
-	builder := ctrl.NewControllerManagedBy(mgr).
-		For(&operatorsv1alpha1.CatalogSource{}).
-		// Watch Pods to detect catalog pod changes
+	bldr := ctrl.NewControllerManagedBy(mgr).
+		// Watch CatalogSources, but only reconcile on spec or label changes (not status-only updates).
+		For(&operatorsv1alpha1.CatalogSource{}, builder.WithPredicates(
+			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}),
+		)).
+		// Watch Pods to detect catalog pod changes, but only when phase, imageID, or nodeName change.
 		Watches(&corev1.Pod{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
 			pod, ok := obj.(*corev1.Pod)
 			if !ok {
@@ -715,8 +750,8 @@ func (r *LifecycleServerReconciler) SetupWithManager(mgr ctrl.Manager, tlsProfil
 					},
 				},
 			}
-		})).
-		// Watch lifecycle-server Deployments to detect changes/deletion
+		}), builder.WithPredicates(catalogPodPredicate())).
+		// Watch lifecycle-server Deployments to detect spec drift or deletion (not status updates).
 		Watches(&appsv1.Deployment{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
 			deploy, ok := obj.(*appsv1.Deployment)
 			if !ok {
@@ -738,10 +773,10 @@ func (r *LifecycleServerReconciler) SetupWithManager(mgr ctrl.Manager, tlsProfil
 					},
 				},
 			}
-		}))
+		}), builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
 	// Add TLS change source if provided
-	builder = builder.WatchesRawSource(source.Channel(tlsProfileChan, handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, _ configv1.TLSProfileSpec) []reconcile.Request {
+	bldr = bldr.WatchesRawSource(source.Channel(tlsProfileChan, handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, _ configv1.TLSProfileSpec) []reconcile.Request {
 		// Trigger reconciliation of all CatalogSources to update lifecycle-server deployments
 		var catalogSources operatorsv1alpha1.CatalogSourceList
 		if err := mgr.GetClient().List(ctx, &catalogSources); err != nil {
@@ -757,5 +792,5 @@ func (r *LifecycleServerReconciler) SetupWithManager(mgr ctrl.Manager, tlsProfil
 		return requests
 	})))
 
-	return builder.Complete(r)
+	return bldr.Complete(r)
 }
