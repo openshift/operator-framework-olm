@@ -299,6 +299,18 @@ func (r *LifecycleServerReconciler) cleanupResources(ctx context.Context, log lo
 		return err
 	}
 
+	// Delete NetworkPolicy
+	np := &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: csNamespace,
+		},
+	}
+	if err := r.Delete(ctx, np); err != nil && !errors.IsNotFound(err) {
+		log.Error(err, "failed to delete networkpolicy")
+		return err
+	}
+
 	// Delete ServiceAccount
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
