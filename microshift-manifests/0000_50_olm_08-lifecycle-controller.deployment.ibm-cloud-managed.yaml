@@ -12,7 +12,10 @@ metadata:
     include.release.openshift.io/hypershift: "true"
 spec:
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   replicas: 1
   selector:
     matchLabels:
