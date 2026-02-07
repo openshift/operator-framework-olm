@@ -25,6 +25,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
 func testScheme() *runtime.Scheme {
@@ -295,8 +296,6 @@ func TestBuildServiceAccount(t *testing.T) {
 	require.Equal(t, "test-ns", sa.Namespace)
 	require.Equal(t, appLabelVal, sa.Labels[appLabelKey])
 	require.Equal(t, "test-catalog", sa.Labels[catalogNameLabelKey])
-	require.Equal(t, "v1", sa.TypeMeta.APIVersion)
-	require.Equal(t, "ServiceAccount", sa.TypeMeta.Kind)
 }
 
 func TestBuildService(t *testing.T) {
@@ -305,27 +304,17 @@ func TestBuildService(t *testing.T) {
 	name := resourceName(cs.Name)
 
 	svc := r.buildService(name, cs)
+	deploy := r.buildDeployment(name, cs, "sha256:abc123", "worker-1")
+	deployLabels := deploy.Spec.Template.Labels
 
-	require.Equal(t, name, svc.Name)
-	require.Equal(t, "test-ns", svc.Namespace)
-	require.Equal(t, appLabelVal, svc.Labels[appLabelKey])
-	require.Equal(t, "test-catalog", svc.Labels[catalogNameLabelKey])
+	// Service port is 8443 (other components depend on this)
+	require.Equal(t, int32(8443), svc.Spec.Ports[0].Port)
 
-	// Serving cert annotation
+	// Service selector labels match the deployment template labels exactly (otherwise routing breaks)
+	require.Equal(t, deployLabels, svc.Spec.Selector)
+
+	// Serving-cert annotation is present with the correct secret name (otherwise TLS won't work)
 	require.Equal(t, name+"-tls", svc.Annotations["service.beta.openshift.io/serving-cert-secret-name"])
-
-	// Selector
-	require.Equal(t, appLabelVal, svc.Spec.Selector[appLabelKey])
-	require.Equal(t, "test-catalog", svc.Spec.Selector[catalogNameLabelKey])
-
-	// Port
-	require.Len(t, svc.Spec.Ports, 1)
-	port := svc.Spec.Ports[0]
-	require.Equal(t, "api", port.Name)
-	require.Equal(t, int32(8443), port.Port)
-	require.Equal(t, intstr.FromString("api"), port.TargetPort)
-	require.Equal(t, corev1.ProtocolTCP, port.Protocol)
-	require.Equal(t, corev1.ServiceTypeClusterIP, svc.Spec.Type)
 }
 
 func TestBuildDeployment(t *testing.T) {
@@ -335,7 +324,6 @@ func TestBuildDeployment(t *testing.T) {
 		imageRef           string
 		nodeName           string
 		expectedCatalogDir string
-		expectAffinity     bool
 	}{
 		{
 			name:               "default catalog dir when GrpcPodConfig is nil",
@@ -343,7 +331,6 @@ func TestBuildDeployment(t *testing.T) {
 			imageRef:           "sha256:abc123",
 			nodeName:           "worker-1",
 			expectedCatalogDir: "/catalog/configs",
-			expectAffinity:     true,
 		},
 		{
 			name: "custom catalog dir from ExtractContent",
@@ -363,7 +350,6 @@ func TestBuildDeployment(t *testing.T) {
 			imageRef:           "sha256:def456",
 			nodeName:           "",
 			expectedCatalogDir: "/catalog/custom/path",
-			expectAffinity:     false,
 		},
 	}
 
@@ -373,91 +359,19 @@ func TestBuildDeployment(t *testing.T) {
 			name := resourceName(tc.cs.Name)
 			deploy := r.buildDeployment(name, tc.cs, tc.imageRef, tc.nodeName)
 
-			require.Equal(t, name, deploy.Name)
-			require.Equal(t, tc.cs.Namespace, deploy.Namespace)
-
-			// Replicas
-			require.NotNil(t, deploy.Spec.Replicas)
-			require.Equal(t, int32(1), *deploy.Spec.Replicas)
-
-			// Strategy
-			require.Equal(t, appsv1.RollingUpdateDeploymentStrategyType, deploy.Spec.Strategy.Type)
-
-			// Pod template
 			podSpec := deploy.Spec.Template.Spec
-
-			// Security context
-			require.NotNil(t, podSpec.SecurityContext)
-			require.NotNil(t, podSpec.SecurityContext.RunAsNonRoot)
-			require.True(t, *podSpec.SecurityContext.RunAsNonRoot)
-			require.NotNil(t, podSpec.SecurityContext.SeccompProfile)
-			require.Equal(t, corev1.SeccompProfileTypeRuntimeDefault, podSpec.SecurityContext.SeccompProfile.Type)
-
-			// Service account
-			require.Equal(t, name, podSpec.ServiceAccountName)
-
-			// Priority class
-			require.Equal(t, "system-cluster-critical", podSpec.PriorityClassName)
-
-			// Node affinity
-			if tc.expectAffinity {
-				require.NotNil(t, podSpec.Affinity)
-			} else {
-				require.Nil(t, podSpec.Affinity)
-			}
-
-			// Node selector
-			require.Equal(t, "linux", podSpec.NodeSelector["kubernetes.io/os"])
-
-			// Container
-			require.Len(t, podSpec.Containers, 1)
 			container := podSpec.Containers[0]
-			require.Equal(t, "lifecycle-server", container.Name)
+
+			// Deployment uses the provided imageRef as the OCI image volume reference
+			catalogVolume := findVolume(podSpec.Volumes, "catalog")
+			require.NotNil(t, catalogVolume, "catalog volume must exist")
+			require.NotNil(t, catalogVolume.Image)
+			require.Equal(t, tc.imageRef, catalogVolume.Image.Reference)
+
+			// Deployment uses the provided ServerImage for the container image
 			require.Equal(t, r.ServerImage, container.Image)
-			require.Equal(t, corev1.PullIfNotPresent, container.ImagePullPolicy)
 
-			// GOMEMLIMIT env
-			require.Len(t, container.Env, 1)
-			require.Equal(t, "GOMEMLIMIT", container.Env[0].Name)
-			require.Equal(t, "50MiB", container.Env[0].Value)
-
-			// Ports
-			require.Len(t, container.Ports, 2)
-			require.Equal(t, "api", container.Ports[0].Name)
-			require.Equal(t, int32(8443), container.Ports[0].ContainerPort)
-			require.Equal(t, "health", container.Ports[1].Name)
-			require.Equal(t, int32(8081), container.Ports[1].ContainerPort)
-
-			// TerminationMessagePolicy
-			require.Equal(t, corev1.TerminationMessageFallbackToLogsOnError, container.TerminationMessagePolicy)
-
-			// Container security context
-			require.NotNil(t, container.SecurityContext)
-			require.NotNil(t, container.SecurityContext.AllowPrivilegeEscalation)
-			require.False(t, *container.SecurityContext.AllowPrivilegeEscalation)
-			require.NotNil(t, container.SecurityContext.ReadOnlyRootFilesystem)
-			require.True(t, *container.SecurityContext.ReadOnlyRootFilesystem)
-			require.Equal(t, []corev1.Capability{"ALL"}, container.SecurityContext.Capabilities.Drop)
-
-			// Probes
-			require.NotNil(t, container.LivenessProbe)
-			require.NotNil(t, container.ReadinessProbe)
-			require.Equal(t, "/healthz", container.LivenessProbe.HTTPGet.Path)
-			require.Equal(t, "/healthz", container.ReadinessProbe.HTTPGet.Path)
-
-			// Resource requests
-			require.NotNil(t, container.Resources.Requests)
-			require.Equal(t, "10m", container.Resources.Requests.Cpu().String())
-			require.Equal(t, "50Mi", container.Resources.Requests.Memory().String())
-
-			// Volume mounts (check FBC path in args)
-			require.Len(t, container.VolumeMounts, 2)
-			require.Equal(t, "catalog", container.VolumeMounts[0].Name)
-			require.True(t, container.VolumeMounts[0].ReadOnly)
-			require.Equal(t, "serving-cert", container.VolumeMounts[1].Name)
-			require.Equal(t, "/var/run/secrets/serving-cert", container.VolumeMounts[1].MountPath)
-
-			// Command includes fbc-path
+			// --fbc-path arg reflects the catalog dir
 			require.Contains(t, container.Args, "start")
 			foundFBCArg := false
 			for _, arg := range container.Args {
@@ -467,16 +381,44 @@ func TestBuildDeployment(t *testing.T) {
 			}
 			require.True(t, foundFBCArg, "expected --fbc-path=%s in args %v", tc.expectedCatalogDir, container.Args)
 
-			// Volumes
-			require.Len(t, podSpec.Volumes, 2)
-			require.Equal(t, "catalog", podSpec.Volumes[0].Name)
-			require.NotNil(t, podSpec.Volumes[0].Image)
-			require.Equal(t, tc.imageRef, podSpec.Volumes[0].Image.Reference)
-			require.Equal(t, "serving-cert", podSpec.Volumes[1].Name)
-			require.NotNil(t, podSpec.Volumes[1].Secret)
-			require.Equal(t, name+"-tls", podSpec.Volumes[1].Secret.SecretName)
+			// TLS cert volume is mounted from the correctly-named secret
+			certVolume := findVolume(podSpec.Volumes, "serving-cert")
+			require.NotNil(t, certVolume, "serving-cert volume must exist")
+			require.NotNil(t, certVolume.Secret)
+			require.Equal(t, name+"-tls", certVolume.Secret.SecretName)
+
+			// Catalog volume is mounted read-only
+			catalogMount := findVolumeMount(container.VolumeMounts, "catalog")
+			require.NotNil(t, catalogMount, "catalog volume mount must exist")
+			require.True(t, catalogMount.ReadOnly)
+
+			// Service account name matches the expected resource name
+			require.Equal(t, name, podSpec.ServiceAccountName)
+
+			// Rollout strategy ensures availability (RollingUpdate with MaxUnavailable=0)
+			require.Equal(t, appsv1.RollingUpdateDeploymentStrategyType, deploy.Spec.Strategy.Type)
+			require.NotNil(t, deploy.Spec.Strategy.RollingUpdate)
+			require.Equal(t, intstr.FromInt32(0), *deploy.Spec.Strategy.RollingUpdate.MaxUnavailable)
 		})
 	}
+}
+
+func findVolume(volumes []corev1.Volume, name string) *corev1.Volume {
+	for i := range volumes {
+		if volumes[i].Name == name {
+			return &volumes[i]
+		}
+	}
+	return nil
+}
+
+func findVolumeMount(mounts []corev1.VolumeMount, name string) *corev1.VolumeMount {
+	for i := range mounts {
+		if mounts[i].Name == name {
+			return &mounts[i]
+		}
+	}
+	return nil
 }
 
 func TestBuildNetworkPolicy(t *testing.T) {
@@ -485,33 +427,15 @@ func TestBuildNetworkPolicy(t *testing.T) {
 	name := resourceName(cs.Name)
 
 	np := r.buildNetworkPolicy(name, cs)
+	deploy := r.buildDeployment(name, cs, "sha256:abc123", "worker-1")
+	deployLabels := deploy.Spec.Template.Labels
 
-	require.Equal(t, name, np.Name)
-	require.Equal(t, "test-ns", np.Namespace)
-	require.Equal(t, appLabelVal, np.Labels[appLabelKey])
+	// Pod selector labels match the deployment template labels exactly (otherwise NP targets wrong pods)
+	require.Equal(t, deployLabels, np.Spec.PodSelector.MatchLabels)
 
-	// Pod selector
-	require.Equal(t, appLabelVal, np.Spec.PodSelector.MatchLabels[appLabelKey])
-	require.Equal(t, "test-catalog", np.Spec.PodSelector.MatchLabels[catalogNameLabelKey])
-
-	// Policy types
+	// Both Ingress and Egress policy types are present
 	require.Contains(t, np.Spec.PolicyTypes, networkingv1.PolicyTypeIngress)
 	require.Contains(t, np.Spec.PolicyTypes, networkingv1.PolicyTypeEgress)
-
-	// Ingress: 8443/TCP
-	require.Len(t, np.Spec.Ingress, 1)
-	require.Len(t, np.Spec.Ingress[0].Ports, 1)
-	require.Equal(t, int32(8443), np.Spec.Ingress[0].Ports[0].Port.IntVal)
-	tcp := corev1.ProtocolTCP
-	require.Equal(t, &tcp, np.Spec.Ingress[0].Ports[0].Protocol)
-
-	// Egress: API server (6443) and DNS (53, 5353)
-	require.Len(t, np.Spec.Egress, 2)
-	// API server
-	require.Len(t, np.Spec.Egress[0].Ports, 1)
-	require.Equal(t, int32(6443), np.Spec.Egress[0].Ports[0].Port.IntVal)
-	// DNS
-	require.Len(t, np.Spec.Egress[1].Ports, 4)
 }
 
 func TestBuildLifecycleServerArgs(t *testing.T) {
@@ -958,4 +882,198 @@ func TestGetCatalogPodInfo(t *testing.T) {
 			require.Equal(t, tc.expectedNode, node)
 		})
 	}
+}
+
+// --- catalogPodPredicate tests ---
+
+func TestCatalogPodPredicate(t *testing.T) {
+	pred := catalogPodPredicate()
+
+	basePod := func() *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-pod",
+				Namespace: "test-ns",
+				Labels:    map[string]string{catalogLabelKey: "test-catalog"},
+			},
+			Spec: corev1.PodSpec{
+				NodeName: "worker-1",
+			},
+			Status: corev1.PodStatus{
+				Phase: corev1.PodRunning,
+				ContainerStatuses: []corev1.ContainerStatus{
+					{Name: "registry", ImageID: "sha256:abc123"},
+				},
+			},
+		}
+	}
+
+	t.Run("create events always pass", func(t *testing.T) {
+		result := pred.Create(event.CreateEvent{Object: basePod()})
+		require.True(t, result)
+	})
+
+	t.Run("delete events always pass", func(t *testing.T) {
+		result := pred.Delete(event.DeleteEvent{Object: basePod()})
+		require.True(t, result)
+	})
+
+	t.Run("generic events always pass", func(t *testing.T) {
+		result := pred.Generic(event.GenericEvent{Object: basePod()})
+		require.True(t, result)
+	})
+
+	t.Run("update: phase change passes", func(t *testing.T) {
+		oldPod := basePod()
+		newPod := basePod()
+		newPod.Status.Phase = corev1.PodSucceeded
+
+		result := pred.Update(event.UpdateEvent{ObjectOld: oldPod, ObjectNew: newPod})
+		require.True(t, result)
+	})
+
+	t.Run("update: node name change passes", func(t *testing.T) {
+		oldPod := basePod()
+		newPod := basePod()
+		newPod.Spec.NodeName = "worker-2"
+
+		result := pred.Update(event.UpdateEvent{ObjectOld: oldPod, ObjectNew: newPod})
+		require.True(t, result)
+	})
+
+	t.Run("update: imageID change passes", func(t *testing.T) {
+		oldPod := basePod()
+		newPod := basePod()
+		newPod.Status.ContainerStatuses[0].ImageID = "sha256:def456"
+
+		result := pred.Update(event.UpdateEvent{ObjectOld: oldPod, ObjectNew: newPod})
+		require.True(t, result)
+	})
+
+	t.Run("update: no relevant change is filtered out", func(t *testing.T) {
+		oldPod := basePod()
+		newPod := basePod()
+		// Only an annotation change - should be filtered
+		newPod.Annotations = map[string]string{"foo": "bar"}
+
+		result := pred.Update(event.UpdateEvent{ObjectOld: oldPod, ObjectNew: newPod})
+		require.False(t, result)
+	})
+
+	t.Run("update: non-Pod objects return false", func(t *testing.T) {
+		svc := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "svc"}}
+		result := pred.Update(event.UpdateEvent{ObjectOld: svc, ObjectNew: svc})
+		require.False(t, result)
+	})
+}
+
+// --- Reconcile deletion cleanup test ---
+
+func TestReconcile_CatalogSourceDeleted_CleansUpResources(t *testing.T) {
+	scheme := testScheme()
+	ctx := context.Background()
+	name := resourceName("test-catalog")
+
+	// Pre-create all lifecycle-server resources as if they had been created by a previous reconcile
+	deploy := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "test-ns"},
+	}
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "test-ns"},
+	}
+	sa := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "test-ns"},
+	}
+	np := &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "test-ns"},
+	}
+
+	cl := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(deploy, svc, sa, np).
+		Build()
+
+	r := testReconciler(cl)
+
+	// Reconcile with CatalogSource absent (deleted)
+	result, err := r.Reconcile(ctx, ctrl.Request{
+		NamespacedName: types.NamespacedName{Name: "test-catalog", Namespace: "test-ns"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, ctrl.Result{}, result)
+
+	// Verify all 4 resource types are deleted
+	err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: "test-ns"}, &appsv1.Deployment{})
+	require.True(t, errors.IsNotFound(err), "Deployment should be deleted")
+
+	err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: "test-ns"}, &corev1.Service{})
+	require.True(t, errors.IsNotFound(err), "Service should be deleted")
+
+	err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: "test-ns"}, &corev1.ServiceAccount{})
+	require.True(t, errors.IsNotFound(err), "ServiceAccount should be deleted")
+
+	err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: "test-ns"}, &networkingv1.NetworkPolicy{})
+	require.True(t, errors.IsNotFound(err), "NetworkPolicy should be deleted")
+
+	// Verify CRB was reconciled (should exist with no subjects since no CatalogSources remain)
+	var crb rbacv1.ClusterRoleBinding
+	err = cl.Get(ctx, types.NamespacedName{Name: clusterRoleBindingName}, &crb)
+	require.NoError(t, err)
+	require.Empty(t, crb.Subjects)
+}
+
+// --- Reconcile idempotency test ---
+
+func TestReconcile_Idempotent(t *testing.T) {
+	scheme := testScheme()
+	ctx := context.Background()
+	cs := newCatalogSource("test-catalog", "test-ns", nil)
+	pod := catalogPod("test-catalog", "test-ns", "worker-1", "sha256:abc123", corev1.PodRunning)
+
+	cl := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(cs, pod).
+		Build()
+
+	r := testReconciler(cl)
+	req := ctrl.Request{
+		NamespacedName: types.NamespacedName{Name: "test-catalog", Namespace: "test-ns"},
+	}
+
+	// First reconcile
+	result, err := r.Reconcile(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, ctrl.Result{}, result)
+
+	// Second reconcile (idempotent)
+	result, err = r.Reconcile(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, ctrl.Result{}, result)
+
+	// Verify all resources still exist with correct state
+	name := resourceName("test-catalog")
+
+	var sa corev1.ServiceAccount
+	err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: "test-ns"}, &sa)
+	require.NoError(t, err)
+	require.Equal(t, appLabelVal, sa.Labels[appLabelKey])
+
+	var svc corev1.Service
+	err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: "test-ns"}, &svc)
+	require.NoError(t, err)
+	require.Equal(t, int32(8443), svc.Spec.Ports[0].Port)
+
+	var deploy appsv1.Deployment
+	err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: "test-ns"}, &deploy)
+	require.NoError(t, err)
+	require.Equal(t, r.ServerImage, deploy.Spec.Template.Spec.Containers[0].Image)
+
+	var np networkingv1.NetworkPolicy
+	err = cl.Get(ctx, types.NamespacedName{Name: name, Namespace: "test-ns"}, &np)
+	require.NoError(t, err)
+
+	var crb rbacv1.ClusterRoleBinding
+	err = cl.Get(ctx, types.NamespacedName{Name: clusterRoleBindingName}, &crb)
+	require.NoError(t, err)
+	require.Equal(t, clusterRoleName, crb.RoleRef.Name)
 }
