@@ -752,7 +752,7 @@ func (r *LifecycleServerReconciler) SetupWithManager(mgr ctrl.Manager, tlsProfil
 		// Send events to trigger reconciliation
 		var requests []reconcile.Request
 		for _, obj := range catalogSources.Items {
-			requests = append(requests, reconcile.Request{client.ObjectKeyFromObject(&obj)})
+			requests = append(requests, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(&obj)})
 		}
 		return requests
 	})))
