@@ -165,6 +165,64 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 		o.Expect(output).To(o.ContainSubstring("quay.io/windupeng/windup-operator-native:0.0.5"))
 	})
 
+	g.It("PolarionID:40945-[OTP][Skipped:Disconnected] opm render community operator index to local yaml", func() {
+		err := opmcli.EnsureContainerPolicy()
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		baseDir, err := os.MkdirTemp("", "opm-render-community-")
+		o.Expect(err).NotTo(o.HaveOccurred())
+		defer func() {
+			_ = os.RemoveAll(baseDir)
+		}()
+
+		authDir := filepath.Join(baseDir, "pull-secret")
+		err = os.MkdirAll(authDir, 0755)
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		if err = exutil.GetPullSec(oc, authDir); err != nil {
+			g.Skip("Skipping test: unable to extract pull-secret: " + err.Error())
+		}
+
+		authFile := filepath.Join(authDir, ".dockerconfigjson")
+		if _, err = os.Stat(authFile); err != nil {
+			legacyAuthFile := filepath.Join(authDir, ".dockercfg")
+			if _, legacyErr := os.Stat(legacyAuthFile); legacyErr == nil {
+				authFile = legacyAuthFile
+			} else {
+				g.Skip("Skipping test: pull-secret auth file not found: " + err.Error())
+			}
+		}
+
+		renderCLI := opmcli.NewOpmCLI().SetAuthFile(authFile)
+
+		outputDir := filepath.Join(baseDir, "community-operators")
+		err = os.MkdirAll(outputDir, 0755)
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		output, err := renderCLI.Run("render").Args("quay.io/olmqe/mta-operator:v0.0.4-45402", "-o", "yaml").Output()
+		if err != nil && strings.Contains(output, "authentication required") {
+			g.Skip("Skipping test: authentication required to pull image")
+		}
+		if err != nil && strings.Contains(output, "failed to pull image") {
+			g.Skip("Skipping test: failed to pull image")
+		}
+		o.Expect(err).NotTo(o.HaveOccurred())
+
+		indexFilePath := filepath.Join(outputDir, "index.yaml")
+		if err = os.WriteFile(indexFilePath, []byte(output), 0644); err != nil {
+			e2e.Failf("Writefile %s Error: %v", indexFilePath, err)
+		}
+
+		info, err := os.Stat(indexFilePath)
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(info.Size()).To(o.BeNumerically(">", 0))
+
+		content, err := os.ReadFile(indexFilePath)
+		o.Expect(err).NotTo(o.HaveOccurred())
+		o.Expect(strings.Contains(string(content), "packageName: mta-operator")).To(o.BeTrue())
+		o.Expect(strings.Contains(string(content), "quay.io/olmqe/mta-operator:v0.0.4-45402")).To(o.BeTrue())
+	})
+
 	g.It("PolarionID:43248-[OTP]Support ignoring files when loading declarative configs", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:43248-Support ignoring files when loading declarative configs"), func() {
 		opmBaseDir := exutil.FixturePath("testdata", "opm")
 		correctIndex := filepath.Join(opmBaseDir, "render", "validate", "configs")
