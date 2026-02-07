@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	tlsutil "github.com/openshift/controller-runtime-common/pkg/tls"
 	"github.com/openshift/library-go/pkg/crypto"
 	controllers "github.com/openshift/operator-framework-olm/pkg/lifecycle-controller"
+	"github.com/openshift/operator-framework-olm/pkg/leaderelection"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,12 +37,6 @@ const (
 	defaultMetricsAddr     = ":8443"
 	defaultHealthCheckAddr = ":8081"
 	leaderElectionID       = "lifecycle-controller-lock"
-
-	// Leader election defaults per OpenShift conventions
-	// https://github.com/openshift/enhancements/blob/master/CONVENTIONS.md#high-availability
-	defaultLeaseDuration = 137 * time.Second
-	defaultRenewDeadline = 107 * time.Second
-	defaultRetryPeriod   = 26 * time.Second
 )
 
 var (
@@ -119,6 +112,8 @@ type startConfig struct {
 	RESTConfig                 *rest.Config
 	Scheme                     *runtime.Scheme
 
+	LeaderElection configv1.LeaderElection
+
 	InitialTLSProfileSpec   configv1.TLSProfileSpec
 	TLSConfigProvider       *controllers.TLSConfigProvider
 	EnableTLSProfileWatcher bool
@@ -162,6 +157,7 @@ func loadStartConfig(ctx context.Context) (*startConfig, error) {
 		return nil, fmt.Errorf("failed to get rest config: %v", err)
 	}
 	cfg.Scheme = setupScheme()
+	cfg.LeaderElection = leaderelection.GetLeaderElectionConfig(ctrl.Log.WithName("leaderelection"), cfg.RESTConfig, !disableLeaderElection)
 
 	cfg.InitialTLSProfileSpec, cfg.EnableTLSProfileWatcher, err = getInitialTLSProfile(ctx, cfg.RESTConfig, cfg.Scheme)
 	if err != nil {
@@ -214,12 +210,12 @@ func setupManager(cfg *startConfig) (manager.Manager, error) {
 				}
 			}},
 		},
-		LeaderElection:                !disableLeaderElection,
+		LeaderElection:                !cfg.LeaderElection.Disable,
 		LeaderElectionNamespace:       cfg.Namespace,
 		LeaderElectionID:              leaderElectionID,
-		LeaseDuration:                 ptr.To(defaultLeaseDuration),
-		RenewDeadline:                 ptr.To(defaultRenewDeadline),
-		RetryPeriod:                   ptr.To(defaultRetryPeriod),
+		LeaseDuration:                 &cfg.LeaderElection.LeaseDuration.Duration,
+		RenewDeadline:                 &cfg.LeaderElection.RenewDeadline.Duration,
+		RetryPeriod:                   &cfg.LeaderElection.RetryPeriod.Duration,
 		HealthProbeBindAddress:        healthCheckAddr,
 		LeaderElectionReleaseOnCancel: true,
 		Cache: cache.Options{
