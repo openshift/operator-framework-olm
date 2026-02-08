@@ -734,6 +734,53 @@ func catalogPodPredicate() predicate.Predicate {
 	}
 }
 
+// mapPodToCatalogSource maps a Pod event to a reconcile request for its owning CatalogSource.
+// Pods without a catalog label or with an empty catalog label value are ignored.
+func mapPodToCatalogSource(_ context.Context, obj client.Object) []reconcile.Request {
+	pod, ok := obj.(*corev1.Pod)
+	if !ok {
+		return nil
+	}
+	// Check if this is a catalog pod
+	catalogName := pod.Labels[catalogLabelKey]
+	if catalogName == "" {
+		return nil
+	}
+	// Enqueue the CatalogSource for reconciliation
+	return []reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      catalogName,
+				Namespace: pod.Namespace,
+			},
+		},
+	}
+}
+
+// mapDeploymentToCatalogSource maps a Deployment event to a reconcile request for its owning CatalogSource.
+func mapDeploymentToCatalogSource(_ context.Context, obj client.Object) []reconcile.Request {
+	deploy, ok := obj.(*appsv1.Deployment)
+	if !ok {
+		return nil
+	}
+	// Only watch our deployments
+	if deploy.Labels[appLabelKey] != appLabelVal {
+		return nil
+	}
+	csName := deploy.Labels[catalogNameLabelKey]
+	if csName == "" {
+		return nil
+	}
+	return []reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      csName,
+				Namespace: deploy.Namespace,
+			},
+		},
+	}
+}
+
 // SetupWithManager sets up the controller with the Manager.
 // tlsChangeSource is an optional channel source that triggers reconciliation when TLS profileSpec changes.
 func (r *LifecycleServerReconciler) SetupWithManager(mgr ctrl.Manager, tlsProfileChan <-chan event.TypedGenericEvent[configv1.TLSProfileSpec]) error {
@@ -743,49 +790,9 @@ func (r *LifecycleServerReconciler) SetupWithManager(mgr ctrl.Manager, tlsProfil
 			predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}),
 		)).
 		// Watch Pods to detect catalog pod changes, but only when phase, imageID, or nodeName change.
-		Watches(&corev1.Pod{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
-			pod, ok := obj.(*corev1.Pod)
-			if !ok {
-				return nil
-			}
-			// Check if this is a catalog pod
-			catalogName, ok := pod.Labels[catalogLabelKey]
-			if !ok {
-				return nil
-			}
-			// Enqueue the CatalogSource for reconciliation
-			return []reconcile.Request{
-				{
-					NamespacedName: types.NamespacedName{
-						Name:      catalogName,
-						Namespace: pod.Namespace,
-					},
-				},
-			}
-		}), builder.WithPredicates(catalogPodPredicate())).
+		Watches(&corev1.Pod{}, handler.EnqueueRequestsFromMapFunc(mapPodToCatalogSource), builder.WithPredicates(catalogPodPredicate())).
 		// Watch lifecycle-server Deployments to detect spec drift or deletion (not status updates).
-		Watches(&appsv1.Deployment{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
-			deploy, ok := obj.(*appsv1.Deployment)
-			if !ok {
-				return nil
-			}
-			// Only watch our deployments
-			if deploy.Labels[appLabelKey] != appLabelVal {
-				return nil
-			}
-			csName := deploy.Labels[catalogNameLabelKey]
-			if csName == "" {
-				return nil
-			}
-			return []reconcile.Request{
-				{
-					NamespacedName: types.NamespacedName{
-						Name:      csName,
-						Namespace: deploy.Namespace,
-					},
-				},
-			}
-		}), builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+		Watches(&appsv1.Deployment{}, handler.EnqueueRequestsFromMapFunc(mapDeploymentToCatalogSource), builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
 	// Add TLS change source if provided
 	bldr = bldr.WatchesRawSource(source.Channel(tlsProfileChan, handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, _ configv1.TLSProfileSpec) []reconcile.Request {

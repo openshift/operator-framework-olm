@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 func testScheme() *runtime.Scheme {
@@ -965,6 +966,74 @@ func TestCatalogPodPredicate(t *testing.T) {
 		result := pred.Update(event.UpdateEvent{ObjectOld: svc, ObjectNew: svc})
 		require.False(t, result)
 	})
+}
+
+// --- mapPodToCatalogSource tests ---
+
+func TestMapPodToCatalogSource(t *testing.T) {
+	tt := []struct {
+		name     string
+		obj      client.Object
+		expected []reconcile.Request
+	}{
+		{
+			name: "pod with valid catalog label enqueues request",
+			obj: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "olm",
+					Labels:    map[string]string{catalogLabelKey: "my-catalog"},
+				},
+			},
+			expected: []reconcile.Request{
+				{NamespacedName: types.NamespacedName{Name: "my-catalog", Namespace: "olm"}},
+			},
+		},
+		{
+			name: "pod with empty catalog label value is ignored",
+			obj: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "olm",
+					Labels:    map[string]string{catalogLabelKey: ""},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "pod without catalog label is ignored",
+			obj: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "olm",
+					Labels:    map[string]string{"other": "label"},
+				},
+			},
+			expected: nil,
+		},
+		{
+			name: "pod with no labels is ignored",
+			obj: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "olm",
+				},
+			},
+			expected: nil,
+		},
+		{
+			name:     "non-pod object is ignored",
+			obj:      &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "olm"}},
+			expected: nil,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			result := mapPodToCatalogSource(context.Background(), tc.obj)
+			require.Equal(t, tc.expected, result)
+		})
+	}
 }
 
 // --- Reconcile deletion cleanup test ---
