@@ -13,8 +13,8 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	tlsutil "github.com/openshift/controller-runtime-common/pkg/tls"
 	"github.com/openshift/library-go/pkg/crypto"
-	controllers "github.com/openshift/operator-framework-olm/pkg/lifecycle-controller"
 	"github.com/openshift/operator-framework-olm/pkg/leaderelection"
+	controllers "github.com/openshift/operator-framework-olm/pkg/lifecycle-controller"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
@@ -89,6 +89,7 @@ func run(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to setup TLS profile watcher: %v", err)
 	}
+	defer close(tlsProfileChan)
 
 	if err := setupLifecycleServerController(mgr, cfg, tlsProfileChan); err != nil {
 		return fmt.Errorf("unable to setup lifecycle server controller: %v", err)
@@ -257,16 +258,15 @@ func setupTLSProfileWatcher(mgr manager.Manager, cfg *startConfig) (chan event.T
 		InitialTLSProfileSpec: cfg.InitialTLSProfileSpec,
 		OnProfileChange: func(ctx context.Context, oldTLSProfileSpec, newTLSProfileSpec configv1.TLSProfileSpec) {
 			cfg.TLSConfigProvider.UpdateProfile(newTLSProfileSpec)
-			_, unsupportedCiphers := cfg.TLSConfigProvider.Get()
-			if len(unsupportedCiphers) > 0 {
-				log.Info("ignoring unsupported ciphers found in TLS profile", "unsupportedCiphers", unsupportedCiphers)
-			}
-
 			log.Info("applying new TLS profile spec",
 				"minVersion", newTLSProfileSpec.MinTLSVersion,
 				"cipherSuites", newTLSProfileSpec.Ciphers,
 			)
 
+			_, unsupportedCiphers := cfg.TLSConfigProvider.Get()
+			if len(unsupportedCiphers) > 0 {
+				log.Info("ignoring unsupported ciphers found in TLS profile", "unsupportedCiphers", unsupportedCiphers)
+			}
 			tlsChangeChan <- event.TypedGenericEvent[configv1.TLSProfileSpec]{Object: newTLSProfileSpec}
 		},
 	}
