@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+    service.beta.openshift.io/serving-cert-secret-name: lifecycle-controller-serving-cert
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+    include.release.openshift.io/hypershift: "true"
+spec:
+  ports:
+    - name: metrics
+      port: 8443
+      protocol: TCP
+      targetPort: metrics
+  selector:
+    app: olm-lifecycle-controller
+  type: ClusterIP
