@@ -635,7 +635,10 @@ github.com/openshift/client-go/config/informers/externalversions/internalinterfa
 github.com/openshift/client-go/config/listers/config/v1
 github.com/openshift/client-go/config/listers/config/v1alpha1
 github.com/openshift/client-go/config/listers/config/v1alpha2
-# github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a
+# github.com/openshift/controller-runtime-common v0.0.0-20260204183245-642129afd14f => github.com/joelanford/controller-runtime-common v0.0.0-20260206162334-afe447e6c57e
+## explicit; go 1.24.0
+github.com/openshift/controller-runtime-common/pkg/tls
+# github.com/openshift/library-go v0.0.0-20260205095356-7bced6e899b6
 ## explicit; go 1.24.0
 github.com/openshift/library-go/pkg/crypto
 # github.com/operator-framework/api v0.39.0 => ./staging/api
@@ -2372,3 +2375,4 @@ sigs.k8s.io/yaml/kyaml
 # github.com/operator-framework/api => ./staging/api
 # github.com/operator-framework/operator-lifecycle-manager => ./staging/operator-lifecycle-manager
 # github.com/operator-framework/operator-registry => ./staging/operator-registry
+# github.com/openshift/controller-runtime-common => github.com/joelanford/controller-runtime-common v0.0.0-20260206162334-afe447e6c57e

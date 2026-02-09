@@ -4712,6 +4712,7 @@ spec:
                                                 ip:
                                                   description: IP address of the host file entry.
                                                   type: string
+                                                  default: ""
                                             x-kubernetes-list-map-keys:
                                               - ip
                                             x-kubernetes-list-type: map

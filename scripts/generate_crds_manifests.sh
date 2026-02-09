@@ -18,13 +18,11 @@ export GOFLAGS="-mod=vendor"
 source .bingo/variables.env
 
 YQ="go run ./vendor/github.com/mikefarah/yq/v3/"
-CONTROLLER_GEN="go run ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen"
 
 ver=${OLM_VERSION:-"0.0.0-dev"}
 tmpdir="$(mktemp -p . -d 2>/dev/null || mktemp -d ./tmpdir.XXXXXXX)"
 chartdir="${tmpdir}/chart"
 crddir="${chartdir}/crds"
-crdsrcdir="${tmpdir}/operators"
 
 SED="sed"
 if ! command -v ${SED} &> /dev/null; then
@@ -44,21 +42,15 @@ fi
 
 cp -R "${ROOT_DIR}/staging/operator-lifecycle-manager/deploy/chart/" "${chartdir}"
 cp "${ROOT_DIR}"/values*.yaml "${tmpdir}"
-cp -R "${ROOT_DIR}/staging/api/pkg/operators/" ${crdsrcdir}
 rm -rf ./manifests/* ${crddir}/*
 
 trap "rm -rf ${tmpdir}" EXIT
 
-${CONTROLLER_GEN} crd:crdVersions=v1 output:crd:dir=${crddir} paths=${crdsrcdir}/...
-${CONTROLLER_GEN} schemapatch:manifests=${crddir} output:dir=${crddir} paths=${crdsrcdir}/...
+# Copy upstream CRDs directly instead of regenerating with controller-gen
+cp "${ROOT_DIR}"/staging/api/crds/*.yaml "${crddir}/"
 
-${YQ} w --inplace ${crddir}/operators.coreos.com_clusterserviceversions.yaml spec.versions[0].schema.openAPIV3Schema.properties.spec.properties.install.properties.spec.properties.deployments.items.properties.spec.properties.template.properties.spec.properties.containers.items.properties.ports.items.properties.protocol.default TCP
-${YQ} w --inplace ${crddir}/operators.coreos.com_clusterserviceversions.yaml spec.versions[0].schema.openAPIV3Schema.properties.spec.properties.install.properties.spec.properties.deployments.items.properties.spec.properties.template.properties.spec.properties.initContainers.items.properties.ports.items.properties.protocol.default TCP
-${YQ} w --inplace ${crddir}/operators.coreos.com_clusterserviceversions.yaml spec.versions[0].schema.openAPIV3Schema.properties.spec.properties.install.properties.spec.properties.deployments.items.properties.spec.properties.template.properties.metadata.x-kubernetes-preserve-unknown-fields true
-${YQ} d --inplace ${crddir}/operators.coreos.com_operatorconditions.yaml 'spec.versions[*].schema.openAPIV3Schema.properties.spec.properties.overrides.items.required(.==lastTransitionTime)'
-
+# Rename CRD files to match OpenShift manifest naming convention
 for f in ${crddir}/*.yaml ; do
-    ${YQ} d --inplace $f status
     mv -v "$f" "${crddir}/0000_50_olm_00-$(basename $f | ${SED} 's/^.*_\([^.]\+\)\.yaml/\1.crd.yaml/')"
 done
 
@@ -555,6 +547,270 @@ subjects:
   kind: Group
   name: system:authenticated
 EOF
+
+cat << EOF > manifests/0000_50_olm_08-lifecycle-controller.deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  labels:
+    app: olm-lifecycle-controller
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      app: olm-lifecycle-controller
+  template:
+    metadata:
+      annotations:
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        openshift.io/required-scc: restricted-v2
+        kubectl.kubernetes.io/default-container: lifecycle-controller
+      labels:
+        app: olm-lifecycle-controller
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: lifecycle-controller
+      priorityClassName: "system-cluster-critical"
+      containers:
+        - name: lifecycle-controller
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          command:
+            - /bin/lifecycle-controller
+          args:
+            - start
+            - --catalog-source-field-selector=metadata.namespace=openshift-marketplace,metadata.name=redhat-operators
+            - --tls-cert=/var/run/secrets/serving-cert/tls.crt
+            - --tls-key=/var/run/secrets/serving-cert/tls.key
+          image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RELEASE_VERSION
+              value: "0.0.1-snapshot"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: LIFECYCLE_SERVER_IMAGE
+              value: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
+            - name: GOMEMLIMIT
+              value: "5MiB"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 10Mi
+          ports:
+            - containerPort: 8081
+              name: health
+            - containerPort: 8443
+              name: metrics
+              protocol: TCP
+          volumeMounts:
+            - name: serving-cert
+              mountPath: /var/run/secrets/serving-cert
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+              scheme: HTTP
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+              scheme: HTTP
+            initialDelaySeconds: 30
+          terminationMessagePolicy: FallbackToLogsOnError
+      nodeSelector:
+        kubernetes.io/os: linux
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+        - effect: NoExecute
+          key: node.kubernetes.io/unreachable
+          operator: Exists
+          tolerationSeconds: 120
+        - effect: NoExecute
+          key: node.kubernetes.io/not-ready
+          operator: Exists
+          tolerationSeconds: 120
+      volumes:
+        - name: serving-cert
+          secret:
+            secretName: lifecycle-controller-serving-cert
+EOF
+
+cat << EOF > manifests/0000_50_olm_08-lifecycle-controller.service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+    service.beta.openshift.io/serving-cert-secret-name: lifecycle-controller-serving-cert
+spec:
+  ports:
+    - name: metrics
+      port: 8443
+      protocol: TCP
+      targetPort: metrics
+  selector:
+    app: olm-lifecycle-controller
+  type: ClusterIP
+EOF
+
+cat << EOF > manifests/0000_50_olm_08-lifecycle-controller.networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+spec:
+  podSelector:
+    matchLabels:
+      app: olm-lifecycle-controller
+  ingress:
+    - ports:
+        - port: 8443
+          protocol: TCP
+  egress:
+    - ports:
+        - port: 6443
+          protocol: TCP
+    - ports:
+        - port: 53
+          protocol: TCP
+        - port: 53
+          protocol: UDP
+        - port: 5353
+          protocol: TCP
+        - port: 5353
+          protocol: UDP
+  policyTypes:
+    - Ingress
+    - Egress
+EOF
+
+cat << EOF > manifests/0000_50_olm_08-lifecycle-controller.rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: operator-lifecycle-manager-lifecycle-controller
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+rules:
+  # Read APIServer for TLS security profile configuration
+  - apiGroups: ["config.openshift.io"]
+    resources: ["apiservers"]
+    verbs: ["get", "list", "watch"]
+  # Watch CatalogSources cluster-wide
+  - apiGroups: ["operators.coreos.com"]
+    resources: ["catalogsources"]
+    verbs: ["get", "list", "watch"]
+  # Watch catalog pods cluster-wide
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # Manage lifecycle-server deployments
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server services
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server serviceaccounts
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server networkpolicies
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage lifecycle-server clusterrolebindings
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterrolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Required to grant these permissions to lifecycle-server via CRB
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+  # Leader election
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: operator-lifecycle-manager-lifecycle-controller
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: operator-lifecycle-manager-lifecycle-controller
+subjects:
+  - kind: ServiceAccount
+    name: lifecycle-controller
+    namespace: openshift-operator-lifecycle-manager
+EOF
+
+cat << EOF > manifests/0000_50_olm_09-lifecycle-server.rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: operator-lifecycle-manager-lifecycle-server
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+rules:
+  # Required by kube-rbac-proxy for authn/authz
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+EOF
+
 
 add_ibm_managed_cloud_annotations "${ROOT_DIR}/manifests"
 

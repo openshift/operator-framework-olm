@@ -316,6 +316,8 @@ github.com/itchyny/timefmt-go v0.1.7 h1:xyftit9Tbw+Dc/huSSPJaEmX1TVL8lw5vxjJLK4G
 github.com/itchyny/timefmt-go v0.1.7/go.mod h1:5E46Q+zj7vbTgWY8o5YkMeYb4I6GeWLFnetPy5oBrAI=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
+github.com/joelanford/controller-runtime-common v0.0.0-20260206162334-afe447e6c57e h1:QKmwy5dnsX8Gik2J3wliX3IXSpZPIWyCAlL2xi3y/do=
+github.com/joelanford/controller-runtime-common v0.0.0-20260206162334-afe447e6c57e/go.mod h1:v50YKO19Utu2nn7jsWwMFZXmO+HSHdkeDdEdNvOSy88=
 github.com/joelanford/ignore v0.1.1 h1:vKky5RDoPT+WbONrbQBgOn95VV/UPh4ejlyAbbzgnQk=
 github.com/joelanford/ignore v0.1.1/go.mod h1:8eho/D8fwQ3rIXrLwE23AaeaGDNXqLE9QJ3zJ4LIPCw=
 github.com/jonboulle/clockwork v0.1.0/go.mod h1:Ii8DK3G1RaLaWxj9trq07+26W01tbo22gdxWY5EU2bo=
@@ -430,8 +432,8 @@ github.com/openshift/api v0.0.0-20260204104751-e09e5a4ebcd0 h1:mj1uTiMB24CUakpEc
 github.com/openshift/api v0.0.0-20260204104751-e09e5a4ebcd0/go.mod h1:d5uzF0YN2nQQFA0jIEWzzOZ+edmo6wzlGLvx5Fhz4uY=
 github.com/openshift/client-go v0.0.0-20260108185524-48f4ccfc4e13 h1:6rd4zSo2UaWQcAPZfHK9yzKVqH0BnMv1hqMzqXZyTds=
 github.com/openshift/client-go v0.0.0-20260108185524-48f4ccfc4e13/go.mod h1:YvOmPmV7wcJxpfhTDuFqqs2Xpb3M3ovsM6Qs/i2ptq4=
-github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a h1:YLnZtVfqGUfTbQ+M06QAslEmP4WrnRoPrk4AtoBJdm8=
-github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a/go.mod h1:DCRz1EgdayEmr9b6KXKDL+DWBN0rGHu/VYADeHzPoOk=
+github.com/openshift/library-go v0.0.0-20260205095356-7bced6e899b6 h1:YoT3Q+9/I3QMicrayX7ZwGZh8BFVKjaVat2gdMd8Ads=
+github.com/openshift/library-go v0.0.0-20260205095356-7bced6e899b6/go.mod h1:DCRz1EgdayEmr9b6KXKDL+DWBN0rGHu/VYADeHzPoOk=
 github.com/otiai10/copy v1.14.1 h1:5/7E6qsUMBaH5AnQ0sSLzzTg1oTECmcCmT6lvF45Na8=
 github.com/otiai10/copy v1.14.1/go.mod h1:oQwrEDDOci3IM8dJF0d8+jnbfPDllW6vUjNc3DoZm9I=
 github.com/otiai10/mint v1.6.3 h1:87qsV/aw1F5as1eH1zS/yqHY85ANKVMgkDrf9rcxbQs=

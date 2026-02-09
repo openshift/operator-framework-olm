@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lifecycle-controller
+  namespace: openshift-operator-lifecycle-manager
+  annotations:
+    release.openshift.io/feature-set: "TechPreviewNoUpgrade"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    capability.openshift.io/name: "OperatorLifecycleManager"
+    include.release.openshift.io/hypershift: "true"
+spec:
+  podSelector:
+    matchLabels:
+      app: olm-lifecycle-controller
+  ingress:
+    - ports:
+        - port: 8443
+          protocol: TCP
+  egress:
+    - ports:
+        - port: 6443
+          protocol: TCP
+    - ports:
+        - port: 53
+          protocol: TCP
+        - port: 53
+          protocol: UDP
+        - port: 5353
+          protocol: TCP
+        - port: 5353
+          protocol: UDP
+  policyTypes:
+    - Ingress
+    - Egress

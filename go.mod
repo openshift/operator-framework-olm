@@ -13,12 +13,15 @@ require (
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/openshift/api v0.0.0-20260204104751-e09e5a4ebcd0
+	github.com/openshift/controller-runtime-common v0.0.0-20260204183245-642129afd14f
+	github.com/openshift/library-go v0.0.0-20260205095356-7bced6e899b6
 	github.com/operator-framework/api v0.39.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.63.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/sync v0.19.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v2 v2.4.0
@@ -26,6 +29,7 @@ require (
 	k8s.io/apimachinery v0.35.0
 	k8s.io/client-go v0.35.0
 	k8s.io/code-generator v0.35.0
+	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20260127142750-a19766b6e2d4
 	k8s.io/utils v0.0.0-20260108192941-914a6e750570
 	sigs.k8s.io/controller-runtime v0.23.1
@@ -157,7 +161,6 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.3.0 // indirect
 	github.com/openshift/client-go v0.0.0-20260108185524-48f4ccfc4e13 // indirect
-	github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a // indirect
 	github.com/otiai10/copy v1.14.1 // indirect
 	github.com/otiai10/mint v1.6.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -209,7 +212,6 @@ require (
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/term v0.39.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
@@ -232,7 +234,6 @@ require (
 	k8s.io/component-base v0.35.0 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b // indirect
 	k8s.io/klog v1.0.0 // indirect
-	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kms v0.35.0 // indirect
 	k8s.io/kube-aggregator v0.35.0 // indirect
 	k8s.io/kubectl v0.35.0 // indirect
@@ -250,3 +251,5 @@ replace (
 	github.com/operator-framework/operator-lifecycle-manager => ./staging/operator-lifecycle-manager
 	github.com/operator-framework/operator-registry => ./staging/operator-registry
 )
+
+replace github.com/openshift/controller-runtime-common => github.com/joelanford/controller-runtime-common v0.0.0-20260206162334-afe447e6c57e
