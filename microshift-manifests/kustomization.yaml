@@ -20,6 +20,11 @@ resources:
   - 0000_50_olm_03-services.yaml
   - 0000_50_olm_07-olm-operator.deployment.yaml
   - 0000_50_olm_08-catalog-operator.deployment.yaml
+  - 0000_50_olm_08-lifecycle-controller.deployment.yaml
+  - 0000_50_olm_08-lifecycle-controller.networkpolicy.yaml
+  - 0000_50_olm_08-lifecycle-controller.rbac.yaml
+  - 0000_50_olm_08-lifecycle-controller.service.yaml
   - 0000_50_olm_09-aggregated.clusterrole.yaml
+  - 0000_50_olm_09-lifecycle-server.rbac.yaml
   - 0000_50_olm_13-operatorgroup-default.yaml
   - 0000_50_olm_15-csv-viewer.rbac.yaml
