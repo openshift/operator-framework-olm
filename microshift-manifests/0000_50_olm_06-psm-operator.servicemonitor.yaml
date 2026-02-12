@@ -20,3 +20,4 @@ spec:
     matchNames:
       - openshift-operator-lifecycle-manager
   selector: {}
+  serviceDiscoveryRole: EndpointSlice
