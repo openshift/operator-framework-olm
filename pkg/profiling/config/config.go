@@ -1,7 +1,7 @@
 package config
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
@@ -44,7 +44,7 @@ type config struct {
 }
 
 func GetConfig(path string) (*config, error) {
-	data, err := ioutil.ReadFile(filepath.Join(path, "pprof-config.yaml"))
+	data, err := os.ReadFile(filepath.Join(path, "pprof-config.yaml"))
 	if err != nil {
 		return nil, err
 	}
