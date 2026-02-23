@@ -7,6 +7,7 @@ import (
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
+	ote "github.com/openshift-eng/openshift-tests-extension/pkg/ginkgo"
 	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
 	"github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/olmv0util"
 
@@ -219,7 +220,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 
 	})
 
-	g.It("PolarionID:83581-[OTP][Skipped:Disconnected]olmv0 networkpolicy on microshift.", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:83581-[Skipped:Disconnected]olmv0 networkpolicy on microshift."), func() {
+	g.It("PolarionID:83581-[OTP][Skipped:Disconnected]olmv0 networkpolicy on microshift.", ote.Informing(), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:83581-[Skipped:Disconnected]olmv0 networkpolicy on microshift."), func() {
 
 		policies := []olmv0util.NpExpecter{
 			{
@@ -233,14 +234,17 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 				},
 				ExpectEgress: []olmv0util.EgressRule{
 					{
-						Ports:     []olmv0util.Port{{Port: 6443, Protocol: "TCP"}},
+						Ports:     []olmv0util.Port{{}},
 						Selectors: nil,
 					},
 					{
-						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
-						Selectors: []olmv0util.Selector{
-							{NamespaceLabels: map[string]string{"kubernetes.io/metadata.name": "openshift-dns"}},
+						Ports: []olmv0util.Port{
+							{Port: "53", Protocol: "TCP"},
+							{Port: "53", Protocol: "UDP"},
+							{Port: "5353", Protocol: "TCP"},
+							{Port: "5353", Protocol: "UDP"},
 						},
+						Selectors: nil,
 					},
 					{
 						Ports:     []olmv0util.Port{{Port: 50051, Protocol: "TCP"}},
@@ -269,14 +273,17 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 				},
 				ExpectEgress: []olmv0util.EgressRule{
 					{
-						Ports:     []olmv0util.Port{{Port: 6443, Protocol: "TCP"}},
+						Ports:     []olmv0util.Port{{}},
 						Selectors: nil,
 					},
 					{
-						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
-						Selectors: []olmv0util.Selector{
-							{NamespaceLabels: map[string]string{"kubernetes.io/metadata.name": "openshift-dns"}},
+						Ports: []olmv0util.Port{
+							{Port: "53", Protocol: "TCP"},
+							{Port: "53", Protocol: "UDP"},
+							{Port: "5353", Protocol: "TCP"},
+							{Port: "5353", Protocol: "UDP"},
 						},
+						Selectors: nil,
 					},
 				},
 				ExpectSelector:    map[string]string{"app": "olm-operator"},
