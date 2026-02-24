@@ -52,7 +52,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 				},
 				ExpectEgress: []olmv0util.EgressRule{
 					{
-						Ports:     []olmv0util.Port{{Port: 6443, Protocol: "TCP"}},
+						Ports:     []olmv0util.Port{{}},
 						Selectors: nil,
 					},
 					{
@@ -88,7 +88,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 				},
 				ExpectEgress: []olmv0util.EgressRule{
 					{
-						Ports:     []olmv0util.Port{{Port: 6443, Protocol: "TCP"}},
+						Ports:     []olmv0util.Port{{}},
 						Selectors: nil,
 					},
 					{
@@ -112,7 +112,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 				},
 				ExpectEgress: []olmv0util.EgressRule{
 					{
-						Ports:     []olmv0util.Port{{Port: 6443, Protocol: "TCP"}},
+						Ports:     []olmv0util.Port{{}},
 						Selectors: nil,
 					},
 					{
@@ -291,7 +291,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 					{Ports: []olmv0util.Port{{Port: "metrics", Protocol: "TCP"}}, Selectors: nil},
 				},
 				ExpectEgress: []olmv0util.EgressRule{
-					{Ports: []olmv0util.Port{{Port: 6443, Protocol: "TCP"}}, Selectors: nil},
+					{Ports: []olmv0util.Port{{}}, Selectors: nil},
 					{
 						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
 						Selectors: []olmv0util.Selector{
@@ -318,7 +318,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 					{Ports: []olmv0util.Port{{Port: "metrics", Protocol: "TCP"}}, Selectors: nil},
 				},
 				ExpectEgress: []olmv0util.EgressRule{
-					{Ports: []olmv0util.Port{{Port: 6443, Protocol: "TCP"}}, Selectors: nil},
+					{Ports: []olmv0util.Port{{}}, Selectors: nil},
 					{
 						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
 						Selectors: []olmv0util.Selector{
@@ -336,7 +336,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 networkpolicy", func() {
 					{Ports: []olmv0util.Port{{Port: 8443, Protocol: "TCP"}}, Selectors: nil},
 				},
 				ExpectEgress: []olmv0util.EgressRule{
-					{Ports: []olmv0util.Port{{Port: 6443, Protocol: "TCP"}}, Selectors: nil},
+					{Ports: []olmv0util.Port{{}}, Selectors: nil},
 					{
 						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
 						Selectors: []olmv0util.Selector{
