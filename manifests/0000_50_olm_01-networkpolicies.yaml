@@ -33,9 +33,7 @@ spec:
         - port: metrics
           protocol: TCP
   egress:
-    - ports:
-        - port: 6443
-          protocol: TCP
+    - {}
     - ports:
         - port: dns-tcp
           protocol: TCP
@@ -68,9 +66,7 @@ spec:
         - port: metrics
           protocol: TCP
   egress:
-    - ports:
-        - port: 6443
-          protocol: TCP
+    - {}
     - ports:
         - port: dns-tcp
           protocol: TCP
@@ -106,9 +102,7 @@ spec:
         - protocol: TCP
           port: 5443
   egress:
-    - ports:
-        - port: 6443
-          protocol: TCP
+    - {}
     - ports:
         - port: dns-tcp
           protocol: TCP
