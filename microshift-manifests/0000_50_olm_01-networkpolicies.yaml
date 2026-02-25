@@ -36,14 +36,14 @@ spec:
   egress:
     - {}
     - ports:
-        - port: dns-tcp
+        - port: 53
           protocol: TCP
-        - port: dns
+        - port: 53
           protocol: UDP
-      to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: openshift-dns
+        - port: 5353
+          protocol: TCP
+        - port: 5353
+          protocol: UDP
   policyTypes:
     - Ingress
     - Egress
@@ -69,14 +69,14 @@ spec:
   egress:
     - {}
     - ports:
-        - port: dns-tcp
+        - port: 53
           protocol: TCP
-        - port: dns
+        - port: 53
           protocol: UDP
-      to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: openshift-dns
+        - port: 5353
+          protocol: TCP
+        - port: 5353
+          protocol: UDP
     - ports:
         - protocol: TCP
           port: 50051
