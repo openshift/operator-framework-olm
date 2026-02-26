@@ -238,10 +238,13 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 						Selectors: nil,
 					},
 					{
-						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
-						Selectors: []olmv0util.Selector{
-							{NamespaceLabels: map[string]string{"kubernetes.io/metadata.name": "openshift-dns"}},
+						Ports: []olmv0util.Port{
+							{Port: 53, Protocol: "TCP"},
+							{Port: 53, Protocol: "UDP"},
+							{Port: 5353, Protocol: "TCP"},
+							{Port: 5353, Protocol: "UDP"},
 						},
+						Selectors: nil,
 					},
 					{
 						Ports:     []olmv0util.Port{{Port: 50051, Protocol: "TCP"}},
@@ -274,10 +277,13 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 on microshift", g.Label("NonH
 						Selectors: nil,
 					},
 					{
-						Ports: []olmv0util.Port{{Port: "dns-tcp", Protocol: "TCP"}, {Port: "dns", Protocol: "UDP"}},
-						Selectors: []olmv0util.Selector{
-							{NamespaceLabels: map[string]string{"kubernetes.io/metadata.name": "openshift-dns"}},
+						Ports: []olmv0util.Port{
+							{Port: 53, Protocol: "TCP"},
+							{Port: 53, Protocol: "UDP"},
+							{Port: 5353, Protocol: "TCP"},
+							{Port: 5353, Protocol: "UDP"},
 						},
+						Selectors: nil,
 					},
 				},
 				ExpectSelector:    map[string]string{"app": "olm-operator"},
