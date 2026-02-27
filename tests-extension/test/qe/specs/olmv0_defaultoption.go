@@ -784,12 +784,12 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		subTemplate := filepath.Join(buildDir, "olm-subscription.yaml")
 
 		cs := olmv0util.CatalogSourceDescription{
-			Name:        "prometheus-dependency-cs",
-			Namespace:   "openshift-marketplace",
+			Name:        "learn-32613",
+			Namespace:   oc.Namespace(),
 			DisplayName: "OLM QE",
 			Publisher:   "OLM QE",
 			SourceType:  "grpc",
-			Address:     "quay.io/olmqe/etcd-prometheus-dependency-index:11.0",
+			Address:     "quay.io/olmqe/learn-operator-index:v25",
 			Template:    csTemplate,
 		}
 		dr := make(olmv0util.DescriberResrouce)
@@ -809,36 +809,33 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		sub := olmv0util.SubscriptionDescription{
 			SubName:                "sub-32613",
 			Namespace:              oc.Namespace(),
-			CatalogSourceName:      "prometheus-dependency-cs",
-			CatalogSourceNamespace: "openshift-marketplace",
-			Channel:                "singlenamespace-alpha",
+			CatalogSourceName:      cs.Name,
+			CatalogSourceNamespace: cs.Namespace,
+			Channel:                "beta",
 			IpApproval:             "Automatic",
-			OperatorPackage:        "etcd-service-monitor",
-			StartingCSV:            "etcdoperator.v0.9.4",
+			OperatorPackage:        "learn",
+			StartingCSV:            "learn-operator.v0.0.3",
 			SingleNamespace:        true,
 			Template:               subTemplate,
 		}
+		defer sub.Delete(itName, dr)
+		defer sub.DeleteCSV(itName, dr)
 		sub.Create(oc, itName, dr)
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.4", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
-
-		g.By("Assert that prometheus dependency is resolved")
-		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", oc.Namespace()).Output()
-		o.Expect(err).NotTo(o.HaveOccurred())
-		o.Expect(msg).To(o.ContainSubstring("prometheus"))
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "learn-operator.v0.0.3", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
 
 		sub = olmv0util.SubscriptionDescription{
-			SubName:                "prometheus-32613",
+			SubName:                "sub-32613-conflict",
 			Namespace:              oc.Namespace(),
-			CatalogSourceName:      "community-operators",
-			CatalogSourceNamespace: "openshift-marketplace",
+			CatalogSourceName:      cs.Name,
+			CatalogSourceNamespace: cs.Namespace,
 			IpApproval:             "Automatic",
 			Channel:                "beta",
-			OperatorPackage:        "prometheus",
+			OperatorPackage:        "learn",
 			SingleNamespace:        true,
 			Template:               subTemplate,
 		}
 		sub.CreateWithoutCheck(oc, itName, dr)
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "prometheus-beta-community-operators-openshift-marketplace exists", exutil.Ok, []string{"subs", "prometheus-32613", "-n", oc.Namespace(), "-o=jsonpath={.status.conditions..message}"}).Check(oc)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "ConstraintsNotSatisfiable", exutil.Ok, []string{"subs", sub.SubName, "-n", oc.Namespace(), "-o=jsonpath={.status.conditions..reason}"}).Check(oc)
 	})
 
 	g.It("PolarionID:24055-[OTP][Skipped:Disconnected]Check for defaultChannel mandatory field when having multiple channels", func() {
@@ -3266,6 +3263,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 	g.It("PolarionID:47181-[OTP][Skipped:Disconnected]Disjunctive constraint of one package and one GVK", func() {
 		olmv0util.ValidateAccessEnvironment(oc)
 		architecture.SkipNonAmd64SingleArch(oc)
+		exutil.SkipIfDisableDefaultCatalogsource(oc)
 
 		dr := make(olmv0util.DescriberResrouce)
 		itName := g.CurrentSpecReport().FullText()
@@ -3274,14 +3272,14 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		buildPruningBaseDir := exutil.FixturePath("testdata", "olm")
 		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
 		ogTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
-		csImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
+		csImageTemplate := filepath.Join(buildPruningBaseDir, "catalogsource-image-extract.yaml")
 		cs := olmv0util.CatalogSourceDescription{
 			Name:        "ocp-47181",
 			Namespace:   oc.Namespace(),
 			DisplayName: "ocp-47181",
 			Publisher:   "OLM QE",
 			SourceType:  "grpc",
-			Address:     "quay.io/olmqe/etcd-47181:1.0",
+			Address:     "quay.io/olmqe/ditto-index:41565-cache",
 			Template:    csImageTemplate,
 		}
 		cs.CreateWithCheck(oc, itName, dr)
@@ -3294,19 +3292,27 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		og.CreateWithCheck(oc, itName, dr)
 
 		sub := olmv0util.SubscriptionDescription{
-			SubName:                "etcd",
+			SubName:                "sub-47181",
 			Namespace:              oc.Namespace(),
 			CatalogSourceName:      cs.Name,
 			CatalogSourceNamespace: cs.Namespace,
-			Channel:                "singlenamespace-alpha",
+			Channel:                "alpha",
 			IpApproval:             "Automatic",
-			OperatorPackage:        "etcd",
+			OperatorPackage:        "ditto-operator",
 			SingleNamespace:        true,
 			Template:               subTemplate,
 		}
 		sub.Create(oc, itName, dr)
 
-		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
+		waitErr := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 360*time.Second, false, func(ctx context.Context) (bool, error) {
+			csvList, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", sub.Namespace).Output()
+			o.Expect(err).NotTo(o.HaveOccurred())
+			return strings.Contains(csvList, "ditto-operator") && strings.Contains(csvList, "planetscale-operator"), nil
+		})
+		if waitErr != nil {
+			olmv0util.LogDebugInfo(oc, sub.Namespace, "pod", "ip", "csv", "events")
+		}
+		exutil.AssertWaitPollNoErr(waitErr, "csv ditto-operator or planetscale-operator was not installed")
 	})
 
 	// Polarion ID: 47179
