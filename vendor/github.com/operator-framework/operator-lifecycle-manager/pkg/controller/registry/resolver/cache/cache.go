@@ -150,6 +150,8 @@ func (c *Cache) Namespaced(namespaces ...string) MultiCatalogOperatorFinder {
 		CachePopulateTimeout = time.Minute
 	)
 
+	populateStart := cacheTraceBegin(c.logger, "cache_populate")
+
 	sources := c.sp.Sources(namespaces...)
 
 	result := NamespacedOperatorCache{
@@ -179,7 +181,9 @@ func (c *Cache) Namespaced(namespaces ...string) MultiCatalogOperatorFinder {
 		}
 	}()
 
+	cacheHits := len(sources) - len(misses)
 	if len(misses) == 0 {
+		cacheTraceDone(c.logger, "cache_populate", populateStart, cacheKV("source_count", len(sources)), cacheKV("cache_hit_count", cacheHits), cacheKV("cache_miss_count", 0))
 		return &result
 	}
 
@@ -209,6 +213,7 @@ func (c *Cache) Namespaced(namespaces ...string) MultiCatalogOperatorFinder {
 	}
 	misses = misses[found:]
 
+	var wg sync.WaitGroup
 	for _, miss := range misses {
 		ctx, cancel := context.WithTimeout(context.Background(), CachePopulateTimeout)
 
@@ -222,7 +227,9 @@ func (c *Cache) Namespaced(namespaces ...string) MultiCatalogOperatorFinder {
 		c.snapshots[miss] = &hdr
 		result.snapshots[miss] = &hdr
 
+		wg.Add(1)
 		go func(ctx context.Context, hdr *snapshotHeader, source Source) {
+			defer wg.Done()
 			defer hdr.m.Unlock()
 			c.sem <- struct{}{}
 			defer func() { <-c.sem }()
@@ -236,6 +243,11 @@ func (c *Cache) Namespaced(namespaces ...string) MultiCatalogOperatorFinder {
 		}(ctx, &hdr, sources[miss])
 	}
 
+	missCount := len(misses)
+	go func() {
+		wg.Wait()
+		cacheTraceDone(c.logger, "cache_populate", populateStart, cacheKV("source_count", len(sources)), cacheKV("cache_hit_count", cacheHits), cacheKV("cache_miss_count", missCount))
+	}()
 	return &result
 }
 
