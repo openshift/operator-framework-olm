@@ -639,7 +639,7 @@ github.com/openshift/client-go/config/listers/config/v1alpha2
 ## explicit; go 1.24.0
 github.com/openshift/library-go/pkg/crypto
 # github.com/operator-framework/api v0.39.0 => ./staging/api
-## explicit; 7
+## explicit; 1.25.7
 github.com/operator-framework/api/crds
 github.com/operator-framework/api/pkg/constraints
 github.com/operator-framework/api/pkg/encoding
