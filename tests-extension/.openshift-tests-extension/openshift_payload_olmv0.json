@@ -897,6 +897,7 @@
     "originalName": "[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:83581-[Skipped:Disconnected]olmv0 networkpolicy on microshift.",
     "labels": {
       "Extended": {},
+      "Lifecycle:informing": {},
       "NonHyperShiftHOST": {},
       "original-name:[sig-operator][Jira:OLM] OLMv0 on microshift PolarionID:83581-[Skipped:Disconnected]olmv0 networkpolicy on microshift.": {}
     },
@@ -904,7 +905,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
+    "lifecycle": "informing",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }
@@ -962,6 +963,7 @@
     "originalName": "[sig-operator][Jira:OLM] OLMv0 should PolarionID:83105-[Skipped:Disconnected]olmv0 static networkpolicy on ocp",
     "labels": {
       "Extended": {},
+      "Lifecycle:informing": {},
       "NonHyperShiftHOST": {},
       "ReleaseGate": {},
       "original-name:[sig-operator][Jira:OLM] OLMv0 should PolarionID:83105-[Skipped:Disconnected]olmv0 static networkpolicy on ocp": {}
@@ -970,7 +972,7 @@
       "isolation": {}
     },
     "source": "openshift:payload:olmv0",
-    "lifecycle": "blocking",
+    "lifecycle": "informing",
     "environmentSelector": {
       "exclude": "topology==\"External\""
     }

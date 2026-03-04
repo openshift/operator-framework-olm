@@ -121,10 +121,10 @@ networkPolicy:
   dns:
     ports:
       - protocol: TCP
-        port: dns-tcp
+        port: 53
       - protocol: UDP
-        port: dns
-    to:
-      - namespaceSelector:
-          matchLabels:
-            kubernetes.io/metadata.name: openshift-dns
+        port: 53
+      - protocol: TCP
+        port: 5353
+      - protocol: UDP
+        port: 5353
