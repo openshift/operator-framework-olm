@@ -97,34 +97,62 @@ func NewOperatorStepResolver(lister operatorlister.OperatorLister, client versio
 }
 
 func (r *OperatorStepResolver) ResolveSteps(namespace string) ([]*v1alpha1.Step, []v1alpha1.BundleLookup, []*v1alpha1.Subscription, error) {
+	resolutionID := NewResolutionID()
+	log := r.log.WithField("resolution_id", resolutionID)
+	resolveStart := traceBegin(log, "resolve_steps", kv("namespace", namespace))
+	var resolvedSubCount int
+	var resolveErr error
+	defer func() {
+		kvs := []string{kv("namespace", namespace), kv("subscription_count", resolvedSubCount)}
+		if resolveErr != nil {
+			kvs = append(kvs, kv("error", true))
+		}
+		traceDone(log, "resolve_steps", resolveStart, kvs...)
+	}()
+
+	listSubsStart := traceBegin(log, "list_subscriptions", kv("namespace", namespace))
 	subs, err := r.listSubscriptions(namespace)
 	if err != nil {
+		resolveErr = err
+		traceDone(log, "list_subscriptions", listSubsStart, kv("namespace", namespace), kv("error", true))
 		return nil, nil, nil, err
 	}
+	resolvedSubCount = len(subs)
+	traceDone(log, "list_subscriptions", listSubsStart, kv("namespace", namespace), kv("subscription_count", len(subs)))
 
 	namespaces := []string{namespace}
+	listOGStart := traceBegin(log, "list_operator_groups", kv("namespace", namespace))
 	ogs, err := r.ogLister.OperatorGroups(namespace).List(labels.Everything())
 	if err != nil {
+		resolveErr = err
+		traceDone(log, "list_operator_groups", listOGStart, kv("namespace", namespace), kv("error", true))
 		return nil, nil, nil, fmt.Errorf("listing operatorgroups in namespace %s: %s", namespace, err)
 	}
+	traceDone(log, "list_operator_groups", listOGStart, kv("namespace", namespace), kv("count", len(ogs)))
 	if len(ogs) != 1 {
-		return nil, nil, nil, fmt.Errorf("expected 1 OperatorGroup in the namespace, found %d", len(ogs))
+		resolveErr = fmt.Errorf("expected 1 OperatorGroup in the namespace, found %d", len(ogs))
+		return nil, nil, nil, resolveErr
 	}
 	og := ogs[0]
 	if val, ok := og.Annotations[exclusionAnnotation]; ok && val == "true" {
 		// Exclusion specified
 		// Ignore the globalNamespace for the purposes of resolution in this namespace
-		r.log.Printf("excluding global catalogs from resolution in namespace %s", namespace)
+		log.Printf("excluding global catalogs from resolution in namespace %s", namespace)
 	} else {
 		namespaces = append(namespaces, r.globalCatalogNamespace)
 	}
-	operators, err := r.resolver.Resolve(namespaces, subs)
+	coreResolveStart := traceBegin(log, "core_resolve", kv("namespace", namespace), kv("subscription_count", len(subs)), kv("namespace_count", len(namespaces)))
+	operators, err := r.resolver.WithLog(log).Resolve(namespaces, subs)
 	if err != nil {
+		resolveErr = err
+		traceDone(log, "core_resolve", coreResolveStart, kv("namespace", namespace), kv("error", true))
 		return nil, nil, nil, err
 	}
+	traceDone(log, "core_resolve", coreResolveStart, kv("namespace", namespace), kv("subscription_count", len(subs)), kv("operator_count", len(operators)))
 
 	// if there's no error, we were able to satisfy all constraints in the subscription set, so we calculate what
 	// changes to persist to the cluster and write them out as `steps`
+	generateStepsStart := traceBegin(log, "generate_steps", kv("namespace", namespace), kv("operator_count", len(operators)))
 	steps := []*v1alpha1.Step{}
 	updatedSubs := []*v1alpha1.Subscription{}
 	bundleLookups := []v1alpha1.BundleLookup{}
@@ -232,6 +260,7 @@ func (r *OperatorStepResolver) ResolveSteps(namespace string) ([]*v1alpha1.Step,
 
 	// Order Steps
 	steps = v1alpha1.OrderSteps(steps)
+	traceDone(log, "generate_steps", generateStepsStart, kv("namespace", namespace), kv("step_count", len(steps)), kv("bundle_lookup_count", len(bundleLookups)))
 	return steps, bundleLookups, updatedSubs, nil
 }
 

@@ -146,6 +146,8 @@ type registrySource struct {
 }
 
 func (s *registrySource) Snapshot(ctx context.Context) (*cache.Snapshot, error) {
+	catalogID := fmt.Sprintf("%s/%s", s.key.Namespace, s.key.Name)
+	snapshotStart := stdTraceBegin(s.logger, "catalog_snapshot", kv("catalog", catalogID))
 	s.logger.Printf("requesting snapshot for catalog source %s/%s", s.key.Namespace, s.key.Name)
 	metrics.IncrementCatalogSourceSnapshotsTotal(s.key.Name, s.key.Namespace)
 
@@ -154,19 +156,27 @@ func (s *registrySource) Snapshot(ctx context.Context) (*cache.Snapshot, error) 
 	// or embed the information into Bundle.
 	packages := make(map[string]*api.Package)
 
+	listBundlesStart := stdTraceBegin(s.logger, "list_bundles", kv("catalog", catalogID))
 	it, err := s.client.ListBundles(ctx)
 	if err != nil {
+		stdTraceDone(s.logger, "list_bundles", listBundlesStart, kv("catalog", catalogID), kv("error", true))
+		stdTraceDone(s.logger, "catalog_snapshot", snapshotStart, kv("catalog", catalogID), kv("error", true))
 		return nil, fmt.Errorf("failed to list bundles: %w", err)
 	}
 
 	var operators []*cache.Entry
+	var getPackageTotalMs int64
+	var getPackageCount int
 	for b := it.Next(); b != nil; b = it.Next() {
 		p, ok := packages[b.PackageName]
 		if !ok {
+			getPkgStart := time.Now()
 			if p, err = s.client.GetPackage(ctx, b.PackageName); err != nil {
 				s.logger.Printf("failed to retrieve default channel for bundle, continuing: %v", err)
 				continue
 			} else {
+				getPackageTotalMs += time.Since(getPkgStart).Milliseconds()
+				getPackageCount++
 				packages[b.PackageName] = p
 			}
 		}
@@ -201,9 +211,13 @@ func (s *registrySource) Snapshot(ctx context.Context) (*cache.Snapshot, error) 
 		operators = append(operators, o)
 	}
 	if err := it.Error(); err != nil {
+		stdTraceDone(s.logger, "list_bundles", listBundlesStart, kv("catalog", catalogID), kv("error", true))
+		stdTraceDone(s.logger, "catalog_snapshot", snapshotStart, kv("catalog", catalogID), kv("error", true))
 		return nil, fmt.Errorf("error encountered while listing bundles: %w", err)
 	}
+	stdTraceDone(s.logger, "list_bundles", listBundlesStart, kv("catalog", catalogID), kv("bundle_count", len(operators)), kv("package_count", len(packages)), kv("get_package_calls", getPackageCount), kv("get_package_ms", getPackageTotalMs))
 
+	stdTraceDone(s.logger, "catalog_snapshot", snapshotStart, kv("catalog", catalogID), kv("bundle_count", len(operators)), kv("package_count", len(packages)))
 	return &cache.Snapshot{
 		Entries: operators,
 		Valid:   s.invalidator.GetValidChannel(s.key),
