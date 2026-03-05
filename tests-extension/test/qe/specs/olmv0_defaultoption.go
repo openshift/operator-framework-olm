@@ -1975,7 +1975,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 	// Polarion ID: 43101
 	g.It("PolarionID:43101-[OTP][Skipped:Disconnected]OLM blocks minor OpenShift upgrades when incompatible optional operators are installed", func() {
 		architecture.SkipNonAmd64SingleArch(oc)
-		// consumes this index imaage: quay.io/olmqe/etcd-index:upgrade-auto, it contains the etcdoperator v0.9.2, v0.9.4, v0.9.5
+		// quay.io/olmqe/learn-operator-index:v25-43101 contains the learn-operator.v0.0.1, v0.0.2, v0.0.3 in the `beta` channel
 		g.By("1, create a random project")
 		oc.SetupProject()
 		g.By("1-1, create a CatalogSource in this random project")
@@ -1987,7 +1987,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			DisplayName: "OLM QE Operators",
 			Publisher:   "Jian",
 			SourceType:  "grpc",
-			Address:     "quay.io/olmqe/etcd-index:upgrade-fips",
+			Address:     "quay.io/olmqe/learn-operator-index:v25-43101",
 			Template:    csImageTemplate,
 		}
 		dr := make(olmv0util.DescriberResrouce)
@@ -2008,17 +2008,17 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		defer og.Delete(itName, dr)
 		og.CreateWithCheck(oc, itName, dr)
 
-		g.By("3, install the etcdoperator v0.9.2 with Manual approval")
+		g.By("3, install the learn-operator.v0.0.1 with Manual approval")
 		subTemplate := filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
 		sub := olmv0util.SubscriptionDescription{
 			SubName:                "sub-43101",
 			Namespace:              oc.Namespace(),
 			CatalogSourceName:      "cs-43101",
 			CatalogSourceNamespace: oc.Namespace(),
-			Channel:                "singlenamespace-alpha",
+			Channel:                "beta",
 			IpApproval:             "Manual",
-			OperatorPackage:        "etcd",
-			StartingCSV:            "etcdoperator.v0.9.2",
+			OperatorPackage:        "learn",
+			StartingCSV:            "learn-operator.v0.0.1",
 			SingleNamespace:        true,
 			Template:               subTemplate,
 		}
@@ -2027,9 +2027,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		defer sub.Update(oc, itName, dr)
 		sub.Create(oc, itName, dr)
 
-		g.By("4, apprrove this etcdoperator.v0.9.2, it should be in Complete state")
-		sub.ApproveSpecificIP(oc, itName, dr, "etcdoperator.v0.9.2", "Complete")
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.2", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+		g.By("4, apprrove this learn-operator.v0.0.1, it should be in Complete state")
+		sub.ApproveSpecificIP(oc, itName, dr, "learn-operator.v0.0.1", "Complete")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "learn-operator.v0.0.1", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
 
 		// Get current OCP version for later checks
 		currentVersion, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("clusterversion", "version", "-o=jsonpath={.status.desired.version}").Output()
@@ -2037,6 +2037,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			e2e.Failf("Fail to get the OCP version")
 		}
 		v, _ := semver.ParseTolerant(currentVersion)
+		nextV := olmv0util.NextY(v)
 
 		// olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": " "}]'
 		g.By("5, this operator's olm.maxOpenShiftVersion is empty, so it should block the upgrade")
@@ -2049,33 +2050,31 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			olmv0util.CheckUpgradeMessage(oc, "has invalid olm.maxOpenShiftVersion properties")
 		}
 
-		g.By("6, apprrove this etcdoperator.v0.9.4, it should be in Complete state")
-		sub.ApproveSpecificIP(oc, itName, dr, "etcdoperator.v0.9.4", "Complete")
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.4", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+		g.By("6, apprrove this learn-operator.v0.0.2, it should be in Complete state")
+		sub.ApproveSpecificIP(oc, itName, dr, "learn-operator.v0.0.2", "Complete")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "learn-operator.v0.0.2", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
 		// [OCP-87276] For OCP 4.22, check the Upgradeable message after upgrading to v0.9.4 (maxOpenShiftVersion: 4.9)
 		if v.Major == 4 && v.Minor == 22 {
 			g.By("6-1, [OCP-87276] OCP 4.22: check message contains 'upgrades to 4.23' and 'maximum supported OCP version'")
 			olmv0util.CheckUpgradeMessage(oc, "upgrades to 4.23 or major version upgrades to 5.0")
 			olmv0util.CheckUpgradeMessage(oc, "maximum supported OCP version")
 		}
-		// olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.9"}]'
-		g.By("7, 4.9.0-xxx upgraded to 4.10.0-xxx < 4.10.0, or 4.9.1 upgraded to 4.9.x < 4.10.0, so it should NOT block 4.9 upgrade, but block 4.10+ upgrade")
-		maxVersion, _ := semver.ParseTolerant("4.9")
-		// current version > the operator's max version: 4.9
-		if v.Compare(maxVersion) > 0 {
+		// olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.21"}]'
+		g.By("7, the nextY(4.21.4) = 4.22.0, so it should block 4.21- upgrade")
+		maxVersion, _ := semver.ParseTolerant("4.21")
+		if nextV.Compare(maxVersion) > 0 {
 			olmv0util.CheckUpgradeStatus(oc, "False")
 		} else {
 			olmv0util.CheckUpgradeStatus(oc, "True")
 		}
 
-		g.By("8, apprrove this etcdoperator.v0.9.5, it should be in Complete state")
-		sub.ApproveSpecificIP(oc, itName, dr, "etcdoperator.v0.9.5", "Complete")
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.5", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
-		// olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.10.0"}]'
-		g.By("9, 4.9.0-xxx upgraded to 4.10.0-xxx < 4.10.0, or 4.9.1 upgraded to 4.9.x < 4.11.0, so it should NOT block 4.10 upgrade, but blocks 4.11+ upgrade")
-		maxVersion2, _ := semver.ParseTolerant("4.10.0")
-		// current version > the operator's max version: 4.10.0
-		if v.Compare(maxVersion2) > 0 {
+		g.By("8, apprrove this learn-operator.v0.0.3, it should be in Complete state")
+		sub.ApproveSpecificIP(oc, itName, dr, "learn-operator.v0.0.3", "Complete")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "learn-operator.v0.0.3", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+		// olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.22.0"}]'
+		g.By("9, the nextY(4.22.0-0.nightly...) = 4.23.0 , so it should block OCP 4.22+ upgrade")
+		maxVersion2, _ := semver.ParseTolerant("4.22.0")
+		if nextV.Compare(maxVersion2) > 0 {
 			olmv0util.CheckUpgradeStatus(oc, "False")
 		} else {
 			olmv0util.CheckUpgradeStatus(oc, "True")
@@ -2570,7 +2569,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		g.By("7) Patch the spec.conditions[0].Upgradeable to True")
 		// $oc patch operatorcondition learn-operator.v0.0.1 -p '{"spec":{"conditions":[{"type":"Upgradeable", "observedCondition":1,"status":"True","reason":"bug","message":"ready","lastUpdateTime":"2021-06-16T16:56:44Z","lastTransitionTime":"2021-06-16T16:56:44Z"}]}}' --type=merge
 		olmv0util.PatchResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "-n", ns, "operatorcondition", "learn-operator.v0.0.1", "-p", "{\"spec\": {\"conditions\": [{\"type\": \"Upgradeable\", \"status\": \"True\", \"reason\": \"ready\", \"message\": \"enable the upgrade\", \"observedCondition\":1, \"lastUpdateTime\":\"2021-06-16T17:56:44Z\",\"lastTransitionTime\":\"2021-06-16T17:56:44Z\"}]}}", "--type=merge")
-		g.By("8) the learn-operator.v0.0.1 can be upgraded to etcdoperator.v0.9.4 successfully")
+		g.By("8) the learn-operator.v0.0.1 can be upgraded to learn-operator.v0.0.2 successfully")
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "learn-operator.v0.0.2", "-n", ns, "-o=jsonpath={.status.phase}"}).Check(oc)
 	})
 
@@ -3455,7 +3454,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "UpgradePending", exutil.Ok, []string{"sub", "sub-21126", "-n", ns, "-o=jsonpath={.status.state}"}).Check(oc)
 		// the InstallPlan should not approved
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "false", exutil.Ok, []string{"installplan", sub.GetIP(oc), "-n", ns, "-o=jsonpath={.spec.approved}"}).Check(oc)
-		// should no etcdoperator.v0.9.4 CSV found
+		// should no learn-operator.v0.0.3 CSV found
 		msg, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "learn-operator.v0.0.3", "-n", ns).Output()
 		if !strings.Contains(msg, "not found") {
 			e2e.Failf("still found the learn-operator.v0.0.3 in Namespace:%s, msg:%v", ns, msg)

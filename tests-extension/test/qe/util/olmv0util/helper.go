@@ -12,6 +12,7 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/blang/semver/v4"
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 	"golang.org/x/oauth2"
@@ -1014,4 +1015,8 @@ func RemoveNamespace(namespace string, oc *exutil.CLI) {
 		_, err := oc.WithoutNamespace().AsAdmin().Run("delete").Args("ns", namespace).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 	}
+}
+
+func NextY(v semver.Version) semver.Version {
+	return semver.Version{Major: v.Major, Minor: v.Minor + 1} // Sets Y=Y+1
 }
