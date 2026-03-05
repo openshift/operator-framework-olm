@@ -2665,7 +2665,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			DisplayName: "OLM QE Operators",
 			Publisher:   "Jian",
 			SourceType:  "grpc",
-			Address:     "quay.io/olmqe/etcd-index:33450-fips",
+			Address:     "quay.io/olmqe/learn-operator-index:v25-33450",
 			Template:    csImageTemplate,
 		}
 		dr := make(olmv0util.DescriberResrouce)
@@ -2675,7 +2675,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 		defer cs.Delete(itName, dr)
 		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "READY", exutil.Ok, []string{"catsrc", cs.Name, "-n", "openshift-marketplace", "-o=jsonpath={.status..lastObservedState}"}).Check(oc)
 
-		g.By("2) Subscribe to the etcd operator with Manual approval")
+		g.By("2) Subscribe to the learn-operator.v0.0.2 with Manual approval")
 		oc.SetupProject()
 		ogSingleTemplate := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 
@@ -2694,34 +2694,33 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 optional should", func() {
 			CatalogSourceNamespace: "openshift-marketplace",
 			Channel:                "alpha",
 			IpApproval:             "Manual",
-			OperatorPackage:        "etcd",
-			StartingCSV:            "etcdoperator.v0.9.2",
+			OperatorPackage:        "learn",
+			StartingCSV:            "learn-operator.v0.0.2",
 			SingleNamespace:        true,
 			Template:               subTemplate,
 		}
 		defer sub.Delete(itName, dr)
 		defer sub.DeleteCSV(itName, dr)
 		sub.Create(oc, itName, dr)
-		g.By("3) Apprrove the etcdoperator.v0.9.2, it should be in Complete state")
-		sub.ApproveSpecificIP(oc, itName, dr, "etcdoperator.v0.9.2", "Complete")
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.2", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+		g.By("3) Apprrove the learn-operator.v0.0.2, it should be in Complete state")
+		sub.ApproveSpecificIP(oc, itName, dr, "learn-operator.v0.0.2", "Complete")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "learn-operator.v0.0.2", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
 
-		g.By("4) Apprrove the etcdoperator.v0.9.4, it should be in Failed state")
-		sub.ApproveSpecificIP(oc, itName, dr, "etcdoperator.v0.9.4", "Failed")
+		g.By("4) Apprrove the learn-operator.v0.0.3, it should be in Failed state")
+		sub.ApproveSpecificIP(oc, itName, dr, "learn-operator.v0.0.3", "Failed")
 
-		g.By("5) The etcdoperator.v0.9.4 CSV should be in Pending status")
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Pending", exutil.Ok, []string{"csv", "etcdoperator.v0.9.4", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
+		g.By("5) The learn-operator.v0.0.3 CSV should be in Pending status")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Pending", exutil.Ok, []string{"csv", "learn-operator.v0.0.3", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).Check(oc)
 
-		g.By("6) The SA should be owned by the etcdoperator.v0.9.2")
+		g.By("6) The SA should be owned by the learn-operator.v0.0.2")
 		err := wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, 10*time.Second, false, func(ctx context.Context) (bool, error) {
-			saOwner := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "sa", "etcd-operator", "-n", sub.Namespace, "-o=jsonpath={.metadata.ownerReferences[0].name}")
-			if strings.Compare(saOwner, "etcdoperator.v0.9.2") != 0 {
+			saOwner := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "sa", "learn-operator", "-n", sub.Namespace, "-o=jsonpath={.metadata.ownerReferences[0].name}")
+			if strings.Compare(saOwner, "learn-operator.v0.0.2") != 0 {
 				return false, nil
 			}
 			return true, nil
 		})
-		exutil.AssertWaitPollNoErr(err, "sa etcd-operator owner is not etcdoperator.v0.9.2")
-
+		exutil.AssertWaitPollNoErr(err, "sa learn-operator owner is not learn-operator.v0.0.2")
 	})
 
 	// Polarion ID: 37260
