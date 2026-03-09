@@ -143,18 +143,16 @@ spec:
         - port: 8443
           protocol: TCP
   egress:
+    - {}
     - ports:
-        - port: 6443
+        - port: 53
           protocol: TCP
-    - ports:
-        - port: dns-tcp
-          protocol: TCP
-        - port: dns
+        - port: 53
           protocol: UDP
-      to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: openshift-dns
+        - port: 5353
+          protocol: TCP
+        - port: 5353
+          protocol: UDP
   policyTypes:
     - Ingress
     - Egress
@@ -444,18 +442,16 @@ spec:
         - podSelector:
             matchLabels:
               app: catalog-operator
+    - {}
     - ports:
-        - port: 6443
+        - port: 53
           protocol: TCP
-    - ports:
-        - port: dns-tcp
-          protocol: TCP
-        - port: dns
+        - port: 53
           protocol: UDP
-      to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: openshift-dns
+        - port: 5353
+          protocol: TCP
+        - port: 5353
+          protocol: UDP
   policyTypes:
     - Egress
     - Ingress
