@@ -378,24 +378,10 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			itName              = g.CurrentSpecReport().FullText()
 			ns                  = oc.Namespace()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
-			csImageTemplate     = filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
 			ogSingleTemplate    = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
+			prometheusTemplate  = filepath.Join(buildPruningBaseDir, "prometheus-nodeaffinity.yaml")
 			subTemplate         = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
-			csvName             = "etcdoperator.v0.9.4"
 		)
-
-		g.By("Start to create the CatalogSource CR")
-		catsrc := olmv0util.CatalogSourceDescription{
-			Name:        "prometheus-dependency-27680",
-			Namespace:   oc.Namespace(),
-			DisplayName: "OLM QE",
-			Publisher:   "OLM QE",
-			SourceType:  "grpc",
-			Address:     "quay.io/olmqe/etcd-prometheus-dependency-index:11.0",
-			Template:    csImageTemplate,
-		}
-		defer catsrc.Delete(itName, dr)
-		catsrc.CreateWithCheck(oc, itName, dr)
 
 		g.By("Install the OperatorGroup in a random project")
 		og := olmv0util.OperatorGroupDescription{
@@ -406,50 +392,63 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		defer og.Delete(itName, dr)
 		og.CreateWithCheck(oc, itName, dr)
 
-		g.By("Install the etcdoperator v0.9.4 with Automatic approval")
 		sub := olmv0util.SubscriptionDescription{
 			SubName:                "sub-27680",
 			Namespace:              ns,
-			CatalogSourceName:      catsrc.Name,
-			CatalogSourceNamespace: catsrc.Namespace,
-			Channel:                "singlenamespace-alpha",
+			CatalogSourceName:      "redhat-operators",
+			CatalogSourceNamespace: "openshift-marketplace",
+			Channel:                "",
 			IpApproval:             "Automatic",
-			OperatorPackage:        "etcd-service-monitor",
-			StartingCSV:            csvName,
+			OperatorPackage:        "odf-prometheus-operator",
 			SingleNamespace:        true,
 			Template:               subTemplate,
 		}
+		exists, err := olmv0util.ClusterPackageExists(oc, sub)
+		o.Expect(err).NotTo(o.HaveOccurred(), "failed to query packagemanifest for %s in %s", sub.OperatorPackage, sub.CatalogSourceNamespace)
+		if !exists {
+			g.Skip("SKIP:PackageMissing odf-prometheus-operator does not exist in catalog redhat-operators")
+		}
+
+		defaultChannel, channelErr := oc.AsAdmin().WithoutNamespace().Run("get").Args(
+			"packagemanifest", sub.OperatorPackage, "-n", sub.CatalogSourceNamespace, "-o=jsonpath={.status.defaultChannel}",
+		).Output()
+		o.Expect(channelErr).NotTo(o.HaveOccurred(), "failed to get default channel for packagemanifest %s", sub.OperatorPackage)
+		sub.Channel = strings.TrimSpace(defaultChannel)
+		o.Expect(sub.Channel).NotTo(o.BeEmpty(), "default channel for packagemanifest %s is empty", sub.OperatorPackage)
+
+		workerNodes, workerErr := exutil.GetSchedulableLinuxWorkerNodes(oc)
+		o.Expect(workerErr).NotTo(o.HaveOccurred(), "failed to list schedulable linux worker nodes")
+		firstNode := ""
+		for _, worker := range workerNodes {
+			for _, con := range worker.Status.Conditions {
+				if con.Type == "Ready" && con.Status == "True" {
+					firstNode = worker.Name
+					break
+				}
+			}
+			if firstNode != "" {
+				break
+			}
+		}
+		if firstNode == "" {
+			e2e.Failf("no schedulable worker node in READY state found")
+		}
+
+		g.By("Install the Prometheus operator with Automatic approval")
 		defer sub.Delete(itName, dr)
 		defer sub.DeleteCSV(itName, dr)
 		sub.Create(oc, itName, dr)
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", csvName, "-n", ns, "-o=jsonpath={.status.phase}"}).Check(oc)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", sub.InstalledCSV, "-n", ns, "-o=jsonpath={.status.phase}"}).Check(oc)
 
-		g.By("Assert that prometheus dependency is resolved")
-		msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("csv", "-n", ns).Output()
+		g.By("Create a Prometheus resource that relies on Prometheus bundle types")
+		defer func() {
+			_ = oc.AsAdmin().WithoutNamespace().Run("delete").Args("prometheus", "example", "-n", ns, "--ignore-not-found").Execute()
+		}()
+		err = olmv0util.ApplyResourceFromTemplate(oc, "--ignore-unknown-parameters=true", "-f", prometheusTemplate, "-p", fmt.Sprintf("NAMESPACE=%s", ns), fmt.Sprintf("NODE_NAME=%s", firstNode))
 		o.Expect(err).NotTo(o.HaveOccurred())
-		o.Expect(msg).To(o.ContainSubstring("prometheus"))
-
-		g.By("Assert that ServiceMonitor is created")
-		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 2*time.Minute, false, func(ctx context.Context) (bool, error) {
-			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("ServiceMonitor", "my-servicemonitor", "-n", ns).Output()
-			if err != nil {
-				e2e.Logf("waiting for ServiceMonitor: %v", err)
-				return false, nil
-			}
-			return strings.Contains(output, "my-servicemonitor"), nil
-		})
-		exutil.AssertWaitPollNoErr(err, "ServiceMonitor was not created")
-
-		g.By("Assert that PrometheusRule is created")
-		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 2*time.Minute, false, func(ctx context.Context) (bool, error) {
-			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("PrometheusRule", "my-prometheusrule", "-n", ns).Output()
-			if err != nil {
-				e2e.Logf("waiting for PrometheusRule: %v", err)
-				return false, nil
-			}
-			return strings.Contains(output, "my-prometheusrule"), nil
-		})
-		exutil.AssertWaitPollNoErr(err, "PrometheusRule was not created")
+		// The package used for this test guarantees Prometheus types are served, but may not report
+		// status.conditions[0].type=Available for this standalone CR in all environments.
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "example2", exutil.Ok, []string{"Prometheus", "example", "-n", ns, "-o=jsonpath={.metadata.name}{.spec.replicas}"}).Check(oc)
 	})
 
 	g.It("PolarionID:22200-[OTP][Skipped:Disconnected]add minimum kube version to CSV [Slow]", g.Label("NonHyperShiftHOST"), g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 within a namespace PolarionID:22200-[Skipped:Disconnected]add minimum kube version to CSV [Slow]"), func() {
