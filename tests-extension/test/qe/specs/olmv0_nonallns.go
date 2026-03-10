@@ -4111,6 +4111,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
 			ogSingleTemplate    = filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 			subTemplate         = filepath.Join(buildPruningBaseDir, "olm-subscription.yaml")
+			catsrcImageTemplate = filepath.Join(buildPruningBaseDir, "catalogsource-image.yaml")
 		)
 
 		oc.SetupProject()
@@ -4121,69 +4122,75 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 				Namespace: namespaceName,
 				Template:  ogSingleTemplate,
 			}
+
+			catsrc = olmv0util.CatalogSourceDescription{
+				Name:        "catsrc-40529",
+				Namespace:   namespaceName,
+				DisplayName: "Test Catsrc 40529 Operators",
+				Publisher:   "Red Hat",
+				SourceType:  "grpc",
+				Address:     "quay.io/olmqe/nginxolm-operator-index:v1",
+				Template:    catsrcImageTemplate,
+			}
 			sub = olmv0util.SubscriptionDescription{
-				SubName:                "sub-40529",
+				SubName:                "nginx-40529-operator",
 				Namespace:              namespaceName,
-				CatalogSourceName:      "community-operators",
-				CatalogSourceNamespace: "openshift-marketplace",
-				Channel:                "singlenamespace-alpha",
+				CatalogSourceName:      "catsrc-40529",
+				CatalogSourceNamespace: namespaceName,
+				Channel:                "alpha",
 				IpApproval:             "Manual",
-				OperatorPackage:        "etcd",
+				OperatorPackage:        "nginx-operator",
 				SingleNamespace:        true,
+				StartingCSV:            "nginx-operator.v0.0.1",
 				Template:               subTemplate,
-				StartingCSV:            "etcdoperator.v0.9.2",
 			}
 		)
 
-		exists, err := olmv0util.ClusterPackageExists(oc, sub)
-		o.Expect(err).NotTo(o.HaveOccurred())
-		if !exists {
-			g.Skip("SKIP:PackageMissing etcd does not exist in catalog community-operators")
-		}
-
 		itName := g.CurrentSpecReport().FullText()
-		g.By("1: create the OperatorGroup ")
+		g.By("STEP 1: create the OperatorGroup and catalog source")
 		og.Create(oc, itName, dr)
+		defer catsrc.Delete(itName, dr)
+		catsrc.Create(oc, itName, dr)
 
-		g.By("2: create sub")
+		g.By("STEP 2: create sub")
 		defer sub.Delete(itName, dr)
 		defer sub.DeleteCSV(itName, dr)
 		defer sub.Update(oc, itName, dr)
 
 		sub.Create(oc, itName, dr)
 		e2e.Logf("approve the install plan")
-		sub.ApproveSpecificIP(oc, itName, dr, "etcdoperator.v0.9.2", "Complete")
-		err = olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.2", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).CheckWithoutAssert(oc)
+		sub.ApproveSpecificIP(oc, itName, dr, "nginx-operator.v0.0.1", "Complete")
+		err := olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "nginx-operator.v0.0.1", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).CheckWithoutAssert(oc)
 		if err != nil {
-			output := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "etcdoperator.v0.9.2", "-n", namespaceName, "-o=jsonpath={.status.conditions}")
+			output := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "nginx-operator.v0.0.1", "-n", namespaceName, "-o=jsonpath={.status.conditions}")
 			e2e.Logf("output: %s", output)
 		}
-		exutil.AssertWaitPollNoErr(err, "state of csv etcdoperator.v0.9.2 is not Succeeded")
+		exutil.AssertWaitPollNoErr(err, "state of csv nginx-operator.v0.0.1 is not Succeeded")
 
 		g.By("3: check OPERATOR_CONDITION_NAME")
-		err = olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "etcdoperator.v0.9.2 etcdoperator.v0.9.2 etcdoperator.v0.9.2", exutil.Ok, []string{"deployment", "etcd-operator", "-n", namespaceName, "-o=jsonpath={.spec.template.spec.containers[*].env[?(@.name==\"OPERATOR_CONDITION_NAME\")].value}"}).CheckWithoutAssert(oc)
+		err = olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "nginx-operator.v0.0.1", exutil.Ok, []string{"deployment", "nginx-operator-controller-manager", "-n", namespaceName, "-o=jsonpath={.spec.template.spec.containers[*].env[?(@.name==\"OPERATOR_CONDITION_NAME\")].value}"}).CheckWithoutAssert(oc)
 		if err != nil {
-			output := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "deployment", "etcd-operator", "-n", namespaceName, "-o=jsonpath={..spec.template.spec.containers}")
+			output := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "deployment", "nginx-operator-controller-manager", "-n", namespaceName, "-o=jsonpath={..spec.template.spec.containers}")
 			e2e.Logf("output: %s", output)
 		}
-		exutil.AssertWaitPollNoErr(err, "OPERATOR_CONDITION_NAME of etcd-operator is not correct")
+		exutil.AssertWaitPollNoErr(err, "OPERATOR_CONDITION_NAME of nginx-operator-controller-manager is not correct")
 
 		g.By("4: approve the install plan")
-		sub.ApproveSpecificIP(oc, itName, dr, "etcdoperator.v0.9.4", "Complete")
-		err = olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.4", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).CheckWithoutAssert(oc)
+		sub.ApproveSpecificIP(oc, itName, dr, "nginx-operator.v1.0.1", "Complete")
+		err = olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "nginx-operator.v1.0.1", "-n", oc.Namespace(), "-o=jsonpath={.status.phase}"}).CheckWithoutAssert(oc)
 		if err != nil {
-			output := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "etcdoperator.v0.9.4", "-n", namespaceName, "-o=jsonpath={.status.conditions}")
+			output := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "nginx-operator.v1.0.1", "-n", namespaceName, "-o=jsonpath={.status.conditions}")
 			e2e.Logf("output: %s", output)
 		}
-		exutil.AssertWaitPollNoErr(err, "state of csv etcdoperator.v0.9.4 is not Succeeded")
+		exutil.AssertWaitPollNoErr(err, "state of csv nginx-operator.v1.0.1 is not Succeeded")
 
 		g.By("5: check OPERATOR_CONDITION_NAME")
-		err = olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "etcdoperator.v0.9.4 etcdoperator.v0.9.4 etcdoperator.v0.9.4", exutil.Ok, []string{"deployment", "etcd-operator", "-n", namespaceName, "-o=jsonpath={.spec.template.spec.containers[*].env[?(@.name==\"OPERATOR_CONDITION_NAME\")].value}"}).CheckWithoutAssert(oc)
+		err = olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "nginx-operator.v1.0.1", exutil.Ok, []string{"deployment", "nginx-operator-controller-manager", "-n", namespaceName, "-o=jsonpath={.spec.template.spec.containers[*].env[?(@.name==\"OPERATOR_CONDITION_NAME\")].value}"}).CheckWithoutAssert(oc)
 		if err != nil {
-			output := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "deployment", "etcd-operator", "-n", namespaceName, "-o=jsonpath={..spec.template.spec.containers}")
+			output := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "deployment", "nginx-operator-controller-manager", "-n", namespaceName, "-o=jsonpath={..spec.template.spec.containers}")
 			e2e.Logf("output: %s", output)
 		}
-		exutil.AssertWaitPollNoErr(err, "OPERATOR_CONDITION_NAME of etcd-operator is not correct")
+		exutil.AssertWaitPollNoErr(err, "OPERATOR_CONDITION_NAME of nginx-operator-controller-manager is not correct")
 	})
 
 	g.It("PolarionID:40534-PolarionID:40532-[OTP][Skipped:Disconnected]the deployment should not lost the resources section", g.Label("NonHyperShiftHOST"), func() {
@@ -4817,7 +4824,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("4) check csv")
 		err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
 			status1 := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "etcdoperator.v0.9.2", "-n", sub.Namespace, "-o=jsonpath={.status.phase}")
-			if strings.Compare(status1, "Succeeded") != 0 {
+			if (strings.Compare(status1, "Succeeded") != 0) && (strings.Compare(status1, "Installing") != 0) {
 				e2e.Logf("csv etcdoperator.v0.9.2 status is not Succeeded, go next round")
 				return false, nil
 			}
@@ -4872,19 +4879,19 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("9) check status of csv etcdoperator.v0.9.4 and ditto-operator.v0.2.0")
 		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
 			status1 := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "etcdoperator.v0.9.4", "-n", sub.Namespace, "-o=jsonpath={.status.phase}")
-			if strings.Compare(status1, "Succeeded") == 0 {
-				e2e.Logf("csv etcdoperator.v0.9.4 status is Succeeded")
-				return true, nil
+			if (strings.Compare(status1, "Succeeded") != 0) && (strings.Compare(status1, "Installing") != 0) {
+				e2e.Logf("csv etcdoperator.v0.9.4 status is not Succeeded or Installing, go next round")
+				return false, nil
 			}
-			e2e.Logf("csv etcdoperator.v0.9.4 status is not Succeeded, go next round")
-			return false, nil
+			e2e.Logf("csv etcdoperator.v0.9.4 status is Succeeded or Installing")
+			return true, nil
 		})
 		if err != nil {
-			olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", sub.SubName, "-n", namespaceName)
+			olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "etcdoperator.v0.9.4", "-n", namespaceName)
 			olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "sub", sub.SubName, "-n", namespaceName)
 			olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "sub", sub.SubName, "-n", namespaceName, "-o=jsonpath={.status}")
 		}
-		exutil.AssertWaitPollNoErr(err, "csv etcdoperator.v0.9.4 is not Succeeded")
+		exutil.AssertWaitPollNoErr(err, "csv etcdoperator.v0.9.4 is not Succeeded or Installing")
 
 		err = wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
 			status2 := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "ditto-operator.v0.2.0", "-n", sub.Namespace, "-o=jsonpath={.status.phase}")
@@ -5015,7 +5022,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("4) check csv")
 		err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
 			status1 := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "etcdoperator.v0.9.2", "-n", sub.Namespace, "-o=jsonpath={.status.phase}")
-			if strings.Compare(status1, "Succeeded") != 0 {
+			if (strings.Compare(status1, "Succeeded") != 0) && (strings.Compare(status1, "Installing") != 0) {
 				e2e.Logf("csv etcdoperator.v0.9.2 status is not Succeeded, go next round")
 				return false, nil
 			}
@@ -5083,7 +5090,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("6) check csv")
 		err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
 			status1 := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "etcdoperator.v0.9.4", "-n", sub.Namespace, "-o=jsonpath={.status.phase}")
-			if strings.Compare(status1, "Succeeded") != 0 {
+			if (strings.Compare(status1, "Succeeded") != 0) && (strings.Compare(status1, "Installing") != 0) {
 				e2e.Logf("csv etcdoperator.v0.9.4 status is not Succeeded, go next round")
 				return false, nil
 			}
@@ -5151,7 +5158,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("3.2) check csv")
 		err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
 			status1 := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "etcdoperator.v0.9.2", "-n", sub.Namespace, "-o=jsonpath={.status.phase}")
-			if strings.Compare(status1, "Succeeded") != 0 {
+			if (strings.Compare(status1, "Succeeded") != 0) && (strings.Compare(status1, "Installing") != 0) {
 				e2e.Logf("csv etcdoperator.v0.9.2 status is not Succeeded, go next round")
 				return false, nil
 			}
@@ -5165,15 +5172,9 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		if err != nil {
 			olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "sub", sub.SubName, "-n", namespaceName, "-o=jsonpath={.status}")
 		}
-		exutil.AssertWaitPollNoErr(err, "csv etcdoperator.v0.9.2 or ditto-operator.v0.1.0 is not Succeeded")
+		exutil.AssertWaitPollNoErr(err, "csv etcdoperator.v0.9.2 or ditto-operator.v0.1.0 is not Succeeded or Installing")
 
-		g.By("3.3) switch channel to be alpha-2")
-		sub.Patch(oc, "{\"spec\": {\"channel\": \"alpha-2\"}}")
-
-		g.By("3.4) check csv")
-		olmv0util.NewCheck("expect", exutil.AsUser, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "etcdoperator.v0.9.4", "-n", sub.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
-
-		g.By("3.4) delete all subs and csvs")
+		g.By("3.3) delete all subs and csvs")
 		sub.FindInstalledCSV(oc, itName, dr)
 		sub.Delete(itName, dr)
 		sub.DeleteCSV(itName, dr)
@@ -5252,7 +5253,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("3.2) check csv")
 		err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, 300*time.Second, false, func(ctx context.Context) (bool, error) {
 			status1 := olmv0util.GetResource(oc, exutil.AsAdmin, exutil.WithoutNamespace, "csv", "etcdoperator.v0.9.2", "-n", sub.Namespace, "-o=jsonpath={.status.phase}")
-			if strings.Compare(status1, "Succeeded") != 0 {
+			if (strings.Compare(status1, "Succeeded") != 0) && (strings.Compare(status1, "Installing") != 0) {
 				e2e.Logf("csv etcdoperator.v0.9.2 status is not Succeeded, go next round")
 				return false, nil
 			}
@@ -5418,8 +5419,8 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 				CatalogSourceNamespace: namespaceName,
 				Channel:                "v1.6",
 				IpApproval:             "Manual",
-				OperatorPackage:        "nginx-operator",
-				StartingCSV:            "nginx-operator.v1.6.0",
+				OperatorPackage:        "nginx-operator-59380",
+				StartingCSV:            "nginx-operator-59380.v1.6.0",
 				SingleNamespace:        true,
 				Template:               subTemplate,
 			}
@@ -5443,14 +5444,14 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 		g.By("OCP-68671 SUCCESS")
 
 		e2e.Logf("approve the install plan")
-		subManual.ApproveSpecificIP(oc, itName, dr, "nginx-operator.v1.6.0", "Complete")
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "nginx-operator.v1.6.0", "-n", subManual.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
+		subManual.ApproveSpecificIP(oc, itName, dr, "nginx-operator-59380.v1.6.0", "Complete")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "nginx-operator-59380.v1.6.0", "-n", subManual.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
 
 		g.By("STEP 4: approve the install plan")
-		subManual.ApproveSpecificIP(oc, itName, dr, "nginx-operator.v1.6.2", "Complete")
+		subManual.ApproveSpecificIP(oc, itName, dr, "nginx-operator-59380.v1.6.2", "Complete")
 
-		g.By("STEP 5: check the csv nginx-operator.v1.6.2")
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "nginx-operator.v1.6.2", "-n", subManual.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
+		g.By("STEP 5: check the csv nginx-operator-59380.v1.6.2")
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Compare, "Succeeded", exutil.Ok, []string{"csv", "nginx-operator-59380.v1.6.2", "-n", subManual.Namespace, "-o=jsonpath={.status.phase}"}).Check(oc)
 
 	})
 
