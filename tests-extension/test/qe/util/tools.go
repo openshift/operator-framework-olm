@@ -20,36 +20,73 @@ import (
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
 
+// duplicateFileToPathSafe copies a file without using Gomega (safe for initialization phase).
+// Returns error instead of using Expect, suitable for calling in var initialization.
+func duplicateFileToPathSafe(srcPath, destPath string) error {
+	srcPath = filepath.Clean(srcPath)
+	destPath = filepath.Clean(destPath)
+
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return fmt.Errorf("failed to open source file: %w", err)
+	}
+	defer func() { _ = srcFile.Close() }()
+
+	destFile, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file: %w", err)
+	}
+	defer func() { _ = destFile.Close() }()
+
+	if _, err := io.Copy(destFile, srcFile); err != nil {
+		return fmt.Errorf("failed to copy file: %w", err)
+	}
+
+	return destFile.Sync()
+}
+
+// DuplicateFileToTemp creates a temporary duplicate of a file with a specified prefix
+// Safe version for initialization phase (returns error instead of using Gomega)
+func duplicateFileToTempSafe(srcPath, destPrefix string) (string, error) {
+	if srcPath == "" {
+		return "", nil
+	}
+
+	destFile, err := os.CreateTemp(os.TempDir(), destPrefix)
+	if err != nil {
+		return "", fmt.Errorf("failed to create temporary file: %w", err)
+	}
+	destPath := destFile.Name()
+	_ = destFile.Close()
+
+	if err := duplicateFileToPathSafe(srcPath, destPath); err != nil {
+		_ = os.Remove(destPath) // best-effort cleanup on error
+		return "", err
+	}
+
+	return destPath, nil
+}
+
+// duplicateFileToTempOrEmpty creates a temporary duplicate of a file, returns empty string on error.
+// Logs warning on failure. Safe for initialization phase (doesn't use Gomega).
+func duplicateFileToTempOrEmpty(srcPath, destPrefix string) string {
+	tempPath, err := duplicateFileToTempSafe(srcPath, destPrefix)
+	if err != nil {
+		e2e.Logf("Warning: failed to create temporary admin config: %v", err)
+		return ""
+	}
+	return tempPath
+}
+
 // DuplicateFileToPath copies a file from source path to destination path with error handling
 // Parameters:
 //   - srcPath: path to the source file to copy
 //   - destPath: path where the file will be copied (created with mode 0666 if not exists, truncated if exists)
+//
+// Uses Gomega assertions - only call in test execution phase (It, BeforeEach, etc.)
 func DuplicateFileToPath(srcPath string, destPath string) {
-	// Validate and clean paths to prevent path traversal attacks
-	srcPath = filepath.Clean(srcPath)
-	destPath = filepath.Clean(destPath)
-
-	// Ensure source file exists and is readable
-	srcInfo, err := os.Stat(srcPath)
-	o.Expect(err).NotTo(o.HaveOccurred(), "Source file does not exist or is not accessible")
-	o.Expect(srcInfo.Mode().IsRegular()).To(o.BeTrue(), "Source path is not a regular file")
-
-	srcFile, err := os.Open(srcPath)
-	o.Expect(err).NotTo(o.HaveOccurred())
-	defer func() {
-		o.Expect(srcFile.Close()).NotTo(o.HaveOccurred())
-	}()
-
-	// Create destination file with restrictive permissions (0644)
-	destFile, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	o.Expect(err).NotTo(o.HaveOccurred())
-	defer func() {
-		o.Expect(destFile.Close()).NotTo(o.HaveOccurred())
-	}()
-
-	_, err = io.Copy(destFile, srcFile)
-	o.Expect(err).NotTo(o.HaveOccurred())
-	o.Expect(destFile.Sync()).NotTo(o.HaveOccurred())
+	err := duplicateFileToPathSafe(srcPath, destPath)
+	o.Expect(err).NotTo(o.HaveOccurred(), "Failed to duplicate file from %s to %s", srcPath, destPath)
 }
 
 // DuplicateFileToTemp creates a temporary duplicate of a file with a specified prefix
@@ -59,13 +96,11 @@ func DuplicateFileToPath(srcPath string, destPath string) {
 //
 // Returns:
 //   - string: path to the created temporary file
+//
+// Uses Gomega assertions - only call in test execution phase (It, BeforeEach, etc.)
 func DuplicateFileToTemp(srcPath string, destPrefix string) string {
-	destFile, err := os.CreateTemp(os.TempDir(), destPrefix)
-	o.Expect(err).NotTo(o.HaveOccurred(), "Failed to create temporary file")
-	o.Expect(destFile.Close()).NotTo(o.HaveOccurred(), "Failed to close temporary file")
-
-	destPath := destFile.Name()
-	DuplicateFileToPath(srcPath, destPath)
+	destPath, err := duplicateFileToTempSafe(srcPath, destPrefix)
+	o.Expect(err).NotTo(o.HaveOccurred(), "Failed to duplicate file %s to temp", srcPath)
 	return destPath
 }
 
