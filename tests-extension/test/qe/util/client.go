@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	g "github.com/onsi/ginkgo/v2"
@@ -54,6 +55,12 @@ import (
 	e2edebug "k8s.io/kubernetes/test/e2e/framework/debug"
 )
 
+var (
+	// Global cache for admin context name to avoid repeated parsing across all test suites
+	globalAdmContextName string
+	globalAdmContextOnce sync.Once
+)
+
 // CLI provides function to call the OpenShift CLI and Kubernetes and OpenShift
 // clients.
 type CLI struct {
@@ -62,6 +69,9 @@ type CLI struct {
 	configPath       string
 	guestConfigPath  string
 	adminConfigPath  string
+	tempAdmConfPath  string // Temporary admin config for this test to avoid concurrent access
+	admContextName   string // Cached admin context name (parsed once, lazy-loaded in AsAdmin)
+	isUseAdminCxt    bool
 	username         string
 	globalArgs       []string
 	commandArgs      []string
@@ -105,6 +115,8 @@ func NewCLI(project, adminConfigPath string) *CLI {
 	client.execPath = "oc"
 	client.showInfo = true
 	client.adminConfigPath = adminConfigPath
+	// Get cached admin context name (parsed only once globally for efficiency)
+	client.admContextName = getAdminContextNameCached(client.adminConfigPath)
 
 	g.BeforeEach(client.SetupProject)
 
@@ -128,6 +140,10 @@ func NewCLIWithoutNamespace(project string) *CLI {
 	client.execPath = "oc"
 	client.adminConfigPath = KubeConfigPath()
 	client.showInfo = true
+	// Get cached admin context name (parsed only once globally for efficiency)
+	client.admContextName = getAdminContextNameCached(client.adminConfigPath)
+	client.tempAdmConfPath = duplicateFileToTempOrEmpty(client.adminConfigPath, "admin-config-")
+
 	return client
 }
 
@@ -171,9 +187,20 @@ func (c *CLI) Username() string {
 }
 
 // AsAdmin changes current config file path to the admin config.
+// If a temporary admin config was created for this test (to avoid concurrent access),
+// it will be used instead of the shared admin config.
+// Lazy-loads admin context name on first call for automatic --context specification.
 func (c *CLI) AsAdmin() *CLI {
 	nc := *c
-	nc.configPath = c.adminConfigPath
+	// Use temporary admin config if available (created in SetupProject for concurrent safety)
+	if c.tempAdmConfPath != "" {
+		nc.configPath = c.tempAdmConfPath
+	} else {
+		nc.configPath = c.adminConfigPath
+	}
+
+	nc.isUseAdminCxt = true
+
 	return &nc
 }
 
@@ -286,6 +313,9 @@ func (c *CLI) GetGuestKubeconf() string {
 // SetAdminKubeconf instructs the admin cluster kubeconf file is set
 func (c *CLI) SetAdminKubeconf(adminKubeconf string) *CLI {
 	c.adminConfigPath = adminKubeconf
+	// Refresh derived fields to match new admin kubeconfig
+	c.admContextName = getAdminContextNameCached(adminKubeconf)
+	c.tempAdmConfPath = duplicateFileToTempOrEmpty(adminKubeconf, "admin-config-")
 	return c
 }
 
@@ -330,6 +360,10 @@ func (c *CLI) appendGuestKubeconfig(globalArgs []string) []string {
 func (c *CLI) SetupProject() {
 	newNamespace := names.SimpleNameGenerator.GenerateName(fmt.Sprintf("e2e-test-%s-", c.kubeFramework.BaseName))
 	c.SetNamespace(newNamespace)
+
+	if c.tempAdmConfPath == "" {
+		c.tempAdmConfPath = duplicateFileToTempOrEmpty(c.adminConfigPath, "admin-config-")
+	}
 
 	// The user.openshift.io and oauth.openshift.io APIs are unavailable on external OIDC clusters by design.
 	// We will create and switch to a temporary user for non-external-oidc clusters only.
@@ -518,10 +552,19 @@ func (c *CLI) TeardownProject() {
 		}
 	}
 
+	// Use AdminDynamicClient to delete resources (needs tempAdmConfPath)
 	dynamicClient := c.AdminDynamicClient()
 	for _, resource := range c.resourcesToDelete {
 		err := dynamicClient.Resource(resource.Resource).Namespace(resource.Namespace).Delete(context.Background(), resource.Name, metav1.DeleteOptions{})
 		e2e.Logf("Deleted %v, err: %v", resource, err)
+	}
+
+	// Clean up temporary admin config after all admin operations complete
+	if len(c.tempAdmConfPath) > 0 {
+		if err := os.Remove(c.tempAdmConfPath); err != nil {
+			e2e.Logf("Failed to remove temporary admin config file %s: %v", c.tempAdmConfPath, err)
+		}
+		c.tempAdmConfPath = "" // Clear the path after removal
 	}
 }
 
@@ -615,7 +658,12 @@ func (c *CLI) UserConfig() *rest.Config {
 
 // AdminConfig method
 func (c *CLI) AdminConfig() *rest.Config {
-	clientConfig, err := getClientConfig(c.adminConfigPath)
+	// Use temporary admin config if available (for concurrent safety)
+	configPath := c.adminConfigPath
+	if c.tempAdmConfPath != "" {
+		configPath = c.tempAdmConfPath
+	}
+	clientConfig, err := getClientConfig(configPath)
 	if err != nil {
 		FatalErr(err)
 	}
@@ -661,6 +709,9 @@ func (c *CLI) Run(commands ...string) *CLI {
 		verb:            commands[0],
 		kubeFramework:   c.KubeFramework(),
 		adminConfigPath: c.adminConfigPath,
+		tempAdmConfPath: c.tempAdmConfPath,
+		admContextName:  c.admContextName,
+		isUseAdminCxt:   c.isUseAdminCxt,
 		configPath:      c.configPath,
 		showInfo:        c.showInfo,
 		guestConfigPath: c.guestConfigPath,
@@ -671,7 +722,16 @@ func (c *CLI) Run(commands ...string) *CLI {
 		if c.asGuestKubeconf {
 			nc.globalArgs = c.appendGuestKubeconfig(nc.globalArgs)
 		} else {
-			nc.globalArgs = append([]string{fmt.Sprintf("--kubeconfig=%s", c.configPath)}, nc.globalArgs...)
+			// Use configPath if available, fallback to tempAdmConfPath if configPath is empty
+			kubeConfigPath := c.configPath
+			if kubeConfigPath == "" && c.tempAdmConfPath != "" {
+				kubeConfigPath = c.tempAdmConfPath
+			}
+			nc.globalArgs = append([]string{fmt.Sprintf("--kubeconfig=%s", kubeConfigPath)}, nc.globalArgs...)
+			// If admin context is cached (from AsAdmin call), use it explicitly (double insurance)
+			if c.admContextName != "" && c.isUseAdminCxt {
+				nc.globalArgs = append([]string{fmt.Sprintf("--context=%s", c.admContextName)}, nc.globalArgs...)
+			}
 		}
 	}
 	if c.asGuestKubeconf && !c.withoutNamespace {
@@ -1122,4 +1182,51 @@ func (c *CLI) SilentOutput() (string, error) {
 	}
 	FatalErr(fmt.Errorf("unable to execute %q: %v", c.execPath, err))
 	return "", nil
+}
+
+// getAdminContextName reads the kubeconfig file and searches for a context with "admin" in its name.
+// This is used to explicitly specify the admin context in oc commands for concurrent safety.
+// Returns empty string if no admin context is found.
+func getAdminContextName(kubeConfigFile string) string {
+	if kubeConfigFile == "" {
+		return ""
+	}
+
+	kubeConfigBytes, err := os.ReadFile(kubeConfigFile)
+	if err != nil {
+		e2e.Logf("Failed to read kubeconfig for admin context search: %v", err)
+		return ""
+	}
+
+	kubeConfig, err := clientcmd.Load(kubeConfigBytes)
+	if err != nil {
+		e2e.Logf("Failed to parse kubeconfig for admin context search: %v", err)
+		return ""
+	}
+
+	// Search for admin context with exact matching
+	// Common patterns: "admin", "system:admin", "<cluster>/admin"
+	for contextName := range kubeConfig.Contexts {
+		lowerName := strings.ToLower(contextName)
+		// Match exact "admin", "system:admin", or contexts ending with "/admin"
+		if lowerName == "admin" || lowerName == "system:admin" || strings.HasSuffix(lowerName, "/admin") {
+			e2e.Logf("Found admin context: %s", contextName)
+			return contextName
+		}
+	}
+
+	e2e.Logf("No admin context found in kubeconfig")
+	return ""
+}
+
+// getAdminContextNameCached returns the cached admin context name, parsing only once globally.
+// This ensures that across all test suites, the kubeconfig is parsed only once for efficiency.
+func getAdminContextNameCached(kubeConfigFile string) string {
+	globalAdmContextOnce.Do(func() {
+		globalAdmContextName = getAdminContextName(kubeConfigFile)
+		if globalAdmContextName != "" {
+			e2e.Logf("Cached admin context for all test suites: %s", globalAdmContextName)
+		}
+	})
+	return globalAdmContextName
 }
