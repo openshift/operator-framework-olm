@@ -119,6 +119,10 @@ lint: $(GOLANGCI_LINT) #HELP Run golangci linter.
 fix-lint: $(GOLANGCI_LINT) #HELP Fix lint issues
 	$(GOLANGCI_LINT) run --fix
 
+.PHONY: verify-images-json
+verify-images-json: #HELP Verify that 'images' subcommand outputs valid JSON (no log pollution)
+	@./hack/verify-images-json.sh $(TOOLS_BIN_DIR)/olmv0-tests-ext
+
 # Bindata generation
 .PHONY: bindata
 bindata: $(GO_BINDATA)
