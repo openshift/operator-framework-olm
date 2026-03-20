@@ -14,6 +14,8 @@
 // test/qe/testdata/olm/cm-21824-wrong.yaml
 // test/qe/testdata/olm/cm-25644-etcd-csv.yaml
 // test/qe/testdata/olm/cm-csv-etcd.yaml
+// test/qe/testdata/olm/cm-csv-sample-24387-modified.yaml
+// test/qe/testdata/olm/cm-csv-sample-24387.yaml
 // test/qe/testdata/olm/cm-namespaceconfig.yaml
 // test/qe/testdata/olm/cm-template.yaml
 // test/qe/testdata/olm/configmap-ectd-alpha-beta.yaml
@@ -2849,6 +2851,609 @@ func testQeTestdataOlmCmCsvEtcdYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/qe/testdata/olm/cm-csv-etcd.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testQeTestdataOlmCmCsvSample24387ModifiedYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: cm-csv-sample-24387-modified-template
+objects:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: "${NAME}"
+    namespace: "${NAMESPACE}"
+  data:
+    clusterServiceVersions: |
+      - apiVersion: operators.coreos.com/v1alpha1
+        kind: ClusterServiceVersion
+        metadata:
+          annotations:
+            alm-examples: |-
+              [
+                {
+                  "apiVersion": "cache.example.com/v1alpha1",
+                  "kind": "Sample",
+                  "metadata": {
+                    "name": "sample-sample"
+                  },
+                  "spec": null
+                }
+              ]
+            capabilities: Basic Install
+            createdAt: "2026-03-09T09:27:42Z"
+            operators.operatorframework.io/builder: operator-sdk-v1.31.0-ocp
+            operators.operatorframework.io/project_layout: ansible.sdk.operatorframework.io/v1
+          name: sample-operator.v0.0.1
+          namespace: "${NAMESPACE}"
+        spec:
+          apiservicedefinitions: {}
+          customresourcedefinitions:
+            owned:
+            - kind: Sample
+              name: samples.cache.example.com
+              version: v1alpha1
+          description: An operator for QE testing
+          displayName: Sample Operator
+          icon:
+          - base64data: ""
+            mediatype: ""
+          install:
+            spec:
+              clusterPermissions:
+              - rules:
+                - apiGroups:
+                  - ""
+                  resources:
+                  - secrets
+                  - pods
+                  - pods/exec
+                  - pods/log
+                  verbs:
+                  - create
+                  - delete
+                  - get
+                  - list
+                  - patch
+                  - update
+                  - watch
+                - apiGroups:
+                  - apps
+                  resources:
+                  - deployments
+                  - daemonsets
+                  - replicasets
+                  - statefulsets
+                  verbs:
+                  - create
+                  - delete
+                  - get
+                  - list
+                  - patch
+                  - update
+                  - watch
+                - apiGroups:
+                  - cache.example.com
+                  resources:
+                  - samples
+                  - samples/status
+                  - samples/finalizers
+                  verbs:
+                  - create
+                  - delete
+                  - get
+                  - list
+                  - patch
+                  - update
+                  - watch
+                - apiGroups:
+                  - authentication.k8s.io
+                  resources:
+                  - tokenreviews
+                  verbs:
+                  - create
+                - apiGroups:
+                  - authorization.k8s.io
+                  resources:
+                  - subjectaccessreviews
+                  verbs:
+                  - create
+                serviceAccountName: sample-operator-controller-manager
+              deployments:
+              - label:
+                  control-plane: controller-manager
+                name: sample-operator-controller-manager
+                spec:
+                  replicas: 1
+                  selector:
+                    matchLabels:
+                      control-plane: controller-manager
+                  strategy: {}
+                  template:
+                    metadata:
+                      annotations:
+                        kubectl.kubernetes.io/default-container: manager
+                      labels:
+                        control-plane: controller-manager
+                    spec:
+                      containers:
+                      - args:
+                        - --secure-listen-address=0.0.0.0:8443
+                        - --upstream=http://127.0.0.1:8080/
+                        - --logtostderr=true
+                        - --v=0
+                        image: quay.io/olmqe/kube-rbac-proxy@sha256:3789634ce5991a19bc56f3143e739d7887f1e817c0a556a4f51e27b18ab3c5d6
+                        name: kube-rbac-proxy
+                        ports:
+                        - containerPort: 8443
+                          name: https
+                          protocol: TCP
+                        resources:
+                          limits:
+                            cpu: 500m
+                            memory: 128Mi
+                          requests:
+                            cpu: 5m
+                            memory: 64Mi
+                      - args:
+                        - --health-probe-bind-address=:6789
+                        - --metrics-bind-address=127.0.0.1:8080
+                        - --leader-elect
+                        - --leader-election-id=sample-operator
+                        env:
+                        - name: ANSIBLE_GATHERING
+                          value: explicit
+                        image: quay.io/olmqe/sample-operator@sha256:e83e6ae660fe7c94ec61616c622dce6640bf912667ede0c17881e10ad8812be3
+                        livenessProbe:
+                          httpGet:
+                            path: /healthz
+                            port: 6789
+                          initialDelaySeconds: 15
+                          periodSeconds: 20
+                        name: manager
+                        readinessProbe:
+                          httpGet:
+                            path: /readyz
+                            port: 6789
+                          initialDelaySeconds: 5
+                          periodSeconds: 10
+                        resources:
+                          limits:
+                            cpu: 500m
+                            memory: 768Mi
+                          requests:
+                            cpu: 10m
+                            memory: 256Mi
+                        securityContext:
+                          allowPrivilegeEscalation: false
+                      securityContext:
+                        runAsNonRoot: true
+                      serviceAccountName: sample-operator-controller-manager
+                      terminationGracePeriodSeconds: 10
+              permissions:
+              - rules:
+                - apiGroups:
+                  - ""
+                  resources:
+                  - configmaps
+                  verbs:
+                  - get
+                  - list
+                  - watch
+                  - create
+                  - update
+                  - patch
+                  - delete
+                - apiGroups:
+                  - coordination.k8s.io
+                  resources:
+                  - leases
+                  verbs:
+                  - get
+                  - list
+                  - watch
+                  - create
+                  - update
+                  - patch
+                  - delete
+                - apiGroups:
+                  - ""
+                  resources:
+                  - events
+                  verbs:
+                  - create
+                  - patch
+                serviceAccountName: sample-operator-controller-manager
+            strategy: deployment
+          installModes:
+          - supported: true
+            type: OwnNamespace
+          - supported: true
+            type: SingleNamespace
+          - supported: true
+            type: MultiNamespace
+          - supported: true
+            type: AllNamespaces
+          keywords:
+          - sample
+          - nginx
+          links:
+          - name: Sample Operator
+            url: https://sample-operator.domain
+          maintainers:
+          - email: jiazha@redhat.com
+            name: JianZhang
+          maturity: alpha
+          provider:
+            name: Jian
+          version: 0.0.1
+    customResourceDefinitions: |
+      - apiVersion: apiextensions.k8s.io/v1
+        kind: CustomResourceDefinition
+        metadata:
+          name: samples.cache.example.com
+        spec:
+          group: cache.example.com
+          names:
+            kind: Sample
+            listKind: SampleList
+            plural: samples
+            singular: sample
+          scope: Namespaced
+          versions:
+          - name: v1alpha1
+            schema:
+              openAPIV3Schema:
+                description: Sample is the Schema for the samples API
+                properties:
+                  apiVersion:
+                    description: APIVersion defines the versioned schema of this representation of an object.
+                    type: string
+                  kind:
+                    description: Kind is a string value representing the REST resource this object represents.
+                    type: string
+                  metadata:
+                    type: object
+                  spec:
+                    description: Spec defines the desired state of Sample
+                    type: object
+                    properties:
+                      propertyIncludedTest:
+                        type: string
+                    x-kubernetes-preserve-unknown-fields: true
+                  status:
+                    description: Status defines the observed state of Sample
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                type: object
+            served: true
+            storage: true
+            subresources:
+              status: {}
+    packages: |
+      - packageName: sample-operator
+        defaultChannel: alpha
+        channels:
+        - name: alpha
+          currentCSV: sample-operator.v0.0.1
+parameters:
+- name: NAME
+- name: NAMESPACE
+`)
+
+func testQeTestdataOlmCmCsvSample24387ModifiedYamlBytes() ([]byte, error) {
+	return _testQeTestdataOlmCmCsvSample24387ModifiedYaml, nil
+}
+
+func testQeTestdataOlmCmCsvSample24387ModifiedYaml() (*asset, error) {
+	bytes, err := testQeTestdataOlmCmCsvSample24387ModifiedYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/qe/testdata/olm/cm-csv-sample-24387-modified.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testQeTestdataOlmCmCsvSample24387Yaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: cm-csv-sample-24387-template
+objects:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: "${NAME}"
+    namespace: "${NAMESPACE}"
+  data:
+    clusterServiceVersions: |
+      - apiVersion: operators.coreos.com/v1alpha1
+        kind: ClusterServiceVersion
+        metadata:
+          annotations:
+            alm-examples: |-
+              [
+                {
+                  "apiVersion": "cache.example.com/v1alpha1",
+                  "kind": "Sample",
+                  "metadata": {
+                    "name": "sample-sample"
+                  },
+                  "spec": null
+                }
+              ]
+            capabilities: Basic Install
+            createdAt: "2026-03-09T09:27:42Z"
+            operators.operatorframework.io/builder: operator-sdk-v1.31.0-ocp
+            operators.operatorframework.io/project_layout: ansible.sdk.operatorframework.io/v1
+          name: sample-operator.v0.0.1
+          namespace: "${NAMESPACE}"
+        spec:
+          apiservicedefinitions: {}
+          customresourcedefinitions:
+            owned:
+            - kind: Sample
+              name: samples.cache.example.com
+              version: v1alpha1
+          description: An operator for QE testing
+          displayName: Sample Operator
+          icon:
+          - base64data: ""
+            mediatype: ""
+          install:
+            spec:
+              clusterPermissions:
+              - rules:
+                - apiGroups:
+                  - ""
+                  resources:
+                  - secrets
+                  - pods
+                  - pods/exec
+                  - pods/log
+                  verbs:
+                  - create
+                  - delete
+                  - get
+                  - list
+                  - patch
+                  - update
+                  - watch
+                - apiGroups:
+                  - apps
+                  resources:
+                  - deployments
+                  - daemonsets
+                  - replicasets
+                  - statefulsets
+                  verbs:
+                  - create
+                  - delete
+                  - get
+                  - list
+                  - patch
+                  - update
+                  - watch
+                - apiGroups:
+                  - cache.example.com
+                  resources:
+                  - samples
+                  - samples/status
+                  - samples/finalizers
+                  verbs:
+                  - create
+                  - delete
+                  - get
+                  - list
+                  - patch
+                  - update
+                  - watch
+                - apiGroups:
+                  - authentication.k8s.io
+                  resources:
+                  - tokenreviews
+                  verbs:
+                  - create
+                - apiGroups:
+                  - authorization.k8s.io
+                  resources:
+                  - subjectaccessreviews
+                  verbs:
+                  - create
+                serviceAccountName: sample-operator-controller-manager
+              deployments:
+              - label:
+                  control-plane: controller-manager
+                name: sample-operator-controller-manager
+                spec:
+                  replicas: 1
+                  selector:
+                    matchLabels:
+                      control-plane: controller-manager
+                  strategy: {}
+                  template:
+                    metadata:
+                      annotations:
+                        kubectl.kubernetes.io/default-container: manager
+                      labels:
+                        control-plane: controller-manager
+                    spec:
+                      containers:
+                      - args:
+                        - --secure-listen-address=0.0.0.0:8443
+                        - --upstream=http://127.0.0.1:8080/
+                        - --logtostderr=true
+                        - --v=0
+                        image: quay.io/olmqe/kube-rbac-proxy@sha256:3789634ce5991a19bc56f3143e739d7887f1e817c0a556a4f51e27b18ab3c5d6
+                        name: kube-rbac-proxy
+                        ports:
+                        - containerPort: 8443
+                          name: https
+                          protocol: TCP
+                        resources:
+                          limits:
+                            cpu: 500m
+                            memory: 128Mi
+                          requests:
+                            cpu: 5m
+                            memory: 64Mi
+                      - args:
+                        - --health-probe-bind-address=:6789
+                        - --metrics-bind-address=127.0.0.1:8080
+                        - --leader-elect
+                        - --leader-election-id=sample-operator
+                        env:
+                        - name: ANSIBLE_GATHERING
+                          value: explicit
+                        image: quay.io/olmqe/sample-operator@sha256:e83e6ae660fe7c94ec61616c622dce6640bf912667ede0c17881e10ad8812be3
+                        livenessProbe:
+                          httpGet:
+                            path: /healthz
+                            port: 6789
+                          initialDelaySeconds: 15
+                          periodSeconds: 20
+                        name: manager
+                        readinessProbe:
+                          httpGet:
+                            path: /readyz
+                            port: 6789
+                          initialDelaySeconds: 5
+                          periodSeconds: 10
+                        resources:
+                          limits:
+                            cpu: 500m
+                            memory: 768Mi
+                          requests:
+                            cpu: 10m
+                            memory: 256Mi
+                        securityContext:
+                          allowPrivilegeEscalation: false
+                      securityContext:
+                        runAsNonRoot: true
+                      serviceAccountName: sample-operator-controller-manager
+                      terminationGracePeriodSeconds: 10
+              permissions:
+              - rules:
+                - apiGroups:
+                  - ""
+                  resources:
+                  - configmaps
+                  verbs:
+                  - get
+                  - list
+                  - watch
+                  - create
+                  - update
+                  - patch
+                  - delete
+                - apiGroups:
+                  - coordination.k8s.io
+                  resources:
+                  - leases
+                  verbs:
+                  - get
+                  - list
+                  - watch
+                  - create
+                  - update
+                  - patch
+                  - delete
+                - apiGroups:
+                  - ""
+                  resources:
+                  - events
+                  verbs:
+                  - create
+                  - patch
+                serviceAccountName: sample-operator-controller-manager
+            strategy: deployment
+          installModes:
+          - supported: true
+            type: OwnNamespace
+          - supported: true
+            type: SingleNamespace
+          - supported: true
+            type: MultiNamespace
+          - supported: true
+            type: AllNamespaces
+          keywords:
+          - sample
+          - nginx
+          links:
+          - name: Sample Operator
+            url: https://sample-operator.domain
+          maintainers:
+          - email: jiazha@redhat.com
+            name: JianZhang
+          maturity: alpha
+          provider:
+            name: Jian
+          version: 0.0.1
+    customResourceDefinitions: |
+      - apiVersion: apiextensions.k8s.io/v1
+        kind: CustomResourceDefinition
+        metadata:
+          name: samples.cache.example.com
+        spec:
+          group: cache.example.com
+          names:
+            kind: Sample
+            listKind: SampleList
+            plural: samples
+            singular: sample
+          scope: Namespaced
+          versions:
+          - name: v1alpha1
+            schema:
+              openAPIV3Schema:
+                description: Sample is the Schema for the samples API
+                properties:
+                  apiVersion:
+                    description: APIVersion defines the versioned schema of this representation of an object.
+                    type: string
+                  kind:
+                    description: Kind is a string value representing the REST resource this object represents.
+                    type: string
+                  metadata:
+                    type: object
+                  spec:
+                    description: Spec defines the desired state of Sample
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  status:
+                    description: Status defines the observed state of Sample
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                type: object
+            served: true
+            storage: true
+            subresources:
+              status: {}
+    packages: |
+      - packageName: sample-operator
+        defaultChannel: alpha
+        channels:
+        - name: alpha
+          currentCSV: sample-operator.v0.0.1
+parameters:
+- name: NAME
+- name: NAMESPACE
+`)
+
+func testQeTestdataOlmCmCsvSample24387YamlBytes() ([]byte, error) {
+	return _testQeTestdataOlmCmCsvSample24387Yaml, nil
+}
+
+func testQeTestdataOlmCmCsvSample24387Yaml() (*asset, error) {
+	bytes, err := testQeTestdataOlmCmCsvSample24387YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/qe/testdata/olm/cm-csv-sample-24387.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -18008,6 +18613,8 @@ var _bindata = map[string]func() (*asset, error){
 	"test/qe/testdata/olm/cm-21824-wrong.yaml":                                                                   testQeTestdataOlmCm21824WrongYaml,
 	"test/qe/testdata/olm/cm-25644-etcd-csv.yaml":                                                                testQeTestdataOlmCm25644EtcdCsvYaml,
 	"test/qe/testdata/olm/cm-csv-etcd.yaml":                                                                      testQeTestdataOlmCmCsvEtcdYaml,
+	"test/qe/testdata/olm/cm-csv-sample-24387-modified.yaml":                                                     testQeTestdataOlmCmCsvSample24387ModifiedYaml,
+	"test/qe/testdata/olm/cm-csv-sample-24387.yaml":                                                              testQeTestdataOlmCmCsvSample24387Yaml,
 	"test/qe/testdata/olm/cm-namespaceconfig.yaml":                                                               testQeTestdataOlmCmNamespaceconfigYaml,
 	"test/qe/testdata/olm/cm-template.yaml":                                                                      testQeTestdataOlmCmTemplateYaml,
 	"test/qe/testdata/olm/configmap-ectd-alpha-beta.yaml":                                                        testQeTestdataOlmConfigmapEctdAlphaBetaYaml,
@@ -18198,6 +18805,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"cm-21824-wrong.yaml":                               {testQeTestdataOlmCm21824WrongYaml, map[string]*bintree{}},
 					"cm-25644-etcd-csv.yaml":                            {testQeTestdataOlmCm25644EtcdCsvYaml, map[string]*bintree{}},
 					"cm-csv-etcd.yaml":                                  {testQeTestdataOlmCmCsvEtcdYaml, map[string]*bintree{}},
+					"cm-csv-sample-24387-modified.yaml":                 {testQeTestdataOlmCmCsvSample24387ModifiedYaml, map[string]*bintree{}},
+					"cm-csv-sample-24387.yaml":                          {testQeTestdataOlmCmCsvSample24387Yaml, map[string]*bintree{}},
 					"cm-namespaceconfig.yaml":                           {testQeTestdataOlmCmNamespaceconfigYaml, map[string]*bintree{}},
 					"cm-template.yaml":                                  {testQeTestdataOlmCmTemplateYaml, map[string]*bintree{}},
 					"configmap-ectd-alpha-beta.yaml":                    {testQeTestdataOlmConfigmapEctdAlphaBetaYaml, map[string]*bintree{}},
