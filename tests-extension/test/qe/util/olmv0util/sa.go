@@ -96,11 +96,13 @@ func (sa *serviceAccountDescription) Delete(oc *exutil.CLI) {
 
 // Reapply recreates the ServiceAccount using the previously exported definition
 // This method restores a ServiceAccount from its saved configuration file
+// Uses 'replace --force' to handle race conditions where OLM may have already
+// recreated the SA with a different resourceVersion
 //
 // Parameters:
 //   - oc: OpenShift CLI client for executing commands
 func (sa *serviceAccountDescription) Reapply(oc *exutil.CLI) {
-	err := oc.AsAdmin().WithoutNamespace().Run("apply").Args("-f", sa.definitionfile).Execute()
+	err := oc.AsAdmin().WithoutNamespace().Run("replace").Args("--force", "-f", sa.definitionfile).Execute()
 	o.Expect(err).NotTo(o.HaveOccurred())
 }
 
