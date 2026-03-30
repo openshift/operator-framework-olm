@@ -3,6 +3,7 @@ package semver
 import (
 	"cmp"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"slices"
@@ -16,6 +17,7 @@ import (
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/alpha/property"
 	"github.com/operator-framework/operator-registry/alpha/template/api"
+	"github.com/operator-framework/operator-registry/pkg/registry"
 )
 
 // Schema
@@ -114,6 +116,8 @@ func (t *semverTemplate) Render(ctx context.Context, reader io.Reader) (*declcfg
 	channels := sv.generateChannels(channelBundleVersions)
 	out.Channels = channels
 	out.Packages[0].DefaultChannel = sv.defaultChannel
+
+	sv.populatePackageMetadata(&out)
 
 	return &out, nil
 }
@@ -352,7 +356,7 @@ func (sv *SemverTemplateData) getVersionsFromChannel(semverBundles []bundleEntry
 // - within the same minor version (Y-stream), the head of the channel should have a 'skips' encompassing all lesser Y.Z versions of the bundle enumerated in the template.
 // along the way, uses a highwaterChannel marker to identify the "most stable" channel head to be used as the default channel for the generated package
 func (sv *SemverTemplateData) generateChannels(semverChannels *bundleVersions) []declcfg.Channel {
-	outChannels := []declcfg.Channel{}
+	outChannels := make([]declcfg.Channel, 0, len(*semverChannels)*2)
 
 	// sort the channel archetypes in ascending order so we can traverse the bundles in order of
 	// their source channel's priority
@@ -377,7 +381,7 @@ func (sv *SemverTemplateData) generateChannels(semverChannels *bundleVersions) [
 		}
 
 		// sort the bundle names according to their semver, so we can walk in ascending order
-		bundleNamesByVersion := []string{}
+		bundleNamesByVersion := make([]string, 0, len(bundles))
 		for b := range bundles {
 			bundleNamesByVersion = append(bundleNamesByVersion, b)
 		}
@@ -428,8 +432,55 @@ func (sv *SemverTemplateData) generateChannels(semverChannels *bundleVersions) [
 	return outChannels
 }
 
+// populatePackageMetadata extracts icon and description from the head bundle of the default channel -- if present --
+// and sets them on the package object
+// this assumes that all schema have been validated as part of the declarative config aggregation
+func (sv *SemverTemplateData) populatePackageMetadata(cfg *declcfg.DeclarativeConfig) {
+	if len(cfg.Packages) == 0 {
+		return
+	}
+
+	// Find the default channel
+	channelIdx := slices.IndexFunc(cfg.Channels, func(ch declcfg.Channel) bool {
+		return ch.Name == sv.defaultChannel
+	})
+	if channelIdx == -1 || len(cfg.Channels[channelIdx].Entries) == 0 {
+		return
+	}
+
+	// Find the head bundle (the bundle with the highest version, which is the last entry in the channel)
+	// Since bundles are processed in ascending version order, the last entry is the head
+	headBundleName := cfg.Channels[channelIdx].Entries[len(cfg.Channels[channelIdx].Entries)-1].Name
+
+	bundleIdx := slices.IndexFunc(cfg.Bundles, func(b declcfg.Bundle) bool {
+		return b.Name == headBundleName
+	})
+	if bundleIdx == -1 || cfg.Bundles[bundleIdx].CsvJSON == "" {
+		return
+	}
+
+	// Parse CSV JSON to extract metadata
+	var csv registry.ClusterServiceVersion
+	if err := json.Unmarshal([]byte(cfg.Bundles[bundleIdx].CsvJSON), &csv); err != nil {
+		return
+	}
+
+	// Extract and set description
+	if desc, err := csv.GetDescription(); err == nil && desc != "" {
+		cfg.Packages[0].Description = desc
+	}
+
+	// Extract and set icon
+	if icons, err := csv.GetIcons(); err == nil && len(icons) > 0 {
+		cfg.Packages[0].Icon = &declcfg.Icon{
+			Data:      icons[0].Base64data,
+			MediaType: icons[0].MediaType,
+		}
+	}
+}
+
 func (sv *SemverTemplateData) linkChannels(unlinkedChannels map[string]*declcfg.Channel, entries []entryTuple) []declcfg.Channel {
-	channels := []declcfg.Channel{}
+	channels := make([]declcfg.Channel, 0, len(unlinkedChannels))
 
 	// sort to force partitioning by archetype --> kind --> semver
 	sort.Slice(entries, func(i, j int) bool {
