@@ -1905,8 +1905,9 @@ func TestSortUnpackJobs(t *testing.T) {
 		}
 		return &batchv1.Job{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   name,
-				Labels: map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: "test"},
+				Name:              name,
+				Labels:            map[string]string{install.OLMManagedLabelKey: install.OLMManagedLabelValue, bundleUnpackRefLabel: "test"},
+				CreationTimestamp: metav1.Time{Time: time.Unix(ts, 0)},
 			},
 			Status: batchv1.JobStatus{
 				Conditions: conditions,
@@ -1930,6 +1931,11 @@ func TestSortUnpackJobs(t *testing.T) {
 		testJob("f-5", true, 5),
 	}
 	nonFailedJob := testJob("s-1", false, 1)
+	nonFailedJobs := []*batchv1.Job{
+		testJob("nf-1", false, 1),
+		testJob("nf-2", false, 2),
+		testJob("nf-3", false, 3),
+	}
 	for _, tc := range []struct {
 		name             string
 		jobs             []*batchv1.Job
@@ -2007,6 +2013,15 @@ func TestSortUnpackJobs(t *testing.T) {
 				nonFailedJob,
 			},
 			expectedLatest: nonFailedJob,
+		}, {
+			name:        "multiple non-failed jobs sorted by creation time",
+			maxRetained: 3,
+			jobs: []*batchv1.Job{
+				nonFailedJobs[0],
+				nonFailedJobs[2],
+				nonFailedJobs[1],
+			},
+			expectedLatest: nonFailedJobs[2], // latest creation time should be first
 		},
 	} {
 		latest, toDelete := sortUnpackJobs(tc.jobs, tc.maxRetained)
