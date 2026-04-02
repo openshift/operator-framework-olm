@@ -5,6 +5,7 @@ package opmcli
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync"
+	"time"
 
 	g "github.com/onsi/ginkgo/v2"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
@@ -153,42 +155,87 @@ func (c *CLI) Output() (string, error) {
 	if c.verbose {
 		e2e.Logf("DEBUG: %s %s\n", c.execPath, c.printCmd())
 	}
-	// Create the command with the executable and arguments
-	cmd := exec.Command(c.execPath, c.finalArgs...)
-	// Set registry authentication file if configured
-	if c.podmanAuthfile != "" {
-		cmd.Env = append(os.Environ(), "REGISTRY_AUTH_FILE="+c.podmanAuthfile)
+
+	const maxRetries = 3
+	const retryDelay = 2 * time.Second
+
+	var lastErr error
+	var lastTrimmed string
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		// Create the command with the executable and arguments
+		cmd := exec.Command(c.execPath, c.finalArgs...)
+		// Set registry authentication file if configured
+		if c.podmanAuthfile != "" {
+			cmd.Env = append(os.Environ(), "REGISTRY_AUTH_FILE="+c.podmanAuthfile)
+		}
+		// Set working directory if specified
+		if c.ExecCommandPath != "" {
+			e2e.Logf("set exec command path is %s\n", c.ExecCommandPath)
+			cmd.Dir = c.ExecCommandPath
+		}
+		// Set stdin buffer
+		cmd.Stdin = c.stdin
+		// Log command execution if info logging is enabled
+		if c.showInfo && attempt == 1 {
+			e2e.Logf("Running '%s %s'", c.execPath, strings.Join(c.finalArgs, " "))
+		}
+		// Execute command and capture combined output
+		out, err := cmd.CombinedOutput()
+		trimmed := strings.TrimSpace(string(out))
+
+		if err == nil {
+			c.stdout = bytes.NewBuffer(out)
+			if attempt > 1 {
+				e2e.Logf("Command succeeded on retry attempt %d/%d", attempt, maxRetries)
+			}
+			return trimmed, nil
+		}
+
+		lastErr = err
+		lastTrimmed = trimmed
+
+		if isTransientRegistryError(trimmed) && attempt < maxRetries {
+			e2e.Logf("Transient registry error detected (attempt %d/%d), retrying after %v: %s",
+				attempt, maxRetries, retryDelay, trimmed)
+			time.Sleep(retryDelay)
+			continue
+		}
+
+		break
 	}
-	// Set working directory if specified
-	if c.ExecCommandPath != "" {
-		e2e.Logf("set exec command path is %s\n", c.ExecCommandPath)
-		cmd.Dir = c.ExecCommandPath
+
+	var exitErr *exec.ExitError
+	if errors.As(lastErr, &exitErr) {
+		e2e.Logf("Error running %s %s:\n%s", c.execPath, strings.Join(c.finalArgs, " "), lastTrimmed)
+		return lastTrimmed, &ExitError{ExitError: exitErr, Cmd: c.execPath + " " + strings.Join(c.finalArgs, " "), StdErr: lastTrimmed}
 	}
-	// Set stdin buffer
-	cmd.Stdin = c.stdin
-	// Log command execution if info logging is enabled
-	if c.showInfo {
-		e2e.Logf("Running '%s %s'", c.execPath, strings.Join(c.finalArgs, " "))
+
+	// Fatal error preventing command execution
+	FatalErr(fmt.Errorf("unable to execute %q: %v", c.execPath, lastErr))
+	// unreachable code
+	return "", nil
+}
+
+func isTransientRegistryError(output string) bool {
+	transientErrors := []string{
+		"503 Service Unavailable",
+		"received unexpected HTTP status: 503",
+		"502 Bad Gateway",
+		"504 Gateway Timeout",
+		"429 Too Many Requests",
+		"TLS handshake timeout",
+		"i/o timeout",
+		"connection reset by peer",
+		"unexpected EOF",
+		"EOF",
 	}
-	// Execute command and capture combined output
-	out, err := cmd.CombinedOutput()
-	trimmed := strings.TrimSpace(string(out))
-	// Handle different types of execution results
-	switch exitErr := err.(type) {
-	case nil:
-		// Successful execution
-		c.stdout = bytes.NewBuffer(out)
-		return trimmed, nil
-	case *exec.ExitError:
-		// Command executed but returned non-zero exit code
-		e2e.Logf("Error running %v:\n%s", cmd, trimmed)
-		return trimmed, &ExitError{ExitError: exitErr, Cmd: c.execPath + " " + strings.Join(c.finalArgs, " "), StdErr: trimmed}
-	default:
-		// Fatal error preventing command execution
-		FatalErr(fmt.Errorf("unable to execute %q: %v", c.execPath, err))
-		// unreachable code
-		return "", nil
+	for _, errMsg := range transientErrors {
+		if strings.Contains(output, errMsg) {
+			return true
+		}
 	}
+	return false
 }
 
 // GetDirPath recursively searches for a directory containing a file/directory with the specified prefix.
