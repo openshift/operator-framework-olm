@@ -57,13 +57,17 @@ type csvSource struct {
 }
 
 func (s *csvSource) Snapshot(ctx context.Context) (*cache.Snapshot, error) {
+	snapshotStart := stdTraceBegin(s.logger, "csv_snapshot", kv("namespace", s.key.Namespace))
+
 	csvs, err := s.csvLister.List(labels.Everything())
 	if err != nil {
+		stdTraceDone(s.logger, "csv_snapshot", snapshotStart, kv("namespace", s.key.Namespace), kv("error", true))
 		return nil, err
 	}
 
 	subs, err := s.subLister.List(labels.Everything())
 	if err != nil {
+		stdTraceDone(s.logger, "csv_snapshot", snapshotStart, kv("namespace", s.key.Namespace), kv("error", true))
 		return nil, err
 	}
 
@@ -164,6 +168,7 @@ func (s *csvSource) Snapshot(ctx context.Context) (*cache.Snapshot, error) {
 		s.logger.Printf("considered csvs without properties annotation during resolution: %v", names)
 	}
 
+	stdTraceDone(s.logger, "csv_snapshot", snapshotStart, kv("namespace", s.key.Namespace), kv("csv_count", len(csvs)), kv("subscription_count", len(subs)), kv("entry_count", len(entries)))
 	return &cache.Snapshot{
 		Entries: entries,
 		Valid:   cache.ValidOnce(),

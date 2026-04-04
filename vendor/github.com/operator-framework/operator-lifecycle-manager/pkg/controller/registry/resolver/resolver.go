@@ -56,6 +56,16 @@ func (w *debugWriter) Write(b []byte) (int, error) {
 	return n, nil
 }
 
+type infoWriter struct {
+	logrus.FieldLogger
+}
+
+func (w *infoWriter) Write(b []byte) (int, error) {
+	n := len(b)
+	w.Info(strings.TrimRight(string(b), "\n"))
+	return n, nil
+}
+
 func (r *Resolver) Resolve(namespaces []string, subs []*v1alpha1.Subscription) ([]*cache.Entry, error) {
 	var errs []error
 
@@ -65,7 +75,13 @@ func (r *Resolver) Resolve(namespaces []string, subs []*v1alpha1.Subscription) (
 	// TODO: better abstraction
 	startingCSVs := make(map[string]struct{})
 
+	nsLabel := ""
+	if len(namespaces) > 0 {
+		nsLabel = namespaces[0]
+	}
+	cacheStart := traceBegin(r.log, "cache_namespaced", kv("namespace", nsLabel))
 	namespacedCache := r.cache.Namespaced(namespaces...)
+	traceDone(r.log, "cache_namespaced", cacheStart, kv("namespace", nsLabel), kv("namespace_count", len(namespaces)))
 
 	if len(namespaces) < 1 {
 		// the first namespace is treated as the preferred namespace today
@@ -73,15 +89,20 @@ func (r *Resolver) Resolve(namespaces []string, subs []*v1alpha1.Subscription) (
 	}
 
 	preferredNamespace := namespaces[0]
-	_, existingVariables, err := r.getBundleVariables(preferredNamespace, namespacedCache.Catalog(cache.NewVirtualSourceKey(preferredNamespace)).Find(cache.True()), namespacedCache, visited)
+	existingStart := traceBegin(r.log, "existing_variables", kv("namespace", preferredNamespace))
+	existingEntries := namespacedCache.Catalog(cache.NewVirtualSourceKey(preferredNamespace)).Find(cache.True())
+	_, existingVariables, err := r.getBundleVariables(preferredNamespace, existingEntries, namespacedCache, visited)
 	if err != nil {
+		traceDone(r.log, "existing_variables", existingStart, kv("namespace", preferredNamespace), kv("entry_count", len(existingEntries)), kv("error", true))
 		return nil, err
 	}
 	for _, i := range existingVariables {
 		variables[i.Identifier()] = i
 	}
+	traceDone(r.log, "existing_variables", existingStart, kv("namespace", preferredNamespace), kv("entry_count", len(existingEntries)), kv("variable_count", len(existingVariables)))
 
 	// build constraints for each Subscription
+	subVarsStart := traceBegin(r.log, "subscription_variables", kv("namespace", preferredNamespace), kv("subscription_count", len(subs)))
 	for _, sub := range subs {
 		// find the currently installed operator (if it exists)
 		var current *cache.Entry
@@ -102,18 +123,35 @@ func (r *Resolver) Resolve(namespaces []string, subs []*v1alpha1.Subscription) (
 		}
 
 		// find operators, in channel order, that can skip from the current version or list the current in "replaces"
+		singleSubStart := traceBegin(r.log, "single_sub_variables",
+			kv("namespace", preferredNamespace),
+			kv("subscription", sub.GetName()))
 		subVariables, err := r.getSubscriptionVariables(sub, current, namespacedCache, visited)
 		if err != nil {
+			traceDone(r.log, "single_sub_variables", singleSubStart, kv("namespace", preferredNamespace), kv("subscription", sub.GetName()), kv("error", true))
 			errs = append(errs, err)
 			continue
 		}
+		traceDone(r.log, "single_sub_variables", singleSubStart,
+			kv("namespace", preferredNamespace),
+			kv("subscription", sub.GetName()),
+			kv("package", sub.Spec.Package),
+			kv("channel", sub.Spec.Channel),
+			kv("catalog", fmt.Sprintf("%s/%s", sub.Spec.CatalogSourceNamespace, sub.Spec.CatalogSource)),
+			kv("has_current", current != nil),
+			kv("variable_count", len(subVariables)))
 
 		for _, i := range subVariables {
 			variables[i.Identifier()] = i
 		}
 	}
+	traceDone(r.log, "subscription_variables", subVarsStart, kv("namespace", preferredNamespace), kv("subscription_count", len(subs)), kv("total_variables", len(variables)))
 
+	variableCountBefore := len(variables)
+	invariantsStart := traceBegin(r.log, "add_invariants", kv("namespace", preferredNamespace))
 	r.addInvariants(namespacedCache, variables)
+	invariantsAdded := len(variables) - variableCountBefore
+	traceDone(r.log, "add_invariants", invariantsStart, kv("namespace", preferredNamespace), kv("variable_count_before", variableCountBefore), kv("variable_count_after", len(variables)), kv("invariants_added", invariantsAdded))
 
 	if err := namespacedCache.Error(); err != nil {
 		return nil, err
@@ -127,16 +165,26 @@ func (r *Resolver) Resolve(namespaces []string, subs []*v1alpha1.Subscription) (
 	if len(errs) > 0 {
 		return nil, utilerrors.NewAggregate(errs)
 	}
-	s, err := solver.New(solver.WithInput(input), solver.WithTracer(solver.LoggingTracer{Writer: &debugWriter{r.log}}))
+	solverOpts := []solver.Option{solver.WithInput(input)}
+	if r.log != nil {
+		solverOpts = append(solverOpts,
+			solver.WithTracer(solver.LoggingTracer{Writer: &debugWriter{r.log}}),
+			solver.WithLogWriter(&infoWriter{r.log}))
+	}
+	s, err := solver.New(solverOpts...)
 	if err != nil {
 		return nil, err
 	}
+	satStart := traceBegin(r.log, "sat_solve", kv("namespace", preferredNamespace))
 	solvedVariables, err := s.Solve(context.TODO())
 	if err != nil {
+		traceDone(r.log, "sat_solve", satStart, kv("namespace", preferredNamespace), kv("variable_count", len(input)), kv("error", true))
 		return nil, err
 	}
+	traceDone(r.log, "sat_solve", satStart, kv("namespace", preferredNamespace), kv("variable_count", len(input)), kv("subscription_count", len(subs)), kv("solved_count", len(solvedVariables)))
 
 	// get the set of bundle variables from the result solved variables
+	extractStart := traceBegin(r.log, "extract_results", kv("namespace", preferredNamespace))
 	operatorVariables := make([]BundleVariable, 0)
 	for _, variable := range solvedVariables {
 		if bundleVariable, ok := variable.(*BundleVariable); ok {
@@ -198,6 +246,7 @@ func (r *Resolver) Resolve(namespaces []string, subs []*v1alpha1.Subscription) (
 
 		operators = append(operators, op)
 	}
+	traceDone(r.log, "extract_results", extractStart, kv("namespace", preferredNamespace), kv("operator_count", len(operators)))
 
 	if len(errs) > 0 {
 		return nil, utilerrors.NewAggregate(errs)
@@ -253,7 +302,9 @@ func (r *Resolver) getSubscriptionVariables(sub *v1alpha1.Subscription, current 
 			cache.CountingPredicate(cache.ChannelPredicate(sub.Spec.Channel), &nch),
 			cache.CountingPredicate(csvPredicate, &ncsv),
 		))
+		findStart := traceBegin(r.log, "cache_find_entries", kv("catalog", catalog.String()))
 		entries = namespacedCache.Catalog(catalog).Find(cachePredicates...)
+		traceDone(r.log, "cache_find_entries", findStart, kv("catalog", catalog.String()), kv("entry_count", len(entries)))
 
 		var si solver.Variable
 		switch {
@@ -274,6 +325,7 @@ func (r *Resolver) getSubscriptionVariables(sub *v1alpha1.Subscription, current 
 	}
 
 	// entries in the default channel appear first, then lexicographically order by channel name
+	sortStart := traceBegin(r.log, "sort_channel", kv("entry_count", len(entries)))
 	sort.SliceStable(entries, func(i, j int) bool {
 		var idef bool
 		var ichan string
@@ -310,7 +362,9 @@ func (r *Resolver) getSubscriptionVariables(sub *v1alpha1.Subscription, current 
 			lastIndex = i
 		}
 	}
+	traceDone(r.log, "sort_channel", sortStart, kv("entry_count", len(entries)), kv("sorted_count", len(sortedBundles)))
 
+	buildCandStart := traceBegin(r.log, "build_candidates", kv("sorted_bundle_count", len(sortedBundles)))
 	candidates := make([]*BundleVariable, 0)
 	for _, o := range cache.Filter(sortedBundles, channelPredicates...) {
 		predicates := append(cachePredicates, cache.CSVNamePredicate(o.Name))
@@ -330,6 +384,7 @@ func (r *Resolver) getSubscriptionVariables(sub *v1alpha1.Subscription, current 
 			variables[i.Identifier()] = i
 		}
 	}
+	traceDone(r.log, "build_candidates", buildCandStart, kv("candidate_count", len(candidates)))
 
 	depIds := make([]solver.Identifier, 0)
 	for _, c := range candidates {
@@ -360,6 +415,7 @@ func (r *Resolver) getSubscriptionVariables(sub *v1alpha1.Subscription, current 
 }
 
 func (r *Resolver) getBundleVariables(preferredNamespace string, bundleStack []*cache.Entry, namespacedCache cache.MultiCatalogOperatorFinder, visited map[*cache.Entry]*BundleVariable) (map[solver.Identifier]struct{}, map[solver.Identifier]*BundleVariable, error) {
+	dfsStart := traceBegin(r.log, "bundle_variables_dfs", kv("initial_stack_size", len(bundleStack)))
 	errs := make([]error, 0)
 	variables := make(map[solver.Identifier]*BundleVariable) // all variables, including dependencies
 
@@ -369,6 +425,7 @@ func (r *Resolver) getBundleVariables(preferredNamespace string, bundleStack []*
 		initial[o] = struct{}{}
 	}
 
+	var bundlesProcessed, dependencyPredicateCount, totalDepBundles int
 	for {
 		if len(bundleStack) == 0 {
 			break
@@ -382,6 +439,7 @@ func (r *Resolver) getBundleVariables(preferredNamespace string, bundleStack []*
 			continue
 		}
 
+		bundlesProcessed++
 		bundleVariable, err := r.newBundleVariableFromEntry(bundle)
 		if err != nil {
 			errs = append(errs, err)
@@ -395,6 +453,7 @@ func (r *Resolver) getBundleVariables(preferredNamespace string, bundleStack []*
 			errs = append(errs, err)
 			continue
 		}
+		dependencyPredicateCount += len(dependencyPredicates)
 
 		for _, d := range dependencyPredicates {
 			sourcePredicate := cache.False()
@@ -446,6 +505,7 @@ func (r *Resolver) getBundleVariables(preferredNamespace string, bundleStack []*
 				bundleDependencies = append(bundleDependencies, i.Identifier())
 				bundleStack = append(bundleStack, b)
 			}
+			totalDepBundles += len(bundleDependencies)
 			bundleVariable.AddConstraint(PrettyConstraint(
 				solver.Dependency(bundleDependencies...),
 				fmt.Sprintf("bundle %s requires an operator %s", bundle.Name, d.String()),
@@ -456,6 +516,8 @@ func (r *Resolver) getBundleVariables(preferredNamespace string, bundleStack []*
 	}
 
 	if len(errs) > 0 {
+		traceDone(r.log, "bundle_variables_dfs", dfsStart, kv("error", true),
+			kv("bundles_processed", bundlesProcessed), kv("dependency_predicate_count", dependencyPredicateCount))
 		return nil, nil, utilerrors.NewAggregate(errs)
 	}
 
@@ -464,6 +526,12 @@ func (r *Resolver) getBundleVariables(preferredNamespace string, bundleStack []*
 		ids[visited[o].Identifier()] = struct{}{}
 	}
 
+	traceDone(r.log, "bundle_variables_dfs", dfsStart,
+		kv("visited_count", len(visited)),
+		kv("variables_count", len(variables)),
+		kv("bundles_processed", bundlesProcessed),
+		kv("dependency_predicate_count", dependencyPredicateCount),
+		kv("total_dep_bundles", totalDepBundles))
 	return ids, variables, nil
 }
 
