@@ -10,6 +10,7 @@ import (
 	o "github.com/onsi/gomega"
 
 	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
+	"github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/architecture"
 	"github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/opmcli"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
@@ -373,6 +374,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:54168-[OTP][Skipped:Disconnected] opm support '--use-http' global flag", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:54168-[Skipped:Disconnected] opm support '--use-http' global flag"), func() {
+		architecture.SkipArchitectures(oc, architecture.PPC64LE, architecture.S390X)
 		err := opmcli.EnsureContainerPolicy()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
@@ -489,6 +491,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:53869-[OTP][Skipped:Disconnected] opm supports creating a catalog using basic veneer", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53869-[Skipped:Disconnected] opm supports creating a catalog using basic veneer"), func() {
+		architecture.SkipArchitectures(oc, architecture.PPC64LE, architecture.S390X)
 		err := opmcli.EnsureContainerPolicy()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
@@ -553,6 +556,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 opm should", g.Label("NonHype
 	})
 
 	g.It("PolarionID:53871-PolarionID:53915-PolarionID:53996-[OTP][Skipped:Disconnected][Slow] opm supports creating a catalog using semver veneer [Slow]", g.Label("original-name:[sig-operator][Jira:OLM] OLMv0 opm should PolarionID:53871-PolarionID:53915-PolarionID:53996-[Skipped:Disconnected][Slow] opm supports creating a catalog using semver veneer [Slow]"), func() {
+		architecture.SkipArchitectures(oc, architecture.PPC64LE, architecture.S390X)
 		if os.Getenv("HTTP_PROXY") != "" || os.Getenv("http_proxy") != "" {
 			g.Skip("HTTP_PROXY is not empty - skipping test ...")
 		}

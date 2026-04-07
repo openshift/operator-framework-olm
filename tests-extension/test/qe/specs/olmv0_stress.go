@@ -14,6 +14,7 @@ import (
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 
 	exutil "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util"
+	"github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/architecture"
 	olmv0util "github.com/openshift/operator-framework-olm/tests-extension/test/qe/util/olmv0util"
 )
 
@@ -173,6 +174,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLM v0 for stress", func() {
 	})
 
 	g.It("PolarionID:80413-[OTP][Skipped:Disconnected][OlmStress]install operator repeatedly serially with same ns [Slow][Timeout:180m]", g.Label("StressTest"), g.Label("NonHyperShiftHOST"), func() {
+		architecture.SkipArchitectures(oc, architecture.PPC64LE, architecture.S390X)
 		var (
 			itName              = g.CurrentSpecReport().FullText()
 			buildPruningBaseDir = exutil.FixturePath("testdata", "olm")
