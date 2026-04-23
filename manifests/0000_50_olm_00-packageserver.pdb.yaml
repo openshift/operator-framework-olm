@@ -10,6 +10,7 @@ metadata:
     include.release.openshift.io/hypershift: "true"
 spec:
   maxUnavailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
   selector:
     matchLabels:
       app: packageserver
