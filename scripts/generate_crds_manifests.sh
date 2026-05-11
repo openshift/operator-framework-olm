@@ -561,6 +561,9 @@ for f in $(find "${hypershift_manifests_dir}" -type f -name "*.yaml"); do
    fi
 done
 
+${YQ} d -d'*' --inplace manifests/0000_50_olm_00-packageserver.pdb.yaml 'metadata.annotations[include.release.openshift.io/ibm-cloud-managed]'
+${YQ} d -d'*' --inplace manifests/0000_50_olm_00-packageserver.pdb.yaml 'metadata.annotations[include.release.openshift.io/hypershift]'
+
 find "${ROOT_DIR}/manifests" -type f -exec $SED -i "/^#/d" {} \;
 find "${ROOT_DIR}/manifests" -type f -exec $SED -i "1{/---/d}" {} \;
 
