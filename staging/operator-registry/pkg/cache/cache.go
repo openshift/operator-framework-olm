@@ -28,6 +28,8 @@ type Cache interface {
 	Build(ctx context.Context, fbc fs.FS) error
 	Load(ctc context.Context) error
 	Close() error
+
+	ListPackageCustomSchemas(ctx context.Context, schema, packageName string, sender func([]byte) error) error
 }
 
 type backend interface {
@@ -44,6 +46,9 @@ type backend interface {
 	SendBundles(context.Context, registry.BundleSender) error
 	GetBundle(context.Context, bundleKey) (*api.Bundle, error)
 	PutBundle(context.Context, bundleKey, *api.Bundle) error
+
+	PutMeta(context.Context, metaKey, []byte) error
+	SendMetas(context.Context, metaKey, func([]byte) error) error
 
 	GetDigest(context.Context) (string, error)
 	ComputeDigest(context.Context, fs.FS) (string, error)
@@ -237,6 +242,14 @@ func (c *cache) GetBundleThatProvides(ctx context.Context, group, version, kind 
 	return c.packageIndex.GetBundleThatProvides(ctx, c, group, version, kind)
 }
 
+func (c *cache) ListPackageCustomSchemas(ctx context.Context, schema, packageName string, sender func([]byte) error) error {
+	mk, err := newValidatedMetaKey(schema, packageName)
+	if err != nil {
+		return fmt.Errorf("invalid custom schema query: %w", err)
+	}
+	return c.backend.SendMetas(ctx, mk, sender)
+}
+
 func (c *cache) CheckIntegrity(ctx context.Context, fbc fs.FS) error {
 	existingDigest, err := c.backend.GetDigest(ctx)
 	if err != nil {
@@ -290,6 +303,21 @@ func (c *cache) Build(ctx context.Context, fbcFsys fs.FS) error {
 
 		walkMu.Lock()
 		defer walkMu.Unlock()
+
+		switch meta.Schema {
+		case declcfg.SchemaPackage, declcfg.SchemaChannel, declcfg.SchemaBundle, declcfg.SchemaDeprecation:
+		default:
+			mk, err := newValidatedMetaKey(meta.Schema, packageName)
+			if err != nil {
+				return fmt.Errorf("invalid custom schema meta: %v", err)
+			}
+			if err := c.backend.PutMeta(ctx, mk, meta.Blob); err != nil {
+				return fmt.Errorf("store custom schema meta %v: %v", mk, err)
+			}
+			if packageName == "" {
+				return nil
+			}
+		}
 		if _, err := tmpFile.Write(meta.Blob); err != nil {
 			return err
 		}

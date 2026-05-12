@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -127,6 +128,8 @@ func (q *pogrebV1Backend) GetPackageIndex(_ context.Context) (packageIndex, erro
 	return pi, nil
 }
 
+const metaKeyPrefix = "metas/"
+
 func (q *pogrebV1Backend) PutPackageIndex(_ context.Context, index packageIndex) error {
 	packageJSON, err := json.Marshal(index)
 	if err != nil {
@@ -161,6 +164,39 @@ func (q *pogrebV1Backend) PutBundle(_ context.Context, key bundleKey, bundle *ap
 	}
 	q.bundles.Set(key)
 	return nil
+}
+
+func (q *pogrebV1Backend) metaDBKey(in metaKey, blob []byte) []byte {
+	h := fnv.New64a()
+	h.Write(blob)
+	return []byte(fmt.Sprintf("%s%s/%s/%x", metaKeyPrefix, in.Schema, in.PackageName, h.Sum64()))
+}
+
+func (q *pogrebV1Backend) metaDBKeyPrefix(in metaKey) string {
+	return fmt.Sprintf("%s%s/%s/", metaKeyPrefix, in.Schema, in.PackageName)
+}
+
+func (q *pogrebV1Backend) PutMeta(_ context.Context, key metaKey, blob []byte) error {
+	return q.db.Put(q.metaDBKey(key, blob), blob)
+}
+
+func (q *pogrebV1Backend) SendMetas(_ context.Context, key metaKey, sender func([]byte) error) error {
+	prefix := []byte(q.metaDBKeyPrefix(key))
+	it := q.db.Items()
+	for {
+		k, v, err := it.Next()
+		if errors.Is(err, pogreb.ErrIterationDone) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if bytes.HasPrefix(k, prefix) {
+			if err := sender(v); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func (q *pogrebV1Backend) GetDigest(_ context.Context) (string, error) {

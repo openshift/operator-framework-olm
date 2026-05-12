@@ -19,7 +19,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/status"
 
 	"github.com/operator-framework/operator-registry/alpha/action"
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
@@ -39,6 +41,9 @@ const (
 
 	deprecationCachePort    = ":50054"
 	deprecationCacheAddress = "localhost" + deprecationCachePort
+
+	customSchemaCachePort    = ":50055"
+	customSchemaCacheAddress = "localhost" + customSchemaCachePort
 )
 
 func createDBStore(dbPath string) *sqlite.SQLQuerier {
@@ -144,8 +149,14 @@ func TestMain(m *testing.M) {
 	}
 	fbcServerDeprecations := server(fbcDeprecationStore)
 
+	fbcCustomSchemaStore, err := fbcCacheFromFs(customSchemaFS, filepath.Join(tmpDir, "custom-schema-cache"))
+	if err != nil {
+		logrus.Fatalf("failed to create custom schema cache: %v", err)
+	}
+	fbcServerCustomSchemas := server(fbcCustomSchemaStore)
+
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(4)
 	go func() {
 		lis, err := net.Listen("tcp", fmt.Sprintf("localhost%s", dbPort))
 		if err != nil {
@@ -174,6 +185,16 @@ func TestMain(m *testing.M) {
 		wg.Done()
 		if err := fbcServerDeprecations.Serve(lis); err != nil {
 			logrus.Fatalf("failed to serve fbc cache: %v", err)
+		}
+	}()
+	go func() {
+		lis, err := net.Listen("tcp", customSchemaCacheAddress)
+		if err != nil {
+			logrus.Fatalf("failed to listen: %v", err)
+		}
+		wg.Done()
+		if err := fbcServerCustomSchemas.Serve(lis); err != nil {
+			logrus.Fatalf("failed to serve fbc custom schema cache: %v", err)
 		}
 	}()
 	wg.Wait()
@@ -790,6 +811,108 @@ func testListBundles(addr string, etcdAlpha *api.Bundle, etcdStable *api.Bundle)
 	}
 }
 
+func TestListPackageCustomSchemas(t *testing.T) {
+	t.Run("FBCCacheWithCustomSchemas", testListPackageCustomSchemas(customSchemaCacheAddress))
+	t.Run("FBCCacheNoResults", testListPackageCustomSchemasEmpty(cacheAddress))
+	t.Run("FBCCacheInvalidArgument", testListPackageCustomSchemasInvalidArgument(customSchemaCacheAddress))
+	t.Run("FBCCachePackageless", testListPackageCustomSchemasPackageless(customSchemaCacheAddress))
+}
+
+func testListPackageCustomSchemas(addr string) func(*testing.T) {
+	return func(t *testing.T) {
+		c, conn := client(t, addr)
+		defer conn.Close()
+
+		stream, err := c.ListPackageCustomSchemas(context.TODO(), &api.ListPackageCustomSchemasRequest{
+			Schema:      "custom.operator.io",
+			PackageName: "testpkg",
+		})
+		require.NoError(t, err)
+
+		var results []map[string]interface{}
+		for {
+			s, err := stream.Recv()
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			require.NoError(t, err)
+			results = append(results, s.AsMap())
+		}
+
+		require.Len(t, results, 2)
+		for _, r := range results {
+			require.Equal(t, "custom.operator.io", r["schema"])
+			require.Equal(t, "testpkg", r["package"])
+		}
+	}
+}
+
+func testListPackageCustomSchemasEmpty(addr string) func(*testing.T) {
+	return func(t *testing.T) {
+		c, conn := client(t, addr)
+		defer conn.Close()
+
+		stream, err := c.ListPackageCustomSchemas(context.TODO(), &api.ListPackageCustomSchemasRequest{
+			Schema:      "custom.operator.io",
+			PackageName: "nonexistent",
+		})
+		require.NoError(t, err)
+
+		count := 0
+		for {
+			_, err := stream.Recv()
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			require.NoError(t, err)
+			count++
+		}
+		require.Zero(t, count)
+	}
+}
+
+func testListPackageCustomSchemasPackageless(addr string) func(*testing.T) {
+	return func(t *testing.T) {
+		c, conn := client(t, addr)
+		defer conn.Close()
+
+		stream, err := c.ListPackageCustomSchemas(context.TODO(), &api.ListPackageCustomSchemasRequest{
+			Schema:      "custom.packageless",
+			PackageName: "",
+		})
+		require.NoError(t, err)
+
+		var results []map[string]interface{}
+		for {
+			s, err := stream.Recv()
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			require.NoError(t, err)
+			results = append(results, s.AsMap())
+		}
+
+		require.Len(t, results, 1)
+		require.Equal(t, "custom.packageless", results[0]["schema"])
+		require.Equal(t, "global-config", results[0]["name"])
+	}
+}
+
+func testListPackageCustomSchemasInvalidArgument(addr string) func(*testing.T) {
+	return func(t *testing.T) {
+		c, conn := client(t, addr)
+		defer conn.Close()
+
+		stream, err := c.ListPackageCustomSchemas(context.TODO(), &api.ListPackageCustomSchemasRequest{})
+		require.NoError(t, err)
+		_, err = stream.Recv()
+		require.Error(t, err)
+		st, ok := status.FromError(err)
+		require.True(t, ok)
+		require.Equal(t, codes.InvalidArgument, st.Code())
+	}
+}
+
 func EqualBundles(t *testing.T, expected, actual api.Bundle) {
 	t.Helper()
 	stripPlural(actual.ProvidedApis)
@@ -1066,5 +1189,46 @@ entries:
 	validFS = fstest.MapFS{
 		"cockroachdb.json":  cockroachdb,
 		"deprecations.yaml": deprecations,
+	}
+
+	customSchemaFS = fstest.MapFS{
+		"catalog.json": &fstest.MapFile{
+			Data: []byte(`{
+    "schema": "olm.package",
+    "name": "testpkg",
+    "defaultChannel": "stable"
+}
+{
+    "schema": "olm.channel",
+    "package": "testpkg",
+    "name": "stable",
+    "entries": [{"name": "testpkg.v1.0.0"}]
+}
+{
+    "schema": "olm.bundle",
+    "name": "testpkg.v1.0.0",
+    "package": "testpkg",
+    "image": "quay.io/test/testpkg:v1.0.0",
+    "properties": [{"type": "olm.package", "value": {"packageName": "testpkg", "version": "1.0.0"}}]
+}
+{
+    "schema": "custom.operator.io",
+    "package": "testpkg",
+    "name": "my-custom-resource",
+    "customField": "customValue"
+}
+{
+    "schema": "custom.operator.io",
+    "package": "testpkg",
+    "name": "another-custom-resource",
+    "data": {"key": "value"}
+}
+{
+    "schema": "custom.packageless",
+    "name": "global-config",
+    "data": "packageless-value"
+}
+`),
+		},
 	}
 )
