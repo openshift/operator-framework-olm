@@ -59,6 +59,7 @@ func NewCommandStartPackageServer(ctx context.Context, defaults *PackageServerOp
 	flags.StringVar(&defaults.GlobalNamespace, "global-namespace", defaults.GlobalNamespace, "Name of the namespace where the global CatalogSources are located")
 	flags.StringVar(&defaults.Kubeconfig, "kubeconfig", defaults.Kubeconfig, "path to the kubeconfig used to connect to the Kubernetes API server and the Kubelets (defaults to in-cluster config)")
 	flags.BoolVar(&defaults.Debug, "debug", defaults.Debug, "use debug log level")
+	flags.StringSliceVar(&defaults.CustomSchemas, "custom-schemas", defaults.CustomSchemas, "comma-separated list of custom schema names to query from catalog registries")
 
 	defaults.SecureServing.AddFlags(flags)
 	defaults.Authentication.AddFlags(flags)
@@ -80,6 +81,9 @@ type PackageServerOptions struct {
 
 	Kubeconfig   string
 	RegistryAddr string
+
+	// Custom schemas to query from CatalogSource registries
+	CustomSchemas []string
 
 	// Only to be used to for testing
 	DisableAuthForTesting bool
@@ -281,7 +285,7 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 		}
 	}
 
-	sourceProvider, err := provider.NewRegistryProvider(ctx, crClient, queueOperator, o.CurrentSyncInterval, o.GlobalNamespace)
+	sourceProvider, err := provider.NewRegistryProvider(ctx, crClient, queueOperator, o.CurrentSyncInterval, o.GlobalNamespace, o.CustomSchemas)
 	if err != nil {
 		return err
 	}

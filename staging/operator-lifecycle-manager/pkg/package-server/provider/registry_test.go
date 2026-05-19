@@ -1,6 +1,7 @@
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../client/fakes/fake_registry_client.go github.com/operator-framework/operator-registry/pkg/api.RegistryClient
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../client/fakes/fake_list_packages_client.go github.com/operator-framework/operator-registry/pkg/api.Registry_ListPackagesClient
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../client/fakes/fake_list_bundles_client.go github.com/operator-framework/operator-registry/pkg/api.Registry_ListBundlesClient
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../client/fakes/fake_list_package_custom_schemas_client.go github.com/operator-framework/operator-registry/pkg/api.Registry_ListPackageCustomSchemasClient
 package provider
 
 import (
@@ -23,6 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -100,7 +103,7 @@ func NewFakeRegistryProvider(ctx context.Context, clientObjs []runtime.Object, k
 
 	resyncInterval := 5 * time.Minute
 
-	return NewRegistryProvider(ctx, clientFake, op, resyncInterval, globalNamespace)
+	return NewRegistryProvider(ctx, clientFake, op, resyncInterval, globalNamespace, nil)
 }
 
 func catalogSource(name, namespace string) *operatorsv1alpha1.CatalogSource {
@@ -827,7 +830,7 @@ func TestToPackageManifest(t *testing.T) {
 				catsrc:         test.catalogSource,
 			}
 
-			packageManifest, err := newPackageManifest(context.Background(), logrus.NewEntry(logrus.New()), test.apiPkg, client, test.channelEntries)
+			packageManifest, err := newPackageManifest(context.Background(), logrus.NewEntry(logrus.New()), test.apiPkg, client, test.channelEntries, nil)
 			if test.expectedErr != "" {
 				require.Error(t, err)
 				require.Equal(t, test.expectedErr, err.Error())
@@ -835,6 +838,118 @@ func TestToPackageManifest(t *testing.T) {
 				require.NoError(t, err)
 			}
 			require.Equal(t, test.expected, packageManifest)
+		})
+	}
+}
+
+func TestFetchCustomSchemas(t *testing.T) {
+	tests := []struct {
+		name        string
+		schema      string
+		packageName string
+		streamObjs  []*structpb.Struct
+		rpcErr      error
+		expected    map[string][]runtime.RawExtension
+		expectedErr bool
+	}{
+		{
+			name:        "HappyPath/SingleObject",
+			schema:      "io.openshift.operators.lifecycles.v1alpha1",
+			packageName: "testpkg",
+			streamObjs: []*structpb.Struct{
+				{Fields: map[string]*structpb.Value{
+					"schema":  structpb.NewStringValue("io.openshift.operators.lifecycles.v1alpha1"),
+					"package": structpb.NewStringValue("testpkg"),
+				}},
+			},
+			expected: func() map[string][]runtime.RawExtension {
+				obj := &structpb.Struct{Fields: map[string]*structpb.Value{
+					"schema":  structpb.NewStringValue("io.openshift.operators.lifecycles.v1alpha1"),
+					"package": structpb.NewStringValue("testpkg"),
+				}}
+				raw, _ := protojson.Marshal(obj)
+				return map[string][]runtime.RawExtension{
+					"io.openshift.operators.lifecycles.v1alpha1": {{Raw: raw}},
+				}
+			}(),
+		},
+		{
+			name:        "HappyPath/MultipleObjects",
+			schema:      "io.openshift.operators.lifecycles.v1alpha1",
+			packageName: "testpkg",
+			streamObjs: []*structpb.Struct{
+				{Fields: map[string]*structpb.Value{
+					"schema": structpb.NewStringValue("io.openshift.operators.lifecycles.v1alpha1"),
+					"name":   structpb.NewStringValue("obj1"),
+				}},
+				{Fields: map[string]*structpb.Value{
+					"schema": structpb.NewStringValue("io.openshift.operators.lifecycles.v1alpha1"),
+					"name":   structpb.NewStringValue("obj2"),
+				}},
+			},
+			expected: func() map[string][]runtime.RawExtension {
+				obj1 := &structpb.Struct{Fields: map[string]*structpb.Value{
+					"schema": structpb.NewStringValue("io.openshift.operators.lifecycles.v1alpha1"),
+					"name":   structpb.NewStringValue("obj1"),
+				}}
+				obj2 := &structpb.Struct{Fields: map[string]*structpb.Value{
+					"schema": structpb.NewStringValue("io.openshift.operators.lifecycles.v1alpha1"),
+					"name":   structpb.NewStringValue("obj2"),
+				}}
+				raw1, _ := protojson.Marshal(obj1)
+				raw2, _ := protojson.Marshal(obj2)
+				return map[string][]runtime.RawExtension{
+					"io.openshift.operators.lifecycles.v1alpha1": {{Raw: raw1}, {Raw: raw2}},
+				}
+			}(),
+		},
+		{
+			name:        "EmptyStream",
+			schema:      "io.openshift.operators.lifecycles.v1alpha1",
+			packageName: "testpkg",
+			streamObjs:  nil,
+			expected:    nil,
+		},
+		{
+			name:        "RPCError",
+			schema:      "io.openshift.operators.lifecycles.v1alpha1",
+			packageName: "testpkg",
+			rpcErr:      fmt.Errorf("rpc error: unimplemented"),
+			expectedErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			clientFake := &fakes.FakeRegistryClient{}
+			streamFake := &fakes.FakeRegistry_ListPackageCustomSchemasClient{}
+
+			if test.rpcErr != nil {
+				clientFake.ListPackageCustomSchemasReturns(nil, test.rpcErr)
+			} else {
+				clientFake.ListPackageCustomSchemasReturns(streamFake, nil)
+				callCount := 0
+				streamFake.RecvStub = func() (*structpb.Struct, error) {
+					if callCount >= len(test.streamObjs) {
+						return nil, io.EOF
+					}
+					obj := test.streamObjs[callCount]
+					callCount++
+					return obj, nil
+				}
+			}
+
+			client := &registryClient{
+				RegistryClient: clientFake,
+			}
+
+			result, err := fetchCustomSchemas(context.Background(), client, test.packageName, test.schema)
+			if test.expectedErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, test.expected, result)
+			}
 		})
 	}
 }
@@ -885,7 +1000,7 @@ func TestPackageManifestChannelsDisplayOrder(t *testing.T) {
 		catsrc:         catalogSource("cool-operators", "ns"),
 	}
 
-	packageManifest, err := newPackageManifest(context.Background(), logrus.NewEntry(logrus.New()), apiPkg, client, nil)
+	packageManifest, err := newPackageManifest(context.Background(), logrus.NewEntry(logrus.New()), apiPkg, client, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, &operators.PackageManifest{
 		ObjectMeta: metav1.ObjectMeta{

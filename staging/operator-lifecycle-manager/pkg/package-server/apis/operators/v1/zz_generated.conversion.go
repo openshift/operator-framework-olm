@@ -429,6 +429,7 @@ func autoConvert_v1_PackageManifestStatus_To_operators_PackageManifestStatus(in 
 	}
 	out.PackageName = in.PackageName
 	out.Deprecation = (*operators.Deprecation)(unsafe.Pointer(in.Deprecation))
+	out.CustomSchemas = *(*map[string][]runtime.RawExtension)(unsafe.Pointer(&in.CustomSchemas))
 	out.Channels = *(*[]operators.PackageChannel)(unsafe.Pointer(&in.Channels))
 	out.DefaultChannel = in.DefaultChannel
 	return nil
@@ -449,6 +450,7 @@ func autoConvert_operators_PackageManifestStatus_To_v1_PackageManifestStatus(in 
 	}
 	out.PackageName = in.PackageName
 	out.Deprecation = (*Deprecation)(unsafe.Pointer(in.Deprecation))
+	out.CustomSchemas = *(*map[string][]runtime.RawExtension)(unsafe.Pointer(&in.CustomSchemas))
 	out.Channels = *(*[]PackageChannel)(unsafe.Pointer(&in.Channels))
 	out.DefaultChannel = in.DefaultChannel
 	return nil

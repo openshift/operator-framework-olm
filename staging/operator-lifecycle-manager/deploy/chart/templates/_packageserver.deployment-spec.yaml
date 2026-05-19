@@ -52,6 +52,10 @@ spec:
         - --interval
         - {{ .Values.package.interval }}
         {{- end }}
+        {{- if .Values.package.customSchemas }}
+        - --custom-schemas
+        - {{ .Values.package.customSchemas }}
+        {{- end }}
         {{- if .Values.package.commandArgs }}
         - {{ .Values.package.commandArgs }}
         {{- end }}

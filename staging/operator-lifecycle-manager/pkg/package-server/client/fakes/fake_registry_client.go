@@ -145,6 +145,21 @@ type FakeRegistryClient struct {
 		result1 api.Registry_ListBundlesClient
 		result2 error
 	}
+	ListPackageCustomSchemasStub        func(context.Context, *api.ListPackageCustomSchemasRequest, ...grpc.CallOption) (api.Registry_ListPackageCustomSchemasClient, error)
+	listPackageCustomSchemasMutex       sync.RWMutex
+	listPackageCustomSchemasArgsForCall []struct {
+		arg1 context.Context
+		arg2 *api.ListPackageCustomSchemasRequest
+		arg3 []grpc.CallOption
+	}
+	listPackageCustomSchemasReturns struct {
+		result1 api.Registry_ListPackageCustomSchemasClient
+		result2 error
+	}
+	listPackageCustomSchemasReturnsOnCall map[int]struct {
+		result1 api.Registry_ListPackageCustomSchemasClient
+		result2 error
+	}
 	ListPackagesStub        func(context.Context, *api.ListPackageRequest, ...grpc.CallOption) (api.Registry_ListPackagesClient, error)
 	listPackagesMutex       sync.RWMutex
 	listPackagesArgsForCall []struct {
@@ -754,6 +769,72 @@ func (fake *FakeRegistryClient) ListBundlesReturnsOnCall(i int, result1 api.Regi
 	}
 	fake.listBundlesReturnsOnCall[i] = struct {
 		result1 api.Registry_ListBundlesClient
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemas(arg1 context.Context, arg2 *api.ListPackageCustomSchemasRequest, arg3 ...grpc.CallOption) (api.Registry_ListPackageCustomSchemasClient, error) {
+	fake.listPackageCustomSchemasMutex.Lock()
+	ret, specificReturn := fake.listPackageCustomSchemasReturnsOnCall[len(fake.listPackageCustomSchemasArgsForCall)]
+	fake.listPackageCustomSchemasArgsForCall = append(fake.listPackageCustomSchemasArgsForCall, struct {
+		arg1 context.Context
+		arg2 *api.ListPackageCustomSchemasRequest
+		arg3 []grpc.CallOption
+	}{arg1, arg2, arg3})
+	stub := fake.ListPackageCustomSchemasStub
+	fakeReturns := fake.listPackageCustomSchemasReturns
+	fake.recordInvocation("ListPackageCustomSchemas", []interface{}{arg1, arg2, arg3})
+	fake.listPackageCustomSchemasMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemasCallCount() int {
+	fake.listPackageCustomSchemasMutex.RLock()
+	defer fake.listPackageCustomSchemasMutex.RUnlock()
+	return len(fake.listPackageCustomSchemasArgsForCall)
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemasCalls(stub func(context.Context, *api.ListPackageCustomSchemasRequest, ...grpc.CallOption) (api.Registry_ListPackageCustomSchemasClient, error)) {
+	fake.listPackageCustomSchemasMutex.Lock()
+	defer fake.listPackageCustomSchemasMutex.Unlock()
+	fake.ListPackageCustomSchemasStub = stub
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemasArgsForCall(i int) (context.Context, *api.ListPackageCustomSchemasRequest, []grpc.CallOption) {
+	fake.listPackageCustomSchemasMutex.RLock()
+	defer fake.listPackageCustomSchemasMutex.RUnlock()
+	argsForCall := fake.listPackageCustomSchemasArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemasReturns(result1 api.Registry_ListPackageCustomSchemasClient, result2 error) {
+	fake.listPackageCustomSchemasMutex.Lock()
+	defer fake.listPackageCustomSchemasMutex.Unlock()
+	fake.ListPackageCustomSchemasStub = nil
+	fake.listPackageCustomSchemasReturns = struct {
+		result1 api.Registry_ListPackageCustomSchemasClient
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemasReturnsOnCall(i int, result1 api.Registry_ListPackageCustomSchemasClient, result2 error) {
+	fake.listPackageCustomSchemasMutex.Lock()
+	defer fake.listPackageCustomSchemasMutex.Unlock()
+	fake.ListPackageCustomSchemasStub = nil
+	if fake.listPackageCustomSchemasReturnsOnCall == nil {
+		fake.listPackageCustomSchemasReturnsOnCall = make(map[int]struct {
+			result1 api.Registry_ListPackageCustomSchemasClient
+			result2 error
+		})
+	}
+	fake.listPackageCustomSchemasReturnsOnCall[i] = struct {
+		result1 api.Registry_ListPackageCustomSchemasClient
 		result2 error
 	}{result1, result2}
 }

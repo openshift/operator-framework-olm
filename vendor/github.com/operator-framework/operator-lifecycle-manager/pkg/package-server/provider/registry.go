@@ -17,7 +17,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/protobuf/encoding/protojson"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -119,6 +121,7 @@ type RegistryProvider struct {
 	runOnce sync.Once
 
 	globalNamespace string
+	customSchemas   []string
 	sources         *registrygrpc.SourceStore
 	cache           cache.Indexer
 	pkgLister       pkglisters.PackageManifestLister
@@ -127,11 +130,12 @@ type RegistryProvider struct {
 
 var _ PackageManifestProvider = &RegistryProvider{}
 
-func NewRegistryProvider(ctx context.Context, crClient versioned.Interface, operator queueinformer.Operator, wakeupInterval time.Duration, globalNamespace string) (*RegistryProvider, error) {
+func NewRegistryProvider(ctx context.Context, crClient versioned.Interface, operator queueinformer.Operator, wakeupInterval time.Duration, globalNamespace string, customSchemas []string) (*RegistryProvider, error) {
 	p := &RegistryProvider{
 		Operator: operator,
 
 		globalNamespace: globalNamespace,
+		customSchemas:   customSchemas,
 		cache: cache.NewIndexer(PackageManifestKeyFunc, cache.Indexers{
 			cache.NamespaceIndex: cache.MetaNamespaceIndexFunc,
 			catalogIndex:         catalogIndexFunc,
@@ -342,6 +346,34 @@ func (p *RegistryProvider) refreshCache(ctx context.Context, client *registryCli
 		}
 	}
 
+	// Pre-fetch custom schemas per package. On first error (e.g. Unimplemented), log once and skip the rest.
+	var customSchemasByPkg map[string]map[string][]runtime.RawExtension
+	if len(p.customSchemas) > 0 {
+		customSchemasByPkg = map[string]map[string][]runtime.RawExtension{}
+		for pkgName := range bundles {
+			for _, schema := range p.customSchemas {
+				schemas, err := fetchCustomSchemas(ctx, client, pkgName, schema)
+				if err != nil {
+					logger.WithError(err).Warn("registry does not support custom schemas, skipping for this source")
+					customSchemasByPkg = nil
+					break
+				}
+				if len(schemas) > 0 {
+					if customSchemasByPkg[pkgName] == nil {
+						customSchemasByPkg[pkgName] = schemas
+					} else {
+						for k, v := range schemas {
+							customSchemasByPkg[pkgName][k] = v
+						}
+					}
+				}
+			}
+			if customSchemasByPkg == nil {
+				break
+			}
+		}
+	}
+
 	var (
 		added = map[string]struct{}{}
 		mu    sync.Mutex
@@ -366,7 +398,7 @@ func (p *RegistryProvider) refreshCache(ctx context.Context, client *registryCli
 				return
 			}
 
-			newPkg, err := newPackageManifest(ctx, logger, pkg, client, bundles[pkg.GetName()])
+			newPkg, err := newPackageManifest(ctx, logger, pkg, client, bundles[pkg.GetName()], customSchemasByPkg[pkg.GetName()])
 			if err != nil {
 				logger.WithField("err", err.Error()).Warnf("eliding package: error converting to packagemanifest")
 				return
@@ -398,6 +430,42 @@ func isDeprecated(b *api.Bundle) bool {
 		}
 	}
 	return false
+}
+
+func fetchCustomSchemas(ctx context.Context, client *registryClient, packageName, schema string) (map[string][]runtime.RawExtension, error) {
+	stream, err := client.ListPackageCustomSchemas(ctx, &api.ListPackageCustomSchemasRequest{
+		Schema:      schema,
+		PackageName: packageName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if stream == nil {
+		return nil, nil
+	}
+
+	var result map[string][]runtime.RawExtension
+	for {
+		obj, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		raw, err := protojson.Marshal(obj)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal custom schema object: %w", err)
+		}
+
+		if result == nil {
+			result = make(map[string][]runtime.RawExtension)
+		}
+		result[schema] = append(result[schema], runtime.RawExtension{Raw: raw})
+	}
+
+	return result, nil
 }
 
 func (p *RegistryProvider) gcPackages(key registry.CatalogKey, keep map[string]struct{}) error {
@@ -522,7 +590,7 @@ func (p *RegistryProvider) List(namespace string, selector labels.Selector) (*op
 	return pkgList, nil
 }
 
-func newPackageManifest(ctx context.Context, logger *logrus.Entry, pkg *api.Package, client *registryClient, entriesByChannel map[string][]operators.ChannelEntry) (*operators.PackageManifest, error) {
+func newPackageManifest(ctx context.Context, logger *logrus.Entry, pkg *api.Package, client *registryClient, entriesByChannel map[string][]operators.ChannelEntry, customSchemas map[string][]runtime.RawExtension) (*operators.PackageManifest, error) {
 	pkgChannels := pkg.GetChannels()
 	sort.Slice(pkgChannels, func(i, j int) bool {
 		return pkgChannels[i].Name < pkgChannels[j].Name
@@ -600,6 +668,11 @@ func newPackageManifest(ctx context.Context, logger *logrus.Entry, pkg *api.Pack
 		logger.Warn("default channel elided, setting as first in packagemanifest")
 		manifest.Status.DefaultChannel = manifest.Status.Channels[0].Name
 	}
+
+	if len(customSchemas) > 0 {
+		manifest.Status.CustomSchemas = customSchemas
+	}
+
 	manifestLabels := manifest.GetLabels()
 	for k, v := range defaultCsv.GetLabels() {
 		manifestLabels[k] = v

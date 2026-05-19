@@ -289,6 +289,21 @@ func (in *PackageManifestStatus) DeepCopyInto(out *PackageManifestStatus) {
 		*out = new(Deprecation)
 		**out = **in
 	}
+	if in.CustomSchemas != nil {
+		in, out := &in.CustomSchemas, &out.CustomSchemas
+		*out = make(map[string][]runtime.RawExtension, len(*in))
+		for key, val := range *in {
+			var outVal []runtime.RawExtension
+			if val != nil {
+				in, out := &val, &outVal
+				*out = make([]runtime.RawExtension, len(*in))
+				for i := range *in {
+					(*in)[i].DeepCopyInto(&(*out)[i])
+				}
+			}
+			(*out)[key] = outVal
+		}
+	}
 	if in.Channels != nil {
 		in, out := &in.Channels, &out.Channels
 		*out = make([]PackageChannel, len(*in))

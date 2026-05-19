@@ -4,6 +4,7 @@ import (
 	"github.com/operator-framework/api/pkg/lib/version"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // PackageManifestList is a list of PackageManifest objects.
@@ -48,6 +49,9 @@ type PackageManifestStatus struct {
 
 	// Deprecation is an optional field which contains information if the package is deprecated.
 	Deprecation *Deprecation `json:"deprecation,omitempty"`
+
+	// CustomSchemas contains raw custom schema data from the catalog, keyed by schema name.
+	CustomSchemas map[string][]runtime.RawExtension `json:"customSchemas,omitempty"`
 
 	// Channels are the declared channels for the package, ala `stable` or `alpha`.
 	// +listType=set

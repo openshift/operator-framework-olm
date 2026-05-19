@@ -4018,6 +4018,27 @@ func schema_package_server_apis_operators_v1_PackageManifestStatus(ref common.Re
 							Ref:         ref(v1.Deprecation{}.OpenAPIModelName()),
 						},
 					},
+					"customSchemas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CustomSchemas contains raw custom schema data from the catalog, keyed by schema name.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type: []string{"array"},
+										Items: &spec.SchemaOrArray{
+											Schema: &spec.Schema{
+												SchemaProps: spec.SchemaProps{
+													Ref: ref(runtime.RawExtension{}.OpenAPIModelName()),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 					"channels": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -4050,7 +4071,7 @@ func schema_package_server_apis_operators_v1_PackageManifestStatus(ref common.Re
 			},
 		},
 		Dependencies: []string{
-			v1.AppLink{}.OpenAPIModelName(), v1.Deprecation{}.OpenAPIModelName(), v1.PackageChannel{}.OpenAPIModelName()},
+			v1.AppLink{}.OpenAPIModelName(), v1.Deprecation{}.OpenAPIModelName(), v1.PackageChannel{}.OpenAPIModelName(), runtime.RawExtension{}.OpenAPIModelName()},
 	}
 }
 

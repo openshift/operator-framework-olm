@@ -145,6 +145,21 @@ type FakeRegistryClient struct {
 		result1 api.Registry_ListBundlesClient
 		result2 error
 	}
+	ListPackageCustomSchemasStub        func(context.Context, *api.ListPackageCustomSchemasRequest, ...grpc.CallOption) (api.Registry_ListPackageCustomSchemasClient, error)
+	listPackageCustomSchemasMutex       sync.RWMutex
+	listPackageCustomSchemasArgsForCall []struct {
+		arg1 context.Context
+		arg2 *api.ListPackageCustomSchemasRequest
+		arg3 []grpc.CallOption
+	}
+	listPackageCustomSchemasReturns struct {
+		result1 api.Registry_ListPackageCustomSchemasClient
+		result2 error
+	}
+	listPackageCustomSchemasReturnsOnCall map[int]struct {
+		result1 api.Registry_ListPackageCustomSchemasClient
+		result2 error
+	}
 	ListPackagesStub        func(context.Context, *api.ListPackageRequest, ...grpc.CallOption) (api.Registry_ListPackagesClient, error)
 	listPackagesMutex       sync.RWMutex
 	listPackagesArgsForCall []struct {
@@ -172,15 +187,16 @@ func (fake *FakeRegistryClient) GetBundle(arg1 context.Context, arg2 *api.GetBun
 		arg2 *api.GetBundleRequest
 		arg3 []grpc.CallOption
 	}{arg1, arg2, arg3})
+	stub := fake.GetBundleStub
+	fakeReturns := fake.getBundleReturns
 	fake.recordInvocation("GetBundle", []interface{}{arg1, arg2, arg3})
 	fake.getBundleMutex.Unlock()
-	if fake.GetBundleStub != nil {
-		return fake.GetBundleStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getBundleReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -237,15 +253,16 @@ func (fake *FakeRegistryClient) GetBundleForChannel(arg1 context.Context, arg2 *
 		arg2 *api.GetBundleInChannelRequest
 		arg3 []grpc.CallOption
 	}{arg1, arg2, arg3})
+	stub := fake.GetBundleForChannelStub
+	fakeReturns := fake.getBundleForChannelReturns
 	fake.recordInvocation("GetBundleForChannel", []interface{}{arg1, arg2, arg3})
 	fake.getBundleForChannelMutex.Unlock()
-	if fake.GetBundleForChannelStub != nil {
-		return fake.GetBundleForChannelStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getBundleForChannelReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -302,15 +319,16 @@ func (fake *FakeRegistryClient) GetBundleThatReplaces(arg1 context.Context, arg2
 		arg2 *api.GetReplacementRequest
 		arg3 []grpc.CallOption
 	}{arg1, arg2, arg3})
+	stub := fake.GetBundleThatReplacesStub
+	fakeReturns := fake.getBundleThatReplacesReturns
 	fake.recordInvocation("GetBundleThatReplaces", []interface{}{arg1, arg2, arg3})
 	fake.getBundleThatReplacesMutex.Unlock()
-	if fake.GetBundleThatReplacesStub != nil {
-		return fake.GetBundleThatReplacesStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getBundleThatReplacesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -367,15 +385,16 @@ func (fake *FakeRegistryClient) GetChannelEntriesThatProvide(arg1 context.Contex
 		arg2 *api.GetAllProvidersRequest
 		arg3 []grpc.CallOption
 	}{arg1, arg2, arg3})
+	stub := fake.GetChannelEntriesThatProvideStub
+	fakeReturns := fake.getChannelEntriesThatProvideReturns
 	fake.recordInvocation("GetChannelEntriesThatProvide", []interface{}{arg1, arg2, arg3})
 	fake.getChannelEntriesThatProvideMutex.Unlock()
-	if fake.GetChannelEntriesThatProvideStub != nil {
-		return fake.GetChannelEntriesThatProvideStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getChannelEntriesThatProvideReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -432,15 +451,16 @@ func (fake *FakeRegistryClient) GetChannelEntriesThatReplace(arg1 context.Contex
 		arg2 *api.GetAllReplacementsRequest
 		arg3 []grpc.CallOption
 	}{arg1, arg2, arg3})
+	stub := fake.GetChannelEntriesThatReplaceStub
+	fakeReturns := fake.getChannelEntriesThatReplaceReturns
 	fake.recordInvocation("GetChannelEntriesThatReplace", []interface{}{arg1, arg2, arg3})
 	fake.getChannelEntriesThatReplaceMutex.Unlock()
-	if fake.GetChannelEntriesThatReplaceStub != nil {
-		return fake.GetChannelEntriesThatReplaceStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getChannelEntriesThatReplaceReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -497,15 +517,16 @@ func (fake *FakeRegistryClient) GetDefaultBundleThatProvides(arg1 context.Contex
 		arg2 *api.GetDefaultProviderRequest
 		arg3 []grpc.CallOption
 	}{arg1, arg2, arg3})
+	stub := fake.GetDefaultBundleThatProvidesStub
+	fakeReturns := fake.getDefaultBundleThatProvidesReturns
 	fake.recordInvocation("GetDefaultBundleThatProvides", []interface{}{arg1, arg2, arg3})
 	fake.getDefaultBundleThatProvidesMutex.Unlock()
-	if fake.GetDefaultBundleThatProvidesStub != nil {
-		return fake.GetDefaultBundleThatProvidesStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getDefaultBundleThatProvidesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -562,15 +583,16 @@ func (fake *FakeRegistryClient) GetLatestChannelEntriesThatProvide(arg1 context.
 		arg2 *api.GetLatestProvidersRequest
 		arg3 []grpc.CallOption
 	}{arg1, arg2, arg3})
+	stub := fake.GetLatestChannelEntriesThatProvideStub
+	fakeReturns := fake.getLatestChannelEntriesThatProvideReturns
 	fake.recordInvocation("GetLatestChannelEntriesThatProvide", []interface{}{arg1, arg2, arg3})
 	fake.getLatestChannelEntriesThatProvideMutex.Unlock()
-	if fake.GetLatestChannelEntriesThatProvideStub != nil {
-		return fake.GetLatestChannelEntriesThatProvideStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getLatestChannelEntriesThatProvideReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -627,15 +649,16 @@ func (fake *FakeRegistryClient) GetPackage(arg1 context.Context, arg2 *api.GetPa
 		arg2 *api.GetPackageRequest
 		arg3 []grpc.CallOption
 	}{arg1, arg2, arg3})
+	stub := fake.GetPackageStub
+	fakeReturns := fake.getPackageReturns
 	fake.recordInvocation("GetPackage", []interface{}{arg1, arg2, arg3})
 	fake.getPackageMutex.Unlock()
-	if fake.GetPackageStub != nil {
-		return fake.GetPackageStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getPackageReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -692,15 +715,16 @@ func (fake *FakeRegistryClient) ListBundles(arg1 context.Context, arg2 *api.List
 		arg2 *api.ListBundlesRequest
 		arg3 []grpc.CallOption
 	}{arg1, arg2, arg3})
+	stub := fake.ListBundlesStub
+	fakeReturns := fake.listBundlesReturns
 	fake.recordInvocation("ListBundles", []interface{}{arg1, arg2, arg3})
 	fake.listBundlesMutex.Unlock()
-	if fake.ListBundlesStub != nil {
-		return fake.ListBundlesStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listBundlesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -749,6 +773,72 @@ func (fake *FakeRegistryClient) ListBundlesReturnsOnCall(i int, result1 api.Regi
 	}{result1, result2}
 }
 
+func (fake *FakeRegistryClient) ListPackageCustomSchemas(arg1 context.Context, arg2 *api.ListPackageCustomSchemasRequest, arg3 ...grpc.CallOption) (api.Registry_ListPackageCustomSchemasClient, error) {
+	fake.listPackageCustomSchemasMutex.Lock()
+	ret, specificReturn := fake.listPackageCustomSchemasReturnsOnCall[len(fake.listPackageCustomSchemasArgsForCall)]
+	fake.listPackageCustomSchemasArgsForCall = append(fake.listPackageCustomSchemasArgsForCall, struct {
+		arg1 context.Context
+		arg2 *api.ListPackageCustomSchemasRequest
+		arg3 []grpc.CallOption
+	}{arg1, arg2, arg3})
+	stub := fake.ListPackageCustomSchemasStub
+	fakeReturns := fake.listPackageCustomSchemasReturns
+	fake.recordInvocation("ListPackageCustomSchemas", []interface{}{arg1, arg2, arg3})
+	fake.listPackageCustomSchemasMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemasCallCount() int {
+	fake.listPackageCustomSchemasMutex.RLock()
+	defer fake.listPackageCustomSchemasMutex.RUnlock()
+	return len(fake.listPackageCustomSchemasArgsForCall)
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemasCalls(stub func(context.Context, *api.ListPackageCustomSchemasRequest, ...grpc.CallOption) (api.Registry_ListPackageCustomSchemasClient, error)) {
+	fake.listPackageCustomSchemasMutex.Lock()
+	defer fake.listPackageCustomSchemasMutex.Unlock()
+	fake.ListPackageCustomSchemasStub = stub
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemasArgsForCall(i int) (context.Context, *api.ListPackageCustomSchemasRequest, []grpc.CallOption) {
+	fake.listPackageCustomSchemasMutex.RLock()
+	defer fake.listPackageCustomSchemasMutex.RUnlock()
+	argsForCall := fake.listPackageCustomSchemasArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemasReturns(result1 api.Registry_ListPackageCustomSchemasClient, result2 error) {
+	fake.listPackageCustomSchemasMutex.Lock()
+	defer fake.listPackageCustomSchemasMutex.Unlock()
+	fake.ListPackageCustomSchemasStub = nil
+	fake.listPackageCustomSchemasReturns = struct {
+		result1 api.Registry_ListPackageCustomSchemasClient
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRegistryClient) ListPackageCustomSchemasReturnsOnCall(i int, result1 api.Registry_ListPackageCustomSchemasClient, result2 error) {
+	fake.listPackageCustomSchemasMutex.Lock()
+	defer fake.listPackageCustomSchemasMutex.Unlock()
+	fake.ListPackageCustomSchemasStub = nil
+	if fake.listPackageCustomSchemasReturnsOnCall == nil {
+		fake.listPackageCustomSchemasReturnsOnCall = make(map[int]struct {
+			result1 api.Registry_ListPackageCustomSchemasClient
+			result2 error
+		})
+	}
+	fake.listPackageCustomSchemasReturnsOnCall[i] = struct {
+		result1 api.Registry_ListPackageCustomSchemasClient
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRegistryClient) ListPackages(arg1 context.Context, arg2 *api.ListPackageRequest, arg3 ...grpc.CallOption) (api.Registry_ListPackagesClient, error) {
 	fake.listPackagesMutex.Lock()
 	ret, specificReturn := fake.listPackagesReturnsOnCall[len(fake.listPackagesArgsForCall)]
@@ -757,15 +847,16 @@ func (fake *FakeRegistryClient) ListPackages(arg1 context.Context, arg2 *api.Lis
 		arg2 *api.ListPackageRequest
 		arg3 []grpc.CallOption
 	}{arg1, arg2, arg3})
+	stub := fake.ListPackagesStub
+	fakeReturns := fake.listPackagesReturns
 	fake.recordInvocation("ListPackages", []interface{}{arg1, arg2, arg3})
 	fake.listPackagesMutex.Unlock()
-	if fake.ListPackagesStub != nil {
-		return fake.ListPackagesStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listPackagesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -817,26 +908,6 @@ func (fake *FakeRegistryClient) ListPackagesReturnsOnCall(i int, result1 api.Reg
 func (fake *FakeRegistryClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.getBundleMutex.RLock()
-	defer fake.getBundleMutex.RUnlock()
-	fake.getBundleForChannelMutex.RLock()
-	defer fake.getBundleForChannelMutex.RUnlock()
-	fake.getBundleThatReplacesMutex.RLock()
-	defer fake.getBundleThatReplacesMutex.RUnlock()
-	fake.getChannelEntriesThatProvideMutex.RLock()
-	defer fake.getChannelEntriesThatProvideMutex.RUnlock()
-	fake.getChannelEntriesThatReplaceMutex.RLock()
-	defer fake.getChannelEntriesThatReplaceMutex.RUnlock()
-	fake.getDefaultBundleThatProvidesMutex.RLock()
-	defer fake.getDefaultBundleThatProvidesMutex.RUnlock()
-	fake.getLatestChannelEntriesThatProvideMutex.RLock()
-	defer fake.getLatestChannelEntriesThatProvideMutex.RUnlock()
-	fake.getPackageMutex.RLock()
-	defer fake.getPackageMutex.RUnlock()
-	fake.listBundlesMutex.RLock()
-	defer fake.listBundlesMutex.RUnlock()
-	fake.listPackagesMutex.RLock()
-	defer fake.listPackagesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
