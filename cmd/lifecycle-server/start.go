@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
 	"k8s.io/klog/v2"
 
@@ -125,9 +126,9 @@ func run(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	authFilter, err := server.NewAuthFilter(restCfg, httpClient, log)
+	authnzFilter, err := filters.WithAuthenticationAndAuthorization(restCfg, httpClient)
 	if err != nil {
-		log.Error(err, "failed to create auth filter")
+		log.Error(err, "failed to create authorization filter")
 		return err
 	}
 
@@ -146,7 +147,11 @@ func run(_ *cobra.Command, _ []string) error {
 
 	// Create HTTP apiHandler with authn/authz middleware
 	baseHandler := server.NewHandler(data, log)
-	apiHandler := authFilter(baseHandler)
+	apiHandler, err := authnzFilter(log, baseHandler)
+	if err != nil {
+		log.Error(err, "failed to create api handler")
+		return err
+	}
 
 	// Create health handler (no auth required)
 	healthHandler := server.NewHealthHandler(loadErr == nil)
