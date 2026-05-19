@@ -210,6 +210,8 @@ spec:
             - /etc/tls/private/tls.key
             - --client-ca
             - /etc/tls/private/tls.crt
+            - --custom-schemas
+            - io.openshift.operators.lifecycles.v1alpha1
           image: quay.io/operator-framework/olm@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607
           imagePullPolicy: IfNotPresent
           env:

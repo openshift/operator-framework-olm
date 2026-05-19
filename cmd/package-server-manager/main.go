@@ -89,6 +89,10 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	customSchemas, err := cmd.Flags().GetString("custom-schemas")
+	if err != nil {
+		return err
+	}
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	setupLog := ctrl.Log.WithName("setup")
@@ -166,13 +170,14 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := (&controllers.PackageServerCSVReconciler{
-		Name:      name,
-		Namespace: namespace,
-		Image:     os.Getenv("PACKAGESERVER_IMAGE"),
-		Interval:  interval,
-		Client:    mgr.GetClient(),
-		Log:       ctrl.Log.WithName("controllers").WithName(name),
-		Scheme:    mgr.GetScheme(),
+		Name:          name,
+		Namespace:     namespace,
+		Image:         os.Getenv("PACKAGESERVER_IMAGE"),
+		Interval:      interval,
+		CustomSchemas: customSchemas,
+		Client:        mgr.GetClient(),
+		Log:           ctrl.Log.WithName("controllers").WithName(name),
+		Scheme:        mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", name)
 		return err

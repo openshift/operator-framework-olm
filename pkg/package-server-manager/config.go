@@ -66,11 +66,14 @@ func getTopologyModeFromInfra(infra *configv1.Infrastructure) bool {
 // resource matches that of the codified defaults and high availability configurations, where
 // codified defaults are defined by the csv returned by the manifests.NewPackageServerCSV
 // function.
-func ensureCSV(log logr.Logger, image string, interval string, csv *olmv1alpha1.ClusterServiceVersion, highlyAvailableMode bool) (bool, error) {
+func ensureCSV(log logr.Logger, image string, interval string, customSchemas string, csv *olmv1alpha1.ClusterServiceVersion, highlyAvailableMode bool) (bool, error) {
 
 	flags := []string{}
 	if interval != "" {
 		flags = append(flags, "--interval", interval)
+	}
+	if customSchemas != "" {
+		flags = append(flags, "--custom-schemas", customSchemas)
 	}
 	expectedCSV, err := manifests.NewPackageServerCSV(
 		manifests.WithName(csv.Name),

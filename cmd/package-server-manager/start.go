@@ -22,6 +22,7 @@ func newStartCmd() *cobra.Command {
 	cmd.Flags().String("tls-cert", "", "path to use for certificate key (requires tls-key)")
 	cmd.Flags().String("tls-key", "", "path to use for private key (requires tls-cert)")
 	cmd.Flags().String("client-ca", "", "path to watch for client ca bundle")
+	cmd.Flags().String("custom-schemas", "", "comma-separated list of custom FBC schemas to fetch from catalog sources (e.g., io.openshift.operators.lifecycles.v1alpha1)")
 
 	return cmd
 }

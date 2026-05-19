@@ -53,10 +53,11 @@ type PackageServerCSVReconciler struct {
 	Scheme *runtime.Scheme
 	Lock   sync.Mutex
 
-	Name      string
-	Namespace string
-	Image     string
-	Interval  string
+	Name          string
+	Namespace     string
+	Image         string
+	Interval      string
+	CustomSchemas string
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which is responsible
@@ -84,6 +85,9 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if r.Interval != "" {
 		flags = append(flags, "--interval", r.Interval)
 	}
+	if r.CustomSchemas != "" {
+		flags = append(flags, "--custom-schemas", r.CustomSchemas)
+	}
 
 	required, err := manifests.NewPackageServerCSV(
 		manifests.WithName(r.Name),
@@ -96,7 +100,7 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	res, err := controllerutil.CreateOrUpdate(ctx, r.Client, required, func() error {
-		return reconcileCSV(r.Log, r.Image, r.Interval, required, highAvailabilityMode)
+		return reconcileCSV(r.Log, r.Image, r.Interval, r.CustomSchemas, required, highAvailabilityMode)
 	})
 
 	log.Info("reconciliation result", "res", res)
@@ -123,12 +127,12 @@ func ensureRBAC(client client.Client, ctx context.Context, namespace string, log
 	return nil
 }
 
-func reconcileCSV(log logr.Logger, image string, interval string, csv *olmv1alpha1.ClusterServiceVersion, highAvailabilityMode bool) error {
+func reconcileCSV(log logr.Logger, image string, interval string, customSchemas string, csv *olmv1alpha1.ClusterServiceVersion, highAvailabilityMode bool) error {
 	if csv.ObjectMeta.CreationTimestamp.IsZero() {
 		log.Info("attempting to create the packageserver csv")
 	}
 
-	modified, err := ensureCSV(log, image, interval, csv, highAvailabilityMode)
+	modified, err := ensureCSV(log, image, interval, customSchemas, csv, highAvailabilityMode)
 	if err != nil {
 		return fmt.Errorf("error ensuring CSV: %v", err)
 	}
