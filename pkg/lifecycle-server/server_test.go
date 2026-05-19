@@ -195,44 +195,51 @@ func TestNewHandler_ConcurrentRequests(t *testing.T) {
 func TestNewHealthHandler(t *testing.T) {
 	tt := []struct {
 		name           string
-		isReady        bool
+		data           LifecycleIndex
 		path           string
 		expectedStatus int
 		expectedBody   string
 	}{
 		{
-			name:           "healthz returns 200 when not ready",
-			isReady:        false,
+			name:           "healthz always returns 200",
+			data:           LifecycleIndex{},
 			path:           "/healthz",
 			expectedStatus: http.StatusOK,
 			expectedBody:   "ok",
 		},
 		{
-			name:           "healthz returns 200 when ready",
-			isReady:        true,
+			name:           "healthz returns 200 with data",
+			data:           LifecycleIndex{"v1": {"pkg": json.RawMessage(`{}`)}},
 			path:           "/healthz",
 			expectedStatus: http.StatusOK,
 			expectedBody:   "ok",
 		},
 		{
-			name:           "readyz returns 200 when ready",
-			isReady:        true,
-			path:           "/readyz",
-			expectedStatus: http.StatusOK,
-			expectedBody:   "ok",
-		},
-		{
-			name:           "readyz returns 503 when not ready",
-			isReady:        false,
+			name:           "readyz returns 503 when empty",
+			data:           LifecycleIndex{},
 			path:           "/readyz",
 			expectedStatus: http.StatusServiceUnavailable,
-			expectedBody:   "error processing lifecycle metadata - check logs for details",
+			expectedBody:   "no lifecycle data loaded",
+		},
+		{
+			name:           "readyz returns 503 when nil",
+			data:           nil,
+			path:           "/readyz",
+			expectedStatus: http.StatusServiceUnavailable,
+			expectedBody:   "no lifecycle data loaded",
+		},
+		{
+			name:           "readyz returns 200 when data loaded",
+			data:           LifecycleIndex{"v1alpha1": {"my-operator": json.RawMessage(`{}`)}},
+			path:           "/readyz",
+			expectedStatus: http.StatusOK,
+			expectedBody:   "ok",
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			handler := NewHealthHandler(tc.isReady)
+			handler := NewHealthHandler(tc.data)
 			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
 			rec := httptest.NewRecorder()
 			handler.ServeHTTP(rec, req)

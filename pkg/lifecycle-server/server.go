@@ -24,17 +24,17 @@ import (
 
 // NewHealthHandler creates an HTTP handler for health and readiness probes.
 // The /healthz endpoint always returns 200. The /readyz endpoint returns 200
-// if isReady is true, or 503 otherwise.
-func NewHealthHandler(isReady bool) http.Handler {
+// if lifecycle data is loaded, or 503 if the index is empty.
+func NewHealthHandler(data LifecycleIndex) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
-		if !isReady {
+		if len(data) == 0 {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			_, _ = w.Write([]byte("error processing lifecycle metadata - check logs for details"))
+			_, _ = w.Write([]byte("no lifecycle data loaded"))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
