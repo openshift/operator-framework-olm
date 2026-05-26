@@ -151,8 +151,8 @@ github.com/containerd/errdefs/pkg/internal/types
 # github.com/containerd/log v0.1.0
 ## explicit; go 1.20
 github.com/containerd/log
-# github.com/containerd/platforms v0.2.1
-## explicit; go 1.20
+# github.com/containerd/platforms v1.0.0-rc.4
+## explicit; go 1.24
 github.com/containerd/platforms
 # github.com/containerd/ttrpc v1.2.7
 ## explicit; go 1.19
@@ -195,7 +195,7 @@ github.com/davecgh/go-spew/spew
 # github.com/distribution/reference v0.6.0
 ## explicit; go 1.20
 github.com/distribution/reference
-# github.com/docker/cli v29.5.1+incompatible
+# github.com/docker/cli v29.5.2+incompatible
 ## explicit
 github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
@@ -753,7 +753,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/stor
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/version
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
-# github.com/operator-framework/operator-registry v1.68.0 => ./staging/operator-registry
+# github.com/operator-framework/operator-registry v1.69.0 => ./staging/operator-registry
 ## explicit; go 1.25.7
 github.com/operator-framework/operator-registry/alpha/action
 github.com/operator-framework/operator-registry/alpha/action/migrations
@@ -1044,8 +1044,8 @@ go.opentelemetry.io/proto/otlp/collector/trace/v1
 go.opentelemetry.io/proto/otlp/common/v1
 go.opentelemetry.io/proto/otlp/resource/v1
 go.opentelemetry.io/proto/otlp/trace/v1
-# go.podman.io/common v0.67.1
-## explicit; go 1.24.2
+# go.podman.io/common v0.68.0
+## explicit; go 1.25.6
 go.podman.io/common/pkg/auth
 go.podman.io/common/pkg/capabilities
 go.podman.io/common/pkg/completion
