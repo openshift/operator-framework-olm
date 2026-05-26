@@ -2,12 +2,14 @@ package cache
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/fnv"
 	"io"
 	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -15,6 +17,7 @@ import (
 	"github.com/akrylysov/pogreb"
 	pogrebfs "github.com/akrylysov/pogreb/fs"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/operator-framework/operator-registry/alpha/declcfg"
 	"github.com/operator-framework/operator-registry/pkg/api"
@@ -127,6 +130,8 @@ func (q *pogrebV1Backend) GetPackageIndex(_ context.Context) (packageIndex, erro
 	return pi, nil
 }
 
+const metaKeyPrefix = "metas/"
+
 func (q *pogrebV1Backend) PutPackageIndex(_ context.Context, index packageIndex) error {
 	packageJSON, err := json.Marshal(index)
 	if err != nil {
@@ -160,6 +165,66 @@ func (q *pogrebV1Backend) PutBundle(_ context.Context, key bundleKey, bundle *ap
 		return err
 	}
 	q.bundles.Set(key)
+	return nil
+}
+
+func (q *pogrebV1Backend) metaDBKey(in metaKey) []byte {
+	return []byte(fmt.Sprintf("%s%s/%s", metaKeyPrefix, in.Schema, in.PackageName))
+}
+
+func (q *pogrebV1Backend) PutMeta(_ context.Context, key metaKey, blob []byte) error {
+	st := &structpb.Struct{}
+	if err := st.UnmarshalJSON(blob); err != nil {
+		return fmt.Errorf("parse meta JSON: %w", err)
+	}
+	protoBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(st)
+	if err != nil {
+		return fmt.Errorf("marshal meta to proto: %w", err)
+	}
+	if len(protoBytes) > math.MaxUint32 {
+		return fmt.Errorf("meta blob too large: %d bytes exceeds uint32 max", len(protoBytes))
+	}
+	dbKey := q.metaDBKey(key)
+	existing, err := q.db.Get(dbKey)
+	if err != nil {
+		return fmt.Errorf("read existing meta blobs: %w", err)
+	}
+	header := make([]byte, 4)
+	binary.BigEndian.PutUint32(header, uint32(len(protoBytes))) //#nosec G115 -- bounds checked above
+	return q.db.Put(dbKey, append(existing, append(header, protoBytes...)...))
+}
+
+func (q *pogrebV1Backend) SendMetas(ctx context.Context, key metaKey, sender func(*structpb.Struct) error) error {
+	data, err := q.db.Get(q.metaDBKey(key))
+	if err != nil {
+		return fmt.Errorf("read meta blobs: %w", err)
+	}
+	if len(data) == 0 {
+		return nil
+	}
+	for len(data) >= 4 {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		blobLen := binary.BigEndian.Uint32(data[:4])
+		data = data[4:]
+		if len(data) < int(blobLen) {
+			return fmt.Errorf("truncated meta blob in pogreb value")
+		}
+		st := &structpb.Struct{}
+		if err := proto.Unmarshal(data[:blobLen], st); err != nil {
+			return fmt.Errorf("unmarshal meta proto: %w", err)
+		}
+		if err := sender(st); err != nil {
+			return err
+		}
+		data = data[blobLen:]
+	}
+	if len(data) > 0 {
+		return fmt.Errorf("corrupt meta blob: %d trailing bytes", len(data))
+	}
 	return nil
 }
 
