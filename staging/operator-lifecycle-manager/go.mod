@@ -6,7 +6,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/go-semver v0.3.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/distribution/distribution v2.7.1+incompatible
+	github.com/distribution/reference v0.6.0
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-air/gini v1.0.4
