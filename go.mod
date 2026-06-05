@@ -13,9 +13,9 @@ require (
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.29.0
 	github.com/openshift/api v0.0.0-20260204104751-e09e5a4ebcd0
-	github.com/operator-framework/api v0.42.0
+	github.com/operator-framework/api v0.43.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
-	github.com/operator-framework/operator-registry v1.69.0
+	github.com/operator-framework/operator-registry v1.71.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
@@ -67,7 +67,7 @@ require (
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/cli v29.5.2+incompatible // indirect
+	github.com/docker/cli v29.5.3+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.7 // indirect
 	github.com/docker/go-connections v0.7.0 // indirect
@@ -108,7 +108,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
-	github.com/google/cel-go v0.27.0 // indirect
+	github.com/google/cel-go v0.28.1 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-containerregistry v0.21.1 // indirect
