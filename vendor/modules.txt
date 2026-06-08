@@ -169,9 +169,9 @@ github.com/cyphar/filepath-securejoin
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/distribution/distribution v2.7.1+incompatible
-## explicit
-github.com/distribution/distribution/reference
+# github.com/distribution/reference v0.6.0
+## explicit; go 1.20
+github.com/distribution/reference
 # github.com/docker/cli v20.10.12+incompatible
 ## explicit
 github.com/docker/cli/cli/config
