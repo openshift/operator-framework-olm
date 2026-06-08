@@ -1,6 +1,6 @@
 module github.com/openshift/operator-framework-olm/tests-extension
 
-go 1.24.3
+go 1.26.3
 
 require (
 	github.com/blang/semver/v4 v4.0.0
