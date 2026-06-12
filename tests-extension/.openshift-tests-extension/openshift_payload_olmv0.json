@@ -643,6 +643,21 @@
     }
   },
   {
+    "name": "[sig-operator][Jira:OLM] OLMv0 custom schema gRPC endpoint PolarionID:XXXXX-[Skipped:Disconnected]ExperimentalListPackageCustomSchemas returns custom schema FBC [Slow]",
+    "labels": {
+      "Extended": {},
+      "NonHyperShiftHOST": {}
+    },
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:olmv0",
+    "lifecycle": "blocking",
+    "environmentSelector": {
+      "exclude": "topology==\"External\""
+    }
+  },
+  {
     "name": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[OTP][Skipped:Disconnected]catalogsource with invalid name is created",
     "originalName": "[sig-operator][Jira:OLM] OLMv0 optional should PolarionID:68679-[Skipped:Disconnected]catalogsource with invalid name is created",
     "labels": {

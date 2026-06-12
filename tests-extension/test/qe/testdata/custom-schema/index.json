@@ -1,0 +1,6 @@
+{"schema":"olm.package","name":"test-custom-pkg","defaultChannel":"stable"}
+{"schema":"olm.channel","name":"stable","package":"test-custom-pkg","entries":[{"name":"test-custom-pkg.v0.1.0"}]}
+{"schema":"olm.bundle","name":"test-custom-pkg.v0.1.0","package":"test-custom-pkg","image":"registry.example.com/test:v0.1.0","properties":[{"type":"olm.package","value":{"packageName":"test-custom-pkg","version":"0.1.0"}}]}
+{"schema":"custom.operator.io","package":"test-custom-pkg","name":"custom-metadata-1","data":{"key":"value1"}}
+{"schema":"custom.operator.io","package":"test-custom-pkg","name":"custom-metadata-2","data":{"key":"value2"}}
+{"schema":"custom.operator.io","name":"packageless-metadata","data":{"key":"global"}}

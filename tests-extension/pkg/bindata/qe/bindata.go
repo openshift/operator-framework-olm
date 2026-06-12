@@ -1,5 +1,6 @@
 // Code generated for package testdata by go-bindata DO NOT EDIT. (@generated)
 // sources:
+// test/qe/testdata/custom-schema/index.json
 // test/qe/testdata/olm/apiservice.yaml
 // test/qe/testdata/olm/catalogsource-address.yaml
 // test/qe/testdata/olm/catalogsource-configmap.yaml
@@ -31,6 +32,8 @@
 // test/qe/testdata/olm/cs-without-interval.yaml
 // test/qe/testdata/olm/cs-without-scc.yaml
 // test/qe/testdata/olm/csc.yaml
+// test/qe/testdata/olm/custom-schema-buildconfig.yaml
+// test/qe/testdata/olm/custom-schema-imagestream.yaml
 // test/qe/testdata/olm/env-subscription.yaml
 // test/qe/testdata/olm/envfrom-subscription.yaml
 // test/qe/testdata/olm/etcd-cluster.yaml
@@ -194,6 +197,29 @@ func (fi bindataFileInfo) IsDir() bool {
 // Sys return file is sys mode
 func (fi bindataFileInfo) Sys() interface{} {
 	return nil
+}
+
+var _testQeTestdataCustomSchemaIndexJson = []byte(`{"schema":"olm.package","name":"test-custom-pkg","defaultChannel":"stable"}
+{"schema":"olm.channel","name":"stable","package":"test-custom-pkg","entries":[{"name":"test-custom-pkg.v0.1.0"}]}
+{"schema":"olm.bundle","name":"test-custom-pkg.v0.1.0","package":"test-custom-pkg","image":"registry.example.com/test:v0.1.0","properties":[{"type":"olm.package","value":{"packageName":"test-custom-pkg","version":"0.1.0"}}]}
+{"schema":"custom.operator.io","package":"test-custom-pkg","name":"custom-metadata-1","data":{"key":"value1"}}
+{"schema":"custom.operator.io","package":"test-custom-pkg","name":"custom-metadata-2","data":{"key":"value2"}}
+{"schema":"custom.operator.io","name":"packageless-metadata","data":{"key":"global"}}
+`)
+
+func testQeTestdataCustomSchemaIndexJsonBytes() ([]byte, error) {
+	return _testQeTestdataCustomSchemaIndexJson, nil
+}
+
+func testQeTestdataCustomSchemaIndexJson() (*asset, error) {
+	bytes, err := testQeTestdataCustomSchemaIndexJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/qe/testdata/custom-schema/index.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
 }
 
 var _testQeTestdataOlmApiserviceYaml = []byte(`apiVersion: template.openshift.io/v1
@@ -6911,6 +6937,80 @@ func testQeTestdataOlmCscYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/qe/testdata/olm/csc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testQeTestdataOlmCustomSchemaBuildconfigYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: custom-schema-buildconfig-template
+objects:
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    name: "${NAME}"
+    namespace: "${NAMESPACE}"
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: "${NAME}:latest"
+    source:
+      type: Binary
+    strategy:
+      type: Docker
+      dockerStrategy:
+        from:
+          kind: DockerImage
+          name: "${BASE_IMAGE}"
+parameters:
+- name: NAME
+- name: NAMESPACE
+- name: BASE_IMAGE
+`)
+
+func testQeTestdataOlmCustomSchemaBuildconfigYamlBytes() ([]byte, error) {
+	return _testQeTestdataOlmCustomSchemaBuildconfigYaml, nil
+}
+
+func testQeTestdataOlmCustomSchemaBuildconfigYaml() (*asset, error) {
+	bytes, err := testQeTestdataOlmCustomSchemaBuildconfigYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/qe/testdata/olm/custom-schema-buildconfig.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testQeTestdataOlmCustomSchemaImagestreamYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: custom-schema-imagestream-template
+objects:
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    name: "${NAME}"
+    namespace: "${NAMESPACE}"
+parameters:
+- name: NAME
+- name: NAMESPACE
+`)
+
+func testQeTestdataOlmCustomSchemaImagestreamYamlBytes() ([]byte, error) {
+	return _testQeTestdataOlmCustomSchemaImagestreamYaml, nil
+}
+
+func testQeTestdataOlmCustomSchemaImagestreamYaml() (*asset, error) {
+	bytes, err := testQeTestdataOlmCustomSchemaImagestreamYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/qe/testdata/olm/custom-schema-imagestream.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -18599,6 +18699,7 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
+	"test/qe/testdata/custom-schema/index.json":                                                                  testQeTestdataCustomSchemaIndexJson,
 	"test/qe/testdata/olm/apiservice.yaml":                                                                       testQeTestdataOlmApiserviceYaml,
 	"test/qe/testdata/olm/catalogsource-address.yaml":                                                            testQeTestdataOlmCatalogsourceAddressYaml,
 	"test/qe/testdata/olm/catalogsource-configmap.yaml":                                                          testQeTestdataOlmCatalogsourceConfigmapYaml,
@@ -18630,6 +18731,8 @@ var _bindata = map[string]func() (*asset, error){
 	"test/qe/testdata/olm/cs-without-interval.yaml":                                                              testQeTestdataOlmCsWithoutIntervalYaml,
 	"test/qe/testdata/olm/cs-without-scc.yaml":                                                                   testQeTestdataOlmCsWithoutSccYaml,
 	"test/qe/testdata/olm/csc.yaml":                                                                              testQeTestdataOlmCscYaml,
+	"test/qe/testdata/olm/custom-schema-buildconfig.yaml":                                                        testQeTestdataOlmCustomSchemaBuildconfigYaml,
+	"test/qe/testdata/olm/custom-schema-imagestream.yaml":                                                        testQeTestdataOlmCustomSchemaImagestreamYaml,
 	"test/qe/testdata/olm/env-subscription.yaml":                                                                 testQeTestdataOlmEnvSubscriptionYaml,
 	"test/qe/testdata/olm/envfrom-subscription.yaml":                                                             testQeTestdataOlmEnvfromSubscriptionYaml,
 	"test/qe/testdata/olm/etcd-cluster.yaml":                                                                     testQeTestdataOlmEtcdClusterYaml,
@@ -18790,6 +18893,9 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"test": {nil, map[string]*bintree{
 		"qe": {nil, map[string]*bintree{
 			"testdata": {nil, map[string]*bintree{
+				"custom-schema": {nil, map[string]*bintree{
+					"index.json": {testQeTestdataCustomSchemaIndexJson, map[string]*bintree{}},
+				}},
 				"olm": {nil, map[string]*bintree{
 					"apiservice.yaml":                                   {testQeTestdataOlmApiserviceYaml, map[string]*bintree{}},
 					"catalogsource-address.yaml":                        {testQeTestdataOlmCatalogsourceAddressYaml, map[string]*bintree{}},
@@ -18822,6 +18928,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"cs-without-interval.yaml":                          {testQeTestdataOlmCsWithoutIntervalYaml, map[string]*bintree{}},
 					"cs-without-scc.yaml":                               {testQeTestdataOlmCsWithoutSccYaml, map[string]*bintree{}},
 					"csc.yaml":                                          {testQeTestdataOlmCscYaml, map[string]*bintree{}},
+					"custom-schema-buildconfig.yaml":                    {testQeTestdataOlmCustomSchemaBuildconfigYaml, map[string]*bintree{}},
+					"custom-schema-imagestream.yaml":                    {testQeTestdataOlmCustomSchemaImagestreamYaml, map[string]*bintree{}},
 					"env-subscription.yaml":                             {testQeTestdataOlmEnvSubscriptionYaml, map[string]*bintree{}},
 					"envfrom-subscription.yaml":                         {testQeTestdataOlmEnvfromSubscriptionYaml, map[string]*bintree{}},
 					"etcd-cluster.yaml":                                 {testQeTestdataOlmEtcdClusterYaml, map[string]*bintree{}},
