@@ -1,0 +1,13 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: custom-schema-imagestream-template
+objects:
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    name: "${NAME}"
+    namespace: "${NAMESPACE}"
+parameters:
+- name: NAME
+- name: NAMESPACE
