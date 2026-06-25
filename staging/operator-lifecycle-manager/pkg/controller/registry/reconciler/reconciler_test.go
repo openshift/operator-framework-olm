@@ -523,7 +523,7 @@ func TestPodExtractContent(t *testing.T) {
 					GenerateName: "test-",
 					Namespace:    "testns",
 					Labels:       map[string]string{"olm.pod-spec-hash": "8qB6OcFt60v8HdhXnPkB1cjF39t7RkFx9K0JxW", "olm.managed": "true"},
-					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
+					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true", "openshift.io/required-scc": "restricted-v2"},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
@@ -606,7 +606,7 @@ func TestPodExtractContent(t *testing.T) {
 					GenerateName: "test-",
 					Namespace:    "testns",
 					Labels:       map[string]string{"olm.pod-spec-hash": "3xuLPXGJ2pzekw21PFU68XUKOYc7PTuW45M521", "olm.managed": "true"},
-					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
+					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true", "openshift.io/required-scc": "restricted-v2"},
 				},
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
@@ -738,7 +738,7 @@ func TestPodExtractContent(t *testing.T) {
 					GenerateName: "test-",
 					Namespace:    "testns",
 					Labels:       map[string]string{"olm.pod-spec-hash": "7noQSgGmkI4BD1MPKe0pEFFfOE3jJtN2DUyZuD", "olm.managed": "true"},
-					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
+					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true", "openshift.io/required-scc": "restricted-v2"},
 				},
 				Spec: corev1.PodSpec{
 					Volumes: []corev1.Volume{
@@ -1155,6 +1155,58 @@ func TestPodContainerSecurityContext(t *testing.T) {
 
 			// Assert ContainerSecurityContext
 			require.Equal(t, testcase.expectedContainerSecurityContext, outputPod.Spec.Containers[0].SecurityContext)
+		})
+	}
+}
+
+func TestPodRequiredSCCAnnotation(t *testing.T) {
+	testcases := []struct {
+		title              string
+		securityConfig     v1alpha1.SecurityConfig
+		inputAnnotations   map[string]string
+		expectAnnotation   bool
+		expectedSCCValue   string
+	}{
+		{
+			title:            "Restricted config adds required-scc annotation",
+			securityConfig:   v1alpha1.Restricted,
+			inputAnnotations: map[string]string{},
+			expectAnnotation: true,
+			expectedSCCValue: "restricted-v2",
+		},
+		{
+			title:            "Legacy config does not add required-scc annotation",
+			securityConfig:   v1alpha1.Legacy,
+			inputAnnotations: map[string]string{},
+			expectAnnotation: false,
+		},
+		{
+			title:            "User-provided required-scc annotation is preserved",
+			securityConfig:   v1alpha1.Restricted,
+			inputAnnotations: map[string]string{"openshift.io/required-scc": "nonroot-v2"},
+			expectAnnotation: true,
+			expectedSCCValue: "nonroot-v2",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.title, func(t *testing.T) {
+			catsrc := &v1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: testNamespace,
+				},
+			}
+			pod, err := Pod(catsrc, "catalog", "opmImage", "utilImage", "busybox", serviceAccount("", "service-account"), map[string]string{}, tc.inputAnnotations, int32(0), int32(0), workloadUserID, tc.securityConfig)
+			require.NoError(t, err)
+
+			val, exists := pod.Annotations["openshift.io/required-scc"]
+			if tc.expectAnnotation {
+				require.True(t, exists, "expected openshift.io/required-scc annotation to be present")
+				require.Equal(t, tc.expectedSCCValue, val)
+			} else {
+				require.False(t, exists, "expected openshift.io/required-scc annotation to be absent")
+			}
 		})
 	}
 }
