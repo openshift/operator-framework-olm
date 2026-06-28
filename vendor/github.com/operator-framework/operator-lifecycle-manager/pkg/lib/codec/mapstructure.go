@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/go-viper/mapstructure/v2"
+	"github.com/mitchellh/mapstructure"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
