@@ -225,9 +225,13 @@ func (o *PackageServerOptions) Run(ctx context.Context) error {
 	// If --tls-min-version was not supplied (e.g. no PSM-injected flags yet), fall
 	// back to a direct GET of the cluster APIServer CR so the packageserver still
 	// honours the cluster TLS security profile on first boot or during upgrades.
+	// Failure is non-fatal: the packageserver must be able to start even when the
+	// API server is temporarily unreachable (e.g. HyperShift hosted cluster
+	// bootstrap). The Package Server Manager (PSM) will reconcile the correct
+	// TLS flags on its next sync.
 	if o.SecureServing.MinTLSVersion == "" {
 		if err := applyClusterTLSProfile(ctx, clientConfig, o.SecureServing); err != nil {
-			return fmt.Errorf("failed to apply cluster TLS profile to serving options: %w", err)
+			log.Warningf("Failed to apply cluster TLS profile (will use defaults, PSM will reconcile correct settings): %v", err)
 		}
 	}
 
@@ -348,7 +352,7 @@ func (op *Operator) syncOLMConfig(obj interface{}) error {
 // This is the fallback path used when --tls-min-version is not provided via flags
 // (i.e. before the PSM has had a chance to inject them).
 func applyClusterTLSProfile(ctx context.Context, config *rest.Config, serving *genericoptions.SecureServingOptionsWithLoopback) error {
-	const lookupTimeout = 30 * time.Second
+	const lookupTimeout = 10 * time.Second
 	profileCtx, cancel := context.WithTimeout(ctx, lookupTimeout)
 	defer cancel()
 
