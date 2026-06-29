@@ -69,6 +69,14 @@ spec:
               verbs:
                 - get
                 - list
+            - apiGroups:
+                - "config.openshift.io"
+              resources:
+                - apiservers
+              resourceNames:
+                - cluster
+              verbs:
+                - get
       deployments:
         - name: packageserver
           spec:
