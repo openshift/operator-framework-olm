@@ -13,6 +13,7 @@ require (
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/openshift/api v0.0.0-20260204104751-e09e5a4ebcd0
+	github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a
 	github.com/operator-framework/api v0.44.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.72.0
@@ -155,7 +156,6 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.3.0 // indirect
 	github.com/openshift/client-go v0.0.0-20260108185524-48f4ccfc4e13 // indirect
-	github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a // indirect
 	github.com/otiai10/copy v1.14.1 // indirect
 	github.com/otiai10/mint v1.6.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

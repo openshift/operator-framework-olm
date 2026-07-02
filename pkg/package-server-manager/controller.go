@@ -19,16 +19,20 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/go-logr/logr"
 
 	configv1 "github.com/openshift/api/config/v1"
+	libcrypto "github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/operator-framework-olm/pkg/manifests"
+	olmapiserver "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/apiserver"
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -85,6 +89,22 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		flags = append(flags, "--interval", r.Interval)
 	}
 
+	var apiServer configv1.APIServer
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: "cluster"}, &apiServer); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
+	} else {
+		minVersion, cipherSuites := olmapiserver.GetSecurityProfileConfig(apiServer.Spec.TLSSecurityProfile)
+		minVersionStr := libcrypto.TLSVersionToNameOrDie(minVersion)
+		cipherSuitesStr := strings.Join(libcrypto.CipherSuitesToNamesOrDie(cipherSuites), ",")
+		flags = append(flags,
+			"--tls-min-version", minVersionStr,
+			"--tls-cipher-suites", cipherSuitesStr,
+		)
+		log.Info("applying cluster TLS security profile to packageserver", "minVersion", minVersionStr, "cipherSuites", cipherSuitesStr)
+	}
+
 	required, err := manifests.NewPackageServerCSV(
 		manifests.WithName(r.Name),
 		manifests.WithNamespace(r.Namespace),
@@ -96,7 +116,7 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	res, err := controllerutil.CreateOrUpdate(ctx, r.Client, required, func() error {
-		return reconcileCSV(r.Log, r.Image, r.Interval, required, highAvailabilityMode)
+		return reconcileCSV(r.Log, r.Image, flags, required, highAvailabilityMode)
 	})
 
 	log.Info("reconciliation result", "res", res)
@@ -123,12 +143,12 @@ func ensureRBAC(client client.Client, ctx context.Context, namespace string, log
 	return nil
 }
 
-func reconcileCSV(log logr.Logger, image string, interval string, csv *olmv1alpha1.ClusterServiceVersion, highAvailabilityMode bool) error {
+func reconcileCSV(log logr.Logger, image string, flags []string, csv *olmv1alpha1.ClusterServiceVersion, highAvailabilityMode bool) error {
 	if csv.ObjectMeta.CreationTimestamp.IsZero() {
 		log.Info("attempting to create the packageserver csv")
 	}
 
-	modified, err := ensureCSV(log, image, interval, csv, highAvailabilityMode)
+	modified, err := ensureCSV(log, image, flags, csv, highAvailabilityMode)
 	if err != nil {
 		return fmt.Errorf("error ensuring CSV: %v", err)
 	}
@@ -158,10 +178,26 @@ func (r *PackageServerCSVReconciler) infrastructureHandler(_ context.Context, ob
 	}
 }
 
+func (r *PackageServerCSVReconciler) apiServerHandler(_ context.Context, obj client.Object) []reconcile.Request {
+	if obj.GetName() != "cluster" {
+		return nil
+	}
+	r.Log.Info("requeueing the packageserver deployment after encountering APIServer TLS profile change")
+	return []reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      r.Name,
+				Namespace: r.Namespace,
+			},
+		},
+	}
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *PackageServerCSVReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&olmv1alpha1.ClusterServiceVersion{}).
 		Watches(&configv1.Infrastructure{}, handler.EnqueueRequestsFromMapFunc(r.infrastructureHandler)).
+		Watches(&configv1.APIServer{}, handler.EnqueueRequestsFromMapFunc(r.apiServerHandler)).
 		Complete(r)
 }
