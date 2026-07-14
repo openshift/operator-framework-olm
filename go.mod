@@ -163,8 +163,8 @@ require (
 	github.com/proglottis/gpgme v0.1.6 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.69.0 // indirect
-	github.com/prometheus/procfs v0.20.1 // indirect
+	github.com/prometheus/common v0.70.0 // indirect
+	github.com/prometheus/procfs v0.21.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.11.0 // indirect
 	github.com/sigstore/fulcio v1.8.5 // indirect
