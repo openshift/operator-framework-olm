@@ -482,7 +482,7 @@ github.com/json-iterator/go
 ## explicit; go 1.18
 github.com/kisielk/errcheck
 github.com/kisielk/errcheck/errcheck
-# github.com/klauspost/compress v1.18.6
+# github.com/klauspost/compress v1.19.0
 ## explicit; go 1.24
 github.com/klauspost/compress
 github.com/klauspost/compress/flate
@@ -826,8 +826,8 @@ github.com/pmezard/go-difflib/difflib
 # github.com/proglottis/gpgme v0.1.6
 ## explicit; go 1.17
 github.com/proglottis/gpgme
-# github.com/prometheus/client_golang v1.23.2
-## explicit; go 1.23.0
+# github.com/prometheus/client_golang v1.24.0
+## explicit; go 1.25.0
 github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil
 github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil/header
 github.com/prometheus/client_golang/prometheus
@@ -845,7 +845,7 @@ github.com/prometheus/client_model/go
 ## explicit; go 1.25.0
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.21.0
+# github.com/prometheus/procfs v0.21.1
 ## explicit; go 1.25.0
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
