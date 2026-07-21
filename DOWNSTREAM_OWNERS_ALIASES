@@ -1,27 +1,20 @@
-
 aliases:
    # contributors who can approve any PRs in the repo
    operator-framework-approvers:
    - grokspawn
    - joelanford
-   - oceanc80
    - perdasilva
    - tmshort
-   - jianzhangbjz
 
    # contributors who can review/lgtm any PRs in the repo
    operator-framework-reviewers:
-   - anik120
    - ankitathomas
-   - bentito
-   - camilamacedo86
    - dtfranz
    - fgiudici
    - grokspawn
    - joelanford
-   - oceanc80
    - pedjak
    - perdasilva
    - rashmigottipati
-   - thetechnick
    - tmshort
+   - trgeiger
