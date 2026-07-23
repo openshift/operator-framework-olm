@@ -92,8 +92,8 @@ github.com/clipperhouse/uax29/v2/graphemes
 # github.com/containerd/cgroups/v3 v3.1.2
 ## explicit; go 1.22.0
 github.com/containerd/cgroups/v3/cgroup1/stats
-# github.com/containerd/containerd v1.7.33
-## explicit; go 1.24.0
+# github.com/containerd/containerd v1.7.34
+## explicit; go 1.25.0
 github.com/containerd/containerd/archive
 github.com/containerd/containerd/archive/compression
 github.com/containerd/containerd/archive/tarheader
@@ -195,7 +195,7 @@ github.com/davecgh/go-spew/spew
 # github.com/distribution/reference v0.6.0
 ## explicit; go 1.20
 github.com/distribution/reference
-# github.com/docker/cli v29.5.3+incompatible
+# github.com/docker/cli v29.6.2+incompatible
 ## explicit
 github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
@@ -371,7 +371,7 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
-# github.com/google/cel-go v0.28.1
+# github.com/google/cel-go v0.29.2
 ## explicit; go 1.23.0
 github.com/google/cel-go/cel
 github.com/google/cel-go/checker
@@ -472,8 +472,8 @@ github.com/itchyny/timefmt-go
 # github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 ## explicit
 github.com/jbenet/go-context/io
-# github.com/joelanford/ignore v0.1.1
-## explicit; go 1.21
+# github.com/joelanford/ignore v0.1.2
+## explicit; go 1.25.0
 github.com/joelanford/ignore
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
@@ -511,7 +511,7 @@ github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.23
 ## explicit; go 1.20
 github.com/mattn/go-runewidth
-# github.com/mattn/go-sqlite3 v1.14.45
+# github.com/mattn/go-sqlite3 v1.14.48
 ## explicit; go 1.21
 github.com/mattn/go-sqlite3
 # github.com/maxbrunsfeld/counterfeiter/v6 v6.12.2
@@ -537,7 +537,7 @@ github.com/mitchellh/hashstructure/v2
 # github.com/moby/locker v1.0.1
 ## explicit; go 1.13
 github.com/moby/locker
-# github.com/moby/moby/client v0.4.1
+# github.com/moby/moby/client v0.5.0
 ## explicit; go 1.24
 github.com/moby/moby/client/pkg/versions
 # github.com/moby/sys/capability v0.4.0
@@ -632,7 +632,7 @@ github.com/openshift/client-go/config/listers/config/v1alpha2
 # github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a
 ## explicit; go 1.24.0
 github.com/openshift/library-go/pkg/crypto
-# github.com/operator-framework/api v0.44.0 => ./staging/api
+# github.com/operator-framework/api v0.45.0 => ./staging/api
 ## explicit; go 1.26.3
 github.com/operator-framework/api/crds
 github.com/operator-framework/api/pkg/constraints
@@ -750,7 +750,7 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/stor
 github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/version
 github.com/operator-framework/operator-lifecycle-manager/pkg/version
 github.com/operator-framework/operator-lifecycle-manager/util/cpb
-# github.com/operator-framework/operator-registry v1.72.0 => ./staging/operator-registry
+# github.com/operator-framework/operator-registry v1.73.0 => ./staging/operator-registry
 ## explicit; go 1.26.3
 github.com/operator-framework/operator-registry/alpha/action
 github.com/operator-framework/operator-registry/alpha/action/migrations
@@ -928,8 +928,8 @@ github.com/vbauerster/mpb/v8/internal
 # github.com/x448/float16 v0.8.4
 ## explicit; go 1.11
 github.com/x448/float16
-# go.etcd.io/bbolt v1.4.3
-## explicit; go 1.23
+# go.etcd.io/bbolt v1.5.0
+## explicit; go 1.25.0
 go.etcd.io/bbolt
 go.etcd.io/bbolt/errors
 go.etcd.io/bbolt/internal/common
@@ -1041,7 +1041,7 @@ go.opentelemetry.io/proto/otlp/collector/trace/v1
 go.opentelemetry.io/proto/otlp/common/v1
 go.opentelemetry.io/proto/otlp/resource/v1
 go.opentelemetry.io/proto/otlp/trace/v1
-# go.podman.io/common v0.68.0
+# go.podman.io/common v0.68.1
 ## explicit; go 1.25.6
 go.podman.io/common/pkg/auth
 go.podman.io/common/pkg/capabilities
@@ -1172,7 +1172,7 @@ golang.org/x/exp/slices
 ## explicit; go 1.11
 golang.org/x/lint
 golang.org/x/lint/golint
-# golang.org/x/mod v0.37.0
+# golang.org/x/mod v0.38.0
 ## explicit; go 1.25.0
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
