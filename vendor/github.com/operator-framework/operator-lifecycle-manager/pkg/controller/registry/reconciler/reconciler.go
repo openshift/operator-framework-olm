@@ -356,6 +356,12 @@ func Pod(source *operatorsv1alpha1.CatalogSource, name, opmImg, utilImage, img s
 	if securityContextConfig == operatorsv1alpha1.Restricted {
 		// Apply 'restricted' security settings
 		addSecurityContext(pod, runAsUser)
+
+		// Pin SCC selection to prevent custom SCCs from preempting catalog pods on
+		// HCP, where the creating user has broader SCC access than the local SA.
+		if _, alreadySet := podAnnotations["openshift.io/required-scc"]; !alreadySet {
+			podAnnotations["openshift.io/required-scc"] = "restricted-v2"
+		}
 	}
 
 	// Set priorityclass if its annotation exists
