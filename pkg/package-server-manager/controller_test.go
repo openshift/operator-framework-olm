@@ -94,6 +94,21 @@ func withAffinity(affinity *corev1.Affinity) func(*olmv1alpha1.ClusterServiceVer
 		csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Affinity = affinity
 	}
 }
+
+func withoutSeccompProfile() testCSVOption {
+	return func(csv *olmv1alpha1.ClusterServiceVersion) {
+		podSpec := &csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec
+		if podSpec.SecurityContext != nil {
+			podSpec.SecurityContext.SeccompProfile = nil
+		}
+	}
+}
+
+func withNilPodSecurityContext() testCSVOption {
+	return func(csv *olmv1alpha1.ClusterServiceVersion) {
+		csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.SecurityContext = nil
+	}
+}
 func withRollingUpdateStrategy(strategy *appsv1.RollingUpdateDeployment) func(*olmv1alpha1.ClusterServiceVersion) {
 	return func(csv *olmv1alpha1.ClusterServiceVersion) {
 		csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Strategy.RollingUpdate = strategy
@@ -254,6 +269,27 @@ func TestEnsureCSV(t *testing.T) {
 			highlyAvailable: false,
 			inputCSV:        newTestCSV(withReplicas(singleReplicas), withRollingUpdateStrategy(emptyRollout), withAffinity(&corev1.Affinity{})),
 			expectedCSV:     newTestCSV(withReplicas(singleReplicas), withRollingUpdateStrategy(emptyRollout), withAffinity(&corev1.Affinity{})),
+		},
+		{
+			name:            "Modified/HighlyAvailable/MissingSeccompProfile",
+			want:            wanted{true, nil},
+			highlyAvailable: true,
+			inputCSV:        newTestCSV(withReplicas(defaultReplicas), withRollingUpdateStrategy(defaultRollout), withAffinity(defaultAffinity), withoutSeccompProfile()),
+			expectedCSV:     newTestCSV(withReplicas(defaultReplicas), withRollingUpdateStrategy(defaultRollout), withAffinity(defaultAffinity)),
+		},
+		{
+			name:            "Modified/SingleReplica/MissingSeccompProfile",
+			want:            wanted{true, nil},
+			highlyAvailable: false,
+			inputCSV:        newTestCSV(withReplicas(singleReplicas), withRollingUpdateStrategy(emptyRollout), withAffinity(&corev1.Affinity{}), withoutSeccompProfile()),
+			expectedCSV:     newTestCSV(withReplicas(singleReplicas), withRollingUpdateStrategy(emptyRollout), withAffinity(&corev1.Affinity{})),
+		},
+		{
+			name:            "Modified/HighlyAvailable/NilPodSecurityContext",
+			want:            wanted{true, nil},
+			highlyAvailable: true,
+			inputCSV:        newTestCSV(withReplicas(defaultReplicas), withRollingUpdateStrategy(defaultRollout), withAffinity(defaultAffinity), withNilPodSecurityContext()),
+			expectedCSV:     newTestCSV(withReplicas(defaultReplicas), withRollingUpdateStrategy(defaultRollout), withAffinity(defaultAffinity)),
 		},
 	}
 
