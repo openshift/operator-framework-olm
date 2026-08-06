@@ -510,6 +510,9 @@ objects:
     name: "${NAME}"
     namespace: "${NAMESPACE}"
   spec:
+    grpcPodConfig:
+      nodeSelector:
+        kubernetes.io/arch: "${ARCH}"
     image: "${ADDRESS}"
     secrets:
     - "${SECRET}"  
@@ -532,6 +535,7 @@ parameters:
 - name: SECRET
 - name: INTERVAL
   value: "10m0s"
+- name: ARCH
 `)
 
 func testQeTestdataOlmCatalogsourceImageYamlBytes() ([]byte, error) {
@@ -6952,6 +6956,8 @@ objects:
     name: "${NAME}"
     namespace: "${NAMESPACE}"
   spec:
+    nodeSelector:
+      kubernetes.io/arch: "${ARCH}"
     output:
       to:
         kind: ImageStreamTag
@@ -6968,6 +6974,7 @@ parameters:
 - name: NAME
 - name: NAMESPACE
 - name: BASE_IMAGE
+- name: ARCH
 `)
 
 func testQeTestdataOlmCustomSchemaBuildconfigYamlBytes() ([]byte, error) {
