@@ -643,11 +643,13 @@
     }
   },
   {
-    "name": "[sig-operator][Jira:OLM][OCPFeatureGate:OLMLifecycleAndCompatibility] OLMv0 custom schema gRPC endpoint ExperimentalListPackageCustomSchemas returns custom schema FBC",
+    "name": "[sig-operator][Jira:OLM] OLMv0 custom schema gRPC endpoint ExperimentalListPackageCustomSchemas returns custom schema FBC",
+    "originalName": "[sig-operator][Jira:OLM][OCPFeatureGate:OLMLifecycleAndCompatibility] OLMv0 custom schema gRPC endpoint ExperimentalListPackageCustomSchemas returns custom schema FBC",
     "labels": {
       "Extended": {},
       "NonHyperShiftHOST": {},
-      "ReleaseGate": {}
+      "ReleaseGate": {},
+      "original-name:[sig-operator][Jira:OLM][OCPFeatureGate:OLMLifecycleAndCompatibility] OLMv0 custom schema gRPC endpoint ExperimentalListPackageCustomSchemas returns custom schema FBC": {}
     },
     "resources": {
       "isolation": {}

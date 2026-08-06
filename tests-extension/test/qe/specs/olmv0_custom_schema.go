@@ -17,7 +17,7 @@ const (
 	grpcRequestTimeout = 60 * time.Second
 )
 
-var _ = g.Describe("[sig-operator][Jira:OLM][OCPFeatureGate:OLMLifecycleAndCompatibility] OLMv0 custom schema gRPC endpoint", g.Label("NonHyperShiftHOST"), func() {
+var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 custom schema gRPC endpoint", g.Label("NonHyperShiftHOST"), func() {
 	defer g.GinkgoRecover()
 
 	var (
@@ -39,7 +39,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM][OCPFeatureGate:OLMLifecycleAndCompa
 		dr.RmIr(itName)
 	})
 
-	g.It("ExperimentalListPackageCustomSchemas returns custom schema FBC", g.Label("ReleaseGate"), func() {
+	g.It("ExperimentalListPackageCustomSchemas returns custom schema FBC", g.Label("ReleaseGate", "original-name:[sig-operator][Jira:OLM][OCPFeatureGate:OLMLifecycleAndCompatibility] OLMv0 custom schema gRPC endpoint ExperimentalListPackageCustomSchemas returns custom schema FBC"), func() {
 		namespace := oc.Namespace()
 		catalogName := "custom-schema-" + exutil.GetRandomString()
 		itName := g.CurrentSpecReport().FullText()
