@@ -212,7 +212,7 @@ func PortForwardToCatalogPod(oc *exutil.CLI, namespace, catalogName string) (str
 	e2e.Logf("found catalog pod: %s", podName)
 
 	// Find a free local port
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := net.Listen("tcp", "localhost:0")
 	o.Expect(err).NotTo(o.HaveOccurred())
 	localPort := listener.Addr().(*net.TCPAddr).Port
 	_ = listener.Close()
