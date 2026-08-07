@@ -149,6 +149,21 @@ func ensureCSVHighAvailability(image string, csv *olmv1alpha1.ClusterServiceVers
 		modified = true
 	}
 
+	// Ensure pod-level seccompProfile is always set. The openshift-operator-lifecycle-manager
+	// namespace enforces restricted:latest PodSecurity, which requires seccompProfile. The CSV
+	// template includes this field, but it may be absent if the cluster CSV was created by an
+	// older version or if SCC/PSA admission ordering masks the missing field on most clusters.
+	if deployment.Template.Spec.SecurityContext == nil {
+		deployment.Template.Spec.SecurityContext = &corev1.PodSecurityContext{}
+	}
+	if deployment.Template.Spec.SecurityContext.SeccompProfile == nil ||
+		deployment.Template.Spec.SecurityContext.SeccompProfile.Type != corev1.SeccompProfileTypeRuntimeDefault {
+		deployment.Template.Spec.SecurityContext.SeccompProfile = &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		}
+		modified = true
+	}
+
 	if modified {
 		csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec = *deployment
 	}
