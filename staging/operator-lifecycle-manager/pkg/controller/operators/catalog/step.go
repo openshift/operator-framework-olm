@@ -2,9 +2,11 @@ package catalog
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -19,10 +21,12 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
 	listersv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/listers/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/internal/alongside"
 	crdlib "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/crd"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 // Stepper manages cluster interactions based on the step.
@@ -43,6 +47,7 @@ type builder struct {
 	plan             *v1alpha1.InstallPlan
 	csvLister        listersv1alpha1.ClusterServiceVersionLister
 	opclient         operatorclient.ClientInterface
+	olmClient        versioned.Interface
 	dynamicClient    dynamic.Interface
 	manifestResolver ManifestResolver
 	logger           logrus.FieldLogger
@@ -51,11 +56,12 @@ type builder struct {
 	annotator alongside.Annotator
 }
 
-func newBuilder(plan *v1alpha1.InstallPlan, csvLister listersv1alpha1.ClusterServiceVersionLister, opclient operatorclient.ClientInterface, dynamicClient dynamic.Interface, manifestResolver ManifestResolver, logger logrus.FieldLogger, er record.EventRecorder) *builder {
+func newBuilder(plan *v1alpha1.InstallPlan, csvLister listersv1alpha1.ClusterServiceVersionLister, opclient operatorclient.ClientInterface, olmClient versioned.Interface, dynamicClient dynamic.Interface, manifestResolver ManifestResolver, logger logrus.FieldLogger, er record.EventRecorder) *builder {
 	return &builder{
 		plan:             plan,
 		csvLister:        csvLister,
 		opclient:         opclient,
+		olmClient:        olmClient,
 		dynamicClient:    dynamicClient,
 		manifestResolver: manifestResolver,
 		logger:           logger,
@@ -91,6 +97,8 @@ func (b *builder) create(step v1alpha1.Step) (Stepper, error) {
 		case crdlib.V1Beta1Version:
 			return b.NewCRDV1Beta1Step(b.opclient.ApiextensionsInterface().ApiextensionsV1beta1(), &step, manifest), nil
 		}
+	case resolver.BundleSecretKind:
+		return b.NewBundleSecretStep(&step, manifest), nil
 	}
 	return nil, notSupportedStepperErr{fmt.Sprintf("stepper interface does not support %s", step.Resource.Kind)}
 }
@@ -317,4 +325,93 @@ func setInstalledAlongsideAnnotation(a alongside.Annotator, dst metav1.Object, n
 	}
 
 	a.ToObject(dst, nns)
+}
+
+// NewBundleSecretStep returns a StepperFunc for BundleSecret steps (OCPBUGS-35210 Fix 2).
+//
+// SA-token Secrets must not be created before their owning ServiceAccount exists — the
+// Kubernetes token controller (KCM) immediately deletes orphaned token secrets, and
+// EnsureBundleSecret would mark the step Created permanently, preventing any retry.
+//
+// This StepperFunc returns WaitingForAPI when the SA is absent so that NeedsRequeue()
+// keeps phase=Installing and OLM retries after 5 s. On the retry the SA has been
+// created (it appears later in the plan), and the secret is created successfully.
+// WaitingForAPI in the StepperFunc path is handled here directly — it never reaches
+// the main ExecutePlan switch that would otherwise skip the step.
+func (b *builder) NewBundleSecretStep(step *v1alpha1.Step, manifest string) StepperFunc {
+	return func() (v1alpha1.StepStatus, error) {
+		switch step.Status {
+		case v1alpha1.StepStatusPresent, v1alpha1.StepStatusCreated:
+			return step.Status, nil
+		}
+
+		namespace := b.plan.GetNamespace()
+
+		var s corev1.Secret
+		if err := json.Unmarshal([]byte(manifest), &s); err != nil {
+			return v1alpha1.StepStatusUnknown, err
+		}
+
+		saName := s.Annotations[corev1.ServiceAccountNameKey]
+		if s.Type == corev1.SecretTypeServiceAccountToken && saName != "" {
+			_, saErr := b.opclient.KubernetesInterface().CoreV1().
+				ServiceAccounts(namespace).Get(context.TODO(), saName, metav1.GetOptions{})
+			if apierrors.IsNotFound(saErr) {
+				logrus.WithFields(logrus.Fields{
+					"secret": s.Name,
+					"sa":     saName,
+				}).Info("BundleSecretStep: SA not yet created — returning WaitingForAPI (OCPBUGS-35210)")
+				return v1alpha1.StepStatusWaitingForAPI, nil
+			}
+			if saErr != nil {
+				return v1alpha1.StepStatusUnknown, saErr
+			}
+		}
+
+		s.SetNamespace(namespace)
+		if s.Labels == nil {
+			s.Labels = map[string]string{}
+		}
+		s.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
+
+		// Mirror the original owner-ref logic from operator.go: add CSV owner ref
+		// with live API UID lookup (same as getUpdatedOwnerReferences) so the secret
+		// is GC'd when the operator is uninstalled.
+		if step.Resolving != "" {
+			owner := &v1alpha1.ClusterServiceVersion{}
+			owner.SetNamespace(namespace)
+			owner.SetName(step.Resolving)
+			ownerutil.AddNonBlockingOwner(&s, owner)
+			// Update the empty UID with the current CSV UID via live API call.
+			if csv, err := b.olmClient.OperatorsV1alpha1().
+				ClusterServiceVersions(namespace).Get(context.TODO(), step.Resolving, metav1.GetOptions{}); err == nil {
+				refs := s.GetOwnerReferences()
+				for i := range refs {
+					if refs[i].Kind == v1alpha1.ClusterServiceVersionKind && refs[i].Name == step.Resolving {
+						refs[i].UID = csv.GetUID()
+					}
+				}
+				s.SetOwnerReferences(refs)
+			} else if !apierrors.IsNotFound(err) {
+				return v1alpha1.StepStatusUnknown, err
+			} else {
+				// CSV not found — clear the empty-UID owner ref to avoid API rejection.
+				s.SetOwnerReferences(nil)
+			}
+		}
+
+		_, createErr := b.opclient.KubernetesInterface().CoreV1().
+			Secrets(namespace).Create(context.TODO(), &s, metav1.CreateOptions{})
+		if createErr == nil {
+			return v1alpha1.StepStatusCreated, nil
+		}
+		if apierrors.IsAlreadyExists(createErr) {
+			s.SetNamespace(namespace)
+			if _, updateErr := b.opclient.UpdateSecret(&s); updateErr != nil {
+				return v1alpha1.StepStatusUnknown, updateErr
+			}
+			return v1alpha1.StepStatusPresent, nil
+		}
+		return v1alpha1.StepStatusUnknown, createErr
+	}
 }
