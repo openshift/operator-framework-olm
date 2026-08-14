@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	g "github.com/onsi/ginkgo/v2"
@@ -54,8 +55,21 @@ var _ = g.Describe("[sig-operator][Jira:OLM][OCPFeatureGate:OLMLifecycleAndCompa
 		fbcContent, err := os.ReadFile(exutil.FixturePath("testdata", "custom-schema", "index.json"))
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		testArch := runtime.GOARCH
-		e2e.Logf("test running on architecture: %s", testArch)
+		// Detect architecture from a schedulable worker node rather than the
+		// test binary's compile-time GOARCH (which is always amd64 even when
+		// the cluster runs on arm64/ppc64le/s390x).
+		testArch := runtime.GOARCH // fallback to compile-time arch
+		workerArch, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
+			"nodes",
+			"-l", "node-role.kubernetes.io/worker",
+			"-o", "jsonpath={.items[0].status.nodeInfo.architecture}",
+		).Output()
+		if err == nil && strings.TrimSpace(workerArch) != "" {
+			testArch = strings.TrimSpace(workerArch)
+			e2e.Logf("detected worker node architecture: %s", testArch)
+		} else {
+			e2e.Logf("could not detect worker node architecture (err: %v), falling back to runtime.GOARCH: %s", err, testArch)
+		}
 
 		imageRef := olmv0util.BuildCustomCatalogImage(oc, namespace, catalogName, baseImage, testArch, fbcContent)
 		e2e.Logf("built catalog image: %s", imageRef)
