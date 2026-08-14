@@ -6,6 +6,7 @@ package olmv0util
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
@@ -33,6 +34,7 @@ type CatalogSourceDescription struct {
 	Interval      string // Update interval for the catalog source
 	ImageTemplate string // Image template for catalog updates
 	ClusterType   string // Target cluster type (e.g., "microshift")
+	Arch          string // Architecture for node selector
 }
 
 // Create creates a CatalogSource resource using the provided template and parameters
@@ -49,6 +51,10 @@ func (catsrc *CatalogSourceDescription) Create(oc *exutil.CLI, itName string, dr
 		catsrc.Interval = "10m0s"
 		e2e.Logf("set interval to be 10m0s")
 	}
+	if catsrc.Arch == "" {
+		catsrc.Arch = runtime.GOARCH
+		e2e.Logf("set catalogsource node selector arch to %s", catsrc.Arch)
+	}
 	// Choose appropriate template application function based on cluster type
 	applyFn := ApplyResourceFromTemplate
 	if strings.Compare(catsrc.ClusterType, "microshift") == 0 {
@@ -63,7 +69,7 @@ func (catsrc *CatalogSourceDescription) Create(oc *exutil.CLI, itName string, dr
 	err := applyFn(oc, "--ignore-unknown-parameters=true", "-f", catsrc.Template,
 		"-p", "NAME="+catsrc.Name, "NAMESPACE="+catsrc.Namespace, "ADDRESS="+catsrc.Address, "SECRET="+catsrc.Secret,
 		"DISPLAYNAME="+"\""+catsrc.DisplayName+"\"", "PUBLISHER="+"\""+catsrc.Publisher+"\"", "SOURCETYPE="+catsrc.SourceType,
-		"INTERVAL="+catsrc.Interval, "IMAGETEMPLATE="+imageTemplate)
+		"INTERVAL="+catsrc.Interval, "IMAGETEMPLATE="+imageTemplate, "ARCH="+catsrc.Arch)
 	o.Expect(err).NotTo(o.HaveOccurred())
 	// Configure security context constraints for non-microshift clusters
 	if strings.Compare(catsrc.ClusterType, "microshift") != 0 {

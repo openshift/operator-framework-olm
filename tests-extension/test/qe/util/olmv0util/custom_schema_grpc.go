@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -123,7 +124,7 @@ func GetOPMBaseImage(oc *exutil.CLI) string {
 // BuildConfig. It creates an ImageStream and BuildConfig, starts a binary build
 // from the provided FBC content, and waits for completion.
 // Returns the internal registry image reference.
-func BuildCustomCatalogImage(oc *exutil.CLI, namespace, name, baseImage string, fbcContent []byte) string {
+func BuildCustomCatalogImage(oc *exutil.CLI, namespace, name, baseImage, arch string, fbcContent []byte) string {
 	// Create ImageStream
 	isTemplate := exutil.FixturePath("testdata", "olm", "custom-schema-imagestream.yaml")
 	err := ApplyResourceFromTemplate(oc, "--ignore-unknown-parameters=true", "-f", isTemplate,
@@ -132,11 +133,14 @@ func BuildCustomCatalogImage(oc *exutil.CLI, namespace, name, baseImage string, 
 	e2e.Logf("created ImageStream %s/%s", namespace, name)
 
 	// Create BuildConfig
+	if arch == "" {
+		arch = runtime.GOARCH
+	}
 	bcTemplate := exutil.FixturePath("testdata", "olm", "custom-schema-buildconfig.yaml")
 	err = ApplyResourceFromTemplate(oc, "--ignore-unknown-parameters=true", "-f", bcTemplate,
-		"-p", "NAME="+name, "NAMESPACE="+namespace, "BASE_IMAGE="+baseImage)
+		"-p", "NAME="+name, "NAMESPACE="+namespace, "BASE_IMAGE="+baseImage, "ARCH="+arch)
 	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("created BuildConfig %s/%s with base image %s", namespace, name, baseImage)
+	e2e.Logf("created BuildConfig %s/%s with base image %s for arch %s", namespace, name, baseImage, arch)
 
 	// Prepare build directory
 	buildDir, err := os.MkdirTemp("", "custom-schema-build-")
