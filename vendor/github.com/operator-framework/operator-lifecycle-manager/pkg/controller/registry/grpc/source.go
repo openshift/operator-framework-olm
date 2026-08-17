@@ -228,6 +228,12 @@ func (s *SourceStore) watch(ctx context.Context, key registry.CatalogKey, source
 					s.sources[key] = *src
 					s.sourcesLock.Unlock()
 
+					// Always try to reconnect. If the connection is already connected, this is a no-op.
+					//
+					// This function is non-blocking. Therefore, when it returns we'll still return IDLE
+					// as the state (we'll see further state changes in subsequent iterations of the loop).
+					source.Conn.Connect()
+
 					// notify subscriber
 					s.notify <- SourceState{Key: key, State: newState}
 				}
