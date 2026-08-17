@@ -53,7 +53,10 @@ var _ = g.Describe("[sig-operator][Jira:OLM][OCPFeatureGate:OLMLifecycleAndCompa
 		fbcContent, err := os.ReadFile(exutil.FixturePath("testdata", "custom-schema", "index.json"))
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		imageRef := olmv0util.BuildCustomCatalogImage(oc, namespace, catalogName, baseImage, fbcContent)
+		testArch := olmv0util.GetNodeArch(oc)
+		e2e.Logf("test running on architecture: %s", testArch)
+
+		imageRef := olmv0util.BuildCustomCatalogImage(oc, namespace, catalogName, baseImage, testArch, fbcContent)
 		e2e.Logf("built catalog image: %s", imageRef)
 
 		// Register build resources for cleanup
@@ -67,6 +70,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM][OCPFeatureGate:OLMLifecycleAndCompa
 			SourceType: "grpc",
 			Address:    imageRef,
 			Template:   exutil.FixturePath("testdata", "olm", "catalogsource-image.yaml"),
+			Arch:       testArch,
 		}
 		catsrc.CreateWithCheck(oc, itName, dr)
 
