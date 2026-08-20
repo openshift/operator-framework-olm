@@ -5,7 +5,6 @@ package olmv0util
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"runtime"
 	"strings"
@@ -38,21 +37,21 @@ type CatalogSourceDescription struct {
 	Arch          string // Architecture for node selector
 }
 
+// Query architecture directly from a worker node's status.
+// Use worker nodes specifically since BuildConfig and CatalogSource
+// pods are scheduled on worker nodes.
 func GetNodeArch(oc *exutil.CLI) string {
-	envOutput, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
-		"nodes", "-o=jsonpath={.metadata.labels}",
+	arch, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
+		"nodes",
+		"-l", "node-role.kubernetes.io/worker",
+		"--field-selector", "spec.unschedulable!=true",
+		"-o", "jsonpath={.items[0].status.nodeInfo.architecture}",
 	).Output()
-	o.Expect(err).NotTo(o.HaveOccurred())
-
-	for _, nodeLabels := range strings.Split(envOutput, " ") {
-		labels := map[string]string{}
-		err = json.Unmarshal([]byte(nodeLabels), &labels)
-		o.Expect(err).NotTo(o.HaveOccurred())
-		if nodeArch, ok := labels["kubernetes.io/arch"]; ok && len(nodeArch) > 0 {
-			return nodeArch
-		}
+	if err == nil && len(strings.TrimSpace(arch)) > 0 {
+		return strings.TrimSpace(arch)
 	}
 
+	e2e.Logf("failed to get node architecture from cluster (%v), falling back to runtime.GOARCH (%s)", err, runtime.GOARCH)
 	return runtime.GOARCH
 }
 
