@@ -11,6 +11,7 @@ objects:
   spec:
     image: "${ADDRESS}"
     grpcPodConfig:
+      securityContextConfig: restricted
       extractContent:
         catalogDir: /configs
     secrets:
