@@ -17,7 +17,7 @@ require (
 	github.com/operator-framework/api v0.45.0
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/operator-registry v1.73.0
-	github.com/sirupsen/logrus v1.10.0
+	github.com/sirupsen/logrus v1.10.1
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.2
