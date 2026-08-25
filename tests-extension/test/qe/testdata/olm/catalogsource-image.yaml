@@ -9,6 +9,9 @@ objects:
     name: "${NAME}"
     namespace: "${NAMESPACE}"
   spec:
+    grpcPodConfig:
+      nodeSelector:
+        kubernetes.io/arch: "${ARCH}"
     image: "${ADDRESS}"
     secrets:
     - "${SECRET}"  
@@ -31,3 +34,4 @@ parameters:
 - name: SECRET
 - name: INTERVAL
   value: "10m0s"
+- name: ARCH
