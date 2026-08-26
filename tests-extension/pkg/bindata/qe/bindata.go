@@ -359,6 +359,7 @@ objects:
   spec:
     image: "${ADDRESS}"
     grpcPodConfig:
+      securityContextConfig: restricted
       extractContent:
         catalogDir: /configs
     secrets:
@@ -412,6 +413,7 @@ objects:
   spec:
     image: "${ADDRESS}"
     grpcPodConfig:
+      securityContextConfig: restricted
       extractContent:
         cacheDir: /tmp/cache
         catalogDir: /configs
@@ -465,15 +467,17 @@ objects:
     namespace: "${NAMESPACE}"
   spec:
     image: "${ADDRESS}"
+    grpcPodConfig:
+      securityContextConfig: restricted
     secrets:
-    - "${SECRET}"  
+    - "${SECRET}"
     displayName: "${DISPLAYNAME}"
     icon:
       base64data: ""
       mediatype: ""
     publisher: "${PUBLISHER}"
     sourceType: "${SOURCETYPE}"
-    updateStrategy: 
+    updateStrategy:
       registryPoll: {}
 parameters:
 - name: NAME
@@ -482,7 +486,8 @@ parameters:
 - name: DISPLAYNAME
 - name: PUBLISHER
 - name: SOURCETYPE
-- name: SECRET`)
+- name: SECRET
+`)
 
 func testQeTestdataOlmCatalogsourceImageIncorrectUpdatestrategyYamlBytes() ([]byte, error) {
 	return _testQeTestdataOlmCatalogsourceImageIncorrectUpdatestrategyYaml, nil
@@ -511,6 +516,7 @@ objects:
     namespace: "${NAMESPACE}"
   spec:
     grpcPodConfig:
+      securityContextConfig: restricted
       nodeSelector:
         kubernetes.io/arch: "${ARCH}"
     image: "${ADDRESS}"
@@ -645,6 +651,7 @@ objects:
     namespace: "${NAMESPACE}"
   spec:
     grpcPodConfig:
+      securityContextConfig: restricted
       extractContent:
         cacheDir: /tmp/cache
         catalogDir: /configs
@@ -6732,8 +6739,10 @@ objects:
     namespace: "${NAMESPACE}"
   spec:
     image: "${ADDRESS}"
+    grpcPodConfig:
+      securityContextConfig: restricted
     secrets:
-    - "${SECRET}"  
+    - "${SECRET}"
     displayName: "${DISPLAYNAME}"
     publisher: "${PUBLISHER}"
     sourceType: "${SOURCETYPE}"
@@ -6824,8 +6833,10 @@ objects:
     namespace: "${NAMESPACE}"
   spec:
     image: "${ADDRESS}"
+    grpcPodConfig:
+      securityContextConfig: restricted
     secrets:
-    - "${SECRET}"  
+    - "${SECRET}"
     displayName: "${DISPLAYNAME}"
     publisher: "${PUBLISHER}"
     sourceType: "${SOURCETYPE}"

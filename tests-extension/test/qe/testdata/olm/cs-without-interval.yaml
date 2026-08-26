@@ -12,8 +12,10 @@ objects:
     namespace: "${NAMESPACE}"
   spec:
     image: "${ADDRESS}"
+    grpcPodConfig:
+      securityContextConfig: restricted
     secrets:
-    - "${SECRET}"  
+    - "${SECRET}"
     displayName: "${DISPLAYNAME}"
     publisher: "${PUBLISHER}"
     sourceType: "${SOURCETYPE}"

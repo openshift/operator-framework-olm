@@ -10,6 +10,7 @@ objects:
     namespace: "${NAMESPACE}"
   spec:
     grpcPodConfig:
+      securityContextConfig: restricted
       extractContent:
         cacheDir: /tmp/cache
         catalogDir: /configs
