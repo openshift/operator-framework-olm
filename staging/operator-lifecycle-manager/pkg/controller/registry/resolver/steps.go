@@ -148,6 +148,8 @@ func NewStepResourceFromBundle(bundle *api.Bundle, namespace, replaces, catalogS
 	}
 	steps := []v1alpha1.StepResource{step}
 
+	// Original ordering: bundle objects first, then synthesized SA/RBAC last.
+	// This is the UNFIXED ordering that causes OCPBUGS-35210.
 	for _, object := range bundle.Object {
 		dec := yaml.NewYAMLOrJSONDecoder(strings.NewReader(object), 10)
 		unst := &unstructured.Unstructured{}
