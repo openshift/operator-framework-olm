@@ -107,7 +107,7 @@ func NewCLI(project, adminConfigPath string) *CLI {
 	g.BeforeEach(func() { SkipOnOpenShiftNess(true) })
 
 	// must be registered before the e2e framework aftereach
-	g.AfterEach(client.TeardownProject)
+	g.AfterEach(client.AuditAndTeardownProject)
 
 	client.kubeFramework = e2e.NewDefaultFramework(project)
 	client.kubeFramework.SkipNamespaceCreation = true
@@ -131,7 +131,7 @@ func NewCLIWithoutNamespace(project string) *CLI {
 	g.BeforeEach(func() { SkipOnOpenShiftNess(true) })
 
 	// must be registered before the e2e framework aftereach
-	g.AfterEach(client.TeardownProject)
+	g.AfterEach(client.AuditAndTeardownProject)
 
 	client.kubeFramework = e2e.NewDefaultFramework(project)
 	client.kubeFramework.SkipNamespaceCreation = true
