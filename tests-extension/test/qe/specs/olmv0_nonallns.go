@@ -6577,7 +6577,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 within a namespace", func() {
 			}
 			o.Expect(err).NotTo(o.HaveOccurred())
 		}
-		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "10", exutil.Ok, []string{"pods", "-n", "openshift-marketplace", "-l", "olm.catalogSource=redhat-operators", "-o=jsonpath={..spec.containers[0].startupProbe.failureThreshold}"}).Check(oc)
+		olmv0util.NewCheck("expect", exutil.AsAdmin, exutil.WithoutNamespace, exutil.Contain, "15", exutil.Ok, []string{"pods", "-n", "openshift-marketplace", "-l", "olm.catalogSource=redhat-operators", "-o=jsonpath={..spec.containers[0].startupProbe.failureThreshold}"}).Check(oc)
 	})
 
 	g.It("PolarionID:68901-[OTP][Skipped:Disconnected]Packageserver pod should not crash if updateStrategy is incorrect", g.Label("NonHyperShiftHOST"), func() {
