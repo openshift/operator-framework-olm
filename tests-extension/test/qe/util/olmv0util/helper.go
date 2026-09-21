@@ -304,10 +304,14 @@ func removeResource(oc *exutil.CLI, AsAdmin bool, WithoutNamespace bool, paramet
 
 func ClusterPackageExists(oc *exutil.CLI, sub SubscriptionDescription) (bool, error) {
 	msg, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("packagemanifest", sub.OperatorPackage, "-n", sub.CatalogSourceNamespace).Output()
-	if err != nil || strings.Contains(msg, "not found") {
+	if err != nil {
+		// A missing packagemanifest is a legitimate "does not exist" result, not a query error.
+		if strings.Contains(msg, "NotFound") || strings.Contains(msg, "not found") {
+			return false, nil
+		}
 		return false, err
 	}
-	return true, err
+	return true, nil
 }
 
 func ClusterPackageExistsInNamespace(oc *exutil.CLI, sub SubscriptionDescription, namespace string) (bool, error) {
