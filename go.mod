@@ -11,7 +11,7 @@ require (
 	github.com/grpc-ecosystem/grpc-health-probe v0.4.53
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.13.0
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
-	github.com/onsi/ginkgo/v2 v2.32.1
+	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/openshift/api v0.0.0-20260204104751-e09e5a4ebcd0
 	github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a
 	github.com/operator-framework/api v0.45.0
