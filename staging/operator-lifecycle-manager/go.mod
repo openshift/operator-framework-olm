@@ -16,8 +16,8 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.13.0
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.43.0
+	github.com/onsi/ginkgo/v2 v2.33.0
+	github.com/onsi/gomega v1.43.1
 	github.com/openshift/api v0.0.0-20260204104751-e09e5a4ebcd0
 	github.com/openshift/client-go v0.0.0-20260108185524-48f4ccfc4e13
 	github.com/openshift/library-go v0.0.0-20260204111611-b7d4fa0e292a
@@ -27,12 +27,12 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/client_model v0.6.3
-	github.com/prometheus/common v0.70.1
+	github.com/prometheus/common v0.71.0
 	github.com/sirupsen/logrus v1.10.2
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
-	go.podman.io/image/v5 v5.41.1
+	go.podman.io/image/v5 v5.41.2
 	go.uber.org/mock v0.6.0
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/net v0.59.0
@@ -170,7 +170,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.podman.io/common v0.69.0 // indirect
-	go.podman.io/storage v1.64.0 // indirect
+	go.podman.io/storage v1.64.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
