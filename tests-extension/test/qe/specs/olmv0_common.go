@@ -228,8 +228,24 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 			}
 			e2e.Logf("TLS configuration restored")
 
-			// Wait for all ClusterOperators to be stable after restore
-			g.By("Waiting for all ClusterOperators to be stable after restore")
+			// Wait for the OLM-owned ClusterOperators to be stable after restore.
+			//
+			// Restoring the apiserver tlsSecurityProfile triggers a rolling
+			// redeployment of the control-plane apiserver stack (kube-apiserver,
+			// openshift-apiserver, oauth-apiserver/authentication) and, downstream,
+			// machine-config/monitoring. Those operators are not owned by OLM and,
+			// on slow/proxy environments, can take well over 30 minutes to fully
+			// re-stabilize. Waiting on *all* ClusterOperators here makes this test
+			// flake on cluster-wide rollout timing that has nothing to do with OLM.
+			// Scope the wait to the operators this test actually exercises.
+			olmClusterOperators := map[string]bool{
+				"olm":                                      true,
+				"operator-lifecycle-manager":               true,
+				"operator-lifecycle-manager-catalog":       true,
+				"operator-lifecycle-manager-packageserver": true,
+				"marketplace":                              true,
+			}
+			g.By("Waiting for the OLM ClusterOperators to be stable after restore")
 			restoreErr := wait.PollUntilContextTimeout(context.TODO(), 30*time.Second, 1800*time.Second, false, func(ctx context.Context) (bool, error) {
 				// Get all cluster operators and check their status
 				coList, getErr := oc.AsAdmin().WithoutNamespace().Run("get").Args("clusteroperator",
@@ -239,7 +255,7 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 					return false, nil
 				}
 
-				// Parse each CO status
+				// Parse each CO status, only evaluating the OLM-owned operators
 				coEntries := strings.Split(coList, ";")
 				for _, entry := range coEntries {
 					if entry == "" {
@@ -254,16 +270,20 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 					progressing := parts[2]
 					degraded := parts[3]
 
+					if !olmClusterOperators[coName] {
+						continue
+					}
+
 					if available != "True" || progressing != "False" || degraded != "False" {
 						e2e.Logf("ClusterOperator %s status: Available=%s, Progressing=%s, Degraded=%s, waiting...", coName, available, progressing, degraded)
 						return false, nil
 					}
 				}
-				e2e.Logf("All ClusterOperators are stable (Available=True, Progressing=False, Degraded=False)")
+				e2e.Logf("All OLM ClusterOperators are stable (Available=True, Progressing=False, Degraded=False)")
 				return true, nil
 			})
 			if restoreErr != nil {
-				e2e.Failf("ClusterOperators did not stabilize after restore: %v", restoreErr)
+				e2e.Failf("OLM ClusterOperators did not stabilize after restore: %v", restoreErr)
 			}
 
 			// Verify TLS 1.2 connection succeeds after restore
