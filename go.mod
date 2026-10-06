@@ -272,4 +272,4 @@ replace (
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06
 )
 
-replace golang.org/x/net => github.com/openshift-sustaining/net v0.35.0-sec.3
+replace golang.org/x/net => github.com/openshift-sustaining/net v0.35.0-sec.4
