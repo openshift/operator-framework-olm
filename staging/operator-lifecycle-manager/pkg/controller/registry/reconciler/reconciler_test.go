@@ -38,7 +38,7 @@ func TestPodMemoryTarget(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "test-",
 					Namespace:    "testns",
-					Labels:       map[string]string{"olm.pod-spec-hash": "8SbHWyYfjbRT8lLcfdZ5ofXNdC1GE6ayztILTF", "olm.managed": "true"},
+					Labels:       map[string]string{"olm.pod-spec-hash": "7GaS3guB5nI1giLdKmIF0yRzhuS39lnf8GhpA3", "olm.managed": "true"},
 					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
 				},
 				Spec: corev1.PodSpec{
@@ -71,7 +71,7 @@ func TestPodMemoryTarget(t *testing.T) {
 										Command: []string{"grpc_health_probe", "-addr=:50051"},
 									},
 								},
-								FailureThreshold: 10,
+								FailureThreshold: 15,
 								PeriodSeconds:    10,
 								TimeoutSeconds:   5,
 							},
@@ -110,7 +110,7 @@ func TestPodMemoryTarget(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "test-",
 					Namespace:    "testns",
-					Labels:       map[string]string{"olm.pod-spec-hash": "3DSBhZZIiOl5YIjTsZy9aRyFIXeDR8mZCGAcYA", "olm.managed": "true"},
+					Labels:       map[string]string{"olm.pod-spec-hash": "6heQi6ozQDzsAn0qT0Up3eihZ5RLzvQ6mVdx7r", "olm.managed": "true"},
 					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
 				},
 				Spec: corev1.PodSpec{
@@ -144,7 +144,7 @@ func TestPodMemoryTarget(t *testing.T) {
 										Command: []string{"grpc_health_probe", "-addr=:50051"},
 									},
 								},
-								FailureThreshold: 10,
+								FailureThreshold: 15,
 								PeriodSeconds:    10,
 								TimeoutSeconds:   5,
 							},
@@ -209,7 +209,7 @@ func TestPodExtractContent(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "test-",
 					Namespace:    "testns",
-					Labels:       map[string]string{"olm.pod-spec-hash": "8SbHWyYfjbRT8lLcfdZ5ofXNdC1GE6ayztILTF", "olm.managed": "true"},
+					Labels:       map[string]string{"olm.pod-spec-hash": "7GaS3guB5nI1giLdKmIF0yRzhuS39lnf8GhpA3", "olm.managed": "true"},
 					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
 				},
 				Spec: corev1.PodSpec{
@@ -242,7 +242,7 @@ func TestPodExtractContent(t *testing.T) {
 										Command: []string{"grpc_health_probe", "-addr=:50051"},
 									},
 								},
-								FailureThreshold: 10,
+								FailureThreshold: 15,
 								PeriodSeconds:    10,
 								TimeoutSeconds:   5,
 							},
@@ -285,7 +285,7 @@ func TestPodExtractContent(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "test-",
 					Namespace:    "testns",
-					Labels:       map[string]string{"olm.pod-spec-hash": "5MSUJs07MqD3fl9supmPaRNxD9N6tK8Bjo4OFl", "olm.managed": "true"},
+					Labels:       map[string]string{"olm.pod-spec-hash": "3JROFsY5OC2a8eM9MG2M53k1Ub6tzspELr7viS", "olm.managed": "true"},
 					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
 				},
 				Spec: corev1.PodSpec{
@@ -357,7 +357,7 @@ func TestPodExtractContent(t *testing.T) {
 										Command: []string{"grpc_health_probe", "-addr=:50051"},
 									},
 								},
-								FailureThreshold: 10,
+								FailureThreshold: 15,
 								PeriodSeconds:    10,
 								TimeoutSeconds:   5,
 							},
@@ -393,7 +393,7 @@ func TestPodExtractContent(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "test-",
 					Namespace:    "testns",
-					Labels:       map[string]string{"olm.pod-spec-hash": "3sDLk8MMNptrqUfdnruY2gUi1g8O4wpMWC6Q52", "olm.managed": "true"},
+					Labels:       map[string]string{"olm.pod-spec-hash": "18desAbxaGlT66eVvFKsEjoUwkq5DjCMJHNUjm", "olm.managed": "true"},
 					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
 				},
 				Spec: corev1.PodSpec{
@@ -426,7 +426,7 @@ func TestPodExtractContent(t *testing.T) {
 										Command: []string{"grpc_health_probe", "-addr=:50051"},
 									},
 								},
-								FailureThreshold: 10,
+								FailureThreshold: 15,
 								PeriodSeconds:    10,
 								TimeoutSeconds:   5,
 							},
@@ -476,7 +476,7 @@ func TestPodExtractContent(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "test-",
 					Namespace:    "testns",
-					Labels:       map[string]string{"olm.pod-spec-hash": "1X4YqbfXuc9SB9ztW03WNOyanr9aIhKfijeBHH", "olm.managed": "true"},
+					Labels:       map[string]string{"olm.pod-spec-hash": "1jhRAd7h5W3Qt92RLhm7DnR39Lf5scDbzpP4FK", "olm.managed": "true"},
 					Annotations:  map[string]string{"cluster-autoscaler.kubernetes.io/safe-to-evict": "true"},
 				},
 				Spec: corev1.PodSpec{
@@ -556,7 +556,7 @@ func TestPodExtractContent(t *testing.T) {
 										Command: []string{"grpc_health_probe", "-addr=:50051"},
 									},
 								},
-								FailureThreshold: 10,
+								FailureThreshold: 15,
 								PeriodSeconds:    10,
 								TimeoutSeconds:   5,
 							},
