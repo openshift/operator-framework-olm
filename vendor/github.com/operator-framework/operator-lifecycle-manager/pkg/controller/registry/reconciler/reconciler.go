@@ -180,7 +180,7 @@ func Pod(source *operatorsv1alpha1.CatalogSource, name, opmImg, utilImage, img s
 								Command: []string{"grpc_health_probe", "-addr=:50051", "-rpc-timeout=5s"},
 							},
 						},
-						FailureThreshold: 10,
+						FailureThreshold: 15,
 						PeriodSeconds:    10,
 						TimeoutSeconds:   5,
 					},
