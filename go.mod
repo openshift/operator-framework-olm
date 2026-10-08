@@ -9,7 +9,7 @@ require (
 	github.com/golang/mock v1.7.0-rc.1
 	github.com/googleapis/gnostic v0.5.5
 	github.com/grpc-ecosystem/grpc-health-probe v0.4.53
-	github.com/maxbrunsfeld/counterfeiter/v6 v6.13.0
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.14.0
 	github.com/mikefarah/yq/v3 v3.0.0-20201202084205-8846255d1c37
 	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/openshift/api v0.0.0-20260204104751-e09e5a4ebcd0
