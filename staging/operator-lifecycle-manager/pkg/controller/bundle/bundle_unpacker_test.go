@@ -1819,7 +1819,11 @@ func TestOperatorGroupBundleUnpackTimeout(t *testing.T) {
 			timeout, err := OperatorGroupBundleUnpackTimeout(ogLister)
 
 			assert.Equal(t, tc.expectedTimeout, timeout)
-			assert.Equal(t, tc.expectedError, err)
+			if tc.expectedError != nil {
+				assert.EqualError(t, err, tc.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -1931,7 +1935,11 @@ func TestOperatorGroupBundleUnpackRetryInterval(t *testing.T) {
 			timeout, err := OperatorGroupBundleUnpackRetryInterval(ogLister)
 
 			assert.Equal(t, tc.expectedTimeout, timeout)
-			assert.Equal(t, tc.expectedError, err)
+			if tc.expectedError != nil {
+				assert.EqualError(t, err, tc.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
