@@ -24,6 +24,24 @@ import (
 )
 
 func TestReconcileAppliesTLSCurvePreferences(t *testing.T) {
+	command := reconcilePackageServerCommandForTLSGroups(t, []configv1.TLSGroup{configv1.TLSGroupSecP384r1, configv1.TLSGroupSecP256r1})
+	for i, arg := range command {
+		if arg == "--tls-curve-preferences" {
+			require.Less(t, i+1, len(command))
+			require.Equal(t, "24,23", command[i+1])
+			return
+		}
+	}
+	t.Fatal("package-server command is missing --tls-curve-preferences")
+}
+
+func TestReconcileOmitsEmptyTLSCurvePreferences(t *testing.T) {
+	command := reconcilePackageServerCommandForTLSGroups(t, nil)
+	require.NotContains(t, command, "--tls-curve-preferences")
+}
+
+func reconcilePackageServerCommandForTLSGroups(t *testing.T, groups []configv1.TLSGroup) []string {
+	t.Helper()
 	scheme := runtime.NewScheme()
 	require.NoError(t, configv1.AddToScheme(scheme))
 	require.NoError(t, olmv1alpha1.AddToScheme(scheme))
@@ -42,7 +60,7 @@ func TestReconcileAppliesTLSCurvePreferences(t *testing.T) {
 				Custom: &configv1.CustomTLSProfile{TLSProfileSpec: configv1.TLSProfileSpec{
 					Ciphers:       []string{"ECDHE-RSA-AES128-GCM-SHA256"},
 					MinTLSVersion: configv1.VersionTLS12,
-					Groups:        []configv1.TLSGroup{configv1.TLSGroupSecP384r1, configv1.TLSGroupSecP256r1},
+					Groups:        groups,
 				}},
 			}},
 		},
@@ -54,15 +72,7 @@ func TestReconcileAppliesTLSCurvePreferences(t *testing.T) {
 
 	csv := &olmv1alpha1.ClusterServiceVersion{}
 	require.NoError(t, client.Get(context.Background(), types.NamespacedName{Name: name, Namespace: namespace}, csv))
-	command := csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Command
-	for i, arg := range command {
-		if arg == "--tls-curve-preferences" {
-			require.Less(t, i+1, len(command))
-			require.Equal(t, "24,23", command[i+1])
-			return
-		}
-	}
-	t.Fatal("package-server command is missing --tls-curve-preferences")
+	return csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Command
 }
 
 var (

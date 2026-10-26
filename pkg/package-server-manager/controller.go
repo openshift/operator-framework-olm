@@ -104,8 +104,10 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		flags = append(flags,
 			"--tls-min-version", minVersionStr,
 			"--tls-cipher-suites", cipherSuitesStr,
-			"--tls-curve-preferences", curvePreferencesStr,
 		)
+		if curvePreferencesStr != "" {
+			flags = append(flags, "--tls-curve-preferences", curvePreferencesStr)
+		}
 		log.Info("applying cluster TLS security profile to packageserver", "minVersion", minVersionStr, "cipherSuites", cipherSuitesStr, "curvePreferences", curvePreferencesStr)
 	}
 
