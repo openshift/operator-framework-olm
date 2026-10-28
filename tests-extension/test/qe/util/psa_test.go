@@ -31,7 +31,9 @@ func TestSanitizePSAPath(t *testing.T) {
 
 // TestParsePSAWarnings is ported from openshift/cluster-debug-tools
 // (pkg/cmd/psa/parser_test.go) to keep the in-process audit's parsing
-// behaviour aligned with the kubectl-dev_tool psa-check command.
+// behaviour aligned with the kubectl-dev_tool psa-check command, extended to
+// cover the other-violating-pods count the parser captures for the build-pod
+// exemption.
 func TestParsePSAWarnings(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -58,10 +60,25 @@ func TestParsePSAWarnings(t *testing.T) {
 				`p0t-sekurity-pod (and 11 other pods): allowPrivilegeEscalation != false, unrestricted capabilities, runAsNonRoot != true, seccompProfile`,
 			},
 			expected: &podSecurityViolation{
-				Namespace:  "p0t-sekurity-namespace",
-				Level:      "restricted:latest",
-				PodName:    "p0t-sekurity-pod",
-				Violations: []string{"allowPrivilegeEscalation != false", "unrestricted capabilities", "runAsNonRoot != true", "seccompProfile"},
+				Namespace:          "p0t-sekurity-namespace",
+				Level:              "restricted:latest",
+				PodName:            "p0t-sekurity-pod",
+				Violations:         []string{"allowPrivilegeEscalation != false", "unrestricted capabilities", "runAsNonRoot != true", "seccompProfile"},
+				OtherViolatingPods: 11,
+			},
+		},
+		{
+			name: "valid warnings with a singular other-pod hint",
+			warnings: []string{
+				`existing pods in namespace "p0t-sekurity-namespace" violate the new PodSecurity enforce level "restricted:latest"`,
+				`p0t-sekurity-pod (and 1 other pod): privileged, runAsUser=0`,
+			},
+			expected: &podSecurityViolation{
+				Namespace:          "p0t-sekurity-namespace",
+				Level:              "restricted:latest",
+				PodName:            "p0t-sekurity-pod",
+				Violations:         []string{"privileged", "runAsUser=0"},
+				OtherViolatingPods: 1,
 			},
 		},
 		{
@@ -88,10 +105,11 @@ func TestParsePSAWarnings(t *testing.T) {
 				`this is some even more detail on that unknown warning`,
 			},
 			expected: &podSecurityViolation{
-				Namespace:  "p0t-sekurity-namespace",
-				Level:      "restricted:latest",
-				PodName:    "p0t-sekurity-pod",
-				Violations: []string{"forbidden AppArmor profiles", "forbidden sysctls", "host namespaces", "hostPath volumes", "hostPort", "hostProcess", "non-default capabilities", "privileged", "procMount", "restricted volume types", "runAsUser=0", "seLinuxOptions"},
+				Namespace:          "p0t-sekurity-namespace",
+				Level:              "restricted:latest",
+				PodName:            "p0t-sekurity-pod",
+				Violations:         []string{"forbidden AppArmor profiles", "forbidden sysctls", "host namespaces", "hostPath volumes", "hostPort", "hostProcess", "non-default capabilities", "privileged", "procMount", "restricted volume types", "runAsUser=0", "seLinuxOptions"},
+				OtherViolatingPods: 11,
 			},
 		},
 		{
@@ -168,6 +186,9 @@ func TestPSAViolationSummary(t *testing.T) {
 			t.Errorf("summary %q does not contain %q", summary, want)
 		}
 	}
+	if strings.Contains(summary, "other pods") {
+		t.Errorf("summary %q should not mention other pods when none are reported", summary)
+	}
 	if strings.Contains(summary, "podSecurityLabelSync") {
 		t.Errorf("summary %q should not mention the label syncer when unset", summary)
 	}
@@ -175,6 +196,11 @@ func TestPSAViolationSummary(t *testing.T) {
 	violation.SyncControlLabel = "true"
 	if summary := violation.summary(); !strings.Contains(summary, "podSecurityLabelSync") {
 		t.Errorf("summary %q should mention the label syncer when set", summary)
+	}
+
+	violation.OtherViolatingPods = 2
+	if summary := violation.summary(); !strings.Contains(summary, "2 other pods also violate") {
+		t.Errorf("summary %q should mention other violating pods", summary)
 	}
 }
 
@@ -196,5 +222,66 @@ func TestPSALabels(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("psaLabels() = %v, want %v", got, want)
+	}
+}
+
+func TestIsBuildPodName(t *testing.T) {
+	tests := []struct {
+		name    string
+		podName string
+		want    bool
+	}{
+		{name: "build pod", podName: "custom-schema-3d2a6f2c-1-build", want: true},
+		{name: "plain build suffix", podName: "my-build-42-build", want: true},
+		{name: "catalog pod", podName: "custom-schema-3d2a6f2c-jfb9w", want: false},
+		{name: "no suffix", podName: "catalog-operator-abc", want: false},
+		{name: "empty", podName: "", want: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isBuildPodName(tc.podName); got != tc.want {
+				t.Fatalf("isBuildPodName(%q) = %t, want %t", tc.podName, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSoleBuildPodViolation(t *testing.T) {
+	tests := []struct {
+		name      string
+		violation podSecurityViolation
+		want      bool
+	}{
+		{
+			name: "single build pod violation",
+			violation: podSecurityViolation{
+				PodName: "custom-schema-3d2a6f2c-1-build",
+			},
+			want: true,
+		},
+		{
+			name: "build pod with other violating pods",
+			violation: podSecurityViolation{
+				PodName:            "custom-schema-3d2a6f2c-1-build",
+				OtherViolatingPods: 2,
+			},
+			want: false,
+		},
+		{
+			name: "non-build pod",
+			violation: podSecurityViolation{
+				PodName: "custom-schema-3d2a6f2c-jfb9w",
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.violation.soleBuildPodViolation(); got != tc.want {
+				t.Fatalf("soleBuildPodViolation() = %t, want %t", got, tc.want)
+			}
+		})
 	}
 }

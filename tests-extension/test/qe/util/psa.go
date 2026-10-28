@@ -38,6 +38,20 @@ const (
 	psaAuditLevel = psapi.LevelRestricted
 )
 
+const (
+	// buildPodNameSuffix is the suffix the OpenShift build controller uses
+	// when naming the pod it creates for a Build: <build name>-build.
+	buildPodNameSuffix = "-build"
+
+	// buildNameLabel is set by the OpenShift build controller on the pods it
+	// creates for Builds.
+	buildNameLabel = "openshift.io/build.name"
+)
+
+// buildPodExemption is the exemption recorded for violations attributable to
+// OpenShift build pods.
+const buildPodExemption = "openshift build pod"
+
 // PSA audit modes, selected through the PSA_AUDIT_MODE environment variable.
 const (
 	// psaAuditOff skips the audit entirely.
@@ -89,6 +103,11 @@ type podSecurityViolation struct {
 	PodName string `json:"podName"`
 	// Violations lists the violations that pods in the namespace made.
 	Violations []string `json:"violations"`
+	// OtherViolatingPods is the number of additional pods the API server
+	// reported as violating the level without naming them.
+	OtherViolatingPods int `json:"otherViolatingPods,omitempty"`
+	// Exempted records the exemption applied to this violation, if any.
+	Exempted string `json:"exempted,omitempty"`
 	// Labels contains the pod security labels present on the namespace.
 	Labels map[string]string `json:"labels,omitempty"`
 	// SyncControlLabel signals that the OpenShift label syncer is enabled for
@@ -102,6 +121,9 @@ type podSecurityViolation struct {
 func (v *podSecurityViolation) summary() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "pod %q violates PodSecurity level %q: %s", v.PodName, v.Level, strings.Join(v.Violations, ", "))
+	if v.OtherViolatingPods > 0 {
+		fmt.Fprintf(&b, " (%d other pods also violate)", v.OtherViolatingPods)
+	}
 	if v.SyncControlLabel != "" {
 		fmt.Fprintf(&b, " (podSecurityLabelSync=%q: the OpenShift label syncer may still be converging the namespace labels)", v.SyncControlLabel)
 	}
@@ -137,6 +159,13 @@ func (w *warningCollector) popAll() []string {
 //
 //	existing pods in namespace "ns" violate the new PodSecurity enforce level "restricted:latest"
 var psaNamespaceViolationRegexp = regexp.MustCompile(`existing pods in namespace "([^"]+)" violate the new PodSecurity enforce level "([^"]+)"`)
+
+// psaOtherViolatingPodsRegexp matches the hint the API server appends to the
+// pod-level warning when pods other than the named one also violate the
+// level, e.g.:
+//
+//	pod-name (and 2 other pods): privileged, ...
+var psaOtherViolatingPodsRegexp = regexp.MustCompile(`\(and (\d+) other pods?\)`)
 
 // psaViolationReasons are the violation reasons the pod-security-admission
 // plugin reports for individual pods, e.g.:
@@ -205,7 +234,13 @@ func parsePSAWarnings(warnings []string) *podSecurityViolation {
 			continue
 		}
 
-		// Get rid of the potential " (and x other pods)" hint.
+		// Get rid of the potential " (and x other pods)" hint, recording how
+		// many additional pods violate the level without being named.
+		if matches := psaOtherViolatingPodsRegexp.FindStringSubmatch(textSplit[0]); len(matches) == 2 {
+			if count, err := strconv.Atoi(matches[1]); err == nil {
+				psv.OtherViolatingPods = count
+			}
+		}
 		psv.PodName = strings.Split(textSplit[0], " ")[0]
 		psv.Violations = matchedCandidates
 	}
@@ -217,6 +252,46 @@ func parsePSAWarnings(warnings []string) *podSecurityViolation {
 	}
 
 	return &psv
+}
+
+// isBuildPodName reports whether the pod name follows the OpenShift build
+// controller's naming convention for build pods: <build name>-build.
+func isBuildPodName(podName string) bool {
+	return strings.HasSuffix(podName, buildPodNameSuffix)
+}
+
+// soleBuildPodViolation reports whether the violation is attributable, by pod
+// name, to a single OpenShift build pod, making it a candidate for the
+// build-pod exemption. Violations that implicate additional pods are never
+// exempted: the API server does not name those pods, so they must surface for
+// triage.
+func (v *podSecurityViolation) soleBuildPodViolation() bool {
+	return isBuildPodName(v.PodName) && v.OtherViolatingPods == 0
+}
+
+// podIsOpenShiftBuild confirms through the openshift.io/build.name label that
+// the pod was created by the OpenShift build controller, guarding against
+// non-build pods that happen to carry the -build name suffix. When the pod
+// cannot be fetched -- e.g. because it was removed while the audit was
+// running -- the naming convention is trusted.
+func (c *CLI) podIsOpenShiftBuild(ctx context.Context, namespace, podName string) bool {
+	config, err := psaRestConfig(c.adminKubeConfigPath())
+	if err != nil {
+		e2e.Logf("PSA audit could not build a client to confirm the build-pod exemption for pod %q: %v", podName, err)
+		return true
+	}
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		e2e.Logf("PSA audit could not build a client to confirm the build-pod exemption for pod %q: %v", podName, err)
+		return true
+	}
+	pod, err := client.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		e2e.Logf("PSA audit could not fetch pod %q to confirm the build-pod exemption: %v", podName, err)
+		return true
+	}
+	_, isBuild := pod.Labels[buildNameLabel]
+	return isBuild
 }
 
 // AuditAndTeardownProject audits the current test namespace against the
@@ -231,6 +306,10 @@ func parsePSAWarnings(warnings []string) *podSecurityViolation {
 // olmv0-tests-ext binary makes it available wherever the tests execute,
 // without staging an external binary into the test environment (see
 // openshift/release#84940 and openshift/release#87635).
+//
+// Violations attributable solely to OpenShift build pods are exempted: build
+// pods cannot satisfy the restricted level by design, so they do not
+// represent regressions in the OLM resources the scenarios exercise.
 func (c *CLI) AuditAndTeardownProject() {
 	err := c.auditPSA()
 	c.TeardownProject()
@@ -266,6 +345,22 @@ func (c *CLI) auditPSA() error {
 		return fmt.Errorf("PSA audit failed for namespace %q: %w", namespace, err)
 	}
 	if violation == nil {
+		return nil
+	}
+
+	// OpenShift build pods cannot satisfy the restricted level by design
+	// (privileged builder containers, hostPath volumes, root user), so any
+	// scenario that builds images in-cluster would fail under
+	// enforce=restricted through no fault of the OLM resources it exercises.
+	// Violations attributable solely to a build pod are therefore exempted.
+	// This is a deliberate divergence from the kubectl-dev_tool psa-check
+	// baseline, which reports build pods like any other pod.
+	if violation.soleBuildPodViolation() && c.podIsOpenShiftBuild(ctx, namespace, violation.PodName) {
+		violation.Exempted = buildPodExemption
+		if artifactPath := psaArtifactPath(namespace); artifactPath != "" {
+			psaWriteArtifact(artifactPath, violation)
+		}
+		e2e.Logf("PSA audit exempted an OpenShift build pod violation in namespace %q: %s", namespace, violation.summary())
 		return nil
 	}
 
