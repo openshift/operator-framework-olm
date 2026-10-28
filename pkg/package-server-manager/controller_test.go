@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"testing"
 
 	semver "github.com/blang/semver/v4"
@@ -11,11 +12,68 @@ import (
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
+
+func TestReconcileAppliesTLSCurvePreferences(t *testing.T) {
+	command := reconcilePackageServerCommandForTLSGroups(t, []configv1.TLSGroup{configv1.TLSGroupSecP384r1, configv1.TLSGroupSecP256r1})
+	for i, arg := range command {
+		if arg == "--tls-curve-preferences" {
+			require.Less(t, i+1, len(command))
+			require.Equal(t, "24,23", command[i+1])
+			return
+		}
+	}
+	t.Fatal("package-server command is missing --tls-curve-preferences")
+}
+
+func TestReconcileOmitsEmptyTLSCurvePreferences(t *testing.T) {
+	command := reconcilePackageServerCommandForTLSGroups(t, nil)
+	require.NotContains(t, command, "--tls-curve-preferences")
+}
+
+func reconcilePackageServerCommandForTLSGroups(t *testing.T, groups []configv1.TLSGroup) []string {
+	t.Helper()
+	scheme := runtime.NewScheme()
+	require.NoError(t, configv1.AddToScheme(scheme))
+	require.NoError(t, olmv1alpha1.AddToScheme(scheme))
+	require.NoError(t, corev1.AddToScheme(scheme))
+	require.NoError(t, rbacv1.AddToScheme(scheme))
+
+	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(
+		&corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "olm-operator-serviceaccount", Namespace: namespace}},
+		&rbacv1.ClusterRole{ObjectMeta: metav1.ObjectMeta{Name: "system:controller:operator-lifecycle-manager"}},
+		&rbacv1.ClusterRoleBinding{ObjectMeta: metav1.ObjectMeta{Name: "olm-operator-binding-openshift-operator-lifecycle-manager"}},
+		&configv1.Infrastructure{ObjectMeta: metav1.ObjectMeta{Name: infrastructureName}},
+		&configv1.APIServer{
+			ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+			Spec: configv1.APIServerSpec{TLSSecurityProfile: &configv1.TLSSecurityProfile{
+				Type: configv1.TLSProfileCustomType,
+				Custom: &configv1.CustomTLSProfile{TLSProfileSpec: configv1.TLSProfileSpec{
+					Ciphers:       []string{"ECDHE-RSA-AES128-GCM-SHA256"},
+					MinTLSVersion: configv1.VersionTLS12,
+					Groups:        groups,
+				}},
+			}},
+		},
+	).Build()
+	reconciler := &PackageServerCSVReconciler{Client: client, Log: logger, Name: name, Namespace: namespace, Image: image}
+
+	_, err := reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Name: name, Namespace: namespace}})
+	require.NoError(t, err)
+
+	csv := &olmv1alpha1.ClusterServiceVersion{}
+	require.NoError(t, client.Get(context.Background(), types.NamespacedName{Name: name, Namespace: namespace}, csv))
+	return csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Command
+}
 
 var (
 	logger    = zap.New()

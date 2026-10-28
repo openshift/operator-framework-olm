@@ -18,7 +18,9 @@ package controllers
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -27,8 +29,8 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	libcrypto "github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/operator-framework-olm/pkg/manifests"
-	olmapiserver "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/apiserver"
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	olmapiserver "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/apiserver"
 
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -95,14 +97,18 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 	} else {
-		minVersion, cipherSuites := olmapiserver.GetSecurityProfileConfig(apiServer.Spec.TLSSecurityProfile)
+		minVersion, cipherSuites, curvePreferences := olmapiserver.GetSecurityProfileConfig(apiServer.Spec.TLSSecurityProfile)
 		minVersionStr := libcrypto.TLSVersionToNameOrDie(minVersion)
 		cipherSuitesStr := strings.Join(libcrypto.CipherSuitesToNamesOrDie(cipherSuites), ",")
+		curvePreferencesStr := curvePreferencesToString(curvePreferences)
 		flags = append(flags,
 			"--tls-min-version", minVersionStr,
 			"--tls-cipher-suites", cipherSuitesStr,
 		)
-		log.Info("applying cluster TLS security profile to packageserver", "minVersion", minVersionStr, "cipherSuites", cipherSuitesStr)
+		if curvePreferencesStr != "" {
+			flags = append(flags, "--tls-curve-preferences", curvePreferencesStr)
+		}
+		log.Info("applying cluster TLS security profile to packageserver", "minVersion", minVersionStr, "cipherSuites", cipherSuitesStr, "curvePreferences", curvePreferencesStr)
 	}
 
 	required, err := manifests.NewPackageServerCSV(
@@ -126,6 +132,16 @@ func (r *PackageServerCSVReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// curvePreferencesToString converts Go TLS curve IDs to the comma-separated
+// numeric values accepted by the Kubernetes tls-curve-preferences flag.
+func curvePreferencesToString(curvePreferences []tls.CurveID) string {
+	values := make([]string, len(curvePreferences))
+	for i, curvePreference := range curvePreferences {
+		values[i] = strconv.FormatInt(int64(curvePreference), 10)
+	}
+	return strings.Join(values, ",")
 }
 
 func ensureRBAC(client client.Client, ctx context.Context, namespace string, log logr.Logger) error {
