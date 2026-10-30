@@ -78,6 +78,19 @@ func versionsMatch(a []configv1.OperandVersion, b []configv1.OperandVersion) boo
 type skews []skew
 
 func (s skews) String() string {
+	// Sorting depends on a populated .err, to sort invalid skews
+	// first.  incompatibleOperators sets .err through one call path,
+	// but check again here, to ensure reliability, regardless of call-chain.
+	var minVersion *semver.Version
+	for i, skew := range s {
+		if release, err := semver.ParseTolerant(skew.maxOpenShiftVersion); err != nil {
+			s[i].err = err
+		} else if minVersion == nil || normalizeOCPVersion(release).LT(*minVersion) {
+			v := normalizeOCPVersion(release)
+			minVersion = &v
+		}
+	}
+
 	// Sort so the message does not depend on the (unstable) order in which the
 	// CSVs were listed: error skews first, then by namespace/name. A different
 	// order would be a different Message, and so a condition transition.
@@ -99,12 +112,11 @@ func (s skews) String() string {
 		msg[i] = sk.String()
 	}
 
-	// it is safe to ignore the error here, with the assumption
-	// that we build each skew object only after verifying that the
-	// version string is parseable safely.
-	maxOCPVersion, _ := semver.ParseTolerant(s[0].maxOpenShiftVersion)
-	nextY := nextY(maxOCPVersion).String()
-	return fmt.Sprintf("ClusterServiceVersions blocking minor version upgrades to %s or higher:\n%s", nextY, strings.Join(msg, "\n"))
+	if minVersion == nil {
+		return fmt.Sprintf("ClusterServiceVersions blocking major or minor version upgrades beyond the invalid SemVer %q (%s):\n%s", s[0].maxOpenShiftVersion, s[0].err, strings.Join(msg, "\n"))
+	}
+	nextY := nextY(*minVersion)
+	return fmt.Sprintf("ClusterServiceVersions blocking minor version upgrades to %d.%d or higher:\n%s", nextY.Major, nextY.Minor, strings.Join(msg, "\n"))
 }
 
 type skew struct {
@@ -115,10 +127,17 @@ type skew struct {
 }
 
 func (s skew) String() string {
-	if s.err != nil {
-		return fmt.Sprintf("- %s/%s has invalid %s properties: %s", s.namespace, s.name, MaxOpenShiftVersionProperty, s.err)
+	// Sorting depends on a populated .err, to sort invalid skews
+	// first.  incompatibleOperators sets .err through one call path,
+	// but check again here, to ensure reliability, regardless of call-chain.
+	if s.err == nil {
+		if _, err := semver.ParseTolerant(s.maxOpenShiftVersion); err != nil {
+			s.err = err
+		} else {
+			return fmt.Sprintf("- maximum supported OCP version for %s/%s is %s", s.namespace, s.name, s.maxOpenShiftVersion)
+		}
 	}
-	return fmt.Sprintf("- maximum supported OCP version for %s/%s is %s", s.namespace, s.name, s.maxOpenShiftVersion)
+	return fmt.Sprintf("- %s/%s has invalid %s properties: %s", s.namespace, s.name, MaxOpenShiftVersionProperty, s.err)
 }
 
 type transientError struct {
@@ -164,6 +183,7 @@ func incompatibleOperators(ctx context.Context, cli client.Client) (skews, error
 		}
 		max, err := maxOpenShiftVersion(&csv)
 		if err != nil {
+			s.maxOpenShiftVersion = max
 			s.err = err
 			incompatible = append(incompatible, s)
 			continue
