@@ -540,7 +540,7 @@ github.com/json-iterator/go
 ## explicit; go 1.18
 github.com/kisielk/errcheck
 github.com/kisielk/errcheck/errcheck
-# github.com/klauspost/compress v1.20.1
+# github.com/klauspost/compress v1.20.2
 ## explicit; go 1.25
 github.com/klauspost/compress
 github.com/klauspost/compress/flate
