@@ -2100,6 +2100,23 @@ func (o *Operator) syncInstallPlans(obj interface{}) (syncError error) {
 
 	logger.Info("syncing")
 
+	// OCPBUGS-35210: log the step statuses this reconcile sees at start.
+	// Proves whether this loop received a stale cached plan (NotPresent) or
+	// the post-UpdateStatus version (Created) for the BundleSecret step.
+	if len(plan.Status.Plan) > 0 {
+		for i, step := range plan.Status.Plan {
+			if step.Resource.Kind == "BundleSecret" || step.Resource.Kind == "ServiceAccount" {
+				logger.WithFields(logrus.Fields{
+					"resourceVersion": plan.ResourceVersion,
+					"stepIndex":       i,
+					"kind":            step.Resource.Kind,
+					"name":            step.Resource.Name,
+					"status":          step.Status,
+				}).Debug("installplan step status at reconcile start")
+			}
+		}
+	}
+
 	if len(plan.Status.Plan) == 0 && len(plan.Status.BundleLookups) == 0 {
 		logger.Info("skip processing installplan without status - subscription sync responsible for initial status")
 		return
@@ -2107,6 +2124,9 @@ func (o *Operator) syncInstallPlans(obj interface{}) (syncError error) {
 
 	// Complete and Failed are terminal phases
 	if plan.Status.Phase == v1alpha1.InstallPlanPhaseFailed || plan.Status.Phase == v1alpha1.InstallPlanPhaseComplete {
+		// OCPBUGS-35210: log so we can confirm terminal-phase early exit in the timeline.
+		// Loops that see phase=Complete exit here without executing any steps.
+		logger.WithField("phase", plan.Status.Phase).Debug("phase is terminal, skipping execution")
 		return
 	}
 
@@ -2169,8 +2189,26 @@ func (o *Operator) syncInstallPlans(obj interface{}) (syncError error) {
 
 	defer o.requeueSubscriptionForInstallPlan(plan, logger)
 
+	// OCPBUGS-35210: log what step statuses are being persisted and the
+	// resourceVersion. A concurrent reconcile that reads before this write
+	// will have an older resourceVersion and see different step statuses.
+	{
+		fields := logrus.Fields{
+			"resourceVersion": outInstallPlan.ResourceVersion,
+			"phase":           outInstallPlan.Status.Phase,
+		}
+		for i, step := range outInstallPlan.Status.Plan {
+			if step.Resource.Kind == "BundleSecret" || step.Resource.Kind == "ServiceAccount" {
+				fields[fmt.Sprintf("step[%d].%s", i, step.Resource.Kind)] = string(step.Status)
+			}
+		}
+		logger.WithFields(fields).Debug("calling UpdateStatus")
+	}
+
 	// Update InstallPlan with status of transition. Log errors if we can't write them to the status.
-	if _, err := o.client.OperatorsV1alpha1().InstallPlans(plan.GetNamespace()).UpdateStatus(context.TODO(), outInstallPlan, metav1.UpdateOptions{}); err != nil {
+	if updatedPlan, err := o.client.OperatorsV1alpha1().InstallPlans(plan.GetNamespace()).UpdateStatus(context.TODO(), outInstallPlan, metav1.UpdateOptions{}); err != nil {
+		// OCPBUGS-35210: a 409 here means step statuses were NOT persisted.
+		// A concurrent reconcile that already read NotPresent will re-execute the BundleSecret step.
 		logger = logger.WithField("updateError", err.Error())
 		updateErr := errors.New("error updating InstallPlan status: " + err.Error())
 		if syncError == nil {
@@ -2179,6 +2217,13 @@ func (o *Operator) syncInstallPlans(obj interface{}) (syncError error) {
 		}
 		logger.Info("error transitioning InstallPlan")
 		syncError = fmt.Errorf("error transitioning InstallPlan: %s and error updating InstallPlan status: %s", syncError, updateErr)
+	} else {
+		// OCPBUGS-35210: log the new resourceVersion after a successful write.
+		// Any reconcile loop that read a lower resourceVersion saw stale data.
+		logger.WithFields(logrus.Fields{
+			"newResourceVersion": updatedPlan.ResourceVersion,
+			"phase":              updatedPlan.Status.Phase,
+		}).Debug("UpdateStatus succeeded")
 	}
 
 	return
@@ -2474,7 +2519,7 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 		o.logger.Errorf("failed to get a client for plan execution- %v", err)
 		return err
 	}
-	b := newBuilder(plan, o.lister.OperatorsV1alpha1().ClusterServiceVersionLister(), builderKubeClient, builderDynamicClient, r, o.logger, o.recorder)
+	b := newBuilder(plan, o.lister.OperatorsV1alpha1().ClusterServiceVersionLister(), builderKubeClient, o.client, builderDynamicClient, r, o.logger, o.recorder)
 
 	for i, step := range plan.Status.Plan {
 		if err := func(i int, step *v1alpha1.Step) error {
@@ -2521,14 +2566,25 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 			}
 
 			switch step.Status {
-			case v1alpha1.StepStatusPresent, v1alpha1.StepStatusCreated, v1alpha1.StepStatusWaitingForAPI:
+			case v1alpha1.StepStatusPresent, v1alpha1.StepStatusCreated:
+				// OCPBUGS-35210: log skipped steps so we can confirm which reconcile
+				// loop sees Created (and skips) vs NotPresent (and re-executes).
+				if step.Resource.Kind == "BundleSecret" || step.Resource.Kind == "ServiceAccount" {
+					o.logger.WithFields(logrus.Fields{
+						"kind":   step.Resource.Kind,
+						"name":   step.Resource.Name,
+						"status": step.Status,
+					}).Debug("skipping step — already Created/Present")
+				}
+				return nil
+			case v1alpha1.StepStatusWaitingForAPI:
 				return nil
 			case v1alpha1.StepStatusUnknown, v1alpha1.StepStatusNotPresent:
 				manifest, err := r.ManifestForStep(step)
 				if err != nil {
 					return err
 				}
-				o.logger.WithFields(logrus.Fields{"kind": step.Resource.Kind, "name": step.Resource.Name}).Debug("execute resource")
+				o.logger.WithFields(logrus.Fields{"kind": step.Resource.Kind, "name": step.Resource.Name, "stepIndex": i}).Debug("execute resource")
 				switch step.Resource.Kind {
 				case v1alpha1.ClusterServiceVersionKind:
 					// Marshal the manifest into a CSV instance.
@@ -2622,6 +2678,17 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 						s.Labels = map[string]string{}
 					}
 					s.Labels[install.OLMManagedLabelKey] = install.OLMManagedLabelValue
+
+					// OCPBUGS-35210: log the plan resourceVersion at the moment of creation.
+					// This ties the secret creation to a specific plan version, letting us
+					// confirm whether a concurrent reconcile held a stale or current view.
+					o.logger.WithFields(logrus.Fields{
+						"secret":          s.Name,
+						"sa":              s.Annotations[corev1.ServiceAccountNameKey],
+						"planRV":          plan.ResourceVersion,
+						"stepIndex":       i,
+						"stepStatus":      step.Status,
+					}).Debug("ExecutePlan: creating BundleSecret (OCPBUGS-35210)")
 
 					status, err := ensurer.EnsureBundleSecret(plan.Namespace, &s)
 					if err != nil {
@@ -2915,8 +2982,25 @@ func (o *Operator) ExecutePlan(plan *v1alpha1.InstallPlan) error {
 					return notFoundErr
 				}
 			}
+			// OCPBUGS-35210: log the step that caused ExecutePlan to fail.
+			// This error becomes syncError in syncInstallPlans and appears in the
+			// UpdateStatus WRITE log — it is NOT a UpdateStatus error itself.
+			o.logger.WithFields(logrus.Fields{
+				"kind":      step.Resource.Kind,
+				"name":      step.Resource.Name,
+				"stepIndex": i,
+				"error":     err.Error(),
+			}).Debug("step execution failed — ExecutePlan returning error")
 			return err
 		}
+		// OCPBUGS-35210: log the result of each step so we can see exactly
+		// which steps ran and what status they reached in this reconcile loop.
+		o.logger.WithFields(logrus.Fields{
+			"kind":      step.Resource.Kind,
+			"name":      step.Resource.Name,
+			"stepIndex": i,
+			"result":    plan.Status.Plan[i].Status,
+		}).Debug("step execution result")
 	}
 
 	// Loop over one final time to check and see if everything is good.
