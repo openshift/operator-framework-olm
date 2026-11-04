@@ -1,6 +1,8 @@
 module github.com/openshift/operator-framework-olm
 
-go 1.19
+go 1.21
+
+toolchain go1.23.3
 
 require (
 	github.com/blang/semver/v4 v4.0.0
@@ -289,4 +291,4 @@ replace (
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06
 )
 
-replace golang.org/x/net => github.com/openshift-sustaining/net v0.35.0-sec.3
+replace golang.org/x/net => github.com/openshift-sustaining/net v0.35.0-sec.4
