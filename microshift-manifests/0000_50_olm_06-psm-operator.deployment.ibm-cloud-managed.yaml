@@ -69,7 +69,7 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 10Mi
+              memory: 95Mi
           ports:
             - containerPort: 8443
               name: metrics
