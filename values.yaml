@@ -72,7 +72,7 @@ catalog:
   resources:
     requests:
       cpu: 10m
-      memory: 80Mi
+      memory: 160Mi
 package:
   replicaCount: 2
   maxUnavailable: 1
