@@ -179,23 +179,80 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 		}
 
 		g.By("3) Verify TLS 1.2 connection works with Intermediate profile (should NOT contain NONE)")
-		for i, routeHost := range routeHosts {
-			e2e.Logf("Testing TLS 1.2 connection to route: %s", routeHost)
-			opensslCmd := fmt.Sprintf("echo | openssl s_client -connect %s:443 -tls1_2 2>&1 | grep -E 'Protocol|Cipher'", routeHost)
-			output, err := exec.Command("bash", "-c", opensslCmd).CombinedOutput()
-			if err != nil {
-				e2e.Logf("openssl command error (may be expected): %v", err)
-			}
+		const (
+			routeTLSReadyInterval = 5 * time.Second
+			routeTLSReadyTimeout  = 2 * time.Minute
+			tlsProbeTimeout       = 15 * time.Second
+		)
+		protocolPattern := regexp.MustCompile(`(?m)^\s*Protocol\s*:\s*(\S+)\s*$`)
+		cipherPattern := regexp.MustCompile(`(?m)^\s*Cipher\s*:\s*(\S+)\s*$`)
+		probeTLS12 := func(ctx context.Context, routeHost string) (string, error) {
+			probeCtx, cancel := context.WithTimeout(ctx, tlsProbeTimeout)
+			defer cancel()
+
+			cmd := exec.CommandContext(probeCtx, "openssl", "s_client", "-connect", routeHost+":443", "-servername", routeHost, "-tls1_2")
+			cmd.Stdin = strings.NewReader("\n")
+			output, cmdErr := cmd.CombinedOutput()
 			outputStr := string(output)
 
-			// Verify we got valid TLS output - should contain Protocol or Cipher information
-			if len(outputStr) == 0 || (!strings.Contains(outputStr, "Protocol") && !strings.Contains(outputStr, "Cipher")) {
-				e2e.Failf("TLS 1.2 check for %s returned empty or unexpected output: %s", routes[i].routeName, outputStr)
+			if probeCtx.Err() == context.DeadlineExceeded {
+				return outputStr, fmt.Errorf("openssl probe timed out after %s", tlsProbeTimeout)
+			}
+			if strings.TrimSpace(outputStr) == "" {
+				return outputStr, fmt.Errorf("openssl probe returned empty output: %v", cmdErr)
+			}
+			if strings.Contains(outputStr, "(NONE)") {
+				return outputStr, fmt.Errorf("openssl probe did not negotiate a protocol or cipher: %v", cmdErr)
 			}
 
-			// With Intermediate profile, TLS 1.2 should work - should NOT contain "(NONE)"
-			if strings.Contains(outputStr, "(NONE)") {
-				e2e.Failf("TLS 1.2 connection to %s failed unexpectedly with Intermediate profile", routes[i].routeName)
+			protocolMatch := protocolPattern.FindStringSubmatch(outputStr)
+			if len(protocolMatch) != 2 {
+				return outputStr, fmt.Errorf("openssl probe returned invalid output without a protocol: %v", cmdErr)
+			}
+			if protocolMatch[1] != "TLSv1.2" {
+				return outputStr, fmt.Errorf("openssl probe negotiated wrong protocol %q, expected TLSv1.2", protocolMatch[1])
+			}
+
+			cipherMatch := cipherPattern.FindStringSubmatch(outputStr)
+			if len(cipherMatch) != 2 {
+				return outputStr, fmt.Errorf("openssl probe returned invalid output without a cipher: %v", cmdErr)
+			}
+			cipher := cipherMatch[1]
+			if cipher == "0000" || strings.EqualFold(cipher, "NONE") {
+				return outputStr, fmt.Errorf("openssl probe negotiated wrong cipher %q", cipher)
+			}
+			if cmdErr != nil {
+				return outputStr, fmt.Errorf("openssl probe failed after negotiating TLSv1.2 with cipher %s: %w", cipher, cmdErr)
+			}
+
+			return outputStr, nil
+		}
+
+		for i, routeHost := range routeHosts {
+			e2e.Logf("Waiting up to %s for TLS 1.2 readiness on route %s (%s)", routeTLSReadyTimeout, routes[i].routeName, routeHost)
+			var (
+				attempts     int
+				lastOutput   string
+				lastProbeErr error
+			)
+			err := wait.PollUntilContextTimeout(context.TODO(), routeTLSReadyInterval, routeTLSReadyTimeout, true, func(ctx context.Context) (bool, error) {
+				attempts++
+				lastOutput, lastProbeErr = probeTLS12(ctx, routeHost)
+				if lastProbeErr != nil {
+					e2e.Logf("TLS 1.2 probe attempt %d for route %s is not ready: %v", attempts, routes[i].routeName, lastProbeErr)
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				diagnosticOutput := strings.TrimSpace(lastOutput)
+				if diagnosticOutput == "" {
+					diagnosticOutput = "<empty>"
+				} else if len(diagnosticOutput) > 2000 {
+					diagnosticOutput = diagnosticOutput[len(diagnosticOutput)-2000:]
+				}
+				e2e.Failf("TLS 1.2 readiness check for route %s (%s) failed after %d attempts over %s: %v; last probe error: %v; last openssl output:\n%s",
+					routes[i].routeName, routeHost, attempts, routeTLSReadyTimeout, err, lastProbeErr, diagnosticOutput)
 			}
 			e2e.Logf("TLS 1.2 connection to %s works correctly with Intermediate profile", routes[i].routeName)
 		}
