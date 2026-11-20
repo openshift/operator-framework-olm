@@ -202,8 +202,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.podman.io/common v0.69.0 // indirect
-	go.podman.io/image/v5 v5.42.0 // indirect
-	go.podman.io/storage v1.65.0 // indirect
+	go.podman.io/image/v5 v5.42.1 // indirect
+	go.podman.io/storage v1.65.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.5 // indirect
