@@ -3,6 +3,7 @@ package specs
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,6 +15,7 @@ import (
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
+	configv1 "github.com/openshift/api/config/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 
@@ -178,24 +180,99 @@ var _ = g.Describe("[sig-operator][Jira:OLM] OLMv0 should", func() {
 			e2e.Logf("Route %s created with host: %s", route.routeName, routeHost)
 		}
 
-		g.By("3) Verify TLS 1.2 connection works with Intermediate profile (should NOT contain NONE)")
-		for i, routeHost := range routeHosts {
-			e2e.Logf("Testing TLS 1.2 connection to route: %s", routeHost)
-			opensslCmd := fmt.Sprintf("echo | openssl s_client -connect %s:443 -tls1_2 2>&1 | grep -E 'Protocol|Cipher'", routeHost)
-			output, err := exec.Command("bash", "-c", opensslCmd).CombinedOutput()
-			if err != nil {
-				e2e.Logf("openssl command error (may be expected): %v", err)
+		g.By("3) Wait for each route to negotiate TLS 1.2 with an Intermediate profile cipher")
+		const (
+			routeTLSReadyInterval = 5 * time.Second
+			routeTLSReadyTimeout  = 2 * time.Minute
+			tlsProbeTimeout       = 15 * time.Second
+		)
+		protocolPattern := regexp.MustCompile(`(?m)^\s*Protocol\s*:\s*(\S+)\s*$`)
+		cipherPattern := regexp.MustCompile(`(?m)^\s*Cipher\s*:\s*(\S+)\s*$`)
+		intermediateCiphers := make(map[string]struct{}, len(configv1.TLSProfiles[configv1.TLSProfileIntermediateType].Ciphers))
+		for _, cipher := range configv1.TLSProfiles[configv1.TLSProfileIntermediateType].Ciphers {
+			intermediateCiphers[cipher] = struct{}{}
+		}
+		summarizeTLSProbeOutput := func(output string) string {
+			protocol := "<missing>"
+			if match := protocolPattern.FindStringSubmatch(output); len(match) == 2 {
+				protocol = match[1]
 			}
+			cipher := "<missing>"
+			if match := cipherPattern.FindStringSubmatch(output); len(match) == 2 {
+				cipher = match[1]
+			}
+			return fmt.Sprintf("bytes=%d, protocol=%q, cipher=%q, contains_NONE=%t", len(output), protocol, cipher, strings.Contains(output, "(NONE)"))
+		}
+		probeTLS12 := func(ctx context.Context, routeHost string) (string, error) {
+			probeCtx, cancel := context.WithTimeout(ctx, tlsProbeTimeout)
+			defer cancel()
+
+			cmd := exec.CommandContext(probeCtx, "openssl", "s_client", "-connect", routeHost+":443", "-servername", routeHost, "-tls1_2")
+			cmd.Stdin = strings.NewReader("\n")
+			output, cmdErr := cmd.CombinedOutput()
 			outputStr := string(output)
-
-			// Verify we got valid TLS output - should contain Protocol or Cipher information
-			if len(outputStr) == 0 || (!strings.Contains(outputStr, "Protocol") && !strings.Contains(outputStr, "Cipher")) {
-				e2e.Failf("TLS 1.2 check for %s returned empty or unexpected output: %s", routes[i].routeName, outputStr)
+			probeError := func(reason string) error {
+				if cmdErr != nil {
+					return fmt.Errorf("%s: %w", reason, cmdErr)
+				}
+				return errors.New(reason)
 			}
 
-			// With Intermediate profile, TLS 1.2 should work - should NOT contain "(NONE)"
+			if probeCtx.Err() == context.DeadlineExceeded {
+				return outputStr, fmt.Errorf("openssl probe timed out after %s", tlsProbeTimeout)
+			}
+			if strings.TrimSpace(outputStr) == "" {
+				return outputStr, probeError("openssl probe returned empty output")
+			}
 			if strings.Contains(outputStr, "(NONE)") {
-				e2e.Failf("TLS 1.2 connection to %s failed unexpectedly with Intermediate profile", routes[i].routeName)
+				return outputStr, probeError("openssl probe did not negotiate a protocol or cipher")
+			}
+
+			protocolMatch := protocolPattern.FindStringSubmatch(outputStr)
+			if len(protocolMatch) != 2 {
+				return outputStr, probeError("openssl probe returned invalid output without a protocol")
+			}
+			if protocolMatch[1] != "TLSv1.2" {
+				return outputStr, fmt.Errorf("openssl probe negotiated wrong protocol %q, expected TLSv1.2", protocolMatch[1])
+			}
+
+			cipherMatch := cipherPattern.FindStringSubmatch(outputStr)
+			if len(cipherMatch) != 2 {
+				return outputStr, probeError("openssl probe returned invalid output without a cipher")
+			}
+			cipher := cipherMatch[1]
+			if cipher == "0000" || strings.EqualFold(cipher, "NONE") {
+				return outputStr, fmt.Errorf("openssl probe negotiated wrong cipher %q", cipher)
+			}
+			if _, ok := intermediateCiphers[cipher]; !ok {
+				return outputStr, fmt.Errorf("openssl probe negotiated cipher %q outside the Intermediate profile", cipher)
+			}
+			if cmdErr != nil {
+				return outputStr, fmt.Errorf("openssl probe failed after negotiating TLSv1.2 with cipher %s: %w", cipher, cmdErr)
+			}
+
+			return outputStr, nil
+		}
+
+		for i, routeHost := range routeHosts {
+			e2e.Logf("Waiting up to %s for TLS 1.2 readiness on route %s (%s)", routeTLSReadyTimeout, routes[i].routeName, routeHost)
+			var (
+				attempts     int
+				lastOutput   string
+				lastProbeErr error
+			)
+			err := wait.PollUntilContextTimeout(context.TODO(), routeTLSReadyInterval, routeTLSReadyTimeout, true, func(ctx context.Context) (bool, error) {
+				attempts++
+				lastOutput, lastProbeErr = probeTLS12(ctx, routeHost)
+				if lastProbeErr != nil {
+					e2e.Logf("TLS 1.2 probe attempt %d for route %s is not ready: %v", attempts, routes[i].routeName, lastProbeErr)
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				e2e.Failf("TLS 1.2 readiness check for route %s (%s) failed after %d attempts over %s: %v; last probe error: %v; last openssl summary: %s",
+					routes[i].routeName, routeHost, attempts, routeTLSReadyTimeout, err, lastProbeErr, summarizeTLSProbeOutput(lastOutput))
 			}
 			e2e.Logf("TLS 1.2 connection to %s works correctly with Intermediate profile", routes[i].routeName)
 		}
