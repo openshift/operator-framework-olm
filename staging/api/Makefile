@@ -17,9 +17,12 @@ SPECIFIC_SKIP_UNIT_TEST := $(if $(SKIP),-skip $(SKIP),)
 
 .DEFAULT_GOAL := help
 
-# bingo manages consistent tooling versions for binary dependencies in a way 
-# which isn't sensitive to user environments
-include .bingo/Variables.mk
+# Build tools for the host even when GOOS or GOARCH is set for a cross-build.
+HOST_GO_TOOL := GOOS=$(shell go env GOHOSTOS) GOARCH=$(shell go env GOHOSTARCH) GOARM=$(shell go env GOHOSTARM) go tool
+CONTROLLER_GEN := $(HOST_GO_TOOL) controller-gen
+OPENAPI_GEN := $(HOST_GO_TOOL) -modfile=tools/openapi/go.mod openapi-gen
+YQ := $(HOST_GO_TOOL) yq
+KIND := $(HOST_GO_TOOL) kind
 
 .PHONY: help
 help: ## Show this help screen
@@ -55,10 +58,10 @@ tidy: ## Update dependencies
 clean: ## Clean up the build artifacts
 	$(Q)rm -rf build
 
-generate: $(CONTROLLER_GEN) generate-openapi ## Generate code
+generate: generate-openapi ## Generate code
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths=./...
 
-generate-openapi: $(OPENAPI_GEN) ## Generate OpenAPIModelName() functions and OpenAPI definitions
+generate-openapi: ## Generate OpenAPIModelName() functions and OpenAPI definitions
 	@# Generate OpenAPIModelName() functions (zz_generated.model_name.go) in each input package.
 	@# Also produces a consolidated OpenAPI definitions file in pkg/generated/openapi/ (required by openapi-gen).
 	@# API rule violations are written to api_violations.report instead of failing the build.
@@ -73,7 +76,7 @@ generate-openapi: $(OPENAPI_GEN) ## Generate OpenAPIModelName() functions and Op
 		./pkg/operators/v1alpha1 \
 		./pkg/lib/version
 
-manifests: $(CONTROLLER_GEN) $(YQ) ## Generate manifests e.g. CRD, RBAC etc
+manifests: ## Generate manifests e.g. CRD, RBAC etc
 	@# Create CRDs for new APIs
 	$(CONTROLLER_GEN) crd:crdVersions=v1 output:crd:dir=./crds paths=./pkg/operators/...
 
@@ -119,11 +122,11 @@ verify: manifests generate format tidy
 GO_INSTALL_OPTS ?= "-mod=mod"
 
 # Determine the latest available kindest/node image for the Kubernetes minor version
-# matching the k8s.io/client-go dependency (e.g., client-go v0.36.1 → kindest/node:v1.36.1)
+# matching the k8s.io/client-go dependency (e.g., client-go v0.37.1 → kindest/node:v1.37.0)
 KIND_NODE_VERSION := $(shell ./hack/get-kind-node-version.sh)
 KIND_CLUSTER_IMAGE := kindest/node:v$(KIND_NODE_VERSION)
 
 .PHONY: kind-cluster
-kind-cluster: $(KIND) ## Create a kind cluster
+kind-cluster: ## Create a kind cluster
 	$(KIND) create cluster --name olmv0 --image $(KIND_CLUSTER_IMAGE)
 	$(KIND) export kubeconfig --name olmv0
