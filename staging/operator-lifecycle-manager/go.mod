@@ -204,3 +204,8 @@ require (
 )
 
 retract v3.11.0+incompatible // https://github.com/operator-framework/operator-lifecycle-manager/issues/2253
+
+replace (
+	github.com/operator-framework/api => ../api
+	github.com/operator-framework/operator-registry => ../operator-registry
+)
